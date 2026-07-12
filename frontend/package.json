@@ -1,0 +1,9 @@
+{
+  "name": "horse-frontend",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "api:generate": "echo 'OpenAPI generation will be implemented in M0-05' && exit 1",
+    "api:check": "echo 'OpenAPI generation will be implemented in M0-05' && exit 1"
+  }
+}

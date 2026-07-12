@@ -1,0 +1,27 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: horse-mysql
+    restart: unless-stopped
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-horse}"
+      MYSQL_USER: "${MYSQL_USER:-horse}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:-horse_dev}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-horse_root_dev}"
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - horse_mysql_data:/var/lib/mysql
+
+volumes:
+  horse_mysql_data:
+

@@ -1,0 +1,157 @@
+[tools]
+java = "corretto-21"
+node = "24"
+pnpm = "11.7.0"
+
+[env]
+_.file = { path = ".env", redact = true }
+
+[tasks.install]
+description = "Install backend and frontend dependencies"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+./backend/gradlew -p backend dependencies >/dev/null
+pnpm --dir frontend install --frozen-lockfile
+'''
+
+[tasks."harness:self-check"]
+description = "Verify required runtimes, wrappers, workspaces, and task definitions"
+run = "./scripts/harness-self-check.sh"
+
+[tasks."docs:check"]
+description = "Check documentation links, placeholders, and reservation status terminology"
+run = "./scripts/check-docs.sh"
+
+[tasks."db:config"]
+description = "Validate Docker Compose configuration"
+run = "docker compose config --quiet"
+
+[tasks."db:up"]
+description = "Start local MySQL and wait for readiness"
+run = "docker compose up -d --wait mysql"
+
+[tasks."db:down"]
+description = "Stop local MySQL without deleting data"
+run = "docker compose down"
+
+[tasks."db:status"]
+description = "Show local MySQL status"
+run = "docker compose ps mysql"
+
+[tasks."backend:test"]
+description = "Run Spring Boot unit tests"
+dir = "backend"
+run = "./gradlew test"
+
+[tasks."backend:check"]
+description = "Run Spring Boot checks"
+dir = "backend"
+run = "./gradlew check"
+
+[tasks."backend:integration"]
+description = "Run Spring Boot integration tests"
+dir = "backend"
+run = "./gradlew test --tests '*HorseBackendApplicationTests'"
+
+[tasks."backend:build"]
+description = "Build the Spring Boot application"
+dir = "backend"
+run = "./gradlew bootJar"
+
+[tasks."backend:dev"]
+description = "Start Spring Boot on port 8080"
+dir = "backend"
+run = "./gradlew bootRun"
+
+[tasks."web:lint"]
+description = "Lint the React web application"
+run = "pnpm --dir frontend/apps/web lint"
+
+[tasks."web:typecheck"]
+description = "Type-check the React web application"
+run = "pnpm --dir frontend/apps/web typecheck"
+
+[tasks."web:test"]
+description = "Run React web tests"
+run = "pnpm --dir frontend/apps/web test"
+
+[tasks."web:build"]
+description = "Build the React web application"
+run = "pnpm --dir frontend/apps/web build"
+
+[tasks."web:dev"]
+description = "Start Vite on port 5173"
+run = "pnpm --dir frontend/apps/web dev"
+
+[tasks."mobile:lint"]
+description = "Lint the Expo mobile application"
+run = "pnpm --dir frontend/apps/mobile lint"
+
+[tasks."mobile:typecheck"]
+description = "Type-check the Expo mobile application"
+run = "pnpm --dir frontend/apps/mobile typecheck"
+
+[tasks."mobile:test"]
+description = "Run Expo mobile tests"
+run = "pnpm --dir frontend/apps/mobile test"
+
+[tasks."mobile:export"]
+description = "Export the Expo application for web"
+run = "pnpm --dir frontend/apps/mobile export:web"
+
+[tasks."mobile:dev"]
+description = "Start the Expo development server"
+run = "pnpm --dir frontend/apps/mobile start"
+
+[tasks."api:generate"]
+description = "Generate the shared TypeScript API client"
+run = "pnpm --dir frontend api:generate"
+
+[tasks."api:check"]
+description = "Verify the generated TypeScript API client is current"
+run = "pnpm --dir frontend api:check"
+
+[tasks."verify:changed"]
+description = "Verify changed areas, or all areas when Git is unavailable"
+run = "./scripts/verify-changed.sh"
+
+[tasks."verify:all"]
+description = "Run all currently implemented quality gates"
+run = '''
+mise run harness:self-check
+mise run docs:check
+mise run backend:check
+mise run backend:integration
+mise run web:lint
+mise run web:typecheck
+mise run web:test
+mise run web:build
+mise run mobile:lint
+mise run mobile:typecheck
+mise run mobile:test
+mise run mobile:export
+'''
+
+[tasks."verify:m0-01"]
+description = "Verify the Spring Boot skeleton"
+run = '''
+mise run backend:check
+mise run backend:build
+'''
+
+[tasks."verify:m0-02"]
+description = "Verify MySQL and Flyway setup"
+run = '''
+mise run db:config
+mise run backend:integration
+'''
+
+[tasks."verify:m0-03"]
+description = "Verify the React Vite skeleton"
+run = '''
+mise run web:lint
+mise run web:typecheck
+mise run web:test
+mise run web:build
+'''

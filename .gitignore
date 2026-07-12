@@ -1,0 +1,21 @@
+.DS_Store
+.env
+.idea/
+.serena/cache/
+
+# Local agent harness and project instructions
+.agents/
+.codex/
+
+backend/.gradle/
+backend/build/
+backend/out/
+
+frontend/node_modules/
+frontend/**/node_modules/
+frontend/**/dist/
+frontend/**/.expo/
+frontend/**/web-build/
+frontend/**/coverage/
+
+*.log

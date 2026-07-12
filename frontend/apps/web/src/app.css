@@ -1,0 +1,20 @@
+#root {
+  min-height: 100vh;
+}
+
+main {
+  width: min(100% - 32px, 960px);
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+a {
+  color: #135f35;
+}
+
