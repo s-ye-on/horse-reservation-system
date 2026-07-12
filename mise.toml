@@ -188,3 +188,8 @@ actionlint .github/workflows/ci.yml
 mise run harness:self-check
 docker compose config --quiet
 '''
+
+[tasks."verify:m1-01"]
+description = "Verify riding classes and general grade boundaries"
+dir = "backend"
+run = "./gradlew test --tests '*RidingClassTest' --tests '*GeneralRidingGradeTest'"
