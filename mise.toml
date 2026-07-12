@@ -19,6 +19,10 @@ pnpm --dir frontend install --frozen-lockfile
 description = "Verify required runtimes, wrappers, workspaces, and task definitions"
 run = "./scripts/harness-self-check.sh"
 
+[tasks."harness:loop-ready"]
+description = "Verify exactly one active task and its task-specific quality gate"
+run = "./scripts/loop-ready-check.sh"
+
 [tasks."docs:check"]
 description = "Check documentation links, placeholders, and reservation status terminology"
 run = "./scripts/check-docs.sh"
@@ -155,3 +159,8 @@ mise run web:typecheck
 mise run web:test
 mise run web:build
 '''
+
+[tasks."verify:m0-04"]
+description = "Verify Spring Security member and admin access boundaries"
+dir = "backend"
+run = "./gradlew test --tests '*SecurityBoundaryTest'"

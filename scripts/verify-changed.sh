@@ -5,7 +5,10 @@ if [[ ! -d .git ]]; then
   exec mise run verify:all
 fi
 
-changed_files="$(git diff --name-only HEAD 2>/dev/null || true)"
+changed_files="$({
+  git diff --name-only HEAD
+  git ls-files --others --exclude-standard
+} | sort -u)"
 
 if [[ -z "$changed_files" ]]; then
   echo "no changed files"
@@ -34,4 +37,3 @@ fi
 if grep -qE '^(docs/|TMP.md)' <<<"$changed_files"; then
   mise run docs:check
 fi
-

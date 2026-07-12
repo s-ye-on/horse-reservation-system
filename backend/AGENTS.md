@@ -5,9 +5,9 @@
 
 ## 작업 전 확인
 
-1. 현재 `docs/tasks/`의 task 문서를 확인한다.
-2. task가 지정한 제품 정책과 아키텍처 문서만 추가로 읽는다.
-3. task 상태가 `READY` 또는 `IN_PROGRESS`가 아니면 구현하지 않는다.
+1. `docs/tasks/active/`에서 상태가 `READY` 또는 `IN_PROGRESS`인 task를 확인한다.
+2. 실행 가능한 active task가 없거나 둘 이상이면 구현하지 않는다.
+3. active task가 지정한 제품 정책과 아키텍처 문서만 추가로 읽는다.
 
 ## Required Rules
 
@@ -41,8 +41,8 @@
 task 문서의 검증 명령을 먼저 실행한다. 별도 명령이 없다면 다음을 실행한다.
 
 ```bash
-./gradlew test
-./gradlew check
+mise run backend:check
+mise run backend:integration
 ```
 
 검증을 통과시키기 위해 테스트를 삭제하거나 assertion을 약화하지 않는다.
