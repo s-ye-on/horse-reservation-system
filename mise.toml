@@ -127,6 +127,7 @@ mise run harness:self-check
 mise run docs:check
 mise run backend:check
 mise run backend:integration
+mise run api:check
 mise run web:lint
 mise run web:typecheck
 mise run web:test
@@ -170,4 +171,11 @@ description = "Verify OpenAPI contract and generated TypeScript client"
 run = '''
 mise run api:check
 pnpm --dir frontend/packages/api-client exec tsc --noEmit --target ES2022 --module ESNext --moduleResolution Bundler src/index.ts
+'''
+
+[tasks."verify:m0-06"]
+description = "Verify changed-path routing"
+run = '''
+bash -n scripts/verify-changed.sh scripts/tests/verify-changed-test.sh
+./scripts/tests/verify-changed-test.sh
 '''
