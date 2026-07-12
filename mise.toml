@@ -2,6 +2,7 @@
 java = "corretto-21"
 node = "24"
 pnpm = "11.7.0"
+actionlint = "1.7.12"
 
 [env]
 _.file = { path = ".env", redact = true }
@@ -178,4 +179,12 @@ description = "Verify changed-path routing"
 run = '''
 bash -n scripts/verify-changed.sh scripts/tests/verify-changed-test.sh
 ./scripts/tests/verify-changed-test.sh
+'''
+
+[tasks."verify:m0-07"]
+description = "Verify the GitHub Actions quality gate"
+run = '''
+actionlint .github/workflows/ci.yml
+mise run harness:self-check
+docker compose config --quiet
 '''

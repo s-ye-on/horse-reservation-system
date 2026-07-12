@@ -28,8 +28,10 @@ command -v node >/dev/null
 command -v pnpm >/dev/null
 command -v docker >/dev/null
 command -v git >/dev/null
+command -v actionlint >/dev/null
 
 java -version 2>&1 | head -n 1
 node --version
 pnpm --version
 docker --version
+actionlint --version
