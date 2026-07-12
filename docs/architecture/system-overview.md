@@ -6,7 +6,7 @@
 
 ## 기술 스택
 
-- 백엔드: Java, Spring Boot, Spring Data JPA, Hibernate, Spring Security
+- 백엔드: Java, Spring Boot, Spring Data JPA, Hibernate, Spring Security, JWT
 - 데이터베이스: MySQL, Flyway
 - 백엔드 빌드: Gradle Wrapper
 - 웹: React, TypeScript, Vite, React Router
@@ -41,7 +41,7 @@ horse/
 
 ## 핵심 모듈
 
-- `auth`: 회원·관리자 인증과 권한
+- `auth`: JWT 검증과 회원·관리자 역할 기반 권한
 - `members`: 회원 정보, 일반 기승 횟수, 특수 클래스 승인
 - `timeslots`: 수업 시간대, 휴무, 전체·원형·클래스 정원
 - `reservations`: 예약 상태 전이, 정원 점유, 변경·취소
@@ -77,6 +77,8 @@ horse/
 - 운영성: 승인대기와 입금대기 우선순위 표시
 - 변경 용이성: 정책 판정을 UI와 분리된 도메인 서비스로 관리
 - 보안: 회원은 자신의 데이터만, 관리자는 허용된 운영 기능만 접근
+
+API 인증은 서명된 JWT Bearer 토큰을 사용한다. 토큰의 `roles` claim을 `MEMBER`, `ADMIN` 권한으로 변환하며 백엔드는 서버 세션을 생성하지 않는다. 토큰 발급·갱신·폐기 정책은 로그인 작업에서 별도로 확정한다.
 
 ## 비목표
 
