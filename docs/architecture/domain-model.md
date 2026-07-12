@@ -4,6 +4,7 @@
 
 ```text
 id
+auth_subject unique
 name
 phone
 general_ride_count
@@ -17,6 +18,7 @@ updated_at
 ```
 
 일반 클래스 등급은 `general_ride_count`로 계산한다. 특수 클래스 횟수는 일반 등급에 영향을 주지 않는다.
+JWT `sub`는 변경 가능한 회원 상태를 담지 않고 `auth_subject`와 일치시켜 회원을 조회한다.
 
 ## Coupon
 
@@ -122,4 +124,3 @@ created_at
 - 완료·노쇼·취소의 쿠폰 처리는 예약당 한 번만 확정된다.
 - 일반 탑승 횟수는 일반 기승 수업 완료당 한 번만 증가한다.
 - 반려와 취소는 각각 `rejected`, `cancelled` 상태로 기록되며 서로 대체하지 않는다.
-

@@ -193,3 +193,13 @@ docker compose config --quiet
 description = "Verify riding classes and general grade boundaries"
 dir = "backend"
 run = "./gradlew test --tests '*RidingClassTest' --tests '*GeneralRidingGradeTest'"
+
+[tasks."verify:m1-01a"]
+description = "Verify member persistence and lookup against MySQL"
+dir = "backend"
+run = "./gradlew test --tests '*MemberRepositoryIntegrationTest'"
+
+[tasks."verify:m1-02"]
+description = "Verify authenticated member available riding classes API"
+dir = "backend"
+run = "./gradlew test --tests '*MemberAvailableRidingClassesApiTest'"
