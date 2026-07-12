@@ -110,11 +110,11 @@ run = "pnpm --dir frontend/apps/mobile start"
 
 [tasks."api:generate"]
 description = "Generate the shared TypeScript API client"
-run = "pnpm --dir frontend api:generate"
+run = "./scripts/generate-api-client.sh"
 
 [tasks."api:check"]
 description = "Verify the generated TypeScript API client is current"
-run = "pnpm --dir frontend api:check"
+run = "./scripts/check-api-client.sh"
 
 [tasks."verify:changed"]
 description = "Verify changed areas, or all areas when Git is unavailable"
@@ -164,3 +164,10 @@ mise run web:build
 description = "Verify Spring Security member and admin access boundaries"
 dir = "backend"
 run = "./gradlew test --tests '*SecurityBoundaryTest'"
+
+[tasks."verify:m0-05"]
+description = "Verify OpenAPI contract and generated TypeScript client"
+run = '''
+mise run api:check
+pnpm --dir frontend/packages/api-client exec tsc --noEmit --target ES2022 --module ESNext --moduleResolution Bundler src/index.ts
+'''

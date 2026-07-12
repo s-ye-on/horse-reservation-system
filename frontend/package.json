@@ -3,7 +3,10 @@
   "private": true,
   "packageManager": "pnpm@11.7.0",
   "scripts": {
-    "api:generate": "echo 'OpenAPI generation will be implemented in M0-05' && exit 1",
-    "api:check": "echo 'OpenAPI generation will be implemented in M0-05' && exit 1"
+    "api:generate": "openapi-generator-cli generate -i ../backend/openapi/horse-api.json -g typescript-fetch -o packages/api-client/src --additional-properties=supportsES6=true,typescriptThreePlus=true --global-property=apiDocs=false,modelDocs=false,apiTests=false,modelTests=false"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "2.39.1",
+    "typescript": "6.0.3"
   }
 }

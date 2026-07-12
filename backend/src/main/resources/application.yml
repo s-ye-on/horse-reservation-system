@@ -32,3 +32,7 @@ server:
 security:
   jwt:
     secret: ${JWT_SECRET:local-development-jwt-secret-change-me-32-bytes}
+
+springdoc:
+  api-docs:
+    enabled: false
