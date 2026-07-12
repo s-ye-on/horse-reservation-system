@@ -30,19 +30,19 @@ class SecurityBoundaryTest {
 	JwtRoleAuthoritiesConverter authoritiesConverter;
 
 	@Test
-	void healthEndpointIsPublic() throws Exception {
+	void 헬스_체크는_인증_없이_접근할_수_있다() throws Exception {
 		mockMvc.perform(get("/actuator/health"))
 			.andExpect(status().isOk());
 	}
 
 	@Test
-	void apiRequiresAuthentication() throws Exception {
+	void API는_인증이_필요하다() throws Exception {
 		mockMvc.perform(get("/api/profile"))
 			.andExpect(status().isUnauthorized());
 	}
 
 	@Test
-	void memberCanAccessMemberApiButNotAdminApi() throws Exception {
+	void 회원은_회원_API에_접근하고_관리자_API에는_접근할_수_없다() throws Exception {
 		var memberJwt = jwt().authorities(new SimpleGrantedAuthority(UserRole.MEMBER.authority()));
 
 		mockMvc.perform(get("/api/profile").with(memberJwt))
@@ -52,14 +52,14 @@ class SecurityBoundaryTest {
 	}
 
 	@Test
-	void adminCanAccessAdminApi() throws Exception {
+	void 관리자는_관리자_API에_접근할_수_있다() throws Exception {
 		mockMvc.perform(get("/api/admin/dashboard")
 				.with(jwt().authorities(new SimpleGrantedAuthority(UserRole.ADMIN.authority()))))
 			.andExpect(status().isOk());
 	}
 
 	@Test
-	void rolesClaimIsConvertedToRoleAuthorities() {
+	void 역할_클레임을_역할_권한으로_변환한다() {
 		Jwt token = new Jwt(
 			"token",
 			Instant.now(),
