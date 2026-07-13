@@ -44,9 +44,6 @@ public class Member {
 	@Column(name = "jumping_approved", nullable = false)
 	private boolean jumpingApproved;
 
-	@Column(name = "large_arena_allowed", nullable = false)
-	private boolean largeArenaAllowed;
-
 	@Column(name = "created_at", nullable = false, insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 
@@ -109,8 +106,12 @@ public class Member {
 		return jumpingApproved;
 	}
 
-	public boolean isLargeArenaAllowed() {
-		return largeArenaAllowed;
+	public boolean canUseLargeArena() {
+		final GeneralRidingGrade grade = GeneralRidingGrade.fromRideCount(generalRideCount);
+		return grade == GeneralRidingGrade.LARGE_ARENA_BEGINNER
+			|| grade == GeneralRidingGrade.LARGE_ARENA_TROT
+			|| dressageApproved
+			|| jumpingApproved;
 	}
 
 	public LocalDateTime getCreatedAt() {

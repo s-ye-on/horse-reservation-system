@@ -12,13 +12,13 @@ dressage_ride_count
 jumping_ride_count
 dressage_approved
 jumping_approved
-large_arena_allowed
 created_at
 updated_at
 ```
 
 일반 클래스 등급은 `general_ride_count`로 계산한다. 특수 클래스 횟수는 일반 등급에 영향을 주지 않는다.
 JWT `sub`는 변경 가능한 회원 상태를 담지 않고 `auth_subject`와 일치시켜 회원을 조회한다.
+대마장 이용 가능 여부는 저장하지 않는다. 일반 기승 완료 21회 이상이거나 마장마술 또는 장애물 승인을 받은 회원이면 `Member.canUseLargeArena()`가 계산한다.
 
 ## Coupon
 
