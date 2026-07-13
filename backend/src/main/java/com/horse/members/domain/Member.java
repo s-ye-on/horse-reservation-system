@@ -108,6 +108,14 @@ public class Member {
 		return jumpingApproved;
 	}
 
+	public void changeDressageApproval(boolean approved) {
+		this.dressageApproved = approved;
+	}
+
+	public void changeJumpingApproval(boolean approved) {
+		this.jumpingApproved = approved;
+	}
+
 	public boolean canUseLargeArena() {
 		final GeneralRidingGrade grade = currentGeneralRidingGrade();
 		return grade == GeneralRidingGrade.LARGE_ARENA_BEGINNER

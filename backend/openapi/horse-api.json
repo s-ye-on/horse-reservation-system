@@ -12,6 +12,47 @@
     }
   ],
   "paths": {
+    "/api/admin/members/{memberId}/riding-permissions": {
+      "patch": {
+        "tags": [
+          "admin-member-riding-permission-controller"
+        ],
+        "operationId": "changeRidingPermissions",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberRidingPermissionUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/eligible-classes": {
       "get": {
         "tags": [
@@ -89,42 +130,14 @@
   },
   "components": {
     "schemas": {
-      "MemberAvailableRidingClassesResponse": {
+      "MemberRidingPermissionUpdateRequest": {
         "type": "object",
         "properties": {
-          "currentGeneralGrade": {
-            "type": "string",
-            "enum": [
-              "FIRST_RIDE",
-              "ROUND_BEGINNER",
-              "ROUND_TROT",
-              "LARGE_ARENA_BEGINNER",
-              "LARGE_ARENA_TROT"
-            ]
-          },
           "dressageApproved": {
             "type": "boolean"
           },
           "jumpingApproved": {
             "type": "boolean"
-          },
-          "canUseLargeArena": {
-            "type": "boolean"
-          },
-          "availableRidingClasses": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "enum": [
-                "FIRST_RIDE",
-                "ROUND_BEGINNER",
-                "ROUND_TROT",
-                "LARGE_ARENA_BEGINNER",
-                "LARGE_ARENA_TROT",
-                "DRESSAGE",
-                "JUMPING"
-              ]
-            }
           }
         }
       },
@@ -161,6 +174,45 @@
           },
           "canUseLargeArena": {
             "type": "boolean"
+          }
+        }
+      },
+      "MemberAvailableRidingClassesResponse": {
+        "type": "object",
+        "properties": {
+          "currentGeneralGrade": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT"
+            ]
+          },
+          "dressageApproved": {
+            "type": "boolean"
+          },
+          "jumpingApproved": {
+            "type": "boolean"
+          },
+          "canUseLargeArena": {
+            "type": "boolean"
+          },
+          "availableRidingClasses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "FIRST_RIDE",
+                "ROUND_BEGINNER",
+                "ROUND_TROT",
+                "LARGE_ARENA_BEGINNER",
+                "LARGE_ARENA_TROT",
+                "DRESSAGE",
+                "JUMPING"
+              ]
+            }
           }
         }
       }
