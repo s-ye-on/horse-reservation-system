@@ -213,7 +213,172 @@ run = "mise run backend:convention"
 description = "Verify backend convention test boundaries"
 run = "mise run backend:convention"
 
+[tasks."verify:m1-01d"]
+description = "Verify derived large arena eligibility"
+dir = "backend"
+run = "./gradlew test --tests '*MemberTest' --tests '*MemberRepositoryIntegrationTest'"
+
 [tasks."verify:m1-02"]
 description = "Verify authenticated member available riding classes API"
 dir = "backend"
 run = "./gradlew test --tests '*MemberAvailableRidingClassesApiTest'"
+
+[tasks."verify:m1-02a"]
+description = "Verify admin member query API"
+dir = "backend"
+run = "./gradlew test --tests '*AdminMemberQueryApiTest'"
+
+[tasks."verify:m1-02b"]
+description = "Verify admin member riding permission API"
+dir = "backend"
+run = "./gradlew test --tests '*AdminMemberRidingPermissionApiTest'"
+
+[tasks."verify:m1-03"]
+description = "Verify time slot and capacity persistence"
+dir = "backend"
+run = "./gradlew test --tests '*TimeSlotCapacityRepositoryIntegrationTest'"
+
+[tasks."verify:m1-04"]
+description = "Verify admin time slot management API"
+dir = "backend"
+run = "./gradlew test --tests '*AdminTimeSlotApiTest'"
+
+[tasks."verify:m1-05"]
+description = "Verify atomic capacity occupation"
+dir = "backend"
+run = "./gradlew test --tests '*TimeSlotCapacityConcurrencyIntegrationTest'"
+
+[tasks."verify:m1-05a"]
+description = "Verify member available time slot query API"
+dir = "backend"
+run = "./gradlew test --tests '*MemberAvailableTimeSlotsApiTest'"
+
+[tasks."verify:m1-06"]
+description = "Verify coupon and usage log persistence"
+dir = "backend"
+run = "./gradlew test --tests '*CouponRepositoryIntegrationTest'"
+
+[tasks."verify:m1-07"]
+description = "Verify admin coupon registration API"
+dir = "backend"
+run = "./gradlew test --tests '*AdminCouponRegistrationApiTest'"
+
+[tasks."verify:m1-08"]
+description = "Verify coupon auto-selection policy"
+dir = "backend"
+run = "./gradlew test --tests '*CouponSelectionPolicyTest'"
+
+[tasks."verify:m1-09"]
+description = "Verify atomic coupon hold and release"
+dir = "backend"
+run = "./gradlew test --tests '*CouponHoldConcurrencyIntegrationTest'"
+
+[tasks."verify:m1-09a"]
+description = "Verify member coupon and usage history queries"
+dir = "backend"
+run = "./gradlew test --tests '*MemberCouponQueryApiTest'"
+
+[tasks."verify:m1-10"]
+description = "Verify reservation persistence and state constraints"
+dir = "backend"
+run = "./gradlew test --tests '*ReservationRepositoryIntegrationTest'"
+
+[tasks."verify:m1-11"]
+description = "Verify coupon-backed reservation application"
+dir = "backend"
+run = "./gradlew test --tests '*CouponReservationApplicationApiTest'"
+
+[tasks."verify:m1-12"]
+description = "Verify pending-payment reservation application"
+dir = "backend"
+run = "./gradlew test --tests '*PendingPaymentReservationApiTest'"
+
+[tasks."verify:m1-13"]
+description = "Verify admin reservation confirmation"
+dir = "backend"
+run = "./gradlew test --tests '*AdminReservationConfirmApiTest'"
+
+[tasks."verify:m1-14"]
+description = "Verify admin reservation rejection"
+dir = "backend"
+run = "./gradlew test --tests '*AdminReservationRejectApiTest'"
+
+[tasks."verify:m1-15"]
+description = "Verify pending-payment expiry job"
+dir = "backend"
+run = "./gradlew test --tests '*PendingPaymentExpiryJobIntegrationTest'"
+
+[tasks."verify:m1-16"]
+description = "Verify admin pending-payment restoration"
+dir = "backend"
+run = "./gradlew test --tests '*AdminPendingPaymentRestoreApiTest'"
+
+[tasks."verify:m1-16a"]
+description = "Verify admin reservation queries"
+dir = "backend"
+run = "./gradlew test --tests '*AdminReservationQueryApiTest'"
+
+[tasks."verify:m1-16b"]
+description = "Verify admin pending-payment queries"
+dir = "backend"
+run = "./gradlew test --tests '*AdminPendingPaymentQueryApiTest'"
+
+[tasks."verify:m1-17"]
+description = "Verify general riding completion"
+dir = "backend"
+run = "./gradlew test --tests '*GeneralRideCompletionApiTest'"
+
+[tasks."verify:m1-18"]
+description = "Verify special riding completion"
+dir = "backend"
+run = "./gradlew test --tests '*SpecialRideCompletionApiTest'"
+
+[tasks."verify:m1-19"]
+description = "Verify admin no-show processing"
+dir = "backend"
+run = "./gradlew test --tests '*AdminNoShowApiTest'"
+
+[tasks."verify:m1-19a"]
+description = "Verify member reservation queries"
+dir = "backend"
+run = "./gradlew test --tests '*MemberReservationQueryApiTest'"
+
+[tasks."verify:m1-20"]
+description = "Verify admin member and permission screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/admin-members/AdminMembersPage.test.tsx"
+
+[tasks."verify:m1-21"]
+description = "Verify admin coupon registration screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/admin-coupons/AdminCouponRegistrationPage.test.tsx"
+
+[tasks."verify:m1-22"]
+description = "Verify admin time slot management screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/admin-timeslots/AdminTimeSlotsPage.test.tsx"
+
+[tasks."verify:m1-23"]
+description = "Verify admin reservation approval screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/admin-reservations/AdminReservationsPage.test.tsx"
+
+[tasks."verify:m1-24"]
+description = "Verify admin lesson completion screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/admin-attendance/AdminAttendancePage.test.tsx"
+
+[tasks."verify:m1-25"]
+description = "Verify member reservation calendar screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/reservation-calendar/ReservationCalendarPage.test.tsx"
+
+[tasks."verify:m1-26"]
+description = "Verify member reservation application screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/reservation-application/ReservationApplicationPage.test.tsx"
+
+[tasks."verify:m1-27"]
+description = "Verify member reservation history screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/my-reservations/MyReservationsPage.test.tsx"
+
+[tasks."verify:m1-28"]
+description = "Verify member coupon history screen"
+run = "pnpm --dir frontend/apps/web exec vitest run src/features/my-coupons/MyCouponsPage.test.tsx"
+
+[tasks."verify:m1-29"]
+description = "Verify MVP 1 reservation end-to-end flows"
+run = "pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp1-reservation.spec.ts"
