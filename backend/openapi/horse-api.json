@@ -12,6 +12,161 @@
     }
   ],
   "paths": {
+    "/api/admin/timeslots/{timeSlotId}/capacity": {
+      "put": {
+        "tags": [
+          "admin-time-slot-controller"
+        ],
+        "operationId": "changeCapacity",
+        "parameters": [
+          {
+            "name": "timeSlotId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeSlotCapacityUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeSlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/timeslots": {
+      "get": {
+        "tags": [
+          "admin-time-slot-controller"
+        ],
+        "operationId": "getTimeSlots",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeSlotResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-time-slot-controller"
+        ],
+        "operationId": "createTimeSlot",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeSlotCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeSlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/timeslots/{timeSlotId}": {
+      "delete": {
+        "tags": [
+          "admin-time-slot-controller"
+        ],
+        "operationId": "deleteTimeSlot",
+        "parameters": [
+          {
+            "name": "timeSlotId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "admin-time-slot-controller"
+        ],
+        "operationId": "changeClosedStatus",
+        "parameters": [
+          {
+            "name": "timeSlotId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TimeSlotStatusUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/TimeSlotResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/members/{memberId}/riding-permissions": {
       "patch": {
         "tags": [
@@ -130,6 +285,103 @@
   },
   "components": {
     "schemas": {
+      "TimeSlotCapacityUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "totalCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roundArenaCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "classCapacities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "TimeSlotResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "totalCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roundArenaCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "classCapacities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TimeSlotCreateRequest": {
+        "type": "object",
+        "properties": {
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "totalCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roundArenaCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "classCapacities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        }
+      },
+      "TimeSlotStatusUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "closed": {
+            "type": "boolean"
+          }
+        }
+      },
       "MemberRidingPermissionUpdateRequest": {
         "type": "object",
         "properties": {

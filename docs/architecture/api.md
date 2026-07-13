@@ -57,6 +57,9 @@ DELETE /api/admin/timeslots/{timeslotId}
 PUT    /api/admin/timeslots/{timeslotId}/capacity
 ```
 
+`PATCH`는 `is_closed`만 변경해 신규 예약을 마감하거나 재개한다. 기존 예약은 변경하지 않는다.
+`DELETE`는 예약 이력이 없는 오생성 시간대만 물리 삭제하며, 예약 이력이 있으면 `409 Conflict`를 반환한다.
+
 ## 회원과 쿠폰
 
 ```text

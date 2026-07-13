@@ -6,7 +6,8 @@ import org.junit.jupiter.api.Test;
 
 class ExceptionCodeTest {
 
-	private static final String DOMAIN_PREFIX_PATTERN = "^(MEMBER|AUTH|RESERVATION|HORSE|COMMON)_[A-Z0-9_]+$";
+	private static final String DOMAIN_PREFIX_PATTERN =
+		"^(MEMBER|AUTH|RESERVATION|TIMESLOT|HORSE|COMMON)_[A-Z0-9_]+$";
 
 	@Test
 	void 예외_코드는_도메인_접두사를_사용하고_중복되지_않는다() {

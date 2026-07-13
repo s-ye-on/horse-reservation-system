@@ -32,6 +32,7 @@ throw new MemberException(ExceptionCode.MEMBER_INVALID_NAME);
 - 회원: `MEMBER_*`
 - 인증: `AUTH_*`
 - 예약: `RESERVATION_*`
+- 시간대: `TIMESLOT_*`
 - 말: `HORSE_*`
 - 공통: `COMMON_*`
 
