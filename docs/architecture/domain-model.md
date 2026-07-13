@@ -67,6 +67,8 @@ updated_at
 
 `coupon_id`는 임시 점유부터 실제 사용 완료까지 같은 쿠폰을 추적한다. 임시 점유 여부와 단계는 쿠폰 사용 로그로 구분한다.
 
+정원 점유는 별도 모델로 저장하지 않고 `pending_admin_approval`, `pending_payment`, `confirmed` 상태의 Reservation을 집계해 계산한다.
+
 ## TimeSlotCapacity
 
 ```text
@@ -80,6 +82,8 @@ is_closed
 created_at
 updated_at
 ```
+
+`TimeSlotCapacity`는 정원 설정과 운영 마감 상태만 저장한다. 현재 점유 수는 Reservation에서 파생한다.
 
 ## CouponUsageLog
 

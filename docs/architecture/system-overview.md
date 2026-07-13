@@ -62,6 +62,8 @@ horse/
 
 중복 요청으로 쿠폰이나 탑승 횟수가 두 번 반영되지 않도록 상태 조건과 멱등성 키를 사용한다.
 
+M1 정원 점유는 Reservation 상태를 SSOT로 사용한다. `pending_admin_approval`, `pending_payment`, `confirmed`만 활성 점유이며 별도 점유 원장이나 카운터를 두지 않는다. 점유 상태로 진입하는 모든 트랜잭션은 `TimeSlotCapacity`를 먼저 비관적 잠금한 뒤 활성 Reservation을 잠금 조회하고 상태를 변경한다. 자세한 결정은 [ADR 005](adr-005-reservation-occupancy-ssot.md)를 따른다.
+
 ## 백그라운드 작업
 
 - 2시간 지난 입금대기 만료
