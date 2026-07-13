@@ -43,8 +43,11 @@ class CouponRepositoryIntegrationTest {
 		final Long couponId = insertCoupon(memberId, "general", 10, 10, 0, null, null, "active");
 		insertUsageLog(couponId, null, memberId, "held", 1, "member", "예약 신청");
 
-		assertThat(jdbcTemplate.queryForObject(
-			"SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE", Integer.class)).isEqualTo(4);
+		assertThat(jdbcTemplate.queryForObject("""
+			SELECT COUNT(*)
+			FROM flyway_schema_history
+			WHERE success = TRUE AND version IN ('1', '2', '3', '4')
+			""", Integer.class)).isEqualTo(4);
 		assertThat(jdbcTemplate.queryForObject(
 			"SELECT free_change_used FROM coupons WHERE id = ?", Boolean.class, couponId)).isFalse();
 		assertThat(jdbcTemplate.queryForObject(
@@ -60,7 +63,7 @@ class CouponRepositoryIntegrationTest {
 
 		previousFlyway.migrate();
 
-		final Flyway latestFlyway = flyway(databaseUrl, null);
+		final Flyway latestFlyway = flyway(databaseUrl, MigrationVersion.fromVersion("4"));
 		latestFlyway.migrate();
 
 		assertThat(latestFlyway.info().current().getVersion().getVersion()).isEqualTo("4");
