@@ -19,6 +19,12 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_APPROVAL_REQUESTED_AT(HttpStatus.BAD_REQUEST, "예약 신청 시각은 필수입니다."),
 	RESERVATION_INVALID_PERSISTED_VALUE(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 예약 값이 올바르지 않습니다."),
 
+	COUPON_INVALID_MEMBER_ID(HttpStatus.BAD_REQUEST, "쿠폰 회원 식별자는 필수입니다."),
+	COUPON_INVALID_TYPE(HttpStatus.BAD_REQUEST, "쿠폰 종류가 올바르지 않습니다."),
+	COUPON_INVALID_TOTAL_COUNT(HttpStatus.BAD_REQUEST, "쿠폰은 10회권만 등록할 수 있습니다."),
+	COUPON_INVALID_CREATED_BY(HttpStatus.BAD_REQUEST, "쿠폰 등록 관리자 식별자는 필수입니다."),
+	COUPON_INVALID_PERSISTED_VALUE(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 쿠폰 값이 올바르지 않습니다."),
+
 	TIMESLOT_INVALID_LESSON_DATE(HttpStatus.BAD_REQUEST, "수업 날짜는 필수입니다."),
 	TIMESLOT_INVALID_START_TIME(HttpStatus.BAD_REQUEST, "수업 시작 시각은 필수입니다."),
 	TIMESLOT_INVALID_QUERY_DATE(HttpStatus.BAD_REQUEST, "조회 날짜는 오늘 이후의 유효한 날짜여야 합니다."),

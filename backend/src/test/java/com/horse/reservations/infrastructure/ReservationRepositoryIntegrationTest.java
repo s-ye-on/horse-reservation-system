@@ -50,7 +50,11 @@ class ReservationRepositoryIntegrationTest {
 		insertUsageLog(couponId, reservationId, memberId);
 
 		assertThat(jdbcTemplate.queryForObject(
-			"SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE", Integer.class)).isEqualTo(5);
+			"""
+				SELECT COUNT(*)
+				FROM flyway_schema_history
+				WHERE success = TRUE AND version IN ('1', '2', '3', '4', '5')
+				""", Integer.class)).isEqualTo(5);
 		assertThat(jdbcTemplate.queryForObject(
 			"SELECT reservation_id FROM coupon_usage_logs WHERE reservation_id = ?",
 			Long.class,
@@ -65,7 +69,7 @@ class ReservationRepositoryIntegrationTest {
 
 		previousFlyway.migrate();
 
-		final Flyway latestFlyway = flyway(databaseUrl, null);
+		final Flyway latestFlyway = flyway(databaseUrl, MigrationVersion.fromVersion("5"));
 		latestFlyway.migrate();
 
 		assertThat(latestFlyway.info().current().getVersion().getVersion()).isEqualTo("5");
