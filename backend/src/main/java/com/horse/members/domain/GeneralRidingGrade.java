@@ -1,5 +1,8 @@
 package com.horse.members.domain;
 
+import com.horse.global.exception.ExceptionCode;
+import com.horse.members.domain.exception.MemberException;
+
 public enum GeneralRidingGrade {
 	FIRST_RIDE(0, RidingClass.FIRST_RIDE),
 	ROUND_BEGINNER(1, RidingClass.ROUND_BEGINNER),
@@ -17,7 +20,7 @@ public enum GeneralRidingGrade {
 
 	public static GeneralRidingGrade fromRideCount(int rideCount) {
 		if (rideCount < 0) {
-			throw new IllegalArgumentException("일반 기승 횟수는 음수일 수 없습니다.");
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_GENERAL_RIDE_COUNT);
 		}
 
 		GeneralRidingGrade matchedGrade = FIRST_RIDE;

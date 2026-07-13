@@ -9,6 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import com.horse.global.exception.ExceptionCode;
+import com.horse.members.domain.exception.MemberException;
+
 @Entity
 @Table(name = "members")
 public class Member {
@@ -54,18 +57,18 @@ public class Member {
 	}
 
 	private Member(String authSubject, String name, String phone) {
-		this.authSubject = requireText(authSubject, "인증 주체");
-		this.name = requireText(name, "회원 이름");
-		this.phone = requireText(phone, "전화번호");
+		this.authSubject = requireText(authSubject, ExceptionCode.MEMBER_INVALID_AUTH_SUBJECT);
+		this.name = requireText(name, ExceptionCode.MEMBER_INVALID_NAME);
+		this.phone = requireText(phone, ExceptionCode.MEMBER_INVALID_PHONE);
 	}
 
 	public static Member create(String authSubject, String name, String phone) {
 		return new Member(authSubject, name, phone);
 	}
 
-	private static String requireText(String value, String fieldName) {
+	private static String requireText(String value, ExceptionCode exceptionCode) {
 		if (value == null || value.isBlank()) {
-			throw new IllegalArgumentException(fieldName + "은(는) 필수입니다.");
+			throw new MemberException(exceptionCode);
 		}
 		return value;
 	}

@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import com.horse.members.domain.exception.MemberException;
+
 class GeneralRidingGradeTest {
 
 	@ParameterizedTest
@@ -27,7 +29,7 @@ class GeneralRidingGradeTest {
 	@Test
 	void 음수_일반_기승_횟수는_거부한다() {
 		assertThatThrownBy(() -> GeneralRidingGrade.fromRideCount(-1))
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(MemberException.class)
 			.hasMessage("일반 기승 횟수는 음수일 수 없습니다.");
 	}
 

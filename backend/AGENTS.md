@@ -3,6 +3,12 @@
 이 디렉터리는 Java 21 + Spring Boot 기반 마장 예약 시스템의 백엔드이다.  
 기존 코드 구조와 문서에 확정된 제품 정책을 우선하며, 현재 task의 허용 범위 안에서만 작업한다.
 
+## Required Conventions
+
+백엔드 코드를 수정하기 전에 [컨벤션 인덱스](conventions/README.md)에서 작업 유형에 해당하는 문서를 읽는다.
+모든 백엔드 작업은 `architecture.md`, `package.md`, `coding-style.md`, `testing.md`, `review.md`를 공통 입력으로 사용한다.
+규칙과 기존 코드가 충돌하면 규칙을 임의로 완화하지 말고 task의 중단 조건에 따라 보고한다.
+
 ## 작업 전 확인
 
 1. `docs/tasks/active/`에서 상태가 `READY` 또는 `IN_PROGRESS`인 task를 확인한다.
@@ -42,6 +48,7 @@
 task 문서의 검증 명령을 먼저 실행한다. 별도 명령이 없다면 다음을 실행한다.
 
 ```bash
+mise run backend:convention
 mise run backend:check
 mise run backend:integration
 ```

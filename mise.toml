@@ -54,6 +54,11 @@ description = "Run Spring Boot checks"
 dir = "backend"
 run = "./gradlew check"
 
+[tasks."backend:convention"]
+description = "Enforce backend architecture and coding conventions"
+dir = "backend"
+run = "./gradlew checkstyleMain checkstyleTest test --tests '*ArchitectureConventionTest' --tests '*ExceptionCodeTest' --tests '*GlobalExceptionHandlerTest' --tests '*MemberTest' --tests '*GeneralRidingGradeTest' --tests '*MemberRepositoryIntegrationTest'"
+
 [tasks."backend:integration"]
 description = "Run Spring Boot integration tests"
 dir = "backend"
@@ -126,6 +131,7 @@ description = "Run all currently implemented quality gates"
 run = '''
 mise run harness:self-check
 mise run docs:check
+mise run backend:convention
 mise run backend:check
 mise run backend:integration
 mise run api:check
@@ -198,6 +204,10 @@ run = "./gradlew test --tests '*RidingClassTest' --tests '*GeneralRidingGradeTes
 description = "Verify member persistence and lookup against MySQL"
 dir = "backend"
 run = "./gradlew test --tests '*MemberRepositoryIntegrationTest'"
+
+[tasks."verify:m1-01b"]
+description = "Verify backend convention harness"
+run = "mise run backend:convention"
 
 [tasks."verify:m1-02"]
 description = "Verify authenticated member available riding classes API"

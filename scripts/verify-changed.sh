@@ -42,6 +42,7 @@ fi
 grep -qE '^(docs/|TMP\.md$|AGENTS\.md$|backend/AGENTS\.md$)' <<<"$changed_files" && run_docs=true
 
 if [[ "$run_backend" == true ]]; then
+  "$mise_bin" run backend:convention
   "$mise_bin" run backend:check
   "$mise_bin" run backend:integration
 fi
