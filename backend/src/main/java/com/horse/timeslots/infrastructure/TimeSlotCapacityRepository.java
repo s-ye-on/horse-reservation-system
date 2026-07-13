@@ -20,6 +20,8 @@ public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapaci
 
 	List<TimeSlotCapacity> findAllByOrderByLessonDateAscStartTimeAsc();
 
+	List<TimeSlotCapacity> findAllByLessonDateOrderByStartTimeAsc(LocalDate lessonDate);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select timeSlot from TimeSlotCapacity timeSlot where timeSlot.id = :timeSlotId")
 	Optional<TimeSlotCapacity> findByIdForUpdate(@Param("timeSlotId") Long timeSlotId);

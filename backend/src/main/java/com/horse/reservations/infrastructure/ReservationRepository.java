@@ -31,4 +31,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		@Param("startTime") LocalTime startTime,
 		@Param("statuses") Collection<ReservationStatus> statuses
 	);
+
+	@Query("""
+		select reservation
+		from Reservation reservation
+		where reservation.lessonDate = :lessonDate
+		  and reservation.status in :statuses
+		order by reservation.startTime, reservation.id
+		""")
+	List<Reservation> findOccupyingByLessonDate(
+		@Param("lessonDate") LocalDate lessonDate,
+		@Param("statuses") Collection<ReservationStatus> statuses
+	);
 }

@@ -208,6 +208,44 @@
         }
       }
     },
+    "/api/timeslots": {
+      "get": {
+        "tags": [
+          "member-available-time-slots-controller"
+        ],
+        "operationId": "getAvailableTimeSlots",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "classType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberAvailableTimeSlotsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/eligible-classes": {
       "get": {
         "tags": [
@@ -426,6 +464,67 @@
           },
           "canUseLargeArena": {
             "type": "boolean"
+          }
+        }
+      },
+      "MemberAvailableTimeSlotResponse": {
+        "type": "object",
+        "properties": {
+          "timeSlotId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "reservable": {
+            "type": "boolean"
+          },
+          "remainingCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unavailableReason": {
+            "type": "string",
+            "enum": [
+              "NOT_ELIGIBLE",
+              "CLOSED",
+              "FULL"
+            ]
+          }
+        }
+      },
+      "MemberAvailableTimeSlotsResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "classType": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "DRESSAGE",
+              "JUMPING"
+            ]
+          },
+          "timeSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberAvailableTimeSlotResponse"
+            }
           }
         }
       },

@@ -21,6 +21,8 @@ public enum ExceptionCode {
 
 	TIMESLOT_INVALID_LESSON_DATE(HttpStatus.BAD_REQUEST, "수업 날짜는 필수입니다."),
 	TIMESLOT_INVALID_START_TIME(HttpStatus.BAD_REQUEST, "수업 시작 시각은 필수입니다."),
+	TIMESLOT_INVALID_QUERY_DATE(HttpStatus.BAD_REQUEST, "조회 날짜는 오늘 이후의 유효한 날짜여야 합니다."),
+	TIMESLOT_INVALID_CLASS_TYPE(HttpStatus.BAD_REQUEST, "조회할 클래스가 올바르지 않습니다."),
 	TIMESLOT_INVALID_TOTAL_CAPACITY(HttpStatus.BAD_REQUEST, "전체 정원은 0명 이상 8명 이하여야 합니다."),
 	TIMESLOT_INVALID_ROUND_ARENA_CAPACITY(HttpStatus.BAD_REQUEST, "원형 정원은 전체 정원 이하이며 4명을 넘을 수 없습니다."),
 	TIMESLOT_INVALID_CLASS_CAPACITIES(HttpStatus.BAD_REQUEST, "클래스별 정원이 올바르지 않습니다."),
