@@ -10,6 +10,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.horse.global.exception.ExceptionCode;
+import com.horse.members.domain.RidingClass;
 import com.horse.timeslots.domain.exception.TimeSlotException;
 
 import jakarta.persistence.Column;
@@ -33,6 +34,10 @@ public class TimeSlotCapacity {
 		"LARGE_ARENA_TROT",
 		"DRESSAGE",
 		"JUMPING");
+	private static final Set<RidingClass> ROUND_ARENA_CLASSES = Set.of(
+		RidingClass.FIRST_RIDE,
+		RidingClass.ROUND_BEGINNER,
+		RidingClass.ROUND_TROT);
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -111,6 +116,27 @@ public class TimeSlotCapacity {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_CLOSED_STATUS);
 		}
 		this.closed = closed;
+	}
+
+	public void ensureCanReserve(
+		RidingClass ridingClass,
+		int totalOccupied,
+		int roundArenaOccupied,
+		int classOccupied
+	) {
+		if (closed) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_CLOSED);
+		}
+		final int classCapacity = classCapacities.get(ridingClass.name());
+		if (totalOccupied >= totalCapacity
+			|| (usesRoundArena(ridingClass) && roundArenaOccupied >= roundArenaCapacity)
+			|| classOccupied >= classCapacity) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_CAPACITY_EXCEEDED);
+		}
+	}
+
+	public static boolean usesRoundArena(RidingClass ridingClass) {
+		return ROUND_ARENA_CLASSES.contains(ridingClass);
 	}
 
 	private static LocalDate requireLessonDate(LocalDate lessonDate) {
