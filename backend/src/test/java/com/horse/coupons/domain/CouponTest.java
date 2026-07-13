@@ -3,6 +3,8 @@ package com.horse.coupons.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.LocalDate;
+
 import org.junit.jupiter.api.Test;
 
 import com.horse.coupons.domain.exception.CouponException;
@@ -38,5 +40,16 @@ class CouponTest {
 		assertThatThrownBy(() -> Coupon.create(1L, CouponType.GENERAL, 10, " "))
 			.isInstanceOf(CouponException.class)
 			.hasMessage(ExceptionCode.COUPON_INVALID_CREATED_BY.message());
+	}
+
+	@Test
+	void 쿠폰은_사용_가능_횟수_안에서_점유하고_해제한다() {
+		final Coupon coupon = Coupon.create(1L, CouponType.GENERAL, 10, "admin-subject");
+
+		coupon.hold(LocalDate.of(2026, 8, 10));
+		coupon.releaseHold();
+
+		assertThat(coupon.getHeldCount()).isZero();
+		assertThat(coupon.getRemainingCount()).isEqualTo(10);
 	}
 }

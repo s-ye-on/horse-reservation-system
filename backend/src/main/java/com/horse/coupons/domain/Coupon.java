@@ -1,5 +1,6 @@
 package com.horse.coupons.domain;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -80,6 +81,26 @@ public class Coupon {
 
 	public static Coupon create(Long memberId, CouponType type, Integer totalCount, String createdBy) {
 		return new Coupon(memberId, type, totalCount, createdBy);
+	}
+
+	public void hold(LocalDate lessonDate) {
+		if (lessonDate == null) {
+			throw new CouponException(ExceptionCode.COUPON_INVALID_LESSON_DATE);
+		}
+		if (status != CouponStatus.ACTIVE || heldCount >= remainingCount) {
+			throw new CouponException(ExceptionCode.COUPON_HOLD_NOT_AVAILABLE);
+		}
+		if (expiresAt != null && expiresAt.toLocalDate().isBefore(lessonDate)) {
+			throw new CouponException(ExceptionCode.COUPON_EXPIRED_FOR_LESSON);
+		}
+		heldCount++;
+	}
+
+	public void releaseHold() {
+		if (heldCount <= 0) {
+			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
+		}
+		heldCount--;
 	}
 
 	private static Long requireMemberId(Long memberId) {
