@@ -21,7 +21,7 @@
 - [ ] `IllegalArgumentException`이나 원시 `RuntimeException`을 생성하지 않는가?
 - [ ] 업무 예외가 `BusinessException`을 상속하는가?
 - [ ] `ExceptionCode`에 올바른 도메인 prefix를 사용했는가?
-- [ ] `GlobalExceptionHandler`에서만 `ErrorResponse`를 생성하는가?
+- [ ] Controller가 `ErrorResponse`에 직접 의존하거나 이를 생성·입력·반환하지 않는가?
 
 ## Code And Test
 

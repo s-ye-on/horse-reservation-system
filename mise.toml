@@ -57,7 +57,7 @@ run = "./gradlew check"
 [tasks."backend:convention"]
 description = "Enforce backend architecture and coding conventions"
 dir = "backend"
-run = "./gradlew checkstyleMain checkstyleTest test --tests '*ArchitectureConventionTest' --tests '*ExceptionCodeTest' --tests '*GlobalExceptionHandlerTest' --tests '*MemberTest' --tests '*GeneralRidingGradeTest' --tests '*MemberRepositoryIntegrationTest'"
+run = "./gradlew checkstyleMain checkstyleTest test --tests '*ConventionTest' --tests '*ExceptionCodeTest' --tests '*GlobalExceptionHandlerTest' --tests '*MemberTest' --tests '*GeneralRidingGradeTest' --tests '*MemberRepositoryIntegrationTest'"
 
 [tasks."backend:integration"]
 description = "Run Spring Boot integration tests"
@@ -207,6 +207,10 @@ run = "./gradlew test --tests '*MemberRepositoryIntegrationTest'"
 
 [tasks."verify:m1-01b"]
 description = "Verify backend convention harness"
+run = "mise run backend:convention"
+
+[tasks."verify:m1-01c"]
+description = "Verify backend convention test boundaries"
 run = "mise run backend:convention"
 
 [tasks."verify:m1-02"]
