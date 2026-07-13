@@ -44,8 +44,11 @@ class TimeSlotCapacityRepositoryIntegrationTest {
 
 	@Test
 	void 빈_DB에_시간대_정원_스키마를_적용한다() {
-		final Integer migrationCount = jdbcTemplate.queryForObject(
-			"SELECT COUNT(*) FROM flyway_schema_history WHERE success = TRUE", Integer.class);
+		final Integer migrationCount = jdbcTemplate.queryForObject("""
+			SELECT COUNT(*)
+			FROM flyway_schema_history
+			WHERE success = TRUE AND version IN ('1', '2', '3')
+			""", Integer.class);
 
 		insertTimeSlot("2026-08-01", "09:00:00", 8, 4, CLASS_CAPACITIES);
 
@@ -65,7 +68,7 @@ class TimeSlotCapacityRepositoryIntegrationTest {
 
 		assertThat(existingFlyway.info().current().getVersion().getVersion()).isEqualTo("2");
 
-		final Flyway latestFlyway = flyway(databaseUrl, null);
+		final Flyway latestFlyway = flyway(databaseUrl, MigrationVersion.fromVersion("3"));
 		latestFlyway.migrate();
 
 		assertThat(latestFlyway.info().current().getVersion().getVersion()).isEqualTo("3");
