@@ -307,6 +307,52 @@
         }
       }
     },
+    "/api/me/coupons": {
+      "get": {
+        "tags": [
+          "member-coupon-query-controller"
+        ],
+        "operationId": "getCoupons",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberCouponResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/coupon-usage-logs": {
+      "get": {
+        "tags": [
+          "member-coupon-query-controller"
+        ],
+        "operationId": "getUsageLogs",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberCouponUsageResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/members": {
       "get": {
         "tags": [
@@ -666,6 +712,79 @@
                 "JUMPING"
               ]
             }
+          }
+        }
+      },
+      "MemberCouponResponse": {
+        "type": "object",
+        "properties": {
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "type": {
+            "type": "string"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "remainingCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "heldCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "availableCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstUsedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "freeChangeUsed": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "MemberCouponUsageResponse": {
+        "type": "object",
+        "properties": {
+          "usageLogId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "action": {
+            "type": "string"
+          },
+          "countDelta": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actorType": {
+            "type": "string"
           }
         }
       }

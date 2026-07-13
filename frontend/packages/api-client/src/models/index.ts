@@ -6,6 +6,8 @@ export * from './CouponResponse';
 export * from './MemberAvailableRidingClassesResponse';
 export * from './MemberAvailableTimeSlotResponse';
 export * from './MemberAvailableTimeSlotsResponse';
+export * from './MemberCouponResponse';
+export * from './MemberCouponUsageResponse';
 export * from './MemberRidingPermissionUpdateRequest';
 export * from './TimeSlotCapacityUpdateRequest';
 export * from './TimeSlotCreateRequest';

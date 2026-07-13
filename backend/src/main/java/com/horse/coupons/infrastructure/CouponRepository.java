@@ -1,6 +1,7 @@
 package com.horse.coupons.infrastructure;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,8 @@ import com.horse.coupons.domain.Coupon;
 import jakarta.persistence.LockModeType;
 
 public interface CouponRepository extends JpaRepository<Coupon, Long> {
+
+	List<Coupon> findAllByMemberIdOrderByCreatedAtDescIdDesc(Long memberId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT c FROM Coupon c WHERE c.id = :couponId")
