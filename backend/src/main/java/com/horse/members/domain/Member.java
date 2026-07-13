@@ -1,6 +1,8 @@
 package com.horse.members.domain;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -107,11 +109,30 @@ public class Member {
 	}
 
 	public boolean canUseLargeArena() {
-		final GeneralRidingGrade grade = GeneralRidingGrade.fromRideCount(generalRideCount);
+		final GeneralRidingGrade grade = currentGeneralRidingGrade();
 		return grade == GeneralRidingGrade.LARGE_ARENA_BEGINNER
 			|| grade == GeneralRidingGrade.LARGE_ARENA_TROT
 			|| dressageApproved
 			|| jumpingApproved;
+	}
+
+	public GeneralRidingGrade currentGeneralRidingGrade() {
+		return GeneralRidingGrade.fromRideCount(generalRideCount);
+	}
+
+	public List<RidingClass> availableRidingClasses() {
+		final GeneralRidingGrade maximumGeneralGrade = canUseLargeArena()
+			? GeneralRidingGrade.LARGE_ARENA_TROT
+			: currentGeneralRidingGrade();
+		final List<RidingClass> availableClasses = new ArrayList<>(
+			maximumGeneralGrade.availableGeneralRidingClasses());
+		if (dressageApproved) {
+			availableClasses.add(RidingClass.DRESSAGE);
+		}
+		if (jumpingApproved) {
+			availableClasses.add(RidingClass.JUMPING);
+		}
+		return List.copyOf(availableClasses);
 	}
 
 	public LocalDateTime getCreatedAt() {

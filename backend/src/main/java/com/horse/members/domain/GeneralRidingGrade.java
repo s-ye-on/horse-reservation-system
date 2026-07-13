@@ -1,5 +1,8 @@
 package com.horse.members.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.exception.MemberException;
 
@@ -34,5 +37,16 @@ public enum GeneralRidingGrade {
 
 	public RidingClass ridingClass() {
 		return ridingClass;
+	}
+
+	public List<RidingClass> availableGeneralRidingClasses() {
+		final List<RidingClass> availableClasses = new ArrayList<>();
+		for (GeneralRidingGrade grade : values()) {
+			availableClasses.add(grade.ridingClass);
+			if (grade == this) {
+				break;
+			}
+		}
+		return List.copyOf(availableClasses);
 	}
 }

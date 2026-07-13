@@ -11,8 +11,70 @@
       "description": "Generated server url"
     }
   ],
-  "paths": {},
+  "paths": {
+    "/api/me/eligible-classes": {
+      "get": {
+        "tags": [
+          "member-available-riding-classes-controller"
+        ],
+        "operationId": "getAvailableRidingClasses",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberAvailableRidingClassesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "components": {
+    "schemas": {
+      "MemberAvailableRidingClassesResponse": {
+        "type": "object",
+        "properties": {
+          "currentGeneralGrade": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT"
+            ]
+          },
+          "dressageApproved": {
+            "type": "boolean"
+          },
+          "jumpingApproved": {
+            "type": "boolean"
+          },
+          "canUseLargeArena": {
+            "type": "boolean"
+          },
+          "availableRidingClasses": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "FIRST_RIDE",
+                "ROUND_BEGINNER",
+                "ROUND_TROT",
+                "LARGE_ARENA_BEGINNER",
+                "LARGE_ARENA_TROT",
+                "DRESSAGE",
+                "JUMPING"
+              ]
+            }
+          }
+        }
+      }
+    },
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
