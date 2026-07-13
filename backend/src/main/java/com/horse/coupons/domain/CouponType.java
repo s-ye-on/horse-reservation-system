@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import com.horse.coupons.domain.exception.CouponException;
 import com.horse.global.exception.ExceptionCode;
+import com.horse.members.domain.RidingClass;
 
 public enum CouponType {
 
@@ -29,6 +30,16 @@ public enum CouponType {
 			.filter(type -> type.value.equals(value))
 			.findFirst()
 			.orElseThrow(() -> new CouponException(ExceptionCode.COUPON_INVALID_PERSISTED_VALUE));
+	}
+
+	public static CouponType fromRidingClass(RidingClass ridingClass) {
+		if (ridingClass == null) {
+			throw new CouponException(ExceptionCode.COUPON_INVALID_TYPE);
+		}
+		if (ridingClass.isGeneral()) {
+			return GENERAL;
+		}
+		return ridingClass == RidingClass.DRESSAGE ? DRESSAGE : JUMPING;
 	}
 
 	public String value() {
