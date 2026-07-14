@@ -29,4 +29,15 @@ public class CouponSelectionService {
 		return couponRepository.findFirstSelectable(memberId, couponType.value(), lessonDate)
 			.map(CouponSelectionResult::from);
 	}
+
+	@Transactional
+	public Optional<CouponSelectionResult> selectForUpdate(
+		Long memberId,
+		RidingClass ridingClass,
+		LocalDate lessonDate
+	) {
+		final CouponType couponType = CouponType.fromRidingClass(ridingClass);
+		return couponRepository.findFirstSelectableForUpdate(memberId, couponType.value(), lessonDate)
+			.map(CouponSelectionResult::from);
+	}
 }

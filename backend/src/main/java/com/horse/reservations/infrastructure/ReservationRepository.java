@@ -17,6 +17,8 @@ import jakarta.persistence.LockModeType;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
+	boolean existsByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
 		select reservation

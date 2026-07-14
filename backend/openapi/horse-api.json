@@ -53,6 +53,36 @@
         }
       }
     },
+    "/api/reservations": {
+      "post": {
+        "tags": [
+          "reservation-application-controller"
+        ],
+        "operationId": "apply",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReservationApplicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationApplicationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/timeslots": {
       "get": {
         "tags": [
@@ -469,6 +499,75 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ReservationApplicationRequest": {
+        "type": "object",
+        "properties": {
+          "timeSlotId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "classType": {
+            "type": "string"
+          }
+        }
+      },
+      "ReservationApplicationResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "classType": {
+            "type": "string"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentSource": {
+            "type": "string"
+          },
+          "coupon": {
+            "$ref": "#/components/schemas/ReservationCouponResponse"
+          },
+          "paymentDueAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReservationCouponResponse": {
+        "type": "object",
+        "properties": {
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "remainingCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "heldCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "availableCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },
