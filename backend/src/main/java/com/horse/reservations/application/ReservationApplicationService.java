@@ -1,9 +1,11 @@
 package com.horse.reservations.application;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +15,6 @@ import com.horse.coupons.application.CouponHoldService;
 import com.horse.coupons.application.CouponSelectionResult;
 import com.horse.coupons.application.CouponSelectionService;
 import com.horse.coupons.domain.CouponActorType;
-import com.horse.coupons.domain.exception.CouponException;
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.Member;
 import com.horse.members.domain.RidingClass;
@@ -28,8 +29,9 @@ import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
 @Service
 public class ReservationApplicationService {
 
-	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+	private static final Duration PAYMENT_WAIT_DURATION = Duration.ofHours(2);
 
+	private final Clock clock;
 	private final MemberRepository memberRepository;
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final CouponSelectionService couponSelectionService;
@@ -37,12 +39,14 @@ public class ReservationApplicationService {
 	private final CouponHoldService couponHoldService;
 
 	public ReservationApplicationService(
+		Clock clock,
 		MemberRepository memberRepository,
 		TimeSlotCapacityRepository timeSlotRepository,
 		CouponSelectionService couponSelectionService,
 		ReservationCapacityService reservationCapacityService,
 		CouponHoldService couponHoldService
 	) {
+		this.clock = clock;
 		this.memberRepository = memberRepository;
 		this.timeSlotRepository = timeSlotRepository;
 		this.couponSelectionService = couponSelectionService;
@@ -61,20 +65,43 @@ public class ReservationApplicationService {
 		ensureEligible(member, ridingClass);
 		final TimeSlotCapacity timeSlot = lockTimeSlot(timeSlotId);
 		ensureFutureLessonDate(timeSlot.getLessonDate());
-		final CouponSelectionResult selection = couponSelectionService
-			.selectForUpdate(member.getId(), ridingClass, timeSlot.getLessonDate())
-			.orElseThrow(() -> new CouponException(ExceptionCode.COUPON_NOT_FOUND));
-		final LocalDateTime requestedAt = LocalDateTime.now(SEOUL_ZONE);
+		final Optional<CouponSelectionResult> selection = couponSelectionService
+			.selectForUpdate(member.getId(), ridingClass, timeSlot.getLessonDate());
+		final LocalDateTime requestedAt = LocalDateTime.now(clock);
+		if (selection.isEmpty()) {
+			return applySinglePayment(
+				timeSlotId,
+				member.getId(),
+				ridingClass,
+				requestedAt);
+		}
+		return applyCoupon(
+			timeSlotId,
+			timeSlot,
+			member.getId(),
+			ridingClass,
+			selection.get(),
+			requestedAt);
+	}
+
+	private ReservationApplicationResult applyCoupon(
+		Long timeSlotId,
+		TimeSlotCapacity timeSlot,
+		Long memberId,
+		RidingClass ridingClass,
+		CouponSelectionResult selection,
+		LocalDateTime requestedAt
+	) {
 		final Reservation reservation = reservationCapacityService.reserveWithCoupon(
 			timeSlotId,
-			member.getId(),
+			memberId,
 			ridingClass,
 			selection.couponId(),
 			requestedAt);
 		final CouponHoldResult hold = couponHoldService.hold(
 			selection.couponId(),
 			reservation.getId(),
-			member.getId(),
+			memberId,
 			timeSlot.getLessonDate(),
 			requestedAt,
 			CouponActorType.MEMBER);
@@ -82,6 +109,21 @@ public class ReservationApplicationService {
 		return ReservationApplicationResult.coupon(
 			reservation,
 			ReservationCouponResult.from(selection, hold));
+	}
+
+	private ReservationApplicationResult applySinglePayment(
+		Long timeSlotId,
+		Long memberId,
+		RidingClass ridingClass,
+		LocalDateTime requestedAt
+	) {
+		final Reservation reservation = reservationCapacityService.reserveWithSinglePayment(
+			timeSlotId,
+			memberId,
+			ridingClass,
+			requestedAt.plus(PAYMENT_WAIT_DURATION),
+			requestedAt);
+		return ReservationApplicationResult.singlePayment(reservation);
 	}
 
 	private Member findMember(String authSubject) {
@@ -111,7 +153,7 @@ public class ReservationApplicationService {
 	}
 
 	private void ensureFutureLessonDate(LocalDate lessonDate) {
-		if (lessonDate.isBefore(LocalDate.now(SEOUL_ZONE))) {
+		if (lessonDate.isBefore(LocalDate.now(clock))) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_LESSON_DATE);
 		}
 	}

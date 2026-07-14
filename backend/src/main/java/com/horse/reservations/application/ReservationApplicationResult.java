@@ -34,4 +34,16 @@ public record ReservationApplicationResult(
 			coupon,
 			null);
 	}
+
+	public static ReservationApplicationResult singlePayment(Reservation reservation) {
+		return new ReservationApplicationResult(
+			reservation.getId(),
+			reservation.getRidingClass(),
+			reservation.getLessonDate(),
+			reservation.getStartTime(),
+			reservation.getStatus(),
+			reservation.getPaymentSource(),
+			null,
+			reservation.getPaymentDueAt());
+	}
 }

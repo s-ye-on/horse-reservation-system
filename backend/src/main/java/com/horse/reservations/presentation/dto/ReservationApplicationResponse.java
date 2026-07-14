@@ -25,7 +25,7 @@ public record ReservationApplicationResponse(
 			result.startTime(),
 			result.status().databaseValue(),
 			result.paymentSource().databaseValue(),
-			ReservationCouponResponse.from(result.coupon()),
+			result.coupon() == null ? null : ReservationCouponResponse.from(result.coupon()),
 			result.paymentDueAt());
 	}
 }
