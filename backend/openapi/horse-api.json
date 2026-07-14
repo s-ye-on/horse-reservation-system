@@ -134,6 +134,37 @@
         }
       }
     },
+    "/api/admin/reservations/{reservationId}/confirm": {
+      "post": {
+        "tags": [
+          "admin-reservation-confirm-controller"
+        ],
+        "operationId": "confirm",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationConfirmResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/members/{memberId}/coupons": {
       "post": {
         "tags": [
@@ -595,6 +626,29 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        }
+      },
+      "ReservationConfirmResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentSource": {
+            "type": "string"
+          },
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "adminConfirmedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

@@ -85,6 +85,50 @@ class ReservationTest {
 	}
 
 	@Test
+	void 승인대기_쿠폰_예약을_확정한다() {
+		final Reservation reservation = Reservation.createCouponPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			10L,
+			REQUESTED_AT);
+		final LocalDateTime confirmedAt = REQUESTED_AT.plusMinutes(30);
+
+		final boolean changed = reservation.confirm(confirmedAt);
+
+		assertThat(changed).isTrue();
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+		assertThat(reservation.getAdminConfirmedAt()).isEqualTo(confirmedAt);
+		assertThat(reservation.confirm(confirmedAt.plusMinutes(1))).isFalse();
+		assertThat(reservation.getAdminConfirmedAt()).isEqualTo(confirmedAt);
+	}
+
+	@Test
+	void 입금대기_예약은_마감_시각_전에만_확정한다() {
+		final LocalDateTime paymentDueAt = REQUESTED_AT.plusHours(2);
+		final Reservation available = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			paymentDueAt,
+			REQUESTED_AT);
+		final Reservation expired = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			paymentDueAt,
+			REQUESTED_AT);
+
+		assertThat(available.confirm(paymentDueAt.minusNanos(1))).isTrue();
+		assertReservationException(
+			() -> expired.confirm(paymentDueAt),
+			ExceptionCode.RESERVATION_PAYMENT_EXPIRED);
+	}
+
+	@Test
 	void 활성_점유_상태는_승인대기_입금대기_확정이다() {
 		assertThat(ReservationStatus.occupyingStatuses())
 			.containsExactlyInAnyOrder(

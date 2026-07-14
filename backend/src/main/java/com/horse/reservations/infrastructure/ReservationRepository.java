@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -18,6 +19,10 @@ import jakarta.persistence.LockModeType;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
 	boolean existsByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("SELECT reservation FROM Reservation reservation WHERE reservation.id = :reservationId")
+	Optional<Reservation> findByIdForUpdate(@Param("reservationId") Long reservationId);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""

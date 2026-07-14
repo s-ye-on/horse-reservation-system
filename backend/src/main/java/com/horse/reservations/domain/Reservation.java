@@ -159,6 +159,25 @@ public class Reservation {
 			approvalRequestedAt);
 	}
 
+	public boolean confirm(LocalDateTime confirmedAt) {
+		if (confirmedAt == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_APPROVAL_REQUESTED_AT);
+		}
+		if (status == ReservationStatus.CONFIRMED) {
+			return false;
+		}
+		if (status != ReservationStatus.PENDING_ADMIN_APPROVAL
+			&& status != ReservationStatus.PENDING_PAYMENT) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+		if (status == ReservationStatus.PENDING_PAYMENT && !confirmedAt.isBefore(paymentDueAt)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_PAYMENT_EXPIRED);
+		}
+		status = ReservationStatus.CONFIRMED;
+		adminConfirmedAt = confirmedAt;
+		return true;
+	}
+
 	private static Long requireMemberId(Long memberId) {
 		if (memberId == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_MEMBER_ID);
@@ -232,6 +251,10 @@ public class Reservation {
 
 	public LocalDateTime getApprovalRequestedAt() {
 		return approvalRequestedAt;
+	}
+
+	public LocalDateTime getAdminConfirmedAt() {
+		return adminConfirmedAt;
 	}
 
 	public long getVersion() {

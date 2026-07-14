@@ -11,6 +11,7 @@ export * from './MemberCouponUsageResponse';
 export * from './MemberRidingPermissionUpdateRequest';
 export * from './ReservationApplicationRequest';
 export * from './ReservationApplicationResponse';
+export * from './ReservationConfirmResponse';
 export * from './ReservationCouponResponse';
 export * from './TimeSlotCapacityUpdateRequest';
 export * from './TimeSlotCreateRequest';

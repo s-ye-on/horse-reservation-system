@@ -17,6 +17,9 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_COUPON_ID(HttpStatus.BAD_REQUEST, "쿠폰 예약에는 쿠폰 식별자가 필요합니다."),
 	RESERVATION_INVALID_PAYMENT_DUE_AT(HttpStatus.BAD_REQUEST, "입금대기 예약에는 입금 마감 시각이 필요합니다."),
 	RESERVATION_INVALID_APPROVAL_REQUESTED_AT(HttpStatus.BAD_REQUEST, "예약 신청 시각은 필수입니다."),
+	RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예약을 찾을 수 없습니다."),
+	RESERVATION_INVALID_STATUS(HttpStatus.CONFLICT, "현재 예약 상태에서는 요청한 처리를 할 수 없습니다."),
+	RESERVATION_PAYMENT_EXPIRED(HttpStatus.CONFLICT, "입금 마감 시각이 지난 예약은 확정할 수 없습니다."),
 	RESERVATION_INVALID_PERSISTED_VALUE(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 예약 값이 올바르지 않습니다."),
 
 	COUPON_INVALID_MEMBER_ID(HttpStatus.BAD_REQUEST, "쿠폰 회원 식별자는 필수입니다."),

@@ -3,6 +3,7 @@
 export * from './AdminCouponRegistrationControllerApi';
 export * from './AdminMemberQueryControllerApi';
 export * from './AdminMemberRidingPermissionControllerApi';
+export * from './AdminReservationConfirmControllerApi';
 export * from './AdminTimeSlotControllerApi';
 export * from './MemberAvailableRidingClassesControllerApi';
 export * from './MemberAvailableTimeSlotsControllerApi';

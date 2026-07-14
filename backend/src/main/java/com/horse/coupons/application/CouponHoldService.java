@@ -86,6 +86,35 @@ public class CouponHoldService {
 		return true;
 	}
 
+	@Transactional
+	public boolean confirm(
+		Long reservationId,
+		LocalDateTime occurredAt,
+		CouponActorType actorType
+	) {
+		final CouponUsageLog holdLog = usageLogRepository
+			.findFirstByReservationIdAndActionOrderByIdAsc(reservationId, CouponUsageAction.HELD)
+			.orElseThrow(() -> new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT));
+		final Coupon coupon = findCouponForUpdate(holdLog.getCouponId());
+		if (usageLogRepository.existsByReservationIdAndAction(
+			reservationId, CouponUsageAction.CONFIRMED)) {
+			return false;
+		}
+		if (usageLogRepository.existsByReservationIdAndAction(
+			reservationId, CouponUsageAction.RELEASED)) {
+			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
+		}
+
+		ensureCouponMember(coupon, holdLog.getMemberId());
+		usageLogRepository.save(CouponUsageLog.confirmed(
+			coupon.getId(),
+			reservationId,
+			coupon.getMemberId(),
+			occurredAt,
+			actorType));
+		return true;
+	}
+
 	private Coupon findCouponForUpdate(Long couponId) {
 		return couponRepository.findByIdForUpdate(couponId)
 			.orElseThrow(() -> new CouponException(ExceptionCode.COUPON_NOT_FOUND));
