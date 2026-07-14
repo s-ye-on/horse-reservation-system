@@ -5,15 +5,14 @@ import java.util.Arrays;
 import com.horse.global.exception.ExceptionCode;
 import com.horse.reservations.domain.exception.ReservationException;
 
-public enum CouponAction {
-	DEDUCT("deduct"),
-	RETURN("return"),
-	FREE_CHANGE_USED("free_change_used"),
-	NONE("none");
+public enum ReservationActorType {
+	MEMBER("member"),
+	ADMIN("admin"),
+	SYSTEM("system");
 
 	private final String databaseValue;
 
-	CouponAction(String databaseValue) {
+	ReservationActorType(String databaseValue) {
 		this.databaseValue = databaseValue;
 	}
 
@@ -21,9 +20,9 @@ public enum CouponAction {
 		return databaseValue;
 	}
 
-	public static CouponAction fromDatabaseValue(String databaseValue) {
+	public static ReservationActorType fromDatabaseValue(String databaseValue) {
 		return Arrays.stream(values())
-			.filter(action -> action.databaseValue.equals(databaseValue))
+			.filter(actorType -> actorType.databaseValue.equals(databaseValue))
 			.findFirst()
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_INVALID_PERSISTED_VALUE));
 	}

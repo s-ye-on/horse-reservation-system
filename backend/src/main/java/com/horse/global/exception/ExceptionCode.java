@@ -23,6 +23,9 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_REJECTION_ACTOR(HttpStatus.BAD_REQUEST, "예약 반려 관리자 식별자는 필수입니다."),
 	RESERVATION_INVALID_REJECTION_REASON(HttpStatus.BAD_REQUEST, "예약 반려 사유가 올바르지 않습니다."),
 	RESERVATION_INVALID_PAYMENT_EXPIRY_AT(HttpStatus.BAD_REQUEST, "입금대기 만료 처리 시각은 필수입니다."),
+	RESERVATION_INVALID_CHANGE_LOG_REFERENCE(HttpStatus.BAD_REQUEST, "예약 변경 이력 참조가 올바르지 않습니다."),
+	RESERVATION_INVALID_CHANGE_LOG_ACTOR(HttpStatus.BAD_REQUEST, "예약 변경 이력 처리 주체가 올바르지 않습니다."),
+	RESERVATION_INVALID_CHANGE_LOG_MEMO(HttpStatus.BAD_REQUEST, "예약 변경 이력 메모가 올바르지 않습니다."),
 	RESERVATION_INVALID_PERSISTED_VALUE(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 예약 값이 올바르지 않습니다."),
 
 	COUPON_INVALID_MEMBER_ID(HttpStatus.BAD_REQUEST, "쿠폰 회원 식별자는 필수입니다."),

@@ -105,7 +105,7 @@ created_at
 ```text
 id
 reservation_id
-actor_id
+actor_auth_subject
 actor_type: member | admin | system
 from_status
 to_status
@@ -118,6 +118,10 @@ coupon_action: none | free_change_used | deduct | return nullable
 memo nullable
 created_at
 ```
+
+`ReservationChangeLog`는 현재 예약 상태를 표현하지 않고 발생한 행위를 추가만 하는 감사 이력이다. 애플리케이션은 기존 행의 수정·삭제 기능을 제공하지 않는다. JWT `sub`는 DB 식별자와 혼동하지 않도록 `actorAuthSubject` / `actor_auth_subject`로 저장한다.
+
+만료 예약 복구는 `change_type = payment_restored`, `actor_type = admin`, `from_status = payment_expired`, `to_status = confirmed`, `coupon_action = none`으로 기록하며 관리자 메모는 필수이고 최대 500자다.
 
 ## 핵심 불변식
 

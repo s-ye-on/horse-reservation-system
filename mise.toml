@@ -308,6 +308,11 @@ description = "Verify pending-payment expiry job"
 dir = "backend"
 run = "./gradlew test --tests '*PendingPaymentExpiryJobIntegrationTest'"
 
+[tasks."verify:m1-15a"]
+description = "Verify append-only reservation change log persistence"
+dir = "backend"
+run = "./gradlew test --tests '*ReservationChangeLogTest' --tests '*ReservationChangeLogRepositoryIntegrationTest'"
+
 [tasks."verify:m1-16"]
 description = "Verify admin pending-payment restoration"
 dir = "backend"
