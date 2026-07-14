@@ -72,6 +72,10 @@ M1 정원 점유는 Reservation 상태를 SSOT로 사용한다. `pending_admin_a
 
 작업은 여러 번 실행해도 같은 결과가 나와야 한다.
 
+M1의 입금대기 만료는 애플리케이션 내부 Spring Scheduler가 `PendingPaymentExpiryService`를 직접 호출한다. 관리자가 같은 작업을 수동 실행할 때는 `ROLE_ADMIN`으로 보호된 `/api/admin/jobs/**` Controller가 동일한 Service를 호출한다. Scheduler와 Controller는 트랜잭션이나 상태 전이 규칙을 갖지 않는다.
+
+`payment_expired`는 운영 자동화 상태이며 최종 결제 실패 판정이 아니다. 늦은 입금 확인 시 관리자는 현재 정원을 원자적으로 재확보한 경우 예약을 복구할 수 있다. 외부 Scheduler 또는 별도 머신 호출이 도입되기 전에는 `ROLE_SYSTEM`을 사용하지 않는다.
+
 ## 품질 속성
 
 - 정확성: 정원·쿠폰·탑승 횟수 중복 반영 방지

@@ -180,6 +180,24 @@ class ReservationTest {
 	}
 
 	@Test
+	void 입금대기_예약은_결제_마감_시각부터_만료한다() {
+		final LocalDateTime paymentDueAt = REQUESTED_AT.plusHours(2);
+		final Reservation reservation = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			paymentDueAt,
+			REQUESTED_AT);
+
+		assertThat(reservation.expirePayment(paymentDueAt.minusNanos(1))).isFalse();
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.PENDING_PAYMENT);
+		assertThat(reservation.expirePayment(paymentDueAt)).isTrue();
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.PAYMENT_EXPIRED);
+		assertThat(reservation.expirePayment(paymentDueAt.plusMinutes(1))).isFalse();
+	}
+
+	@Test
 	void 활성_점유_상태는_승인대기_입금대기_확정이다() {
 		assertThat(ReservationStatus.occupyingStatuses())
 			.containsExactlyInAnyOrder(

@@ -247,6 +247,26 @@
         }
       }
     },
+    "/api/admin/jobs/expire-pending-payments": {
+      "post": {
+        "tags": [
+          "admin-pending-payment-expiry-job-controller"
+        ],
+        "operationId": "expirePendingPayments",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PendingPaymentExpiryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/timeslots/{timeSlotId}": {
       "delete": {
         "tags": [
@@ -791,6 +811,19 @@
             "type": "string"
           },
           "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PendingPaymentExpiryResponse": {
+        "type": "object",
+        "properties": {
+          "expiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "executedAt": {
             "type": "string",
             "format": "date-time"
           }

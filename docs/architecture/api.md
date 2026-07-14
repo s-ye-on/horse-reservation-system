@@ -76,11 +76,10 @@ POST  /api/admin/coupons/{couponId}/expire
 GET   /api/admin/coupon-usage-logs
 ```
 
-## 시스템 작업
+## 관리자 작업
 
 ```text
-POST /api/jobs/expire-pending-payments
-POST /api/jobs/expire-coupons
+POST /api/admin/jobs/expire-pending-payments
 ```
 
-시스템 작업 API는 일반 사용자에게 공개하지 않으며 내부 인증과 멱등성을 적용한다.
+입금대기 만료는 Spring Scheduler가 Application Service를 직접 호출해 자동 실행한다. 관리자 수동 실행 API는 같은 Service를 호출하며 `ROLE_ADMIN`만 접근할 수 있다. 외부 Scheduler나 머신 인증이 필요한 시점에 시스템 작업 API와 별도 권한을 재검토한다.

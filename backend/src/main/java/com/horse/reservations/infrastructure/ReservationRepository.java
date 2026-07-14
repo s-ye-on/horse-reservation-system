@@ -1,6 +1,7 @@
 package com.horse.reservations.infrastructure;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
@@ -23,6 +24,19 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT reservation FROM Reservation reservation WHERE reservation.id = :reservationId")
 	Optional<Reservation> findByIdForUpdate(@Param("reservationId") Long reservationId);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+		select reservation
+		from Reservation reservation
+		where reservation.status = :status
+		  and reservation.paymentDueAt <= :dueAt
+		order by reservation.id
+		""")
+	List<Reservation> findPaymentDueReservationsForUpdate(
+		@Param("status") ReservationStatus status,
+		@Param("dueAt") LocalDateTime dueAt
+	);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""

@@ -9,6 +9,7 @@ export * from './MemberAvailableTimeSlotsResponse';
 export * from './MemberCouponResponse';
 export * from './MemberCouponUsageResponse';
 export * from './MemberRidingPermissionUpdateRequest';
+export * from './PendingPaymentExpiryResponse';
 export * from './ReservationApplicationRequest';
 export * from './ReservationApplicationResponse';
 export * from './ReservationConfirmResponse';

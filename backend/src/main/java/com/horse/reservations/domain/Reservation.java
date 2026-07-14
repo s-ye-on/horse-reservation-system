@@ -200,6 +200,23 @@ public class Reservation {
 		return true;
 	}
 
+	public boolean expirePayment(LocalDateTime expiredAt) {
+		if (expiredAt == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_PAYMENT_EXPIRY_AT);
+		}
+		if (status != ReservationStatus.PENDING_PAYMENT) {
+			return false;
+		}
+		if (paymentDueAt == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_PERSISTED_VALUE);
+		}
+		if (expiredAt.isBefore(paymentDueAt)) {
+			return false;
+		}
+		status = ReservationStatus.PAYMENT_EXPIRED;
+		return true;
+	}
+
 	private static Long requireMemberId(Long memberId) {
 		if (memberId == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_MEMBER_ID);
