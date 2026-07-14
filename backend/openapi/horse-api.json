@@ -577,6 +577,29 @@
         }
       }
     },
+    "/api/admin/pending-payments": {
+      "get": {
+        "tags": [
+          "admin-pending-payment-query-controller"
+        ],
+        "operationId": "getPendingPayments",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminPendingPaymentResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/members": {
       "get": {
         "tags": [
@@ -1359,6 +1382,49 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "AdminPendingPaymentResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberName": {
+            "type": "string"
+          },
+          "memberPhone": {
+            "type": "string"
+          },
+          "classType": {
+            "type": "string"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "approvalRequestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "paymentDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deadlineExceeded": {
+            "type": "boolean"
           }
         }
       }

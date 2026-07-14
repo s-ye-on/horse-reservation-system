@@ -87,6 +87,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		@Param("dueAt") LocalDateTime dueAt
 	);
 
+	@Query("""
+		select reservation
+		from Reservation reservation
+		where reservation.status in :statuses
+		order by reservation.paymentDueAt, reservation.id
+		""")
+	List<Reservation> findPendingPaymentOperations(
+		@Param("statuses") Collection<ReservationStatus> statuses
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
 		select reservation
