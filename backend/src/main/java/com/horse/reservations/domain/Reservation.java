@@ -21,6 +21,7 @@ import jakarta.persistence.Version;
 @Entity
 @Table(name = "reservations")
 public class Reservation {
+	private static final int MAX_REJECTION_REASON_LENGTH = 500;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -178,6 +179,27 @@ public class Reservation {
 		return true;
 	}
 
+	public boolean reject(LocalDateTime occurredAt, String adminSubject, String reason) {
+		if (status == ReservationStatus.REJECTED) {
+			return false;
+		}
+		if (status != ReservationStatus.PENDING_ADMIN_APPROVAL
+			&& status != ReservationStatus.PENDING_PAYMENT) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+		if (occurredAt == null || adminSubject == null || adminSubject.isBlank()) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_REJECTION_ACTOR);
+		}
+		if (reason == null || reason.isBlank() || reason.length() > MAX_REJECTION_REASON_LENGTH) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_REJECTION_REASON);
+		}
+		status = ReservationStatus.REJECTED;
+		rejectedAt = occurredAt;
+		rejectedBy = adminSubject;
+		rejectionReason = reason;
+		return true;
+	}
+
 	private static Long requireMemberId(Long memberId) {
 		if (memberId == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_MEMBER_ID);
@@ -255,6 +277,18 @@ public class Reservation {
 
 	public LocalDateTime getAdminConfirmedAt() {
 		return adminConfirmedAt;
+	}
+
+	public LocalDateTime getRejectedAt() {
+		return rejectedAt;
+	}
+
+	public String getRejectedBy() {
+		return rejectedBy;
+	}
+
+	public String getRejectionReason() {
+		return rejectionReason;
 	}
 
 	public long getVersion() {

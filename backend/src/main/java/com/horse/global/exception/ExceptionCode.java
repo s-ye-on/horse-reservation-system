@@ -20,6 +20,8 @@ public enum ExceptionCode {
 	RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예약을 찾을 수 없습니다."),
 	RESERVATION_INVALID_STATUS(HttpStatus.CONFLICT, "현재 예약 상태에서는 요청한 처리를 할 수 없습니다."),
 	RESERVATION_PAYMENT_EXPIRED(HttpStatus.CONFLICT, "입금 마감 시각이 지난 예약은 확정할 수 없습니다."),
+	RESERVATION_INVALID_REJECTION_ACTOR(HttpStatus.BAD_REQUEST, "예약 반려 관리자 식별자는 필수입니다."),
+	RESERVATION_INVALID_REJECTION_REASON(HttpStatus.BAD_REQUEST, "예약 반려 사유가 올바르지 않습니다."),
 	RESERVATION_INVALID_PERSISTED_VALUE(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 예약 값이 올바르지 않습니다."),
 
 	COUPON_INVALID_MEMBER_ID(HttpStatus.BAD_REQUEST, "쿠폰 회원 식별자는 필수입니다."),

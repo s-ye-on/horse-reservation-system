@@ -13,6 +13,8 @@ export * from './ReservationApplicationRequest';
 export * from './ReservationApplicationResponse';
 export * from './ReservationConfirmResponse';
 export * from './ReservationCouponResponse';
+export * from './ReservationRejectRequest';
+export * from './ReservationRejectResponse';
 export * from './TimeSlotCapacityUpdateRequest';
 export * from './TimeSlotCreateRequest';
 export * from './TimeSlotResponse';

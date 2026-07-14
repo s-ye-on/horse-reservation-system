@@ -129,6 +129,57 @@ class ReservationTest {
 	}
 
 	@Test
+	void 승인_전_예약을_관리자_사유와_함께_반려한다() {
+		final Reservation reservation = Reservation.createCouponPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			10L,
+			REQUESTED_AT);
+		final LocalDateTime rejectedAt = REQUESTED_AT.plusMinutes(30);
+
+		final boolean changed = reservation.reject(rejectedAt, "reject-admin", "입금 확인 불가");
+
+		assertThat(changed).isTrue();
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.REJECTED);
+		assertThat(reservation.getRejectedAt()).isEqualTo(rejectedAt);
+		assertThat(reservation.getRejectedBy()).isEqualTo("reject-admin");
+		assertThat(reservation.getRejectionReason()).isEqualTo("입금 확인 불가");
+		assertThat(reservation.reject(rejectedAt.plusMinutes(1), "other-admin", "다른 사유")).isFalse();
+		assertThat(reservation.getRejectedBy()).isEqualTo("reject-admin");
+	}
+
+	@Test
+	void 확정된_예약과_잘못된_반려_감사값은_반려하지_않는다() {
+		final Reservation confirmed = Reservation.createCouponPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			10L,
+			REQUESTED_AT);
+		confirmed.confirm(REQUESTED_AT.plusMinutes(10));
+		final Reservation pending = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			REQUESTED_AT.plusHours(2),
+			REQUESTED_AT);
+
+		assertReservationException(
+			() -> confirmed.reject(REQUESTED_AT.plusMinutes(20), "reject-admin", "반려"),
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+		assertReservationException(
+			() -> pending.reject(REQUESTED_AT.plusMinutes(20), " ", "반려"),
+			ExceptionCode.RESERVATION_INVALID_REJECTION_ACTOR);
+		assertReservationException(
+			() -> pending.reject(REQUESTED_AT.plusMinutes(20), "reject-admin", " "),
+			ExceptionCode.RESERVATION_INVALID_REJECTION_REASON);
+	}
+
+	@Test
 	void 활성_점유_상태는_승인대기_입금대기_확정이다() {
 		assertThat(ReservationStatus.occupyingStatuses())
 			.containsExactlyInAnyOrder(

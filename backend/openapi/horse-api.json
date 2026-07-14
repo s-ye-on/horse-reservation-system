@@ -134,6 +134,47 @@
         }
       }
     },
+    "/api/admin/reservations/{reservationId}/reject": {
+      "post": {
+        "tags": [
+          "admin-reservation-reject-controller"
+        ],
+        "operationId": "reject",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReservationRejectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationRejectResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/reservations/{reservationId}/confirm": {
       "post": {
         "tags": [
@@ -626,6 +667,48 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        }
+      },
+      "ReservationRejectRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ReservationRejectResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentSource": {
+            "type": "string"
+          },
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rejectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rejectedBy": {
+            "type": "string"
+          },
+          "rejectionReason": {
+            "type": "string"
           }
         }
       },
