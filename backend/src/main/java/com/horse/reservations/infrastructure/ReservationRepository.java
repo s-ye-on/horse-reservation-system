@@ -21,6 +21,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
 	boolean existsByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);
 
+	@Query("""
+		select reservation.lessonDate as lessonDate, reservation.startTime as startTime
+		from Reservation reservation
+		where reservation.id = :reservationId
+		""")
+	Optional<ReservationTimeSlotProjection> findTimeSlotById(@Param("reservationId") Long reservationId);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT reservation FROM Reservation reservation WHERE reservation.id = :reservationId")
 	Optional<Reservation> findByIdForUpdate(@Param("reservationId") Long reservationId);

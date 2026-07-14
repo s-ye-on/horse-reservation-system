@@ -198,6 +198,44 @@ class ReservationTest {
 	}
 
 	@Test
+	void 만료된_일회_결제_예약을_확정_상태로_복구한다() {
+		final LocalDateTime paymentDueAt = REQUESTED_AT.plusHours(2);
+		final LocalDateTime restoredAt = paymentDueAt.plusHours(1);
+		final Reservation reservation = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			paymentDueAt,
+			REQUESTED_AT);
+		reservation.expirePayment(paymentDueAt);
+
+		reservation.restorePayment(restoredAt);
+
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+		assertThat(reservation.getAdminConfirmedAt()).isEqualTo(restoredAt);
+	}
+
+	@Test
+	void 만료_상태가_아니거나_복구_시각이_없으면_복구하지_않는다() {
+		final Reservation pending = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			REQUESTED_AT.plusHours(2),
+			REQUESTED_AT);
+
+		assertReservationException(
+			() -> pending.restorePayment(REQUESTED_AT.plusHours(3)),
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+		pending.expirePayment(REQUESTED_AT.plusHours(2));
+		assertReservationException(
+			() -> pending.restorePayment(null),
+			ExceptionCode.RESERVATION_INVALID_PAYMENT_RESTORE_AT);
+	}
+
+	@Test
 	void 활성_점유_상태는_승인대기_입금대기_확정이다() {
 		assertThat(ReservationStatus.occupyingStatuses())
 			.containsExactlyInAnyOrder(

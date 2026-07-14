@@ -134,6 +134,47 @@
         }
       }
     },
+    "/api/admin/reservations/{reservationId}/restore-payment": {
+      "post": {
+        "tags": [
+          "admin-pending-payment-restore-controller"
+        ],
+        "operationId": "restore",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReservationPaymentRestoreRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationPaymentRestoreResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/reservations/{reservationId}/reject": {
       "post": {
         "tags": [
@@ -687,6 +728,38 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        }
+      },
+      "ReservationPaymentRestoreRequest": {
+        "type": "object",
+        "properties": {
+          "memo": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "memo"
+        ]
+      },
+      "ReservationPaymentRestoreResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentSource": {
+            "type": "string"
+          },
+          "adminConfirmedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

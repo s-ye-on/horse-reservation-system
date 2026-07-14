@@ -26,4 +26,16 @@ public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapaci
 	@Query("select timeSlot from TimeSlotCapacity timeSlot where timeSlot.id = :timeSlotId")
 	Optional<TimeSlotCapacity> findByIdForUpdate(@Param("timeSlotId") Long timeSlotId);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+		select timeSlot
+		from TimeSlotCapacity timeSlot
+		where timeSlot.lessonDate = :lessonDate
+		  and timeSlot.startTime = :startTime
+		""")
+	Optional<TimeSlotCapacity> findByLessonDateAndStartTimeForUpdate(
+		@Param("lessonDate") LocalDate lessonDate,
+		@Param("startTime") LocalTime startTime
+	);
+
 }

@@ -14,6 +14,8 @@ export * from './ReservationApplicationRequest';
 export * from './ReservationApplicationResponse';
 export * from './ReservationConfirmResponse';
 export * from './ReservationCouponResponse';
+export * from './ReservationPaymentRestoreRequest';
+export * from './ReservationPaymentRestoreResponse';
 export * from './ReservationRejectRequest';
 export * from './ReservationRejectResponse';
 export * from './TimeSlotCapacityUpdateRequest';

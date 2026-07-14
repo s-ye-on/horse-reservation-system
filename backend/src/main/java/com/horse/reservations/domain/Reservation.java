@@ -217,6 +217,21 @@ public class Reservation {
 		return true;
 	}
 
+	public void restorePayment(LocalDateTime restoredAt) {
+		if (restoredAt == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_PAYMENT_RESTORE_AT);
+		}
+		ensurePaymentRestorable();
+		status = ReservationStatus.CONFIRMED;
+		adminConfirmedAt = restoredAt;
+	}
+
+	public void ensurePaymentRestorable() {
+		if (status != ReservationStatus.PAYMENT_EXPIRED || paymentSource != PaymentSource.SINGLE_PAYMENT) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+	}
+
 	private static Long requireMemberId(Long memberId) {
 		if (memberId == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_MEMBER_ID);
