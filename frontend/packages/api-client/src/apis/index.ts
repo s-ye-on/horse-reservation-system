@@ -6,6 +6,7 @@ export * from './AdminMemberRidingPermissionControllerApi';
 export * from './AdminPendingPaymentExpiryJobControllerApi';
 export * from './AdminPendingPaymentRestoreControllerApi';
 export * from './AdminReservationConfirmControllerApi';
+export * from './AdminReservationQueryControllerApi';
 export * from './AdminReservationRejectControllerApi';
 export * from './AdminTimeSlotControllerApi';
 export * from './MemberAvailableRidingClassesControllerApi';

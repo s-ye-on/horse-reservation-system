@@ -7,11 +7,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.horse.members.domain.RidingClass;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationStatus;
 
@@ -27,6 +30,45 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		where reservation.id = :reservationId
 		""")
 	Optional<ReservationTimeSlotProjection> findTimeSlotById(@Param("reservationId") Long reservationId);
+
+	@Query(
+		value = """
+			select reservation
+			from Reservation reservation, Member member
+			where member.id = reservation.memberId
+			  and (:status is null or reservation.status = :status)
+			  and (:lessonDateFrom is null or reservation.lessonDate >= :lessonDateFrom)
+			  and (:lessonDateTo is null or reservation.lessonDate <= :lessonDateTo)
+			  and (:ridingClass is null or reservation.ridingClass = :ridingClass)
+			  and (
+				:keyword is null
+				or member.name like concat('%', :keyword, '%')
+				or member.phone like concat('%', :keyword, '%')
+			  )
+			order by reservation.lessonDate, reservation.startTime, reservation.id
+			""",
+		countQuery = """
+			select count(reservation)
+			from Reservation reservation, Member member
+			where member.id = reservation.memberId
+			  and (:status is null or reservation.status = :status)
+			  and (:lessonDateFrom is null or reservation.lessonDate >= :lessonDateFrom)
+			  and (:lessonDateTo is null or reservation.lessonDate <= :lessonDateTo)
+			  and (:ridingClass is null or reservation.ridingClass = :ridingClass)
+			  and (
+				:keyword is null
+				or member.name like concat('%', :keyword, '%')
+				or member.phone like concat('%', :keyword, '%')
+			  )
+			""")
+	Page<Reservation> findAdminReservations(
+		@Param("status") ReservationStatus status,
+		@Param("lessonDateFrom") LocalDate lessonDateFrom,
+		@Param("lessonDateTo") LocalDate lessonDateTo,
+		@Param("ridingClass") RidingClass ridingClass,
+		@Param("keyword") String keyword,
+		Pageable pageable
+	);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT reservation FROM Reservation reservation WHERE reservation.id = :reservationId")

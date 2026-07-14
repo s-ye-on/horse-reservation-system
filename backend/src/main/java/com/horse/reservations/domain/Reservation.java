@@ -323,6 +323,22 @@ public class Reservation {
 		return rejectionReason;
 	}
 
+	public LocalDateTime getCancelledAt() {
+		return cancelledAt;
+	}
+
+	public CancellationResponsibility getCancellationResponsibility() {
+		return cancellationResponsibility;
+	}
+
+	public CouponAction getCouponAction() {
+		return couponAction;
+	}
+
+	public String getAdminMemo() {
+		return adminMemo;
+	}
+
 	public long getVersion() {
 		return version;
 	}

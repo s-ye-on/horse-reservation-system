@@ -1,6 +1,10 @@
 /* tslint:disable */
 /* eslint-disable */
 export * from './AdminMemberResponse';
+export * from './AdminReservationCouponResponse';
+export * from './AdminReservationPageResponse';
+export * from './AdminReservationQueryRequest';
+export * from './AdminReservationResponse';
 export * from './CouponRegistrationRequest';
 export * from './CouponResponse';
 export * from './MemberAvailableRidingClassesResponse';

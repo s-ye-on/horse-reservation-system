@@ -516,6 +516,67 @@
         }
       }
     },
+    "/api/admin/reservations": {
+      "get": {
+        "tags": [
+          "admin-reservation-query-controller"
+        ],
+        "operationId": "getReservations",
+        "parameters": [
+          {
+            "name": "request",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AdminReservationQueryRequest"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReservationPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/reservations/{reservationId}": {
+      "get": {
+        "tags": [
+          "admin-reservation-query-controller"
+        ],
+        "operationId": "getReservation",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReservationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/members": {
       "get": {
         "tags": [
@@ -1127,6 +1188,177 @@
           },
           "actorType": {
             "type": "string"
+          }
+        }
+      },
+      "AdminReservationQueryRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "lessonDateFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "lessonDateTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "classType": {
+            "type": "string"
+          },
+          "keyword": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 0
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 1
+          }
+        }
+      },
+      "AdminReservationCouponResponse": {
+        "type": "object",
+        "properties": {
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "couponType": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "remainingCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "heldCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminReservationPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminReservationResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AdminReservationResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberName": {
+            "type": "string"
+          },
+          "memberPhone": {
+            "type": "string"
+          },
+          "classType": {
+            "type": "string"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentSource": {
+            "type": "string"
+          },
+          "coupon": {
+            "$ref": "#/components/schemas/AdminReservationCouponResponse"
+          },
+          "paymentDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approvalRequestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "adminConfirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rejectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rejectedBy": {
+            "type": "string"
+          },
+          "rejectionReason": {
+            "type": "string"
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancellationResponsibility": {
+            "type": "string"
+          },
+          "couponAction": {
+            "type": "string"
+          },
+          "adminMemo": {
+            "type": "string"
+          },
+          "approvalWarning": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }
