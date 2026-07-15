@@ -40,6 +40,7 @@ public enum ExceptionCode {
 	COUPON_INVALID_TOTAL_COUNT(HttpStatus.BAD_REQUEST, "쿠폰은 10회권만 등록할 수 있습니다."),
 	COUPON_INVALID_CREATED_BY(HttpStatus.BAD_REQUEST, "쿠폰 등록 관리자 식별자는 필수입니다."),
 	COUPON_INVALID_LESSON_DATE(HttpStatus.BAD_REQUEST, "쿠폰을 사용할 수업 날짜는 필수입니다."),
+	COUPON_INVALID_EXPIRY_DATE(HttpStatus.BAD_REQUEST, "쿠폰 만료 기준 날짜는 필수입니다."),
 	COUPON_INVALID_USAGE_REFERENCE(HttpStatus.BAD_REQUEST, "쿠폰 사용 이력 참조가 올바르지 않습니다."),
 	COUPON_INVALID_USAGE_OCCURRED_AT(HttpStatus.BAD_REQUEST, "쿠폰 사용 이력 발생 시각은 필수입니다."),
 	COUPON_INVALID_ACTOR_TYPE(HttpStatus.BAD_REQUEST, "쿠폰 처리 주체는 필수입니다."),
@@ -61,6 +62,7 @@ public enum ExceptionCode {
 	TIMESLOT_NOT_FOUND(HttpStatus.NOT_FOUND, "시간대를 찾을 수 없습니다."),
 	TIMESLOT_CLOSED(HttpStatus.CONFLICT, "마감된 시간대에는 예약할 수 없습니다."),
 	TIMESLOT_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "시간대 정원이 마감되었습니다."),
+	TIMESLOT_CAPACITY_BELOW_OCCUPANCY(HttpStatus.CONFLICT, "현재 예약 인원보다 정원을 작게 설정할 수 없습니다."),
 	TIMESLOT_RESERVATION_HISTORY_EXISTS(HttpStatus.CONFLICT, "예약 이력이 있는 시간대는 삭제할 수 없습니다.");
 
 	private final HttpStatus status;

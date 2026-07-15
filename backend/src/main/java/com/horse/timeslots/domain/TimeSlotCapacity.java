@@ -80,7 +80,7 @@ public class TimeSlotCapacity {
 	) {
 		this.lessonDate = requireLessonDate(lessonDate);
 		this.startTime = requireStartTime(startTime);
-		changeCapacity(totalCapacity, roundArenaCapacity, classCapacities);
+		initializeCapacity(totalCapacity, roundArenaCapacity, classCapacities);
 	}
 
 	public static TimeSlotCapacity create(
@@ -98,7 +98,7 @@ public class TimeSlotCapacity {
 			classCapacities);
 	}
 
-	public void changeCapacity(
+	private void initializeCapacity(
 		Integer totalCapacity,
 		Integer roundArenaCapacity,
 		Map<String, Integer> classCapacities
@@ -106,6 +106,29 @@ public class TimeSlotCapacity {
 		validateTotalCapacity(totalCapacity);
 		validateRoundArenaCapacity(roundArenaCapacity, totalCapacity);
 		validateClassCapacities(classCapacities);
+		this.totalCapacity = totalCapacity.byteValue();
+		this.roundArenaCapacity = roundArenaCapacity.byteValue();
+		this.classCapacities = Map.copyOf(classCapacities);
+	}
+
+	public void changeCapacity(
+		Integer totalCapacity,
+		Integer roundArenaCapacity,
+		Map<String, Integer> classCapacities,
+		int totalOccupied,
+		int roundArenaOccupied,
+		Map<RidingClass, Integer> classOccupied
+	) {
+		validateTotalCapacity(totalCapacity);
+		validateRoundArenaCapacity(roundArenaCapacity, totalCapacity);
+		validateClassCapacities(classCapacities);
+		validateOccupancyFloor(
+			totalCapacity,
+			roundArenaCapacity,
+			classCapacities,
+			totalOccupied,
+			roundArenaOccupied,
+			classOccupied);
 		this.totalCapacity = totalCapacity.byteValue();
 		this.roundArenaCapacity = roundArenaCapacity.byteValue();
 		this.classCapacities = Map.copyOf(classCapacities);
@@ -174,6 +197,23 @@ public class TimeSlotCapacity {
 			|| classCapacities.values().stream()
 				.anyMatch(capacity -> capacity == null || capacity < 0 || capacity > MAX_TOTAL_CAPACITY)) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_CLASS_CAPACITIES);
+		}
+	}
+
+	private static void validateOccupancyFloor(
+		Integer totalCapacity,
+		Integer roundArenaCapacity,
+		Map<String, Integer> classCapacities,
+		int totalOccupied,
+		int roundArenaOccupied,
+		Map<RidingClass, Integer> classOccupied
+	) {
+		final boolean classCapacityBelowOccupancy = classOccupied.entrySet().stream()
+			.anyMatch(entry -> classCapacities.get(entry.getKey().name()) < entry.getValue());
+		if (totalCapacity < totalOccupied
+			|| roundArenaCapacity < roundArenaOccupied
+			|| classCapacityBelowOccupancy) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_CAPACITY_BELOW_OCCUPANCY);
 		}
 	}
 

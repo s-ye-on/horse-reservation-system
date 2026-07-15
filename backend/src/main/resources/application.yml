@@ -41,3 +41,8 @@ reservation:
   pending-payment-expiry:
     fixed-delay: ${PENDING_PAYMENT_EXPIRY_FIXED_DELAY:PT1M}
     initial-delay: ${PENDING_PAYMENT_EXPIRY_INITIAL_DELAY:PT1M}
+
+coupon:
+  expiry:
+    fixed-delay: ${COUPON_EXPIRY_FIXED_DELAY:PT1M}
+    initial-delay: ${COUPON_EXPIRY_INITIAL_DELAY:PT1M}

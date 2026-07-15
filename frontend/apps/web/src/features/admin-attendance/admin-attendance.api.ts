@@ -27,10 +27,16 @@ export function getAdminAttendanceErrorKind(error: unknown): AdminAttendanceErro
 const queryApi = new AdminReservationQueryControllerApi()
 const completionApi = new AdminReservationCompletionControllerApi()
 const noShowApi = new AdminReservationNoShowControllerApi()
+const ATTENDANCE_HISTORY_START = new Date('1970-01-01T00:00:00.000Z')
 
 export const adminAttendanceApi: AdminAttendanceApi = {
   getConfirmedReservations: async () => {
-    const page = await queryApi.getReservations({ status: 'confirmed', page: 0, size: 100 })
+    const page = await queryApi.getReservations({
+      status: 'confirmed',
+      lessonDateFrom: ATTENDANCE_HISTORY_START,
+      page: 0,
+      size: 100,
+    })
     return page.content ?? []
   },
   complete: (reservationId) => completionApi.complete({ reservationId }),

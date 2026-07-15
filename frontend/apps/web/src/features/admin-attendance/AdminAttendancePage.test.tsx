@@ -1,9 +1,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { ResponseError, type AdminReservationResponse, type ReservationCompletionResponse } from '@horse/api-client'
+import {
+  AdminReservationQueryControllerApi,
+  ResponseError,
+  type AdminReservationResponse,
+  type ReservationCompletionResponse,
+} from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
-import type { AdminAttendanceApi } from './admin-attendance.api'
+import { adminAttendanceApi, type AdminAttendanceApi } from './admin-attendance.api'
 import { AdminAttendancePage } from './admin-attendance-page'
 
 const GENERAL: AdminReservationResponse = {
@@ -35,7 +40,10 @@ const JUMPING: AdminReservationResponse = {
   coupon: undefined,
 }
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 function createApi(overrides: Partial<AdminAttendanceApi> = {}): AdminAttendanceApi {
   return {
@@ -57,6 +65,21 @@ async function cardFor(memberName: string) {
 }
 
 describe('AdminAttendancePage', () => {
+  it('출석_목록은_과거_확정_예약을_포함하도록_날짜_하한을_명시한다', async () => {
+    const getReservations = vi
+      .spyOn(AdminReservationQueryControllerApi.prototype, 'getReservations')
+      .mockResolvedValue({ content: [GENERAL], page: 0, size: 100, totalElements: 1, totalPages: 1 })
+
+    await adminAttendanceApi.getConfirmedReservations()
+
+    expect(getReservations).toHaveBeenCalledWith({
+      status: 'confirmed',
+      lessonDateFrom: new Date('1970-01-01T00:00:00.000Z'),
+      page: 0,
+      size: 100,
+    })
+  })
+
   it('확정_예약의_회원_수업_결제와_쿠폰_요약을_표시한다', async () => {
     renderPage(createApi())
     const card = await cardFor('김일반')

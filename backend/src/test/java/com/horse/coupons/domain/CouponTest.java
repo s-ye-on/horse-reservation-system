@@ -66,4 +66,52 @@ class CouponTest {
 		assertThat(coupon.getFirstUsedAt()).isEqualTo(lessonDate.atStartOfDay());
 		assertThat(coupon.getExpiresAt()).isEqualTo(lessonDate.plusMonths(3).atStartOfDay());
 	}
+
+	@Test
+	void 만료일_다음_날에는_점유되지_않은_잔여_횟수만_소멸한다() {
+		final Coupon coupon = usedCoupon();
+		coupon.hold(LocalDate.of(2026, 10, 31));
+		coupon.hold(LocalDate.of(2026, 10, 31));
+
+		final int boundaryExpiredCount = coupon.expire(LocalDate.of(2026, 11, 1));
+		final int expiredCount = coupon.expire(LocalDate.of(2026, 11, 2));
+
+		assertThat(boundaryExpiredCount).isZero();
+		assertThat(expiredCount).isEqualTo(7);
+		assertThat(coupon.getStatus()).isEqualTo(CouponStatus.EXPIRED);
+		assertThat(coupon.getRemainingCount()).isEqualTo(2);
+		assertThat(coupon.getHeldCount()).isEqualTo(2);
+	}
+
+	@Test
+	void 만료_전에_점유한_횟수는_반환하거나_사용해도_잔여분으로_복구되지_않는다() {
+		final Coupon coupon = usedCoupon();
+		coupon.hold(LocalDate.of(2026, 10, 31));
+		coupon.hold(LocalDate.of(2026, 10, 31));
+		coupon.expire(LocalDate.of(2026, 11, 2));
+
+		coupon.releaseHold();
+		coupon.useHeld(LocalDate.of(2026, 11, 3));
+
+		assertThat(coupon.getStatus()).isEqualTo(CouponStatus.EXPIRED);
+		assertThat(coupon.getRemainingCount()).isZero();
+		assertThat(coupon.getHeldCount()).isZero();
+	}
+
+	@Test
+	void 쿠폰_만료_기준일이_없으면_만료할_수_없다() {
+		final Coupon coupon = usedCoupon();
+
+		assertThatThrownBy(() -> coupon.expire(null))
+			.isInstanceOf(CouponException.class)
+			.hasMessage(ExceptionCode.COUPON_INVALID_EXPIRY_DATE.message());
+	}
+
+	private Coupon usedCoupon() {
+		final Coupon coupon = Coupon.create(1L, CouponType.GENERAL, 10, "admin-subject");
+		final LocalDate firstLessonDate = LocalDate.of(2026, 8, 1);
+		coupon.hold(firstLessonDate);
+		coupon.useHeld(firstLessonDate);
+		return coupon;
+	}
 }

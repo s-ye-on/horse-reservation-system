@@ -396,3 +396,29 @@ run = "pnpm --dir frontend/apps/web exec vitest run src/features/my-coupons/MyCo
 [tasks."verify:m1-29"]
 description = "Verify MVP 1 reservation end-to-end flows"
 run = "pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp1-reservation.spec.ts"
+
+[tasks."verify:m1-30"]
+description = "Verify TimeSlot capacity cannot fall below active occupancy"
+dir = "backend"
+run = "./gradlew test --tests '*AdminTimeSlotApiTest' --tests '*TimeSlotCapacityConcurrencyIntegrationTest'"
+
+[tasks."verify:m1-31"]
+description = "Verify TimeSlot deletion is serialized with reservation creation"
+dir = "backend"
+run = "./gradlew test --tests '*TimeSlotDeletionConcurrencyIntegrationTest' --tests '*AdminTimeSlotApiTest'"
+
+[tasks."verify:m1-32"]
+description = "Verify coupon expiry transition and expiry job"
+dir = "backend"
+run = "./gradlew test --tests '*CouponTest' --tests '*CouponExpiryJobIntegrationTest' --tests '*MemberCouponQueryApiTest'"
+
+[tasks."verify:m1-33"]
+description = "Verify overdue confirmed reservations remain actionable"
+run = '''
+./backend/gradlew -p backend test --tests '*AdminReservationQueryApiTest'
+pnpm --dir frontend/apps/web exec vitest run src/features/admin-attendance/AdminAttendancePage.test.tsx
+'''
+
+[tasks."verify:m1-34"]
+description = "Verify MVP 1 scope documentation"
+run = "mise run docs:check"

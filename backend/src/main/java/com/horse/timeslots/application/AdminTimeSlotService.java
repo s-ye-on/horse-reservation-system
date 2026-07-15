@@ -4,12 +4,15 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.global.exception.ExceptionCode;
+import com.horse.members.domain.RidingClass;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
 import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
@@ -76,14 +79,28 @@ public class AdminTimeSlotService {
 		Integer roundArenaCapacity,
 		Map<String, Integer> classCapacities
 	) {
-		final TimeSlotCapacity timeSlot = getTimeSlot(timeSlotId);
-		timeSlot.changeCapacity(totalCapacity, roundArenaCapacity, classCapacities);
+		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
+		final List<RidingClass> activeRidingClasses = reservationHistoryQuery.findActiveRidingClassesForUpdate(
+			timeSlot.getLessonDate(),
+			timeSlot.getStartTime());
+		final int roundArenaOccupied = (int)activeRidingClasses.stream()
+			.filter(TimeSlotCapacity::usesRoundArena)
+			.count();
+		final Map<RidingClass, Integer> classOccupied = activeRidingClasses.stream()
+			.collect(Collectors.toMap(Function.identity(), ignored -> 1, Integer::sum));
+		timeSlot.changeCapacity(
+			totalCapacity,
+			roundArenaCapacity,
+			classCapacities,
+			activeRidingClasses.size(),
+			roundArenaOccupied,
+			classOccupied);
 		return TimeSlotResult.from(timeSlot);
 	}
 
 	@Transactional
 	public void deleteTimeSlot(Long timeSlotId) {
-		final TimeSlotCapacity timeSlot = getTimeSlot(timeSlotId);
+		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
 		if (reservationHistoryQuery.existsByLessonDateAndStartTime(
 			timeSlot.getLessonDate(), timeSlot.getStartTime())) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_RESERVATION_HISTORY_EXISTS);
@@ -94,6 +111,11 @@ public class AdminTimeSlotService {
 
 	private TimeSlotCapacity getTimeSlot(Long timeSlotId) {
 		return timeSlotRepository.findById(timeSlotId)
+			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
+	}
+
+	private TimeSlotCapacity getTimeSlotForUpdate(Long timeSlotId) {
+		return timeSlotRepository.findByIdForUpdate(timeSlotId)
 			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
 	}
 

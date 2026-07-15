@@ -101,6 +101,9 @@ public class Coupon {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
 		}
 		heldCount--;
+		if (status == CouponStatus.EXPIRED) {
+			remainingCount--;
+		}
 	}
 
 	public void useHeld(LocalDate lessonDate) {
@@ -116,7 +119,7 @@ public class Coupon {
 		}
 		heldCount--;
 		remainingCount--;
-		if (remainingCount == 0) {
+		if (remainingCount == 0 && status == CouponStatus.ACTIVE) {
 			status = CouponStatus.DEPLETED;
 		}
 	}
@@ -127,9 +130,24 @@ public class Coupon {
 		}
 		heldCount--;
 		remainingCount--;
-		if (remainingCount == 0) {
+		if (remainingCount == 0 && status == CouponStatus.ACTIVE) {
 			status = CouponStatus.DEPLETED;
 		}
+	}
+
+	public int expire(LocalDate currentDate) {
+		if (currentDate == null) {
+			throw new CouponException(ExceptionCode.COUPON_INVALID_EXPIRY_DATE);
+		}
+		if (status != CouponStatus.ACTIVE
+			|| expiresAt == null
+			|| !expiresAt.toLocalDate().isBefore(currentDate)) {
+			return 0;
+		}
+		final int expiredCount = remainingCount - heldCount;
+		remainingCount = heldCount;
+		status = CouponStatus.EXPIRED;
+		return expiredCount;
 	}
 
 	private static Long requireMemberId(Long memberId) {

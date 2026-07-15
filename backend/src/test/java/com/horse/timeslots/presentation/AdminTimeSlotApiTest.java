@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.TestcontainersConfiguration;
 import com.horse.auth.UserRole;
+import com.horse.members.domain.RidingClass;
 import com.horse.timeslots.application.TimeSlotReservationHistoryQuery;
 
 @Import(TestcontainersConfiguration.class)
@@ -157,6 +158,23 @@ class AdminTimeSlotApiTest {
 	}
 
 	@Test
+	void 활성_예약보다_전체_원형_클래스_정원을_작게_줄일_수_없다() throws Exception {
+		final Long timeSlotId = insertTimeSlot("2026-08-10", "10:00:00");
+		given(reservationHistoryQuery.findActiveRidingClassesForUpdate(
+			java.time.LocalDate.of(2026, 8, 10), java.time.LocalTime.of(10, 0)))
+			.willReturn(java.util.List.of(RidingClass.ROUND_BEGINNER, RidingClass.ROUND_BEGINNER));
+
+		assertCapacityBelowOccupancy(timeSlotId, capacityRequest(1, 1, CLASS_CAPACITIES));
+		assertCapacityBelowOccupancy(timeSlotId, capacityRequest(8, 1, CLASS_CAPACITIES));
+		assertCapacityBelowOccupancy(
+			timeSlotId,
+			capacityRequest(
+				8,
+				4,
+				CLASS_CAPACITIES.replace("\"ROUND_BEGINNER\": 2", "\"ROUND_BEGINNER\": 1")));
+	}
+
+	@Test
 	void 예약_이력이_없는_시간대는_물리_삭제한다() throws Exception {
 		final Long timeSlotId = insertTimeSlot("2026-08-11", "09:00:00");
 
@@ -197,6 +215,15 @@ class AdminTimeSlotApiTest {
 				.content(request))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value(exceptionCode));
+	}
+
+	private void assertCapacityBelowOccupancy(Long timeSlotId, String request) throws Exception {
+		mockMvc.perform(put(ENDPOINT + "/{timeSlotId}/capacity", timeSlotId)
+				.with(adminJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("TIMESLOT_CAPACITY_BELOW_OCCUPANCY"));
 	}
 
 	private void assertThatTimeSlotCount(Long timeSlotId, int expectedCount) {

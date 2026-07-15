@@ -1,6 +1,7 @@
 package com.horse.coupons.infrastructure;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,16 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT c FROM Coupon c WHERE c.id = :couponId")
 	Optional<Coupon> findByIdForUpdate(@Param("couponId") Long couponId);
+
+	@Query(value = """
+		SELECT c.*
+		FROM coupons c
+		WHERE c.status = 'active'
+			AND c.expires_at < :todayStart
+		ORDER BY c.id ASC
+		FOR UPDATE
+		""", nativeQuery = true)
+	List<Coupon> findDueForExpiryForUpdate(@Param("todayStart") LocalDateTime todayStart);
 
 	@Query(value = """
 		SELECT c.*

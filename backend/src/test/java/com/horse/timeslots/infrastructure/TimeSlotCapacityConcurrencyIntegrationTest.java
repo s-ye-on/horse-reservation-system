@@ -28,6 +28,7 @@ import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
 import com.horse.reservations.application.ReservationCapacityService;
 import com.horse.reservations.domain.Reservation;
+import com.horse.timeslots.application.AdminTimeSlotService;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
 
@@ -41,6 +42,9 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 
 	@Autowired
 	ReservationCapacityService reservationCapacityService;
+
+	@Autowired
+	AdminTimeSlotService adminTimeSlotService;
 
 	@Autowired
 	TimeSlotCapacityRepository timeSlotRepository;
@@ -151,6 +155,32 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 
 		assertThat(replacement.getId()).isNotNull();
 		assertThat(reservationCount()).isEqualTo(4);
+	}
+
+	@Test
+	void 실제_활성_예약보다_전체_정원을_작게_변경하지_않는다() {
+		final TestMember member = createMemberWithCoupon("capacity-change-member");
+		final TimeSlotCapacity timeSlot = createTimeSlot(
+			LESSON_DATE,
+			START_TIME,
+			2,
+			2,
+			RidingClass.ROUND_BEGINNER,
+			2);
+		reserveWithCoupon(timeSlot, member, RidingClass.ROUND_BEGINNER);
+		final Map<String, Integer> classCapacities = new HashMap<>();
+		for (RidingClass ridingClass : RidingClass.values()) {
+			classCapacities.put(ridingClass.name(), 1);
+		}
+
+		assertThatThrownBy(() -> adminTimeSlotService.changeCapacity(
+			timeSlot.getId(),
+			0,
+			0,
+			classCapacities))
+			.isInstanceOf(TimeSlotException.class)
+			.extracting(exception -> ((TimeSlotException)exception).code())
+			.isEqualTo(ExceptionCode.TIMESLOT_CAPACITY_BELOW_OCCUPANCY.code());
 	}
 
 	@Test

@@ -60,7 +60,7 @@ public class CouponUsageLog {
 		CouponActorType actorType
 	) {
 		this.couponId = requireId(couponId);
-		this.reservationId = requireId(reservationId);
+		this.reservationId = requireReservationId(reservationId, action);
 		this.memberId = requireId(memberId);
 		this.action = action;
 		this.countDelta = countDelta;
@@ -153,11 +153,34 @@ public class CouponUsageLog {
 			actorType);
 	}
 
+	public static CouponUsageLog expired(
+		Long couponId,
+		Long memberId,
+		int expiredCount,
+		LocalDateTime occurredAt
+	) {
+		return new CouponUsageLog(
+			couponId,
+			null,
+			memberId,
+			CouponUsageAction.EXPIRED,
+			(short) -expiredCount,
+			occurredAt,
+			CouponActorType.SYSTEM);
+	}
+
 	private static Long requireId(Long id) {
 		if (id == null || id <= 0) {
 			throw new CouponException(ExceptionCode.COUPON_INVALID_USAGE_REFERENCE);
 		}
 		return id;
+	}
+
+	private static Long requireReservationId(Long reservationId, CouponUsageAction action) {
+		if (action == CouponUsageAction.EXPIRED && reservationId == null) {
+			return null;
+		}
+		return requireId(reservationId);
 	}
 
 	private static LocalDateTime requireOccurredAt(LocalDateTime occurredAt) {
