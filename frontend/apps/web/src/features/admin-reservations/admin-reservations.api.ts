@@ -1,16 +1,22 @@
 import {
+  AdminReservationCancelControllerApi,
+  AdminReservationChangeControllerApi,
   AdminPendingPaymentRestoreControllerApi,
   AdminReservationConfirmControllerApi,
   AdminReservationQueryControllerApi,
   AdminReservationRejectControllerApi,
+  AdminTimeSlotControllerApi,
   ResponseError,
   type AdminReservationResponse,
+  type ReservationCancellationPreviewResponse,
+  type TimeSlotResponse,
 } from '@horse/api-client'
 
 const ACTIONABLE_STATUSES = [
   'pending_admin_approval',
   'pending_payment',
   'payment_expired',
+  'confirmed',
 ] as const
 
 export interface AdminReservationsApi {
@@ -18,6 +24,10 @@ export interface AdminReservationsApi {
   confirm(reservationId: number): Promise<void>
   reject(reservationId: number, reason: string): Promise<void>
   restore(reservationId: number, memo: string): Promise<void>
+  getTimeSlots(): Promise<TimeSlotResponse[]>
+  previewCancellation(reservationId: number, responsibility: string): Promise<ReservationCancellationPreviewResponse>
+  change(reservationId: number, targetTimeSlotId: number, memo: string): Promise<void>
+  cancel(reservationId: number, responsibility: string, couponAction: string, memo: string): Promise<void>
 }
 
 export type AdminReservationErrorKind = 'forbidden' | 'validation' | 'conflict' | 'unknown'
@@ -34,6 +44,9 @@ const queryApi = new AdminReservationQueryControllerApi()
 const confirmApi = new AdminReservationConfirmControllerApi()
 const rejectApi = new AdminReservationRejectControllerApi()
 const restoreApi = new AdminPendingPaymentRestoreControllerApi()
+const timeSlotApi = new AdminTimeSlotControllerApi()
+const changeApi = new AdminReservationChangeControllerApi()
+const cancelApi = new AdminReservationCancelControllerApi()
 
 export const adminReservationsApi: AdminReservationsApi = {
   getActionableReservations: async () => {
@@ -51,6 +64,17 @@ export const adminReservationsApi: AdminReservationsApi = {
     await restoreApi.restore({
       reservationId,
       reservationPaymentRestoreRequest: { memo },
+    })
+  },
+  getTimeSlots: () => timeSlotApi.getTimeSlots(),
+  previewCancellation: (reservationId, responsibility) => cancelApi.preview1({ reservationId, responsibility }),
+  change: async (reservationId, targetTimeSlotId, memo) => {
+    await changeApi.change1({ reservationId, adminReservationChangeRequest: { targetTimeSlotId, memo } })
+  },
+  cancel: async (reservationId, responsibility, couponAction, memo) => {
+    await cancelApi.cancel1({
+      reservationId,
+      adminReservationCancelRequest: { responsibility, couponAction, memo },
     })
   },
 }

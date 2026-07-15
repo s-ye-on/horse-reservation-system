@@ -470,3 +470,7 @@ run = "mise run verify:m2-08:backend && pnpm --dir frontend/apps/web lint && pnp
 [tasks."verify:m2-09"]
 description = "Verify M2-09 member reservation cancellation screen"
 run = "pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typecheck && pnpm --dir frontend/apps/web test -- ReservationCancelPage.test.tsx MyReservationsPage.test.tsx"
+
+[tasks."verify:m2-10"]
+description = "Verify M2-10 admin reservation change and cancellation screen"
+run = "pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typecheck && pnpm --dir frontend/apps/web test -- AdminReservationsPage.test.tsx"

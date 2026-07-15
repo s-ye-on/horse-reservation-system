@@ -64,6 +64,17 @@ const RESERVATIONS: AdminReservationResponse[] = [
     status: 'payment_expired',
     paymentSource: 'single_payment',
   },
+  {
+    reservationId: 6,
+    memberName: '한확정',
+    memberPhone: '010-6666-6666',
+    classType: 'ROUND_BEGINNER',
+    lessonDate: new Date('2026-08-14'),
+    startTime: '09:00:00',
+    status: 'confirmed',
+    paymentSource: 'coupon',
+    coupon: { couponId: 26, couponType: 'GENERAL', remainingCount: 7, heldCount: 1 },
+  },
 ]
 
 afterEach(cleanup)
@@ -74,6 +85,19 @@ function createApi(overrides: Partial<AdminReservationsApi> = {}): AdminReservat
     confirm: vi.fn().mockResolvedValue(undefined),
     reject: vi.fn().mockResolvedValue(undefined),
     restore: vi.fn().mockResolvedValue(undefined),
+    getTimeSlots: vi.fn().mockResolvedValue([
+      { id: 100, lessonDate: new Date('2026-08-14'), startTime: '09:00:00', closed: false },
+      { id: 101, lessonDate: new Date('2026-08-15'), startTime: '10:00:00', closed: false },
+      { id: 102, lessonDate: new Date('2026-08-16'), startTime: '11:00:00', closed: true },
+    ]),
+    previewCancellation: vi.fn((_reservationId, responsibility) => Promise.resolve({
+      reservationId: 6,
+      timing: 'AFTER_CUTOFF',
+      responsibility,
+      couponAction: responsibility === 'member' ? 'deduct' : 'return',
+    })),
+    change: vi.fn().mockResolvedValue(undefined),
+    cancel: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
 }
@@ -89,12 +113,13 @@ async function cardFor(memberName: string) {
 }
 
 describe('AdminReservationsPage', () => {
-  it('세_상태와_서버_경고를_구분하고_긴급도_순으로_표시한다', async () => {
+  it('네_상태와_서버_경고를_구분하고_긴급도_순으로_표시한다', async () => {
     renderPage(createApi())
 
     const approvalSection = (await screen.findByRole('heading', { name: '쿠폰 승인대기' })).closest('section') as HTMLElement
     expect(screen.getByRole('heading', { name: '입금대기' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '입금만료' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '예약 확정' })).toBeInTheDocument()
     expect(within(approvalSection).getByText('긴급')).toBeInTheDocument()
     expect(within(approvalSection).getByText('확인 필요')).toBeInTheDocument()
     expect(within(approvalSection).getByText('정상')).toBeInTheDocument()
@@ -155,11 +180,75 @@ describe('AdminReservationsPage', () => {
     expect(getActionableReservations).toHaveBeenCalledTimes(2)
   })
 
+  it('확정_예약을_열린_시간대와_필수_메모로_변경한다', async () => {
+    const change = vi.fn().mockResolvedValue(undefined)
+    renderPage(createApi({ change }))
+    const card = await cardFor('한확정')
+    expect(within(card).queryByRole('button', { name: '반려' })).not.toBeInTheDocument()
+    fireEvent.click(within(card).getByRole('button', { name: '시간 변경' }))
+    const timeSlot = await within(card).findByLabelText('변경 시간대')
+    await within(timeSlot).findByRole('option', { name: /8월 15일/ })
+    expect(within(timeSlot).queryByRole('option', { name: /8월 16일/ })).not.toBeInTheDocument()
+    fireEvent.change(timeSlot, { target: { value: '101' } })
+    fireEvent.change(within(card).getByLabelText('관리자 메모'), { target: { value: ' 회원 요청으로 변경 ' } })
+    fireEvent.click(within(card).getByRole('button', { name: '시간 변경 확인' }))
+    await waitFor(() => expect(change).toHaveBeenCalledWith(6, 101, '회원 요청으로 변경'))
+  })
+
+  it('취소_책임별_서버_권장안을_확인하고_최종_처리를_재정의한다', async () => {
+    const previewCancellation = vi.fn((_reservationId, responsibility) => Promise.resolve({
+      reservationId: 6,
+      timing: 'AFTER_CUTOFF',
+      responsibility,
+      couponAction: responsibility === 'stable' ? 'return' : 'deduct',
+    }))
+    const cancel = vi.fn().mockResolvedValue(undefined)
+    renderPage(createApi({ previewCancellation, cancel }))
+    const card = await cardFor('한확정')
+    fireEvent.click(within(card).getByRole('button', { name: '예약 취소' }))
+    expect(await within(card).findByText('1회 차감')).toBeInTheDocument()
+    fireEvent.change(within(card).getByLabelText('취소 책임'), { target: { value: 'stable' } })
+    await waitFor(() => expect(previewCancellation).toHaveBeenCalledWith(6, 'stable'))
+    const recommendation = within(card).getByText('서버 권장 처리').parentElement as HTMLElement
+    await waitFor(() => expect(recommendation).toHaveTextContent('쿠폰 반환'))
+    fireEvent.change(within(card).getByLabelText('최종 쿠폰 처리'), { target: { value: 'deduct' } })
+    expect(within(card).getByText('권장안과 다른 최종 처리를 선택했습니다.')).toBeInTheDocument()
+    fireEvent.change(within(card).getByLabelText('관리자 메모'), { target: { value: '마장 판단으로 차감' } })
+    fireEvent.click(within(card).getByRole('button', { name: '예약 취소 확인' }))
+    await waitFor(() => expect(cancel).toHaveBeenCalledWith(6, 'stable', 'deduct', '마장 판단으로 차감'))
+  })
+
+  it('일회_결제_예약_취소는_쿠폰_처리_없음만_선택한다', async () => {
+    renderPage(createApi({
+      previewCancellation: vi.fn().mockResolvedValue({ reservationId: 4, timing: 'BEFORE_CUTOFF', responsibility: 'member', couponAction: 'none' }),
+    }))
+    const card = await cardFor('최입금')
+    fireEvent.click(within(card).getByRole('button', { name: '예약 취소' }))
+    const couponAction = await within(card).findByLabelText('최종 쿠폰 처리')
+    expect(within(couponAction).getAllByRole('option')).toHaveLength(1)
+    expect(within(couponAction).getByRole('option', { name: '처리 없음' })).toBeInTheDocument()
+  })
+
+  it.each([[409, '최신 목록'], [403, '관리자 권한']])('%i_변경_오류를_운영자에게_안내한다', async (status, message) => {
+    const error = new ResponseError(new Response(null, { status }), 'failed')
+    renderPage(createApi({ change: vi.fn().mockRejectedValue(error) }))
+    const card = await cardFor('한확정')
+    fireEvent.click(within(card).getByRole('button', { name: '시간 변경' }))
+    const timeSlot = await within(card).findByLabelText('변경 시간대')
+    await within(timeSlot).findByRole('option', { name: /8월 15일/ })
+    fireEvent.change(timeSlot, { target: { value: '101' } })
+    fireEvent.change(within(card).getByLabelText('관리자 메모'), { target: { value: '변경 시도' } })
+    fireEvent.click(within(card).getByRole('button', { name: '시간 변경 확인' }))
+    expect(await within(card).findByRole('alert')).toHaveTextContent(message)
+  })
+
   it('320px_화면에서도_상태별_작업을_사용할_수_있다', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 320 })
     renderPage(createApi())
     expect((await screen.findAllByRole('button', { name: '쿠폰 예약 확정' })).length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: '입금 확인 및 확정' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '만료 예약 복구' })).toBeInTheDocument()
+    expect((screen.getAllByRole('button', { name: '시간 변경' })).length).toBeGreaterThan(0)
+    expect((screen.getAllByRole('button', { name: '예약 취소' })).length).toBeGreaterThan(0)
   })
 })
