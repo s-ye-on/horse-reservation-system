@@ -1,6 +1,7 @@
 import { Link, Route, Routes } from 'react-router'
 import { AdminMembersPage } from './features/admin-members/admin-members-page'
 import { AdminCouponRegistrationPage } from './features/admin-coupons/admin-coupon-registration-page'
+import { AdminTimeSlotsPage } from './features/admin-timeslots/admin-timeslots-page'
 import './app.css'
 
 function HomePage() {
@@ -32,6 +33,7 @@ function AdminHomePage() {
       <nav aria-label="관리자 메뉴">
         <Link to="/admin/members">회원 및 기승 승인</Link>
         <Link to="/admin/coupons/new">10회권 쿠폰 등록</Link>
+        <Link to="/admin/timeslots">시간대 및 정원</Link>
       </nav>
     </main>
   )
@@ -45,6 +47,7 @@ export default function App() {
       <Route path="/admin" element={<AdminHomePage />} />
       <Route path="/admin/members" element={<AdminMembersPage />} />
       <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
+      <Route path="/admin/timeslots" element={<AdminTimeSlotsPage />} />
     </Routes>
   )
 }

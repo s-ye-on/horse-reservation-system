@@ -1,0 +1,253 @@
+.admin-timeslots-page {
+  --slot-accent: #7a1f35;
+  --slot-soft: #f6e9ed;
+  --slot-ink: #251f21;
+  --slot-muted: #706568;
+  --slot-line: #ded7d9;
+  min-height: 100vh;
+  padding: 32px 16px 56px;
+  color: var(--slot-ink);
+  background: #f3f2f2;
+}
+
+.admin-timeslots-shell {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+}
+
+.admin-timeslots-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-timeslots-eyebrow {
+  margin: 0 0 6px;
+  color: var(--slot-accent);
+  font-size: .78rem;
+  font-weight: 760;
+}
+
+.admin-timeslots-header h1,
+.admin-timeslots-section h2 {
+  margin: 0;
+}
+
+.admin-timeslots-layout {
+  display: grid;
+  grid-template-columns: minmax(290px, .72fr) minmax(0, 1.28fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.admin-timeslots-panel,
+.admin-timeslot-card,
+.admin-timeslots-state {
+  border: 1px solid var(--slot-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.admin-timeslots-panel {
+  padding: 20px;
+}
+
+.admin-timeslots-form {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-timeslots-field label,
+.admin-timeslots-capacity-grid legend {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .82rem;
+  font-weight: 720;
+}
+
+.admin-timeslots-field input {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid #bdb4b7;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.admin-timeslots-main-capacity,
+.admin-timeslots-capacity-inputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-timeslots-capacity-grid {
+  margin: 4px 0 0;
+  padding: 14px 0 0;
+  border: 0;
+  border-top: 1px solid var(--slot-line);
+}
+
+.admin-timeslots-capacity-inputs {
+  margin-top: 10px;
+}
+
+.admin-timeslots-button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid var(--slot-accent);
+  border-radius: 6px;
+  color: #fff;
+  background: var(--slot-accent);
+  font: inherit;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.admin-timeslots-button.secondary {
+  color: var(--slot-accent);
+  background: #fff;
+}
+
+.admin-timeslots-button:disabled,
+.admin-timeslots-form :disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.admin-timeslots-button:focus-visible,
+.admin-timeslots-field input:focus-visible {
+  outline: 3px solid rgba(122, 31, 53, .22);
+  outline-offset: 2px;
+}
+
+.admin-timeslots-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--slot-accent);
+  color: #742137;
+  background: #fff6f8;
+  font-size: .86rem;
+}
+
+.admin-timeslots-section h2 {
+  margin-bottom: 12px;
+  font-size: 1.05rem;
+}
+
+.admin-timeslots-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-timeslot-card {
+  padding: 16px;
+}
+
+.admin-timeslot-card.closed {
+  background: #f8f6f7;
+}
+
+.admin-timeslot-card-header,
+.admin-timeslot-actions,
+.admin-timeslot-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-timeslot-card-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-timeslot-status {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #25613e;
+  background: #e8f4ed;
+  font-size: .75rem;
+  font-weight: 720;
+}
+
+.admin-timeslot-status.closed {
+  color: var(--slot-accent);
+  background: var(--slot-soft);
+}
+
+.admin-timeslot-summary {
+  justify-content: flex-start;
+  margin: 13px 0;
+  color: var(--slot-muted);
+  font-size: .84rem;
+}
+
+.admin-timeslot-classes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.admin-timeslot-classes div {
+  padding: 8px;
+  border-radius: 5px;
+  background: #f7f4f5;
+}
+
+.admin-timeslot-classes dt {
+  color: var(--slot-muted);
+  font-size: .72rem;
+}
+
+.admin-timeslot-classes dd {
+  margin: 3px 0 0;
+  font-weight: 720;
+}
+
+.admin-timeslot-actions {
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.admin-timeslot-edit {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--slot-line);
+}
+
+.admin-timeslots-state {
+  padding: 30px 20px;
+  color: var(--slot-muted);
+  text-align: center;
+}
+
+@media (max-width: 820px) {
+  .admin-timeslots-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-timeslot-classes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 420px) {
+  .admin-timeslots-page {
+    padding: 22px 12px 40px;
+  }
+
+  .admin-timeslots-main-capacity,
+  .admin-timeslots-capacity-inputs,
+  .admin-timeslot-classes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-timeslot-card-header,
+  .admin-timeslot-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
