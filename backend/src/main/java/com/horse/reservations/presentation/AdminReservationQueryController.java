@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springdoc.core.annotations.ParameterObject;
+
 import com.horse.reservations.application.AdminReservationPageResult;
 import com.horse.reservations.application.AdminReservationQueryService;
 import com.horse.reservations.application.AdminReservationResult;
@@ -27,7 +29,7 @@ public class AdminReservationQueryController {
 
 	@GetMapping
 	public AdminReservationPageResponse getReservations(
-		@Valid @ModelAttribute AdminReservationQueryRequest request
+		@Valid @ParameterObject @ModelAttribute AdminReservationQueryRequest request
 	) {
 		final AdminReservationPageResult result = service.getReservations(
 			request.status(),

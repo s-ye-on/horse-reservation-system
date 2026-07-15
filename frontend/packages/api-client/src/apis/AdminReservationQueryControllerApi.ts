@@ -19,11 +19,6 @@ import {
     AdminReservationPageResponseToJSON,
 } from '../models/AdminReservationPageResponse';
 import {
-    type AdminReservationQueryRequest,
-    AdminReservationQueryRequestFromJSON,
-    AdminReservationQueryRequestToJSON,
-} from '../models/AdminReservationQueryRequest';
-import {
     type AdminReservationResponse,
     AdminReservationResponseFromJSON,
     AdminReservationResponseToJSON,
@@ -34,7 +29,13 @@ export interface GetReservationRequest {
 }
 
 export interface GetReservationsRequest {
-    request: AdminReservationQueryRequest;
+    status?: string;
+    lessonDateFrom?: Date;
+    lessonDateTo?: Date;
+    classType?: string;
+    keyword?: string;
+    page?: number;
+    size?: number;
 }
 
 /**
@@ -89,17 +90,34 @@ export class AdminReservationQueryControllerApi extends runtime.BaseAPI {
      * Creates request options for getReservations without sending the request
      */
     async getReservationsRequestOpts(requestParameters: GetReservationsRequest): Promise<runtime.RequestOpts> {
-        if (requestParameters['request'] == null) {
-            throw new runtime.RequiredError(
-                'request',
-                'Required parameter "request" was null or undefined when calling getReservations().'
-            );
-        }
-
         const queryParameters: any = {};
 
-        if (requestParameters['request'] != null) {
-            queryParameters['request'] = requestParameters['request'];
+        if (requestParameters['status'] != null) {
+            queryParameters['status'] = requestParameters['status'];
+        }
+
+        if (requestParameters['lessonDateFrom'] != null) {
+            queryParameters['lessonDateFrom'] = (requestParameters['lessonDateFrom'] as any).toISOString().substring(0,10);
+        }
+
+        if (requestParameters['lessonDateTo'] != null) {
+            queryParameters['lessonDateTo'] = (requestParameters['lessonDateTo'] as any).toISOString().substring(0,10);
+        }
+
+        if (requestParameters['classType'] != null) {
+            queryParameters['classType'] = requestParameters['classType'];
+        }
+
+        if (requestParameters['keyword'] != null) {
+            queryParameters['keyword'] = requestParameters['keyword'];
+        }
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['size'] != null) {
+            queryParameters['size'] = requestParameters['size'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};
@@ -126,7 +144,7 @@ export class AdminReservationQueryControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async getReservations(requestParameters: GetReservationsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdminReservationPageResponse> {
+    async getReservations(requestParameters: GetReservationsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdminReservationPageResponse> {
         const response = await this.getReservationsRaw(requestParameters, initOverrides);
         return await response.value();
     }

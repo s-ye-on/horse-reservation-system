@@ -360,6 +360,15 @@ run = "pnpm --dir frontend/apps/web exec vitest run src/features/admin-coupons/A
 description = "Verify admin time slot management screen"
 run = "pnpm --dir frontend/apps/web exec vitest run src/features/admin-timeslots/AdminTimeSlotsPage.test.tsx"
 
+[tasks."verify:m1-23a"]
+description = "Verify flat admin reservation query OpenAPI contract"
+run = '''
+./backend/gradlew -p backend test --tests '*AdminReservationOpenApiContractTest'
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run src/test/admin-reservation-api-contract.test.ts
+mise run api:check
+'''
+
 [tasks."verify:m1-23"]
 description = "Verify admin reservation approval screen"
 run = "pnpm --dir frontend/apps/web exec vitest run src/features/admin-reservations/AdminReservationsPage.test.tsx"

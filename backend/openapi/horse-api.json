@@ -619,11 +619,66 @@
         "operationId": "getReservations",
         "parameters": [
           {
-            "name": "request",
+            "name": "status",
             "in": "query",
-            "required": true,
+            "required": false,
             "schema": {
-              "$ref": "#/components/schemas/AdminReservationQueryRequest"
+              "type": "string"
+            }
+          },
+          {
+            "name": "lessonDateFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "lessonDateTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "classType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
             }
           }
         ],
@@ -1465,39 +1520,6 @@
           },
           "actorType": {
             "type": "string"
-          }
-        }
-      },
-      "AdminReservationQueryRequest": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string"
-          },
-          "lessonDateFrom": {
-            "type": "string",
-            "format": "date"
-          },
-          "lessonDateTo": {
-            "type": "string",
-            "format": "date"
-          },
-          "classType": {
-            "type": "string"
-          },
-          "keyword": {
-            "type": "string"
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 0
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32",
-            "maximum": 100,
-            "minimum": 1
           }
         }
       },
