@@ -13,6 +13,7 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { name: '마장 예약' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '회원 예약' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '내 예약' })).toHaveAttribute('href', '/my/reservations')
     expect(screen.getByRole('link', { name: '관리자' })).toBeInTheDocument()
   })
 
