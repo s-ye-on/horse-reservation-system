@@ -437,3 +437,8 @@ run = "./gradlew test --tests '*ReservationChange*Test' --tests '*ReservationCha
 description = "Verify M2-03 coupon free change usage"
 dir = "backend"
 run = "./gradlew test --tests '*CouponTest' --tests '*ReservationChangeApiTest'"
+
+[tasks."verify:m2-04"]
+description = "Verify M2-04 weekday same-day reservation changes"
+dir = "backend"
+run = "./gradlew test --tests '*ReservationChangeApiTest'"

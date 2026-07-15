@@ -137,24 +137,39 @@ public class ReservationChangeService {
 		}
 
 		ensureReservableLessonDate(targetTimeSlot.getLessonDate());
-		if (timing != ReservationChangeTiming.BEFORE_CUTOFF) {
-			ensureCouponForAfterCutoffChange(
-				reservation,
-				lockedCoupon,
-				targetTimeSlot.getLessonDate());
+		if (timing == ReservationChangeTiming.BEFORE_CUTOFF
+			|| isWeekdaySameDayChange(reservation, targetTimeSlot, timing)) {
+			ensureCouponValidForTarget(reservation, lockedCoupon, targetTimeSlot.getLessonDate());
 			ensureTargetCapacity(targetTimeSlot, reservation.getRidingClass());
-			return changeAfterCutoff(
+			return changeWithoutCouponAction(
 				reservation,
 				targetTimeSlot,
-				lockedCoupon,
 				actorAuthSubject,
 				actorType,
-				memo,
-				changedAt);
+				memo);
 		}
-		ensureCouponValidForTarget(reservation, lockedCoupon, targetTimeSlot.getLessonDate());
+		ensureCouponForAfterCutoffChange(
+			reservation,
+			lockedCoupon,
+			targetTimeSlot.getLessonDate());
 		ensureTargetCapacity(targetTimeSlot, reservation.getRidingClass());
+		return changeAfterCutoff(
+			reservation,
+			targetTimeSlot,
+			lockedCoupon,
+			actorAuthSubject,
+			actorType,
+			memo,
+			changedAt);
+	}
 
+	private ReservationChangeResult changeWithoutCouponAction(
+		Reservation reservation,
+		TimeSlotCapacity targetTimeSlot,
+		String actorAuthSubject,
+		ReservationActorType actorType,
+		String memo
+	) {
 		final LocalDate sourceLessonDate = reservation.getLessonDate();
 		final LocalTime sourceStartTime = reservation.getStartTime();
 		final boolean changed = reservation.changeSchedule(
@@ -170,7 +185,7 @@ public class ReservationChangeService {
 				sourceStartTime,
 				memo));
 		}
-		return ReservationChangeResult.beforeCutoff(reservation, changed);
+		return ReservationChangeResult.withoutCouponAction(reservation, changed);
 	}
 
 	private ReservationChangeResult changeAfterCutoff(
@@ -336,7 +351,16 @@ public class ReservationChangeService {
 				CouponUsageAction.FREE_CHANGE_USED)) {
 			return ReservationChangeResult.freeChangeUsed(reservation, false);
 		}
-		return ReservationChangeResult.beforeCutoff(reservation, false);
+		return ReservationChangeResult.withoutCouponAction(reservation, false);
+	}
+
+	private boolean isWeekdaySameDayChange(
+		Reservation reservation,
+		TimeSlotCapacity targetTimeSlot,
+		ReservationChangeTiming timing
+	) {
+		return timing == ReservationChangeTiming.AFTER_CUTOFF_WEEKDAY
+			&& reservation.getLessonDate().equals(targetTimeSlot.getLessonDate());
 	}
 
 	private CouponActorType toCouponActorType(ReservationActorType actorType) {

@@ -42,6 +42,7 @@ class ReservationChangeApiTest {
 	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 	private static final Instant BEFORE_CUTOFF_INSTANT = Instant.parse("2026-07-15T01:00:00Z");
 	private static final Instant AFTER_CUTOFF_INSTANT = Instant.parse("2026-07-31T13:00:00Z");
+	private static final Instant AFTER_CUTOFF_WEEKDAY_INSTANT = Instant.parse("2026-08-02T13:00:00Z");
 	private static final String CLASS_CAPACITIES = """
 		{
 		  "FIRST_RIDE": 8,
@@ -312,6 +313,66 @@ class ReservationChangeApiTest {
 		assertThat(couponFreeChangeUsed(couponId)).isTrue();
 		assertThat(couponUsageCountByCoupon(couponId, "free_change_used")).isEqualTo(1);
 		assertThat(changeLogCouponActions(couponId)).containsExactly("free_change_used");
+	}
+
+	@Test
+	void 마감_후_평일_당일_변경은_결제수단과_무관하게_무료_변경권을_사용하지_않는다() throws Exception {
+		when(clock.instant()).thenReturn(AFTER_CUTOFF_WEEKDAY_INSTANT);
+
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 3);
+		final Long couponMemberId = insertMember("weekday-coupon-member");
+		final Long singlePaymentMemberId = insertMember("weekday-single-payment-member");
+		final Long couponId = insertCoupon(couponMemberId, lessonDate.plusMonths(1), false);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long couponTargetId = insertTimeSlot(lessonDate, "10:00:00", 8);
+		insertTimeSlot(lessonDate, "11:00:00", 8);
+		final Long singlePaymentTargetId = insertTimeSlot(lessonDate, "12:00:00", 8);
+		final Long couponReservationId = insertCouponReservation(
+			couponMemberId, couponId, lessonDate, "09:00:00", "confirmed");
+		final Long singlePaymentReservationId = insertSinglePaymentReservation(
+			singlePaymentMemberId, lessonDate, "11:00:00");
+
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", couponReservationId)
+				.with(memberJwt("weekday-coupon-member"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(couponTargetId, "평일 당일 변경")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.couponAction").value("none"))
+			.andExpect(jsonPath("$.freeChangeUsed").value(false));
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", singlePaymentReservationId)
+				.with(memberJwt("weekday-single-payment-member"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(singlePaymentTargetId, "평일 당일 변경")))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.couponAction").value("none"));
+
+		assertThat(couponFreeChangeUsed(couponId)).isFalse();
+		assertThat(couponUsageCount(couponReservationId, "free_change_used")).isZero();
+		assertThat(changeLogCouponAction(couponReservationId)).isEqualTo("none");
+	}
+
+	@Test
+	void 마감_후_평일이라도_무료_변경권이_없으면_다른_날짜로_변경할_수_없다() throws Exception {
+		when(clock.instant()).thenReturn(AFTER_CUTOFF_WEEKDAY_INSTANT);
+
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 3);
+		final Long memberId = insertMember("weekday-other-date-member");
+		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1), true);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long targetTimeSlotId = insertTimeSlot(lessonDate.plusDays(1), "10:00:00", 8);
+		final Long reservationId = insertCouponReservation(
+			memberId, couponId, lessonDate, "09:00:00", "confirmed");
+
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", reservationId)
+				.with(memberJwt("weekday-other-date-member"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(targetTimeSlotId, "다른 날짜 변경")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_CHANGE_NOT_ALLOWED"));
+
+		assertThat(reservationSchedule(reservationId)).containsExactly(
+			lessonDate.toString(), "09:00:00");
+		assertThat(changeLogCount(reservationId)).isZero();
 	}
 
 	@Test

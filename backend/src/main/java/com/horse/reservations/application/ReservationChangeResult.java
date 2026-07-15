@@ -17,7 +17,7 @@ public record ReservationChangeResult(
 	boolean changed
 ) {
 
-	public static ReservationChangeResult beforeCutoff(Reservation reservation, boolean changed) {
+	public static ReservationChangeResult withoutCouponAction(Reservation reservation, boolean changed) {
 		return new ReservationChangeResult(
 			reservation.getId(),
 			reservation.getLessonDate(),
