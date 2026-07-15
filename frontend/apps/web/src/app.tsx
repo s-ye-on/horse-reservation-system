@@ -5,6 +5,7 @@ import { AdminTimeSlotsPage } from './features/admin-timeslots/admin-timeslots-p
 import { AdminReservationsPage } from './features/admin-reservations/admin-reservations-page'
 import { AdminAttendancePage } from './features/admin-attendance/admin-attendance-page'
 import { ReservationCalendarPage } from './features/reservation-calendar/reservation-calendar-page'
+import { ReservationApplicationPage } from './features/reservation-application/reservation-application-page'
 import './app.css'
 
 function HomePage() {
@@ -40,6 +41,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/reservations" element={<ReservationCalendarPage />} />
+      <Route path="/reservations/new" element={<ReservationApplicationPage />} />
       <Route path="/admin" element={<AdminHomePage />} />
       <Route path="/admin/members" element={<AdminMembersPage />} />
       <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />

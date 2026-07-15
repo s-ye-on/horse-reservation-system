@@ -1,0 +1,44 @@
+.reservation-application-page {
+  --application-accent: #7a1f35; --application-dark: #5b1728; --application-soft: #f7e9ed;
+  --application-ink: #292225; --application-muted: #71666a; --application-line: #ddd5d8;
+  width: 100%; min-height: 100vh; margin: 0; padding: 32px 16px 56px;
+  color: var(--application-ink); background: #f6f5f5;
+}
+.reservation-application-shell { width: min(100%, 680px); margin: 0 auto; }
+.reservation-application-page header { margin-bottom: 18px; }
+.reservation-application-page header p { margin: 0 0 6px; color: var(--application-accent); font-size: .76rem; font-weight: 780; }
+.reservation-application-page header h1 { margin: 0; font-size: clamp(1.65rem, 4vw, 2.25rem); }
+.reservation-application-summary, .reservation-application-result, .reservation-application-state { border: 1px solid var(--application-line); border-radius: 8px; background: #fff; }
+.reservation-application-summary { padding: 21px; }
+.reservation-application-summary h2 { margin: 0 0 15px; font-size: 1rem; }
+.reservation-application-summary dl, .reservation-application-result dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin: 0; }
+.reservation-application-summary dt, .reservation-application-result dt { color: var(--application-muted); font-size: .72rem; }
+.reservation-application-summary dd, .reservation-application-result dd { margin: 3px 0 0; font-size: .88rem; font-weight: 710; }
+.reservation-application-summary > p { margin: 17px 0 0; padding-top: 15px; border-top: 1px solid var(--application-line); color: var(--application-muted); font-size: .78rem; line-height: 1.55; }
+.reservation-application-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 14px; }
+.reservation-application-actions a, .reservation-application-actions button, .reservation-application-result > a, .reservation-application-state a { min-height: 42px; padding: 0 15px; border: 1px solid var(--application-accent); border-radius: 6px; font: inherit; font-size: .82rem; font-weight: 720; text-decoration: none; }
+.reservation-application-actions a { display: inline-flex; align-items: center; color: var(--application-accent); background: #fff; }
+.reservation-application-actions button { color: #fff; background: var(--application-accent); cursor: pointer; }
+.reservation-application-actions button:hover:not(:disabled) { background: var(--application-dark); }
+.reservation-application-actions button:disabled { cursor: not-allowed; opacity: .5; }
+.reservation-application-actions a:focus-visible, .reservation-application-actions button:focus-visible { outline: 3px solid rgba(122, 31, 53, .2); outline-offset: 2px; }
+.reservation-application-error { margin: 14px 0 0; padding: 11px 13px; border-left: 3px solid var(--application-accent); color: #742137; background: #fff6f8; font-size: .83rem; }
+.reservation-application-result { margin-top: 14px; padding: 22px; }
+.reservation-application-result-mark { display: inline-block; padding: 5px 8px; border-radius: 999px; color: #296143; background: #e8f4ed; font-size: .72rem; font-weight: 740; }
+.reservation-application-result h2 { margin: 12px 0 5px; font-size: 1.15rem; }
+.reservation-application-result > p { margin: 0 0 18px; color: var(--application-muted); font-size: .8rem; }
+.reservation-application-result dl { margin-bottom: 18px; padding: 14px; border-radius: 6px; background: var(--application-soft); }
+.reservation-application-payment { display: grid; gap: 6px; margin-bottom: 18px; padding: 15px; border-left: 3px solid var(--application-accent); background: var(--application-soft); }
+.reservation-application-payment span { font-size: .84rem; }
+.reservation-application-payment p { margin: 4px 0 0; color: var(--application-muted); font-size: .76rem; line-height: 1.5; }
+.reservation-application-result > a, .reservation-application-state a { display: inline-flex; align-items: center; color: #fff; background: var(--application-accent); }
+.reservation-application-state { padding: 32px 20px; text-align: center; }
+.reservation-application-state p { margin: 0 0 14px; color: var(--application-muted); }
+.reservation-application-state[role="alert"] p { color: #742137; }
+@media (max-width: 420px) {
+  .reservation-application-page { padding: 22px 12px 40px; }
+  .reservation-application-summary, .reservation-application-result { padding: 17px; }
+  .reservation-application-summary dl, .reservation-application-result dl { grid-template-columns: minmax(0, 1fr); }
+  .reservation-application-actions { align-items: stretch; flex-direction: column; }
+  .reservation-application-actions a, .reservation-application-actions button { width: 100%; justify-content: center; }
+}
