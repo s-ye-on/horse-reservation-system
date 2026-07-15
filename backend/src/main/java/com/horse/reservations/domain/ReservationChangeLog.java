@@ -143,6 +143,35 @@ public class ReservationChangeLog {
 			requireMemo(memo));
 	}
 
+	public static ReservationChangeLog reservationCancelled(
+		Reservation reservation,
+		ReservationStatus fromStatus,
+		String actorAuthSubject,
+		ReservationActorType actorType,
+		String memo
+	) {
+		if (reservation == null
+			|| reservation.getStatus() != ReservationStatus.CANCELLED
+			|| fromStatus == null
+			|| !fromStatus.occupiesCapacity()) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_REFERENCE);
+		}
+		final ReservationActorType validatedActorType = requireScheduleChangeActorType(actorType);
+		return new ReservationChangeLog(
+			reservation.getId(),
+			actorAuthSubject,
+			validatedActorType,
+			fromStatus,
+			ReservationStatus.CANCELLED,
+			reservation.getLessonDate(),
+			reservation.getStartTime(),
+			reservation.getLessonDate(),
+			reservation.getStartTime(),
+			ReservationChangeType.RESERVATION_CANCELLED,
+			reservation.getCouponAction(),
+			requireMemo(memo));
+	}
+
 	public static ReservationChangeLog reservationChanged(
 		Reservation reservation,
 		String actorAuthSubject,

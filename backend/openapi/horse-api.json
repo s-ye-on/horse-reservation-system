@@ -124,6 +124,47 @@
         }
       }
     },
+    "/api/me/reservations/{reservationId}/cancel": {
+      "post": {
+        "tags": [
+          "member-reservation-cancel-controller"
+        ],
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberReservationCancelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationCancelResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/timeslots": {
       "get": {
         "tags": [
@@ -627,6 +668,37 @@
         }
       }
     },
+    "/api/me/reservations/{reservationId}/cancellation-preview": {
+      "get": {
+        "tags": [
+          "member-reservation-cancel-controller"
+        ],
+        "operationId": "preview",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationCancellationPreviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/eligible-classes": {
       "get": {
         "tags": [
@@ -1054,6 +1126,44 @@
           },
           "freeChangeUsed": {
             "type": "boolean"
+          },
+          "changed": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MemberReservationCancelRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ReservationCancelResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "responsibility": {
+            "type": "string"
+          },
+          "couponAction": {
+            "type": "string"
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "changed": {
             "type": "boolean"
@@ -1542,6 +1652,24 @@
           "cancelledAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ReservationCancellationPreviewResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "timing": {
+            "type": "string"
+          },
+          "responsibility": {
+            "type": "string"
+          },
+          "couponAction": {
+            "type": "string"
           }
         }
       },

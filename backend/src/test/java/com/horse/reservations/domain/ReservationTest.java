@@ -312,6 +312,41 @@ class ReservationTest {
 	}
 
 	@Test
+	void 회원은_활성_쿠폰_예약을_한_번만_취소한다() {
+		final Reservation reservation = Reservation.createCouponPending(
+			1L, RidingClass.FIRST_RIDE, LESSON_DATE, START_TIME, 10L, REQUESTED_AT);
+		final LocalDateTime cancelledAt = REQUESTED_AT.plusHours(1);
+
+		assertThat(reservation.cancelByMember(cancelledAt, CouponAction.RETURN)).isTrue();
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+		assertThat(reservation.getCancelledAt()).isEqualTo(cancelledAt);
+		assertThat(reservation.getCancellationResponsibility())
+			.isEqualTo(CancellationResponsibility.MEMBER);
+		assertThat(reservation.getCouponAction()).isEqualTo(CouponAction.RETURN);
+		assertThat(reservation.cancelByMember(cancelledAt.plusMinutes(1), CouponAction.RETURN)).isFalse();
+	}
+
+	@Test
+	void 예약_결제원과_맞지_않는_회원_취소_쿠폰_처리는_거부한다() {
+		final Reservation couponReservation = Reservation.createCouponPending(
+			1L, RidingClass.FIRST_RIDE, LESSON_DATE, START_TIME, 10L, REQUESTED_AT);
+		final Reservation singlePaymentReservation = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			REQUESTED_AT.plusHours(2),
+			REQUESTED_AT);
+
+		assertReservationException(
+			() -> couponReservation.cancelByMember(REQUESTED_AT, CouponAction.NONE),
+			ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		assertReservationException(
+			() -> singlePaymentReservation.cancelByMember(REQUESTED_AT, CouponAction.DEDUCT),
+			ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+	}
+
+	@Test
 	void 노쇼는_확정_예약과_오백자_이하_메모만_허용한다() {
 		final Reservation pending = Reservation.createCouponPending(
 			1L, RidingClass.FIRST_RIDE, LESSON_DATE, START_TIME, 10L, REQUESTED_AT);

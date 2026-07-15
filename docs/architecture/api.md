@@ -12,12 +12,15 @@ POST /api/reservations
 GET  /api/me/reservations
 GET  /api/me/reservations/{reservationId}
 POST /api/me/reservations/{reservationId}/change
+GET  /api/me/reservations/{reservationId}/cancellation-preview
 POST /api/me/reservations/{reservationId}/cancel
 GET  /api/me/coupons
 GET  /api/me/coupon-usage-logs
 ```
 
 예약 신청 응답은 `status`, `payment_source`, 선택된 쿠폰과 임시 점유 정보, `payment_due_at`을 포함한다.
+
+취소 preview와 실행은 같은 서버 정책 판정기를 사용한다. 회원 취소 실행은 활성 예약을 즉시 `cancelled`로 전이하며 회원 책임과 사유를 감사 이력에 남긴다.
 
 ## 관리자 예약
 

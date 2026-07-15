@@ -165,9 +165,7 @@ public class CouponHoldService {
 		if (usageLogRepository.existsByReservationIdAndAction(reservationId, CouponUsageAction.DEDUCTED)) {
 			return false;
 		}
-		if (!usageLogRepository.existsByReservationIdAndAction(
-			reservationId, CouponUsageAction.CONFIRMED)
-			|| usageLogRepository.existsByReservationIdAndAction(
+		if (usageLogRepository.existsByReservationIdAndAction(
 			reservationId, CouponUsageAction.RELEASED)) {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
 		}

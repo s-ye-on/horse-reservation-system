@@ -276,6 +276,29 @@ public class Reservation {
 			&& startTime.equals(requireStartTime(expectedStartTime));
 	}
 
+	public boolean cancelByMember(LocalDateTime occurredAt, CouponAction requestedCouponAction) {
+		if (status == ReservationStatus.CANCELLED) {
+			if (cancellationResponsibility == CancellationResponsibility.MEMBER
+				&& couponAction == requestedCouponAction
+				&& adminMemo == null) {
+				return false;
+			}
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+		ensureChangeable();
+		if (occurredAt == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CANCELLATION_AT);
+		}
+		final CouponAction validatedCouponAction = requireCancellationCouponAction(
+			requestedCouponAction);
+		status = ReservationStatus.CANCELLED;
+		cancelledAt = occurredAt;
+		cancellationResponsibility = CancellationResponsibility.MEMBER;
+		couponAction = validatedCouponAction;
+		adminMemo = null;
+		return true;
+	}
+
 	public boolean recordNoShow(CouponAction requestedCouponAction, String memo) {
 		final CouponAction validatedCouponAction = requireNoShowCouponAction(requestedCouponAction);
 		final String validatedMemo = requireAdminMemo(memo);
@@ -295,6 +318,19 @@ public class Reservation {
 	}
 
 	private CouponAction requireNoShowCouponAction(CouponAction requestedCouponAction) {
+		if (requestedCouponAction == null || requestedCouponAction == CouponAction.FREE_CHANGE_USED) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		}
+		if (paymentSource == PaymentSource.COUPON && requestedCouponAction == CouponAction.NONE) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		}
+		if (paymentSource == PaymentSource.SINGLE_PAYMENT && requestedCouponAction != CouponAction.NONE) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		}
+		return requestedCouponAction;
+	}
+
+	private CouponAction requireCancellationCouponAction(CouponAction requestedCouponAction) {
 		if (requestedCouponAction == null || requestedCouponAction == CouponAction.FREE_CHANGE_USED) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
 		}
