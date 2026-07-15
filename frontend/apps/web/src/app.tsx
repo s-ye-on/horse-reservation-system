@@ -9,6 +9,7 @@ import { ReservationApplicationPage } from './features/reservation-application/r
 import { MyReservationsPage } from './features/my-reservations/my-reservations-page'
 import { MyCouponsPage } from './features/my-coupons/my-coupons-page'
 import { ReservationChangePage } from './features/reservation-change/reservation-change-page'
+import { ReservationCancelPage } from './features/reservation-cancel/reservation-cancel-page'
 import './app.css'
 
 function HomePage() {
@@ -49,6 +50,7 @@ export default function App() {
       <Route path="/reservations/new" element={<ReservationApplicationPage />} />
       <Route path="/my/reservations" element={<MyReservationsPage />} />
       <Route path="/my/reservations/:reservationId/change" element={<ReservationChangePage />} />
+      <Route path="/my/reservations/:reservationId/cancel" element={<ReservationCancelPage />} />
       <Route path="/my/coupons" element={<MyCouponsPage />} />
       <Route path="/admin" element={<AdminHomePage />} />
       <Route path="/admin/members" element={<AdminMembersPage />} />

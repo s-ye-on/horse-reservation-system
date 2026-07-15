@@ -466,3 +466,7 @@ run = "./gradlew test --tests '*ReservationChangeApiTest'"
 [tasks."verify:m2-08"]
 description = "Verify M2-08 member reservation change screen and preview API"
 run = "mise run verify:m2-08:backend && pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typecheck && pnpm --dir frontend/apps/web test -- ReservationChangePage.test.tsx MyReservationsPage.test.tsx"
+
+[tasks."verify:m2-09"]
+description = "Verify M2-09 member reservation cancellation screen"
+run = "pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typecheck && pnpm --dir frontend/apps/web test -- ReservationCancelPage.test.tsx MyReservationsPage.test.tsx"

@@ -108,4 +108,11 @@ describe('MyReservationsPage', () => {
     expect(links).toHaveLength(3)
     expect(links[0]).toHaveAttribute('href', '/my/reservations/1/change')
   })
+
+  it('활성_예약에만_취소_링크를_표시한다', async () => {
+    renderPage(createApi())
+    const links = await screen.findAllByRole('link', { name: '취소하기' })
+    expect(links).toHaveLength(3)
+    expect(links[0]).toHaveAttribute('href', '/my/reservations/1/cancel')
+  })
 })

@@ -71,6 +71,7 @@ function ReservationItem({ reservation }: { reservation: MemberReservationRespon
       {reservation.reservationId && CHANGEABLE_STATUSES.has(reservation.status ?? '') ? (
         <div className="my-reservation-actions">
           <Link to={`/my/reservations/${reservation.reservationId}/change`}>예약 변경</Link>
+          <Link to={`/my/reservations/${reservation.reservationId}/cancel`}>취소하기</Link>
         </div>
       ) : null}
     </article>
