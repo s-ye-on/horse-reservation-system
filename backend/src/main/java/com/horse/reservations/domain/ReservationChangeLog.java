@@ -120,6 +120,29 @@ public class ReservationChangeLog {
 			memo);
 	}
 
+	public static ReservationChangeLog noShowProcessed(
+		Long reservationId,
+		String actorAuthSubject,
+		LocalDate lessonDate,
+		LocalTime startTime,
+		CouponAction couponAction,
+		String memo
+	) {
+		return new ReservationChangeLog(
+			reservationId,
+			actorAuthSubject,
+			ReservationActorType.ADMIN,
+			ReservationStatus.CONFIRMED,
+			ReservationStatus.NO_SHOW,
+			lessonDate,
+			startTime,
+			lessonDate,
+			startTime,
+			ReservationChangeType.NO_SHOW_PROCESSED,
+			couponAction,
+			memo);
+	}
+
 	private static Long requireReservationId(Long reservationId) {
 		if (reservationId == null || reservationId <= 0) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_REFERENCE);

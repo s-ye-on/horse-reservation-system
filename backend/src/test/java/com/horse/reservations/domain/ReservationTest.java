@@ -252,6 +252,70 @@ class ReservationTest {
 	}
 
 	@Test
+	void 확정된_쿠폰_예약은_차감이나_반환으로만_노쇼_처리한다() {
+		final Reservation reservation = confirmedCouponReservation();
+
+		assertThat(reservation.recordNoShow(CouponAction.DEDUCT, "회원 미방문")).isTrue();
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.NO_SHOW);
+		assertThat(reservation.getCouponAction()).isEqualTo(CouponAction.DEDUCT);
+		assertThat(reservation.getAdminMemo()).isEqualTo("회원 미방문");
+		assertThat(reservation.recordNoShow(CouponAction.DEDUCT, "회원 미방문")).isFalse();
+		assertReservationException(
+			() -> reservation.recordNoShow(CouponAction.RETURN, "정책 변경"),
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+	}
+
+	@Test
+	void 예약_결제원과_맞지_않는_노쇼_쿠폰_처리는_거부한다() {
+		final Reservation couponReservation = confirmedCouponReservation();
+		final Reservation singlePaymentReservation = confirmedSinglePaymentReservation();
+
+		assertReservationException(
+			() -> couponReservation.recordNoShow(CouponAction.NONE, "처리 없음"),
+			ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		assertReservationException(
+			() -> singlePaymentReservation.recordNoShow(CouponAction.DEDUCT, "차감"),
+			ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		assertThat(singlePaymentReservation.recordNoShow(CouponAction.NONE, "쿠폰 없음")).isTrue();
+	}
+
+	@Test
+	void 노쇼는_확정_예약과_오백자_이하_메모만_허용한다() {
+		final Reservation pending = Reservation.createCouponPending(
+			1L, RidingClass.FIRST_RIDE, LESSON_DATE, START_TIME, 10L, REQUESTED_AT);
+		final Reservation confirmed = confirmedCouponReservation();
+
+		assertReservationException(
+			() -> pending.recordNoShow(CouponAction.DEDUCT, "미방문"),
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+		assertReservationException(
+			() -> confirmed.recordNoShow(CouponAction.DEDUCT, " "),
+			ExceptionCode.RESERVATION_INVALID_ADMIN_MEMO);
+		assertReservationException(
+			() -> confirmed.recordNoShow(CouponAction.DEDUCT, "가".repeat(501)),
+			ExceptionCode.RESERVATION_INVALID_ADMIN_MEMO);
+	}
+
+	private Reservation confirmedCouponReservation() {
+		final Reservation reservation = Reservation.createCouponPending(
+			1L, RidingClass.FIRST_RIDE, LESSON_DATE, START_TIME, 10L, REQUESTED_AT);
+		reservation.confirm(REQUESTED_AT.plusMinutes(10));
+		return reservation;
+	}
+
+	private Reservation confirmedSinglePaymentReservation() {
+		final Reservation reservation = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			REQUESTED_AT.plusHours(2),
+			REQUESTED_AT);
+		reservation.confirm(REQUESTED_AT.plusMinutes(10));
+		return reservation;
+	}
+
+	@Test
 	void 확정되지_않은_예약은_기승_완료하지_않는다() {
 		final Reservation pending = Reservation.createSinglePaymentPending(
 			1L,

@@ -8,6 +8,7 @@ export * from './AdminPendingPaymentQueryControllerApi';
 export * from './AdminPendingPaymentRestoreControllerApi';
 export * from './AdminReservationCompletionControllerApi';
 export * from './AdminReservationConfirmControllerApi';
+export * from './AdminReservationNoShowControllerApi';
 export * from './AdminReservationQueryControllerApi';
 export * from './AdminReservationRejectControllerApi';
 export * from './AdminTimeSlotControllerApi';

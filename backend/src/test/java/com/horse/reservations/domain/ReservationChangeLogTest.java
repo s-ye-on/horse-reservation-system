@@ -68,6 +68,24 @@ class ReservationChangeLogTest {
 			ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_MEMO);
 	}
 
+	@Test
+	void 노쇼_처리_행위를_관리자와_쿠폰_결과로_생성한다() {
+		final ReservationChangeLog changeLog = ReservationChangeLog.noShowProcessed(
+			1L,
+			"no-show-admin",
+			LESSON_DATE,
+			START_TIME,
+			CouponAction.RETURN,
+			"질병 예외 반환");
+
+		assertThat(changeLog.getActorType()).isEqualTo(ReservationActorType.ADMIN);
+		assertThat(changeLog.getFromStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+		assertThat(changeLog.getToStatus()).isEqualTo(ReservationStatus.NO_SHOW);
+		assertThat(changeLog.getChangeType()).isEqualTo(ReservationChangeType.NO_SHOW_PROCESSED);
+		assertThat(changeLog.getCouponAction()).isEqualTo(CouponAction.RETURN);
+		assertThat(changeLog.getMemo()).isEqualTo("질병 예외 반환");
+	}
+
 	private void assertReservationException(Runnable action, ExceptionCode expectedCode) {
 		assertThatThrownBy(action::run)
 			.isInstanceOfSatisfying(

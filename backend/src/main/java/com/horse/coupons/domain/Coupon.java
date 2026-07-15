@@ -121,6 +121,17 @@ public class Coupon {
 		}
 	}
 
+	public void deductHeld() {
+		if (heldCount <= 0 || remainingCount <= 0) {
+			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
+		}
+		heldCount--;
+		remainingCount--;
+		if (remainingCount == 0) {
+			status = CouponStatus.DEPLETED;
+		}
+	}
+
 	private static Long requireMemberId(Long memberId) {
 		if (memberId == null || memberId <= 0) {
 			throw new CouponException(ExceptionCode.COUPON_INVALID_MEMBER_ID);

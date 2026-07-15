@@ -20,6 +20,8 @@ export * from './ReservationApplicationResponse';
 export * from './ReservationCompletionResponse';
 export * from './ReservationConfirmResponse';
 export * from './ReservationCouponResponse';
+export * from './ReservationNoShowRequest';
+export * from './ReservationNoShowResponse';
 export * from './ReservationPaymentRestoreRequest';
 export * from './ReservationPaymentRestoreResponse';
 export * from './ReservationRejectRequest';

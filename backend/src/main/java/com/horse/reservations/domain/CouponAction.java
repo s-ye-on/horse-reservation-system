@@ -21,6 +21,16 @@ public enum CouponAction {
 		return databaseValue;
 	}
 
+	public static CouponAction fromRequestValue(String requestValue) {
+		if (requestValue == null || requestValue.isBlank()) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		}
+		return Arrays.stream(values())
+			.filter(action -> action.databaseValue.equalsIgnoreCase(requestValue.strip()))
+			.findFirst()
+			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION));
+	}
+
 	public static CouponAction fromDatabaseValue(String databaseValue) {
 		return Arrays.stream(values())
 			.filter(action -> action.databaseValue.equals(databaseValue))

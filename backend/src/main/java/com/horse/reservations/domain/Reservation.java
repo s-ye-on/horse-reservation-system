@@ -3,6 +3,7 @@ package com.horse.reservations.domain;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Objects;
 
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
@@ -22,6 +23,7 @@ import jakarta.persistence.Version;
 @Table(name = "reservations")
 public class Reservation {
 	private static final int MAX_REJECTION_REASON_LENGTH = 500;
+	private static final int MAX_ADMIN_MEMO_LENGTH = 500;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -241,6 +243,44 @@ public class Reservation {
 		}
 		status = ReservationStatus.COMPLETED;
 		return true;
+	}
+
+	public boolean recordNoShow(CouponAction requestedCouponAction, String memo) {
+		final CouponAction validatedCouponAction = requireNoShowCouponAction(requestedCouponAction);
+		final String validatedMemo = requireAdminMemo(memo);
+		if (status == ReservationStatus.NO_SHOW) {
+			if (couponAction == validatedCouponAction && Objects.equals(adminMemo, validatedMemo)) {
+				return false;
+			}
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+		if (status != ReservationStatus.CONFIRMED) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+		status = ReservationStatus.NO_SHOW;
+		couponAction = validatedCouponAction;
+		adminMemo = validatedMemo;
+		return true;
+	}
+
+	private CouponAction requireNoShowCouponAction(CouponAction requestedCouponAction) {
+		if (requestedCouponAction == null || requestedCouponAction == CouponAction.FREE_CHANGE_USED) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		}
+		if (paymentSource == PaymentSource.COUPON && requestedCouponAction == CouponAction.NONE) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		}
+		if (paymentSource == PaymentSource.SINGLE_PAYMENT && requestedCouponAction != CouponAction.NONE) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		}
+		return requestedCouponAction;
+	}
+
+	private String requireAdminMemo(String memo) {
+		if (memo == null || memo.isBlank() || memo.length() > MAX_ADMIN_MEMO_LENGTH) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_ADMIN_MEMO);
+		}
+		return memo;
 	}
 
 	private static Long requireMemberId(Long memberId) {

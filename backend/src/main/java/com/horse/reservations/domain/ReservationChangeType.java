@@ -6,7 +6,8 @@ import com.horse.global.exception.ExceptionCode;
 import com.horse.reservations.domain.exception.ReservationException;
 
 public enum ReservationChangeType {
-	PAYMENT_RESTORED("payment_restored");
+	PAYMENT_RESTORED("payment_restored"),
+	NO_SHOW_PROCESSED("no_show_processed");
 
 	private final String databaseValue;
 

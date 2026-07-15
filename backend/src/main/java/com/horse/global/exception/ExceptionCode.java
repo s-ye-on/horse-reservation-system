@@ -27,6 +27,8 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_CHANGE_LOG_REFERENCE(HttpStatus.BAD_REQUEST, "예약 변경 이력 참조가 올바르지 않습니다."),
 	RESERVATION_INVALID_CHANGE_LOG_ACTOR(HttpStatus.BAD_REQUEST, "예약 변경 이력 처리 주체가 올바르지 않습니다."),
 	RESERVATION_INVALID_CHANGE_LOG_MEMO(HttpStatus.BAD_REQUEST, "예약 변경 이력 메모가 올바르지 않습니다."),
+	RESERVATION_INVALID_COUPON_ACTION(HttpStatus.BAD_REQUEST, "예약 유형에 허용되지 않는 쿠폰 처리입니다."),
+	RESERVATION_INVALID_ADMIN_MEMO(HttpStatus.BAD_REQUEST, "관리자 처리 메모가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_STATUS(HttpStatus.BAD_REQUEST, "조회할 예약 상태가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_CLASS_TYPE(HttpStatus.BAD_REQUEST, "조회할 예약 클래스가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_DATE_RANGE(HttpStatus.BAD_REQUEST, "예약 조회 날짜 범위가 올바르지 않습니다."),
