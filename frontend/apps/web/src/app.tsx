@@ -4,6 +4,7 @@ import { AdminCouponRegistrationPage } from './features/admin-coupons/admin-coup
 import { AdminTimeSlotsPage } from './features/admin-timeslots/admin-timeslots-page'
 import { AdminReservationsPage } from './features/admin-reservations/admin-reservations-page'
 import { AdminAttendancePage } from './features/admin-attendance/admin-attendance-page'
+import { ReservationCalendarPage } from './features/reservation-calendar/reservation-calendar-page'
 import './app.css'
 
 function HomePage() {
@@ -14,15 +15,6 @@ function HomePage() {
         <Link to="/reservations">회원 예약</Link>
         <Link to="/admin">관리자</Link>
       </nav>
-    </main>
-  )
-}
-
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <main>
-      <Link to="/">홈</Link>
-      <h1>{title}</h1>
     </main>
   )
 }
@@ -47,7 +39,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/reservations" element={<PlaceholderPage title="회원 예약" />} />
+      <Route path="/reservations" element={<ReservationCalendarPage />} />
       <Route path="/admin" element={<AdminHomePage />} />
       <Route path="/admin/members" element={<AdminMembersPage />} />
       <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
