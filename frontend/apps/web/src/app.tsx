@@ -3,6 +3,7 @@ import { AdminMembersPage } from './features/admin-members/admin-members-page'
 import { AdminCouponRegistrationPage } from './features/admin-coupons/admin-coupon-registration-page'
 import { AdminTimeSlotsPage } from './features/admin-timeslots/admin-timeslots-page'
 import { AdminReservationsPage } from './features/admin-reservations/admin-reservations-page'
+import { AdminAttendancePage } from './features/admin-attendance/admin-attendance-page'
 import './app.css'
 
 function HomePage() {
@@ -36,6 +37,7 @@ function AdminHomePage() {
         <Link to="/admin/coupons/new">10회권 쿠폰 등록</Link>
         <Link to="/admin/timeslots">시간대 및 정원</Link>
         <Link to="/admin/reservations">예약 승인 및 입금 확인</Link>
+        <Link to="/admin/attendance">수업 완료 및 노쇼</Link>
       </nav>
     </main>
   )
@@ -51,6 +53,7 @@ export default function App() {
       <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
       <Route path="/admin/timeslots" element={<AdminTimeSlotsPage />} />
       <Route path="/admin/reservations" element={<AdminReservationsPage />} />
+      <Route path="/admin/attendance" element={<AdminAttendancePage />} />
     </Routes>
   )
 }
