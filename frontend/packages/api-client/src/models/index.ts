@@ -24,6 +24,7 @@ export * from './ReservationApplicationRequest';
 export * from './ReservationApplicationResponse';
 export * from './ReservationCancelResponse';
 export * from './ReservationCancellationPreviewResponse';
+export * from './ReservationChangePreviewResponse';
 export * from './ReservationChangeResponse';
 export * from './ReservationCompletionResponse';
 export * from './ReservationConfirmResponse';

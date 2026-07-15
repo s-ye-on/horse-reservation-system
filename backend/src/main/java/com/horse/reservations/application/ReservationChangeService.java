@@ -86,6 +86,49 @@ public class ReservationChangeService {
 			normalizeOptionalReason(reason));
 	}
 
+	@Transactional(readOnly = true)
+	public ReservationChangePreviewResult previewByMember(
+		String authSubject,
+		Long reservationId,
+		Long targetTimeSlotId
+	) {
+		final Member member = memberRepository.findByAuthSubject(authSubject)
+			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));
+		final Reservation reservation = reservationRepository.findById(reservationId)
+			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+		ensureExpectedMember(reservation, member.getId());
+		reservation.ensureChangeable();
+		final TimeSlotCapacity targetTimeSlot = timeSlotRepository.findById(
+			requireTargetTimeSlotId(targetTimeSlotId))
+			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
+		if (reservation.hasSchedule(targetTimeSlot.getLessonDate(), targetTimeSlot.getStartTime())) {
+			throw new ReservationException(ExceptionCode.RESERVATION_CHANGE_NOT_ALLOWED);
+		}
+		ensureReservableLessonDate(targetTimeSlot.getLessonDate());
+		final ReservationChangeTiming timing = ReservationChangeDeadlinePolicy.evaluate(
+			reservation.getLessonDate(),
+			Instant.now(clock));
+		if (isWeekendSameDayChange(reservation, targetTimeSlot, timing)) {
+			throw new ReservationException(
+				ExceptionCode.RESERVATION_WEEKEND_SAME_DAY_CHANGE_NOT_ALLOWED);
+		}
+		final Coupon coupon = findCouponForPreview(reservation.getCouponId());
+		final CouponAction couponAction = previewCouponAction(
+			reservation,
+			targetTimeSlot,
+			timing,
+			coupon);
+		ensurePreviewTargetCapacity(targetTimeSlot, reservation.getRidingClass());
+		return new ReservationChangePreviewResult(
+			reservation.getId(),
+			targetTimeSlot.getId(),
+			targetTimeSlot.getLessonDate(),
+			targetTimeSlot.getStartTime(),
+			timing,
+			couponAction,
+			couponAction == CouponAction.FREE_CHANGE_USED);
+	}
+
 	@Transactional
 	public ReservationChangeResult changeByAdmin(
 		String adminSubject,
@@ -248,6 +291,29 @@ public class ReservationChangeService {
 			classOccupied);
 	}
 
+	private void ensurePreviewTargetCapacity(
+		TimeSlotCapacity targetTimeSlot,
+		RidingClass ridingClass
+	) {
+		final List<Reservation> occupyingReservations = reservationRepository
+			.findOccupyingByLessonDate(
+				targetTimeSlot.getLessonDate(),
+				ReservationStatus.occupyingStatuses()).stream()
+			.filter(current -> current.getStartTime().equals(targetTimeSlot.getStartTime()))
+			.toList();
+		final int roundArenaOccupied = (int)occupyingReservations.stream()
+			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))
+			.count();
+		final int classOccupied = (int)occupyingReservations.stream()
+			.filter(current -> current.getRidingClass() == ridingClass)
+			.count();
+		targetTimeSlot.ensureCanReserve(
+			ridingClass,
+			occupyingReservations.size(),
+			roundArenaOccupied,
+			classOccupied);
+	}
+
 	private void ensureCouponValidForTarget(
 		Reservation reservation,
 		Coupon coupon,
@@ -323,6 +389,34 @@ public class ReservationChangeService {
 		}
 		return couponRepository.findByIdForUpdate(couponId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ID));
+	}
+
+	private Coupon findCouponForPreview(Long couponId) {
+		if (couponId == null) {
+			return null;
+		}
+		return couponRepository.findById(couponId)
+			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ID));
+	}
+
+	private CouponAction previewCouponAction(
+		Reservation reservation,
+		TimeSlotCapacity targetTimeSlot,
+		ReservationChangeTiming timing,
+		Coupon coupon
+	) {
+		if (timing == ReservationChangeTiming.BEFORE_CUTOFF
+			|| isWeekdaySameDayChange(reservation, targetTimeSlot, timing)) {
+			ensureCouponValidForTarget(reservation, coupon, targetTimeSlot.getLessonDate());
+			return CouponAction.NONE;
+		}
+		ensureCouponForAfterCutoffChange(reservation, coupon, targetTimeSlot.getLessonDate());
+		if (couponUsageLogRepository.existsByReservationIdAndAction(
+			reservation.getId(),
+			CouponUsageAction.FREE_CHANGE_USED)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_CHANGE_NOT_ALLOWED);
+		}
+		return CouponAction.FREE_CHANGE_USED;
 	}
 
 	private void ensureCouponForAfterCutoffChange(

@@ -11,6 +11,7 @@ GET  /api/timeslots?date=&classType=
 POST /api/reservations
 GET  /api/me/reservations
 GET  /api/me/reservations/{reservationId}
+GET  /api/me/reservations/{reservationId}/change/preview
 POST /api/me/reservations/{reservationId}/change
 GET  /api/me/reservations/{reservationId}/cancellation-preview
 POST /api/me/reservations/{reservationId}/cancel
@@ -19,6 +20,8 @@ GET  /api/me/coupon-usage-logs
 ```
 
 예약 신청 응답은 `status`, `payment_source`, 선택된 쿠폰과 임시 점유 정보, `payment_due_at`을 포함한다.
+
+변경 preview는 선택한 `target_time_slot_id`의 현재 정원과 변경 정책을 검증해 예상 쿠폰 처리를 반환하지만 데이터를 변경하지 않는다. 실제 변경 실행은 실행 시점에 같은 정책과 정원을 다시 검증한다.
 
 취소 preview와 실행은 같은 서버 정책 판정기를 사용한다. 회원 취소 실행은 활성 예약을 즉시 `cancelled`로 전이하며 회원 책임과 사유를 감사 이력에 남긴다.
 

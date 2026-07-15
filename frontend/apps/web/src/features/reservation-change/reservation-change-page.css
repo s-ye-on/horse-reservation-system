@@ -1,0 +1,50 @@
+.reservation-change-page {
+  --change-accent: #7a1f35; --change-soft: #f7e9ed; --change-ink: #292225; --change-muted: #71666a; --change-line: #ddd5d8;
+  width: 100%; min-height: 100vh; margin: 0; padding: 32px 16px 56px; color: var(--change-ink); background: #f6f5f5;
+}
+.reservation-change-shell { width: min(100%, 760px); margin: 0 auto; }
+.reservation-change-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
+.reservation-change-header p { margin: 0 0 6px; color: var(--change-accent); font-size: .76rem; font-weight: 780; }
+.reservation-change-header h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.35rem); }
+.reservation-change-header span { display: block; margin-top: 7px; color: var(--change-muted); font-size: .86rem; }
+.reservation-change-header > a, .reservation-change-actions a, .reservation-change-result a, .reservation-change-state a { color: var(--change-accent); font-size: .8rem; font-weight: 720; }
+.reservation-change-current, .reservation-change-selection, .reservation-change-preview, .reservation-change-result, .reservation-change-state { margin-top: 12px; padding: 18px; border: 1px solid var(--change-line); border-radius: 8px; background: #fff; }
+.reservation-change-current h2, .reservation-change-selection h2, .reservation-change-preview h2 { margin: 0 0 14px; font-size: 1rem; }
+.reservation-change-current dl, .reservation-change-preview dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.reservation-change-current dt, .reservation-change-preview dt { color: var(--change-muted); font-size: .7rem; }
+.reservation-change-current dd, .reservation-change-preview dd { margin: 4px 0 0; font-size: .84rem; font-weight: 690; overflow-wrap: anywhere; }
+.reservation-change-selection > label, .reservation-change-preview > label { display: flex; justify-content: space-between; margin: 0 0 6px; color: var(--change-muted); font-size: .74rem; font-weight: 690; }
+.reservation-change-selection input[type="date"], .reservation-change-preview textarea { box-sizing: border-box; width: 100%; min-height: 44px; padding: 9px 11px; border: 1px solid var(--change-line); border-radius: 6px; color: var(--change-ink); background: #fff; font: inherit; }
+.reservation-change-times { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0 0; padding: 0; border: 0; }
+.reservation-change-times legend { grid-column: 1 / -1; margin-bottom: 7px; color: var(--change-muted); font-size: .74rem; font-weight: 690; }
+.reservation-change-times label { min-width: 0; }
+.reservation-change-times input { position: absolute; opacity: 0; pointer-events: none; }
+.reservation-change-times span { display: grid; min-height: 48px; align-content: center; padding: 8px 10px; border: 1px solid var(--change-line); border-radius: 6px; cursor: pointer; font-size: .83rem; font-weight: 720; }
+.reservation-change-times small { color: var(--change-muted); font-size: .67rem; font-weight: 500; }
+.reservation-change-times input:checked + span { border-color: var(--change-accent); color: var(--change-accent); background: var(--change-soft); }
+.reservation-change-times input:focus-visible + span { outline: 3px solid #e2aaba; outline-offset: 2px; }
+.reservation-change-preview { border-color: #d7b1bc; background: #fffafb; }
+.reservation-change-preview dl { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 16px; }
+.reservation-change-preview textarea { min-height: 84px; resize: vertical; }
+.reservation-change-inline-state, .reservation-change-error { margin: 12px 0 0; padding: 12px; border-radius: 6px; color: var(--change-muted); background: #eeebec; font-size: .8rem; }
+.reservation-change-error { color: #742137; background: #fff0f3; }
+.reservation-change-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 16px; }
+.reservation-change-actions a, .reservation-change-actions button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; box-sizing: border-box; padding: 0 14px; border-radius: 6px; font: inherit; font-size: .8rem; font-weight: 720; text-decoration: none; }
+.reservation-change-actions a { border: 1px solid var(--change-line); color: var(--change-muted); }
+.reservation-change-actions button { border: 1px solid var(--change-accent); color: #fff; background: var(--change-accent); cursor: pointer; }
+.reservation-change-actions button:disabled { cursor: not-allowed; opacity: .5; }
+.reservation-change-result { display: grid; gap: 7px; color: var(--change-accent); background: var(--change-soft); }
+.reservation-change-result p, .reservation-change-result span { margin: 0; }
+.reservation-change-result span { color: var(--change-muted); font-size: .78rem; }
+.reservation-change-result a { margin-top: 5px; }
+.reservation-change-state { text-align: center; }
+.reservation-change-state p { color: var(--change-muted); }
+.reservation-change-state[role="alert"] p { color: #742137; }
+@media (max-width: 560px) {
+  .reservation-change-page { padding: 22px 12px 40px; }
+  .reservation-change-header { align-items: flex-start; flex-direction: column; }
+  .reservation-change-current dl, .reservation-change-preview dl { grid-template-columns: minmax(0, 1fr); }
+  .reservation-change-times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .reservation-change-actions { flex-direction: column-reverse; }
+  .reservation-change-actions a, .reservation-change-actions button { width: 100%; }
+}

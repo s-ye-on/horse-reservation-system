@@ -21,6 +21,8 @@ const CLASS_LABELS: Record<string, string> = {
   DRESSAGE: '마장마술', JUMPING: '장애물',
 }
 
+const CHANGEABLE_STATUSES = new Set(['pending_admin_approval', 'pending_payment', 'confirmed'])
+
 export function MyReservationsPage({ api = myReservationsApi }: { api?: MyReservationsApi }) {
   const query = useQuery({ queryKey: ['member', 'reservations'], queryFn: api.getMyReservations })
   if (query.isPending) return <ReservationsState message="내 예약을 불러오는 중입니다." />
@@ -66,6 +68,11 @@ function ReservationItem({ reservation }: { reservation: MemberReservationRespon
       ) : null}
       {reservation.rejectionReason ? <p className="my-reservation-notice"><strong>반려 사유</strong>{reservation.rejectionReason}</p> : null}
       {reservation.couponAction ? <p className="my-reservation-notice"><strong>최종 쿠폰 처리</strong>{couponActionLabel(reservation.couponAction)}</p> : null}
+      {reservation.reservationId && CHANGEABLE_STATUSES.has(reservation.status ?? '') ? (
+        <div className="my-reservation-actions">
+          <Link to={`/my/reservations/${reservation.reservationId}/change`}>예약 변경</Link>
+        </div>
+      ) : null}
     </article>
   )
 }

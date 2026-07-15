@@ -19,6 +19,11 @@ import {
     MemberReservationChangeRequestToJSON,
 } from '../models/MemberReservationChangeRequest';
 import {
+    type ReservationChangePreviewResponse,
+    ReservationChangePreviewResponseFromJSON,
+    ReservationChangePreviewResponseToJSON,
+} from '../models/ReservationChangePreviewResponse';
+import {
     type ReservationChangeResponse,
     ReservationChangeResponseFromJSON,
     ReservationChangeResponseToJSON,
@@ -27,6 +32,11 @@ import {
 export interface ChangeRequest {
     reservationId: number;
     memberReservationChangeRequest: MemberReservationChangeRequest;
+}
+
+export interface PreviewReservationChangeRequest {
+    reservationId: number;
+    targetTimeSlotId: number;
 }
 
 /**
@@ -84,6 +94,60 @@ export class MemberReservationChangeControllerApi extends runtime.BaseAPI {
      */
     async change(requestParameters: ChangeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationChangeResponse> {
         const response = await this.changeRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for previewReservationChange without sending the request
+     */
+    async previewReservationChangeRequestOpts(requestParameters: PreviewReservationChangeRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['reservationId'] == null) {
+            throw new runtime.RequiredError(
+                'reservationId',
+                'Required parameter "reservationId" was null or undefined when calling previewReservationChange().'
+            );
+        }
+
+        if (requestParameters['targetTimeSlotId'] == null) {
+            throw new runtime.RequiredError(
+                'targetTimeSlotId',
+                'Required parameter "targetTimeSlotId" was null or undefined when calling previewReservationChange().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        if (requestParameters['targetTimeSlotId'] != null) {
+            queryParameters['targetTimeSlotId'] = requestParameters['targetTimeSlotId'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/me/reservations/{reservationId}/change/preview`;
+        urlPath = urlPath.replace('{reservationId}', encodeURIComponent(String(requestParameters['reservationId'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async previewReservationChangeRaw(requestParameters: PreviewReservationChangeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ReservationChangePreviewResponse>> {
+        const requestOptions = await this.previewReservationChangeRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ReservationChangePreviewResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async previewReservationChange(requestParameters: PreviewReservationChangeRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationChangePreviewResponse> {
+        const response = await this.previewReservationChangeRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

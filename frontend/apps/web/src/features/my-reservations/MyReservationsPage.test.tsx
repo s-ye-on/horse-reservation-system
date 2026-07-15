@@ -101,4 +101,11 @@ describe('MyReservationsPage', () => {
     expect(screen.getByText('노쇼')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '새 예약' })).toHaveAttribute('href', '/reservations')
   })
+
+  it('활성_예약에만_변경_링크를_표시한다', async () => {
+    renderPage(createApi())
+    const links = await screen.findAllByRole('link', { name: '예약 변경' })
+    expect(links).toHaveLength(3)
+    expect(links[0]).toHaveAttribute('href', '/my/reservations/1/change')
+  })
 })

@@ -30,6 +30,9 @@
 .my-reservation-coupon span, .my-reservation-coupon small { color: var(--my-muted); }
 .my-reservation-notice { display: grid; grid-template-columns: auto 1fr; gap: 9px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--my-line); color: var(--my-muted); font-size: .77rem; }
 .my-reservation-notice strong { color: var(--my-ink); }
+.my-reservation-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--my-line); }
+.my-reservation-actions a { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--my-accent); border-radius: 6px; color: var(--my-accent); font-size: .78rem; font-weight: 720; text-decoration: none; }
+.my-reservation-actions a:focus-visible { outline: 3px solid #e2aaba; outline-offset: 2px; }
 .my-reservations-state { padding: 32px 18px; color: var(--my-muted); text-align: center; }
 .my-reservations-state[role="alert"] { color: #742137; background: #fff6f8; }
 @media (max-width: 700px) { .my-reservations-list { grid-template-columns: minmax(0, 1fr); } }

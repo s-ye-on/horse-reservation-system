@@ -709,6 +709,46 @@
         }
       }
     },
+    "/api/me/reservations/{reservationId}/change/preview": {
+      "get": {
+        "tags": [
+          "member-reservation-change-controller"
+        ],
+        "operationId": "previewReservationChange",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "targetTimeSlotId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationChangePreviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/reservations/{reservationId}/cancellation-preview": {
       "get": {
         "tags": [
@@ -1753,6 +1793,35 @@
           "cancelledAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "ReservationChangePreviewResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "targetTimeSlotId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "targetLessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "targetStartTime": {
+            "type": "string"
+          },
+          "timing": {
+            "type": "string"
+          },
+          "couponAction": {
+            "type": "string"
+          },
+          "freeChangeUsed": {
+            "type": "boolean"
           }
         }
       },

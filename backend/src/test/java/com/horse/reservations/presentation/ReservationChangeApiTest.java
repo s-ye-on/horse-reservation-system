@@ -3,6 +3,7 @@ package com.horse.reservations.presentation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -106,6 +107,35 @@ class ReservationChangeApiTest {
 		assertThat(reservationAuditValue(reservationId, "status")).isEqualTo("confirmed");
 		assertThat(reservationAuditValue(reservationId, "coupon_id")).isEqualTo(couponId.toString());
 		assertThat(changeLogCount(reservationId)).isEqualTo(1);
+	}
+
+	@Test
+	void 회원은_변경_preview에서_예상_무료_변경권을_확인하고_데이터를_변경하지_않는다() throws Exception {
+		when(clock.instant()).thenReturn(AFTER_CUTOFF_INSTANT);
+		final String authSubject = "change-preview-member";
+		final Long memberId = insertMember(authSubject);
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 1);
+		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1), false);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long targetTimeSlotId = insertTimeSlot(lessonDate.plusDays(1), "10:00:00", 8);
+		final Long reservationId = insertCouponReservation(
+			memberId, couponId, lessonDate, "09:00:00", "confirmed");
+
+		mockMvc.perform(get("/api/me/reservations/{reservationId}/change/preview", reservationId)
+				.param("targetTimeSlotId", targetTimeSlotId.toString())
+				.with(memberJwt(authSubject)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.targetTimeSlotId").value(targetTimeSlotId))
+			.andExpect(jsonPath("$.targetLessonDate").value(lessonDate.plusDays(1).toString()))
+			.andExpect(jsonPath("$.targetStartTime").value("10:00:00"))
+			.andExpect(jsonPath("$.couponAction").value("free_change_used"))
+			.andExpect(jsonPath("$.freeChangeUsed").value(true));
+
+		assertThat(reservationSchedule(reservationId)).containsExactly(
+			lessonDate.toString(), "09:00:00");
+		assertThat(couponFreeChangeUsed(couponId)).isFalse();
+		assertThat(couponUsageCount(reservationId, "free_change_used")).isZero();
+		assertThat(changeLogCount(reservationId)).isZero();
 	}
 
 	@Test
