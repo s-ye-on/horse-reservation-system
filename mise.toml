@@ -422,3 +422,8 @@ pnpm --dir frontend/apps/web exec vitest run src/features/admin-attendance/Admin
 [tasks."verify:m1-34"]
 description = "Verify MVP 1 scope documentation"
 run = "mise run docs:check"
+
+[tasks."verify:m2-01"]
+description = "Verify Seoul reservation change cutoff and weekday boundaries"
+dir = "backend"
+run = "./gradlew test --tests '*ReservationChangeDeadlinePolicyTest'"
