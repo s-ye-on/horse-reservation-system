@@ -151,18 +151,13 @@ class GeneralRideCompletionApiTest {
 	}
 
 	@Test
-	void 확정되지_않은_예약과_특수_기승과_없는_예약은_일반_완료할_수_없다() throws Exception {
+	void 확정되지_않은_예약과_없는_예약은_완료할_수_없다() throws Exception {
 		final Long memberId = insertMember("invalid-completion-member", 0);
 		final Long pendingId = insertPendingPaymentReservation(memberId, LocalDate.of(2026, 8, 4));
-		final Long dressageId = insertConfirmedReservation(
-			memberId, null, "DRESSAGE", "single_payment", LocalDate.of(2026, 8, 4));
 
 		mockMvc.perform(post(completionEndpoint(pendingId)).with(adminJwt()))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.code").value("RESERVATION_INVALID_STATUS"));
-		mockMvc.perform(post(completionEndpoint(dressageId)).with(adminJwt()))
-			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("RESERVATION_INVALID_RIDING_CLASS"));
 		mockMvc.perform(post(completionEndpoint(999999L)).with(adminJwt()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("RESERVATION_NOT_FOUND"));

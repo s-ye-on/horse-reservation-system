@@ -232,10 +232,7 @@ public class Reservation {
 		}
 	}
 
-	public boolean completeGeneralRide() {
-		if (!ridingClass.isGeneral()) {
-			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_RIDING_CLASS);
-		}
+	public boolean completeRide() {
 		if (status == ReservationStatus.COMPLETED) {
 			return false;
 		}

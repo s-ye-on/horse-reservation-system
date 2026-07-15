@@ -1,12 +1,12 @@
 /* tslint:disable */
 /* eslint-disable */
 export * from './AdminCouponRegistrationControllerApi';
-export * from './AdminGeneralRideCompletionControllerApi';
 export * from './AdminMemberQueryControllerApi';
 export * from './AdminMemberRidingPermissionControllerApi';
 export * from './AdminPendingPaymentExpiryJobControllerApi';
 export * from './AdminPendingPaymentQueryControllerApi';
 export * from './AdminPendingPaymentRestoreControllerApi';
+export * from './AdminReservationCompletionControllerApi';
 export * from './AdminReservationConfirmControllerApi';
 export * from './AdminReservationQueryControllerApi';
 export * from './AdminReservationRejectControllerApi';

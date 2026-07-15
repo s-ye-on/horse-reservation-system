@@ -246,20 +246,13 @@ class ReservationTest {
 			REQUESTED_AT);
 		reservation.confirm(REQUESTED_AT.plusMinutes(30));
 
-		assertThat(reservation.completeGeneralRide()).isTrue();
+		assertThat(reservation.completeRide()).isTrue();
 		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
-		assertThat(reservation.completeGeneralRide()).isFalse();
+		assertThat(reservation.completeRide()).isFalse();
 	}
 
 	@Test
-	void 특수_기승과_확정되지_않은_예약은_일반_기승으로_완료하지_않는다() {
-		final Reservation special = Reservation.createSinglePaymentPending(
-			1L,
-			RidingClass.DRESSAGE,
-			LESSON_DATE,
-			START_TIME,
-			REQUESTED_AT.plusHours(2),
-			REQUESTED_AT);
+	void 확정되지_않은_예약은_기승_완료하지_않는다() {
 		final Reservation pending = Reservation.createSinglePaymentPending(
 			1L,
 			RidingClass.FIRST_RIDE,
@@ -269,10 +262,7 @@ class ReservationTest {
 			REQUESTED_AT);
 
 		assertReservationException(
-			special::completeGeneralRide,
-			ExceptionCode.RESERVATION_INVALID_RIDING_CLASS);
-		assertReservationException(
-			pending::completeGeneralRide,
+			pending::completeRide,
 			ExceptionCode.RESERVATION_INVALID_STATUS);
 	}
 

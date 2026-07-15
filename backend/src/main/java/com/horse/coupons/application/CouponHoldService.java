@@ -11,6 +11,7 @@ import com.horse.coupons.domain.Coupon;
 import com.horse.coupons.domain.CouponActorType;
 import com.horse.coupons.domain.CouponUsageAction;
 import com.horse.coupons.domain.CouponUsageLog;
+import com.horse.coupons.domain.CouponType;
 import com.horse.coupons.domain.exception.CouponException;
 import com.horse.coupons.infrastructure.CouponRepository;
 import com.horse.coupons.infrastructure.CouponUsageLogRepository;
@@ -119,6 +120,7 @@ public class CouponHoldService {
 	public boolean use(
 		Long reservationId,
 		LocalDate lessonDate,
+		CouponType expectedType,
 		LocalDateTime occurredAt,
 		CouponActorType actorType
 	) {
@@ -137,6 +139,9 @@ public class CouponHoldService {
 		}
 
 		ensureCouponMember(coupon, holdLog.getMemberId());
+		if (coupon.getType() != expectedType) {
+			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
+		}
 		coupon.useHeld(lessonDate);
 		usageLogRepository.save(CouponUsageLog.used(
 			coupon.getId(),

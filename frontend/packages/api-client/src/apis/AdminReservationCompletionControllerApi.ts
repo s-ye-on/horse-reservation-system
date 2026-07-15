@@ -14,10 +14,10 @@
 
 import * as runtime from '../runtime';
 import {
-    type GeneralRideCompletionResponse,
-    GeneralRideCompletionResponseFromJSON,
-    GeneralRideCompletionResponseToJSON,
-} from '../models/GeneralRideCompletionResponse';
+    type ReservationCompletionResponse,
+    ReservationCompletionResponseFromJSON,
+    ReservationCompletionResponseToJSON,
+} from '../models/ReservationCompletionResponse';
 
 export interface CompleteRequest {
     reservationId: number;
@@ -26,7 +26,7 @@ export interface CompleteRequest {
 /**
  *
  */
-export class AdminGeneralRideCompletionControllerApi extends runtime.BaseAPI {
+export class AdminReservationCompletionControllerApi extends runtime.BaseAPI {
 
     /**
      * Creates request options for complete without sending the request
@@ -57,16 +57,16 @@ export class AdminGeneralRideCompletionControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async completeRaw(requestParameters: CompleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<GeneralRideCompletionResponse>> {
+    async completeRaw(requestParameters: CompleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ReservationCompletionResponse>> {
         const requestOptions = await this.completeRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => GeneralRideCompletionResponseFromJSON(jsonValue));
+        return new runtime.JSONApiResponse(response, (jsonValue) => ReservationCompletionResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async complete(requestParameters: CompleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<GeneralRideCompletionResponse> {
+    async complete(requestParameters: CompleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationCompletionResponse> {
         const response = await this.completeRaw(requestParameters, initOverrides);
         return await response.value();
     }

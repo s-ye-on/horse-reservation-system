@@ -120,6 +120,14 @@ public class Member {
 		generalRideCount++;
 	}
 
+	public void increaseDressageRideCount() {
+		dressageRideCount++;
+	}
+
+	public void increaseJumpingRideCount() {
+		jumpingRideCount++;
+	}
+
 	public boolean canUseLargeArena() {
 		final GeneralRidingGrade grade = currentGeneralRidingGrade();
 		return grade == GeneralRidingGrade.LARGE_ARENA_BEGINNER

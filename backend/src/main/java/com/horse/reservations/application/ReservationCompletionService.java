@@ -8,8 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.coupons.application.CouponHoldService;
 import com.horse.coupons.domain.CouponActorType;
+import com.horse.coupons.domain.CouponType;
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.Member;
+import com.horse.members.domain.RidingClass;
 import com.horse.members.domain.exception.MemberException;
 import com.horse.members.infrastructure.MemberRepository;
 import com.horse.reservations.domain.PaymentSource;
@@ -18,14 +20,14 @@ import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationRepository;
 
 @Service
-public class GeneralRideCompletionService {
+public class ReservationCompletionService {
 
 	private final Clock clock;
 	private final ReservationRepository reservationRepository;
 	private final MemberRepository memberRepository;
 	private final CouponHoldService couponHoldService;
 
-	public GeneralRideCompletionService(
+	public ReservationCompletionService(
 		Clock clock,
 		ReservationRepository reservationRepository,
 		MemberRepository memberRepository,
@@ -38,17 +40,17 @@ public class GeneralRideCompletionService {
 	}
 
 	@Transactional
-	public GeneralRideCompletionResult complete(Long reservationId) {
+	public ReservationCompletionResult complete(Long reservationId) {
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
-		final boolean changed = reservation.completeGeneralRide();
+		final boolean changed = reservation.completeRide();
 		final Member member = memberRepository.findByIdForUpdate(reservation.getMemberId())
 			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));
 		if (changed) {
 			completeCouponUsage(reservation);
-			member.increaseGeneralRideCount();
+			increaseRideCount(member, reservation);
 		}
-		return GeneralRideCompletionResult.from(reservation, member.getGeneralRideCount());
+		return ReservationCompletionResult.from(reservation, member);
 	}
 
 	private void completeCouponUsage(Reservation reservation) {
@@ -59,7 +61,20 @@ public class GeneralRideCompletionService {
 		couponHoldService.use(
 			reservation.getId(),
 			reservation.getLessonDate(),
+			CouponType.fromRidingClass(reservation.getRidingClass()),
 			completedAt,
 			CouponActorType.ADMIN);
+	}
+
+	private void increaseRideCount(Member member, Reservation reservation) {
+		if (reservation.getRidingClass().isGeneral()) {
+			member.increaseGeneralRideCount();
+		}
+		else if (reservation.getRidingClass() == RidingClass.DRESSAGE) {
+			member.increaseDressageRideCount();
+		}
+		else {
+			member.increaseJumpingRideCount();
+		}
 	}
 }

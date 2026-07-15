@@ -25,6 +25,18 @@ class MemberTest {
 	}
 
 	@Test
+	void 마장마술과_장애물_완료_횟수를_각각_증가시킨다() {
+		final Member member = Member.create("member-1", "홍길동", "010-1234-5678");
+
+		member.increaseDressageRideCount();
+		member.increaseJumpingRideCount();
+
+		assertThat(member.getGeneralRideCount()).isZero();
+		assertThat(member.getDressageRideCount()).isEqualTo(1);
+		assertThat(member.getJumpingRideCount()).isEqualTo(1);
+	}
+
+	@Test
 	void 특수_클래스_승인을_변경하면_대마장_이용_가능_여부도_바뀐다() {
 		final Member member = Member.create("member-1", "홍길동", "010-1234-5678");
 

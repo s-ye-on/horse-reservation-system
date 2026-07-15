@@ -250,7 +250,7 @@
     "/api/admin/reservations/{reservationId}/complete": {
       "post": {
         "tags": [
-          "admin-general-ride-completion-controller"
+          "admin-reservation-completion-controller"
         ],
         "operationId": "complete",
         "parameters": [
@@ -270,7 +270,7 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/GeneralRideCompletionResponse"
+                  "$ref": "#/components/schemas/ReservationCompletionResponse"
                 }
               }
             }
@@ -943,7 +943,7 @@
           }
         }
       },
-      "GeneralRideCompletionResponse": {
+      "ReservationCompletionResponse": {
         "type": "object",
         "properties": {
           "reservationId": {
@@ -961,6 +961,14 @@
             "format": "int64"
           },
           "generalRideCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dressageRideCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "jumpingRideCount": {
             "type": "integer",
             "format": "int32"
           }
