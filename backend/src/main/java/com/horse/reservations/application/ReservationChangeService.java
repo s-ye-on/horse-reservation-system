@@ -137,6 +137,10 @@ public class ReservationChangeService {
 		}
 
 		ensureReservableLessonDate(targetTimeSlot.getLessonDate());
+		if (isWeekendSameDayChange(reservation, targetTimeSlot, timing)) {
+			throw new ReservationException(
+				ExceptionCode.RESERVATION_WEEKEND_SAME_DAY_CHANGE_NOT_ALLOWED);
+		}
 		if (timing == ReservationChangeTiming.BEFORE_CUTOFF
 			|| isWeekdaySameDayChange(reservation, targetTimeSlot, timing)) {
 			ensureCouponValidForTarget(reservation, lockedCoupon, targetTimeSlot.getLessonDate());
@@ -360,6 +364,15 @@ public class ReservationChangeService {
 		ReservationChangeTiming timing
 	) {
 		return timing == ReservationChangeTiming.AFTER_CUTOFF_WEEKDAY
+			&& reservation.getLessonDate().equals(targetTimeSlot.getLessonDate());
+	}
+
+	private boolean isWeekendSameDayChange(
+		Reservation reservation,
+		TimeSlotCapacity targetTimeSlot,
+		ReservationChangeTiming timing
+	) {
+		return timing == ReservationChangeTiming.AFTER_CUTOFF_WEEKEND
 			&& reservation.getLessonDate().equals(targetTimeSlot.getLessonDate());
 	}
 

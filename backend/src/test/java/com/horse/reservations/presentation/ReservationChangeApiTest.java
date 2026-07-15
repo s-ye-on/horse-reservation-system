@@ -376,6 +376,18 @@ class ReservationChangeApiTest {
 	}
 
 	@Test
+	void 마감_후_토요일과_일요일_당일_변경은_무료_변경권이_있어도_거부한다() throws Exception {
+		assertWeekendSameDayChangeRejected(
+			LocalDate.of(2026, 8, 1),
+			Instant.parse("2026-07-31T13:00:00Z"),
+			"saturday");
+		assertWeekendSameDayChangeRejected(
+			LocalDate.of(2026, 8, 2),
+			Instant.parse("2026-08-01T13:00:00Z"),
+			"sunday");
+	}
+
+	@Test
 	void 두_예약이_한_자리로_동시에_변경되면_하나만_성공한다() throws Exception {
 		final Long firstMemberId = insertMember("concurrent-change-first");
 		final Long secondMemberId = insertMember("concurrent-change-second");
@@ -434,6 +446,35 @@ class ReservationChangeApiTest {
 		catch (Exception exception) {
 			throw new AssertionError(exception);
 		}
+	}
+
+	private void assertWeekendSameDayChangeRejected(
+		LocalDate lessonDate,
+		Instant requestedAt,
+		String suffix
+	) throws Exception {
+		when(clock.instant()).thenReturn(requestedAt);
+		final String authSubject = "weekend-change-" + suffix;
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1), false);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long targetTimeSlotId = insertTimeSlot(lessonDate, "10:00:00", 8);
+		final Long reservationId = insertCouponReservation(
+			memberId, couponId, lessonDate, "09:00:00", "confirmed");
+
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", reservationId)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(targetTimeSlotId, "주말 당일 변경")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code")
+				.value("RESERVATION_WEEKEND_SAME_DAY_CHANGE_NOT_ALLOWED"));
+
+		assertThat(reservationSchedule(reservationId)).containsExactly(
+			lessonDate.toString(), "09:00:00");
+		assertThat(couponFreeChangeUsed(couponId)).isFalse();
+		assertThat(couponUsageCount(reservationId, "free_change_used")).isZero();
+		assertThat(changeLogCount(reservationId)).isZero();
 	}
 
 	private Long insertMember(String authSubject) {

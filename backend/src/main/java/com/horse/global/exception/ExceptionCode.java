@@ -17,6 +17,9 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_CHANGE_REQUESTED_AT(HttpStatus.BAD_REQUEST, "예약 변경 요청 시각은 필수입니다."),
 	RESERVATION_INVALID_CHANGE_REASON(HttpStatus.BAD_REQUEST, "예약 변경 사유가 올바르지 않습니다."),
 	RESERVATION_CHANGE_NOT_ALLOWED(HttpStatus.CONFLICT, "현재 시각과 예약 조건에서는 변경할 수 없습니다."),
+	RESERVATION_WEEKEND_SAME_DAY_CHANGE_NOT_ALLOWED(
+		HttpStatus.CONFLICT,
+		"주말 수업은 마감 후 같은 날 다른 시간으로 변경할 수 없습니다."),
 	RESERVATION_CHANGE_SOURCE_CONFLICT(HttpStatus.CONFLICT, "예약 일정이 이미 변경되었습니다. 최신 예약을 확인해 주세요."),
 	RESERVATION_MEMBER_MISMATCH(HttpStatus.NOT_FOUND, "예약을 찾을 수 없습니다."),
 	RESERVATION_INVALID_COUPON_ID(HttpStatus.BAD_REQUEST, "쿠폰 예약에는 쿠폰 식별자가 필요합니다."),
