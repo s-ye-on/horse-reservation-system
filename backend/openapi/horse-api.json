@@ -522,6 +522,29 @@
         }
       }
     },
+    "/api/me/reservations": {
+      "get": {
+        "tags": [
+          "member-reservation-query-controller"
+        ],
+        "operationId": "getMyReservations",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemberReservationResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/me/eligible-classes": {
       "get": {
         "tags": [
@@ -1245,6 +1268,91 @@
             "items": {
               "$ref": "#/components/schemas/MemberAvailableTimeSlotResponse"
             }
+          }
+        }
+      },
+      "MemberReservationCouponResponse": {
+        "type": "object",
+        "properties": {
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "couponType": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "remainingCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "heldCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "availableCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "MemberReservationResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "classType": {
+            "type": "string"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentSource": {
+            "type": "string"
+          },
+          "coupon": {
+            "$ref": "#/components/schemas/MemberReservationCouponResponse"
+          },
+          "paymentDueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rejectionReason": {
+            "type": "string"
+          },
+          "couponAction": {
+            "type": "string"
+          },
+          "approvalRequestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "adminConfirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "rejectedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       },

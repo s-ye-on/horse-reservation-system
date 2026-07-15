@@ -24,6 +24,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
 	boolean existsByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);
 
+	List<Reservation> findAllByMemberIdAndLessonDateGreaterThanEqualOrderByLessonDateAscStartTimeAscIdAsc(
+		Long memberId,
+		LocalDate lessonDate
+	);
+
+	List<Reservation> findAllByMemberIdAndLessonDateLessThanOrderByLessonDateDescStartTimeDescIdDesc(
+		Long memberId,
+		LocalDate lessonDate
+	);
+
 	@Query("""
 		select reservation.lessonDate as lessonDate, reservation.startTime as startTime
 		from Reservation reservation

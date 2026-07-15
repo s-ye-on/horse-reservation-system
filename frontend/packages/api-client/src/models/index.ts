@@ -13,6 +13,8 @@ export * from './MemberAvailableTimeSlotResponse';
 export * from './MemberAvailableTimeSlotsResponse';
 export * from './MemberCouponResponse';
 export * from './MemberCouponUsageResponse';
+export * from './MemberReservationCouponResponse';
+export * from './MemberReservationResponse';
 export * from './MemberRidingPermissionUpdateRequest';
 export * from './PendingPaymentExpiryResponse';
 export * from './ReservationApplicationRequest';
