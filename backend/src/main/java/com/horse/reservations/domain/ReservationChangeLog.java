@@ -95,7 +95,7 @@ public class ReservationChangeLog {
 		this.toStartTime = requireStartTime(toStartTime);
 		this.changeType = changeType;
 		this.couponAction = couponAction;
-		this.memo = requireMemo(memo);
+		this.memo = memo;
 	}
 
 	public static ReservationChangeLog paymentRestored(
@@ -117,7 +117,7 @@ public class ReservationChangeLog {
 			startTime,
 			ReservationChangeType.PAYMENT_RESTORED,
 			CouponAction.NONE,
-			memo);
+			requireMemo(memo));
 	}
 
 	public static ReservationChangeLog noShowProcessed(
@@ -140,7 +140,59 @@ public class ReservationChangeLog {
 			startTime,
 			ReservationChangeType.NO_SHOW_PROCESSED,
 			couponAction,
+			requireMemo(memo));
+	}
+
+	public static ReservationChangeLog reservationChanged(
+		Reservation reservation,
+		String actorAuthSubject,
+		ReservationActorType actorType,
+		LocalDate fromLessonDate,
+		LocalTime fromStartTime,
+		String memo
+	) {
+		if (reservation == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_REFERENCE);
+		}
+		return reservationChanged(
+			reservation.getId(),
+			actorAuthSubject,
+			actorType,
+			reservation.getStatus(),
+			fromLessonDate,
+			fromStartTime,
+			reservation.getLessonDate(),
+			reservation.getStartTime(),
 			memo);
+	}
+
+	public static ReservationChangeLog reservationChanged(
+		Long reservationId,
+		String actorAuthSubject,
+		ReservationActorType actorType,
+		ReservationStatus reservationStatus,
+		LocalDate fromLessonDate,
+		LocalTime fromStartTime,
+		LocalDate toLessonDate,
+		LocalTime toStartTime,
+		String memo
+	) {
+		final ReservationActorType validatedActorType = requireScheduleChangeActorType(actorType);
+		final ReservationStatus validatedStatus = requireScheduleChangeStatus(reservationStatus);
+		validateChangedSchedule(fromLessonDate, fromStartTime, toLessonDate, toStartTime);
+		return new ReservationChangeLog(
+			reservationId,
+			actorAuthSubject,
+			validatedActorType,
+			validatedStatus,
+			validatedStatus,
+			fromLessonDate,
+			fromStartTime,
+			toLessonDate,
+			toStartTime,
+			ReservationChangeType.SCHEDULE_CHANGED,
+			CouponAction.NONE,
+			validateScheduleChangeMemo(validatedActorType, memo));
 	}
 
 	private static Long requireReservationId(Long reservationId) {
@@ -174,6 +226,45 @@ public class ReservationChangeLog {
 
 	private static String requireMemo(String memo) {
 		if (memo == null || memo.isBlank() || memo.length() > MAX_MEMO_LENGTH) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_MEMO);
+		}
+		return memo;
+	}
+
+	private static ReservationActorType requireScheduleChangeActorType(ReservationActorType actorType) {
+		if (actorType != ReservationActorType.MEMBER && actorType != ReservationActorType.ADMIN) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_ACTOR);
+		}
+		return actorType;
+	}
+
+	private static ReservationStatus requireScheduleChangeStatus(ReservationStatus reservationStatus) {
+		if (reservationStatus == null || !reservationStatus.occupiesCapacity()) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+		return reservationStatus;
+	}
+
+	private static void validateChangedSchedule(
+		LocalDate fromLessonDate,
+		LocalTime fromStartTime,
+		LocalDate toLessonDate,
+		LocalTime toStartTime
+	) {
+		if (requireLessonDate(fromLessonDate).equals(requireLessonDate(toLessonDate))
+			&& requireStartTime(fromStartTime).equals(requireStartTime(toStartTime))) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_REFERENCE);
+		}
+	}
+
+	private static String validateScheduleChangeMemo(ReservationActorType actorType, String memo) {
+		if (actorType == ReservationActorType.ADMIN) {
+			return requireMemo(memo);
+		}
+		if (memo == null || memo.isBlank()) {
+			return null;
+		}
+		if (memo.length() > MAX_MEMO_LENGTH) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_MEMO);
 		}
 		return memo;

@@ -427,3 +427,8 @@ run = "mise run docs:check"
 description = "Verify Seoul reservation change cutoff and weekday boundaries"
 dir = "backend"
 run = "./gradlew test --tests '*ReservationChangeDeadlinePolicyTest'"
+
+[tasks."verify:m2-02"]
+description = "Verify atomic reservation schedule changes before cutoff"
+dir = "backend"
+run = "./gradlew test --tests '*ReservationChange*Test' --tests '*ReservationChangeApiTest'"

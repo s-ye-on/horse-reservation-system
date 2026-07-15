@@ -67,6 +67,37 @@ class ReservationChangeLogRepositoryIntegrationTest {
 	}
 
 	@Test
+	void 일정_변경_행위를_추가하고_전후_일정과_메모를_보존한다() {
+		final Long reservationId = insertActiveReservation("schedule-change-member");
+		final ReservationChangeLog changeLog = ReservationChangeLog.reservationChanged(
+			reservationId,
+			"change-admin",
+			ReservationActorType.ADMIN,
+			ReservationStatus.CONFIRMED,
+			LocalDate.of(2026, 8, 1),
+			LocalTime.of(9, 0),
+			LocalDate.of(2026, 8, 2),
+			LocalTime.of(10, 0),
+			"우천으로 일정 조정");
+
+		repository.save(changeLog);
+		entityManager.flush();
+		entityManager.clear();
+
+		final ReservationChangeLog saved = repository
+			.findAllByReservationIdOrderByCreatedAtAscIdAsc(reservationId)
+			.getFirst();
+		assertThat(saved.getActorType()).isEqualTo(ReservationActorType.ADMIN);
+		assertThat(saved.getFromStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+		assertThat(saved.getToStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+		assertThat(saved.getFromLessonDate()).isEqualTo(LocalDate.of(2026, 8, 1));
+		assertThat(saved.getToLessonDate()).isEqualTo(LocalDate.of(2026, 8, 2));
+		assertThat(saved.getChangeType()).isEqualTo(ReservationChangeType.SCHEDULE_CHANGED);
+		assertThat(saved.getCouponAction()).isEqualTo(CouponAction.NONE);
+		assertThat(saved.getMemo()).isEqualTo("우천으로 일정 조정");
+	}
+
+	@Test
 	void 데이터베이스가_잘못된_복구_조합과_빈_메모를_거부한다() {
 		final Long reservationId = insertExpiredReservation("constraint-log-member");
 
@@ -75,6 +106,21 @@ class ReservationChangeLogRepositoryIntegrationTest {
 			.isInstanceOf(DataAccessException.class);
 		assertThatThrownBy(() -> insertRawLog(
 			reservationId, "admin", "payment_expired", "confirmed", "none", " "))
+			.isInstanceOf(DataAccessException.class);
+	}
+
+	@Test
+	void 데이터베이스가_잘못된_예약_변경_조합을_거부한다() {
+		final Long reservationId = insertActiveReservation("invalid-schedule-member");
+
+		assertThatThrownBy(() -> insertRawScheduleChangeLog(
+			reservationId, "system", "confirmed", "confirmed", "none", "메모"))
+			.isInstanceOf(DataAccessException.class);
+		assertThatThrownBy(() -> insertRawScheduleChangeLog(
+			reservationId, "admin", "confirmed", "confirmed", "return", "메모"))
+			.isInstanceOf(DataAccessException.class);
+		assertThatThrownBy(() -> insertRawScheduleChangeLog(
+			reservationId, "admin", "confirmed", "confirmed", "none", " "))
 			.isInstanceOf(DataAccessException.class);
 	}
 
@@ -116,6 +162,22 @@ class ReservationChangeLogRepositoryIntegrationTest {
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
+	private Long insertActiveReservation(String authSubject) {
+		jdbcTemplate.update("""
+			INSERT INTO members (auth_subject, name, phone, large_arena_allowed)
+			VALUES (?, '일정 회원', '010-0000-0000', FALSE)
+			""", authSubject);
+		final Long memberId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+		jdbcTemplate.update("""
+			INSERT INTO reservations (
+				member_id, class_type, lesson_date, start_time, status, payment_source,
+				approval_requested_at, admin_confirmed_at
+			) VALUES (?, 'FIRST_RIDE', '2026-08-01', '09:00:00',
+				'confirmed', 'single_payment', '2026-07-15 08:00:00', '2026-07-15 10:00:00')
+			""", memberId);
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
 	private void insertRawLog(
 		Long reservationId,
 		String actorType,
@@ -131,6 +193,24 @@ class ReservationChangeLogRepositoryIntegrationTest {
 				change_type, coupon_action, memo
 			) VALUES (?, 'restore-admin', ?, ?, ?, '2026-08-01', '09:00:00',
 				'2026-08-01', '09:00:00', 'payment_restored', ?, ?)
+			""", reservationId, actorType, fromStatus, toStatus, couponAction, memo);
+	}
+
+	private void insertRawScheduleChangeLog(
+		Long reservationId,
+		String actorType,
+		String fromStatus,
+		String toStatus,
+		String couponAction,
+		String memo
+	) {
+		jdbcTemplate.update("""
+			INSERT INTO reservation_change_logs (
+				reservation_id, actor_auth_subject, actor_type, from_status, to_status,
+				from_lesson_date, from_start_time, to_lesson_date, to_start_time,
+				change_type, coupon_action, memo
+			) VALUES (?, 'change-admin', ?, ?, ?, '2026-08-01', '09:00:00',
+				'2026-08-02', '10:00:00', 'schedule_changed', ?, ?)
 			""", reservationId, actorType, fromStatus, toStatus, couponAction, memo);
 	}
 }

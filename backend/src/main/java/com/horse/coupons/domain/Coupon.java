@@ -84,16 +84,20 @@ public class Coupon {
 	}
 
 	public void hold(LocalDate lessonDate) {
-		if (lessonDate == null) {
-			throw new CouponException(ExceptionCode.COUPON_INVALID_LESSON_DATE);
-		}
+		ensureUsableForLesson(lessonDate);
 		if (status != CouponStatus.ACTIVE || heldCount >= remainingCount) {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_NOT_AVAILABLE);
+		}
+		heldCount++;
+	}
+
+	public void ensureUsableForLesson(LocalDate lessonDate) {
+		if (lessonDate == null) {
+			throw new CouponException(ExceptionCode.COUPON_INVALID_LESSON_DATE);
 		}
 		if (expiresAt != null && expiresAt.toLocalDate().isBefore(lessonDate)) {
 			throw new CouponException(ExceptionCode.COUPON_EXPIRED_FOR_LESSON);
 		}
-		heldCount++;
 	}
 
 	public void releaseHold() {

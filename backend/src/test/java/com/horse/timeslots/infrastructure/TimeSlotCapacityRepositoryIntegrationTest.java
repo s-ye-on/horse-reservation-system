@@ -19,6 +19,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.mysql.MySQLContainer;
 
 import com.horse.TestcontainersConfiguration;
+import com.horse.timeslots.domain.TimeSlotCapacity;
 
 @Import(TestcontainersConfiguration.class)
 @DataJpaTest
@@ -41,6 +42,9 @@ class TimeSlotCapacityRepositoryIntegrationTest {
 
 	@Autowired
 	MySQLContainer mysqlContainer;
+
+	@Autowired
+	TimeSlotCapacityRepository repository;
 
 	@Test
 	void 빈_DB에_시간대_정원_스키마를_적용한다() {
@@ -129,7 +133,32 @@ class TimeSlotCapacityRepositoryIntegrationTest {
 			.isInstanceOf(DataAccessException.class);
 	}
 
-	private void insertTimeSlot(
+	@Test
+	void 날짜와_시각으로_잠금_없는_시간대_projection을_조회한다() {
+		final Long timeSlotId = insertTimeSlot("2026-08-05", "09:00:00", 8, 4, CLASS_CAPACITIES);
+
+		final TimeSlotCapacity projection = repository
+			.findByLessonDateAndStartTime(java.time.LocalDate.of(2026, 8, 5), java.time.LocalTime.of(9, 0))
+			.orElseThrow();
+
+		assertThat(projection.getId()).isEqualTo(timeSlotId);
+		assertThat(projection.getLessonDate()).isEqualTo(java.time.LocalDate.of(2026, 8, 5));
+		assertThat(projection.getStartTime()).isEqualTo(java.time.LocalTime.of(9, 0));
+	}
+
+	@Test
+	void 시간대_ID_잠금_조회는_입력_순서와_무관하게_ID_오름차순을_보장한다() {
+		final Long laterId = insertTimeSlot("2026-08-06", "10:00:00", 8, 4, CLASS_CAPACITIES);
+		final Long earlierId = insertTimeSlot("2026-08-06", "09:00:00", 8, 4, CLASS_CAPACITIES);
+
+		final java.util.List<TimeSlotCapacity> locked = repository.findAllByIdForUpdateOrdered(
+			java.util.List.of(laterId, earlierId));
+
+		assertThat(locked).extracting(TimeSlotCapacity::getId)
+			.containsExactly(Math.min(laterId, earlierId), Math.max(laterId, earlierId));
+	}
+
+	private Long insertTimeSlot(
 		String lessonDate,
 		String startTime,
 		int totalCapacity,
@@ -145,6 +174,7 @@ class TimeSlotCapacityRepositoryIntegrationTest {
 				class_capacity_json
 			) VALUES (?, ?, ?, ?, ?)
 			""", lessonDate, startTime, totalCapacity, roundArenaCapacity, classCapacities);
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
 	private String createDatabase(String databaseName) throws Exception {

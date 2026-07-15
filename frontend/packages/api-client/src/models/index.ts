@@ -2,6 +2,7 @@
 /* eslint-disable */
 export * from './AdminMemberResponse';
 export * from './AdminPendingPaymentResponse';
+export * from './AdminReservationChangeRequest';
 export * from './AdminReservationCouponResponse';
 export * from './AdminReservationPageResponse';
 export * from './AdminReservationResponse';
@@ -12,12 +13,14 @@ export * from './MemberAvailableTimeSlotResponse';
 export * from './MemberAvailableTimeSlotsResponse';
 export * from './MemberCouponResponse';
 export * from './MemberCouponUsageResponse';
+export * from './MemberReservationChangeRequest';
 export * from './MemberReservationCouponResponse';
 export * from './MemberReservationResponse';
 export * from './MemberRidingPermissionUpdateRequest';
 export * from './PendingPaymentExpiryResponse';
 export * from './ReservationApplicationRequest';
 export * from './ReservationApplicationResponse';
+export * from './ReservationChangeResponse';
 export * from './ReservationCompletionResponse';
 export * from './ReservationConfirmResponse';
 export * from './ReservationCouponResponse';

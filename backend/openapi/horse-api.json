@@ -83,6 +83,47 @@
         }
       }
     },
+    "/api/me/reservations/{reservationId}/change": {
+      "post": {
+        "tags": [
+          "member-reservation-change-controller"
+        ],
+        "operationId": "change",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberReservationChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationChangeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/timeslots": {
       "get": {
         "tags": [
@@ -312,6 +353,47 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ReservationCompletionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/reservations/{reservationId}/change": {
+      "post": {
+        "tags": [
+          "admin-reservation-change-controller"
+        ],
+        "operationId": "change_1",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReservationChangeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationChangeResponse"
                 }
               }
             }
@@ -938,6 +1020,46 @@
           }
         }
       },
+      "MemberReservationChangeRequest": {
+        "type": "object",
+        "properties": {
+          "targetTimeSlotId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      },
+      "ReservationChangeResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "couponAction": {
+            "type": "string"
+          },
+          "freeChangeUsed": {
+            "type": "boolean"
+          },
+          "changed": {
+            "type": "boolean"
+          }
+        }
+      },
       "TimeSlotCreateRequest": {
         "type": "object",
         "properties": {
@@ -1133,6 +1255,18 @@
           "jumpingRideCount": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "AdminReservationChangeRequest": {
+        "type": "object",
+        "properties": {
+          "targetTimeSlotId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memo": {
+            "type": "string"
           }
         }
       },

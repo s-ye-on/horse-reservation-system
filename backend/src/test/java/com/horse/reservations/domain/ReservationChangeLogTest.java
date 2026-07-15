@@ -86,6 +86,110 @@ class ReservationChangeLogTest {
 		assertThat(changeLog.getMemo()).isEqualTo("질병 예외 반환");
 	}
 
+	@Test
+	void 회원_예약_변경_이력은_상태를_유지하고_사유는_선택값이다() {
+		final ReservationChangeLog changeLog = ReservationChangeLog.reservationChanged(
+			1L,
+			"member-subject",
+			ReservationActorType.MEMBER,
+			ReservationStatus.CONFIRMED,
+			LESSON_DATE,
+			START_TIME,
+			LESSON_DATE.plusDays(1),
+			START_TIME.plusHours(1),
+			null);
+
+		assertThat(changeLog.getActorType()).isEqualTo(ReservationActorType.MEMBER);
+		assertThat(changeLog.getFromStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+		assertThat(changeLog.getToStatus()).isEqualTo(ReservationStatus.CONFIRMED);
+		assertThat(changeLog.getChangeType()).isEqualTo(ReservationChangeType.SCHEDULE_CHANGED);
+		assertThat(changeLog.getCouponAction()).isEqualTo(CouponAction.NONE);
+		assertThat(changeLog.getMemo()).isNull();
+	}
+
+	@Test
+	void 관리자_예약_변경_이력은_메모가_필수다() {
+		final ReservationChangeLog changeLog = ReservationChangeLog.reservationChanged(
+			1L,
+			"admin-subject",
+			ReservationActorType.ADMIN,
+			ReservationStatus.PENDING_PAYMENT,
+			LESSON_DATE,
+			START_TIME,
+			LESSON_DATE.plusDays(1),
+			START_TIME,
+			"관리자 일정 조정");
+
+		assertThat(changeLog.getActorType()).isEqualTo(ReservationActorType.ADMIN);
+		assertThat(changeLog.getFromStatus()).isEqualTo(ReservationStatus.PENDING_PAYMENT);
+		assertThat(changeLog.getToStatus()).isEqualTo(ReservationStatus.PENDING_PAYMENT);
+		assertThat(changeLog.getMemo()).isEqualTo("관리자 일정 조정");
+	}
+
+	@Test
+	void 예약_변경_이력은_행위자_상태_메모와_변경된_일정을_검증한다() {
+		assertReservationException(
+			() -> ReservationChangeLog.reservationChanged(
+				1L,
+				"system-subject",
+				ReservationActorType.SYSTEM,
+				ReservationStatus.CONFIRMED,
+				LESSON_DATE,
+				START_TIME,
+				LESSON_DATE.plusDays(1),
+				START_TIME,
+				"시스템"),
+			ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_ACTOR);
+		assertReservationException(
+			() -> ReservationChangeLog.reservationChanged(
+				1L,
+				"admin-subject",
+				ReservationActorType.ADMIN,
+				ReservationStatus.CANCELLED,
+				LESSON_DATE,
+				START_TIME,
+				LESSON_DATE.plusDays(1),
+				START_TIME,
+				"메모"),
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+		assertReservationException(
+			() -> ReservationChangeLog.reservationChanged(
+				1L,
+				"admin-subject",
+				ReservationActorType.ADMIN,
+				ReservationStatus.CONFIRMED,
+				LESSON_DATE,
+				START_TIME,
+				LESSON_DATE,
+				START_TIME,
+				"메모"),
+			ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_REFERENCE);
+		assertReservationException(
+			() -> ReservationChangeLog.reservationChanged(
+				1L,
+				"admin-subject",
+				ReservationActorType.ADMIN,
+				ReservationStatus.CONFIRMED,
+				LESSON_DATE,
+				START_TIME,
+				LESSON_DATE.plusDays(1),
+				START_TIME,
+				" "),
+			ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_MEMO);
+		assertReservationException(
+			() -> ReservationChangeLog.reservationChanged(
+				1L,
+				"member-subject",
+				ReservationActorType.MEMBER,
+				ReservationStatus.CONFIRMED,
+				LESSON_DATE,
+				START_TIME,
+				LESSON_DATE.plusDays(1),
+				START_TIME,
+				"가".repeat(501)),
+			ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_MEMO);
+	}
+
 	private void assertReservationException(Runnable action, ExceptionCode expectedCode) {
 		assertThatThrownBy(action::run)
 			.isInstanceOfSatisfying(

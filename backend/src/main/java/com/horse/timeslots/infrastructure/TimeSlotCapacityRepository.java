@@ -2,6 +2,7 @@ package com.horse.timeslots.infrastructure;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,9 +19,20 @@ public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapaci
 
 	boolean existsByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);
 
+	Optional<TimeSlotCapacity> findByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);
+
 	List<TimeSlotCapacity> findAllByOrderByLessonDateAscStartTimeAsc();
 
 	List<TimeSlotCapacity> findAllByLessonDateOrderByStartTimeAsc(LocalDate lessonDate);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+		select timeSlot
+		from TimeSlotCapacity timeSlot
+		where timeSlot.id in :timeSlotIds
+		order by timeSlot.id
+		""")
+	List<TimeSlotCapacity> findAllByIdForUpdateOrdered(@Param("timeSlotIds") Collection<Long> timeSlotIds);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select timeSlot from TimeSlotCapacity timeSlot where timeSlot.id = :timeSlotId")

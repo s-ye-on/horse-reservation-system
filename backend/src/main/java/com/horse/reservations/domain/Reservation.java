@@ -245,6 +245,37 @@ public class Reservation {
 		return true;
 	}
 
+	public boolean changeSchedule(LocalDate targetLessonDate, LocalTime targetStartTime) {
+		final LocalDate validatedLessonDate = requireLessonDate(targetLessonDate);
+		final LocalTime validatedStartTime = requireStartTime(targetStartTime);
+		ensureChangeable();
+		if (lessonDate.equals(validatedLessonDate) && startTime.equals(validatedStartTime)) {
+			return false;
+		}
+		lessonDate = validatedLessonDate;
+		startTime = validatedStartTime;
+		return true;
+	}
+
+	public void ensureSchedule(LocalDate expectedLessonDate, LocalTime expectedStartTime) {
+		final LocalDate validatedLessonDate = requireLessonDate(expectedLessonDate);
+		final LocalTime validatedStartTime = requireStartTime(expectedStartTime);
+		if (!lessonDate.equals(validatedLessonDate) || !startTime.equals(validatedStartTime)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+	}
+
+	public void ensureChangeable() {
+		if (!status.occupiesCapacity()) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+	}
+
+	public boolean hasSchedule(LocalDate expectedLessonDate, LocalTime expectedStartTime) {
+		return lessonDate.equals(requireLessonDate(expectedLessonDate))
+			&& startTime.equals(requireStartTime(expectedStartTime));
+	}
+
 	public boolean recordNoShow(CouponAction requestedCouponAction, String memo) {
 		final CouponAction validatedCouponAction = requireNoShowCouponAction(requestedCouponAction);
 		final String validatedMemo = requireAdminMemo(memo);

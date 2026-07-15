@@ -54,6 +54,16 @@ class CouponTest {
 	}
 
 	@Test
+	void 쿠폰은_대상_수업일이_만료일_이후면_사용할_수_없다() {
+		final Coupon coupon = usedCoupon();
+
+		coupon.ensureUsableForLesson(LocalDate.of(2026, 11, 1));
+		assertThatThrownBy(() -> coupon.ensureUsableForLesson(LocalDate.of(2026, 11, 2)))
+			.isInstanceOf(CouponException.class)
+			.hasMessage(ExceptionCode.COUPON_EXPIRED_FOR_LESSON.message());
+	}
+
+	@Test
 	void 점유된_쿠폰을_처음_사용하면_수업일로부터_삼개월의_유효기간을_설정하고_차감한다() {
 		final Coupon coupon = Coupon.create(1L, CouponType.GENERAL, 10, "admin-subject");
 		final LocalDate lessonDate = LocalDate.of(2026, 8, 10);

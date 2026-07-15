@@ -252,6 +252,38 @@ class ReservationTest {
 	}
 
 	@Test
+	void 활성_예약은_일정을_제자리에서_변경하고_동일_대상_재시도는_false를_반환한다() {
+		final Reservation reservation = confirmedCouponReservation();
+		final LocalDate targetLessonDate = LESSON_DATE.plusDays(1);
+		final LocalTime targetStartTime = START_TIME.plusHours(1);
+
+		assertThat(reservation.changeSchedule(targetLessonDate, targetStartTime)).isTrue();
+		assertThat(reservation.getLessonDate()).isEqualTo(targetLessonDate);
+		assertThat(reservation.getStartTime()).isEqualTo(targetStartTime);
+		assertThat(reservation.changeSchedule(targetLessonDate, targetStartTime)).isFalse();
+	}
+
+	@Test
+	void 비활성_예약은_일정을_변경할_수_없다() {
+		final Reservation reservation = confirmedCouponReservation();
+		reservation.completeRide();
+
+		assertReservationException(
+			() -> reservation.changeSchedule(LESSON_DATE.plusDays(1), START_TIME.plusHours(1)),
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+	}
+
+	@Test
+	void 일정_재검증은_기대한_일정과_다르면_실패한다() {
+		final Reservation reservation = confirmedSinglePaymentReservation();
+
+		reservation.ensureSchedule(LESSON_DATE, START_TIME);
+		assertReservationException(
+			() -> reservation.ensureSchedule(LESSON_DATE.plusDays(1), START_TIME),
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+	}
+
+	@Test
 	void 확정된_쿠폰_예약은_차감이나_반환으로만_노쇼_처리한다() {
 		final Reservation reservation = confirmedCouponReservation();
 
