@@ -27,4 +27,15 @@ public record ReservationChangeResult(
 			false,
 			changed);
 	}
+
+	public static ReservationChangeResult freeChangeUsed(Reservation reservation, boolean changed) {
+		return new ReservationChangeResult(
+			reservation.getId(),
+			reservation.getLessonDate(),
+			reservation.getStartTime(),
+			reservation.getStatus(),
+			CouponAction.FREE_CHANGE_USED,
+			true,
+			changed);
+	}
 }

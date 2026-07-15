@@ -151,6 +151,25 @@ public class ReservationChangeLog {
 		LocalTime fromStartTime,
 		String memo
 	) {
+		return reservationChanged(
+			reservation,
+			actorAuthSubject,
+			actorType,
+			fromLessonDate,
+			fromStartTime,
+			CouponAction.NONE,
+			memo);
+	}
+
+	public static ReservationChangeLog reservationChanged(
+		Reservation reservation,
+		String actorAuthSubject,
+		ReservationActorType actorType,
+		LocalDate fromLessonDate,
+		LocalTime fromStartTime,
+		CouponAction couponAction,
+		String memo
+	) {
 		if (reservation == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_REFERENCE);
 		}
@@ -163,6 +182,7 @@ public class ReservationChangeLog {
 			fromStartTime,
 			reservation.getLessonDate(),
 			reservation.getStartTime(),
+			couponAction,
 			memo);
 	}
 
@@ -177,8 +197,34 @@ public class ReservationChangeLog {
 		LocalTime toStartTime,
 		String memo
 	) {
+		return reservationChanged(
+			reservationId,
+			actorAuthSubject,
+			actorType,
+			reservationStatus,
+			fromLessonDate,
+			fromStartTime,
+			toLessonDate,
+			toStartTime,
+			CouponAction.NONE,
+			memo);
+	}
+
+	public static ReservationChangeLog reservationChanged(
+		Long reservationId,
+		String actorAuthSubject,
+		ReservationActorType actorType,
+		ReservationStatus reservationStatus,
+		LocalDate fromLessonDate,
+		LocalTime fromStartTime,
+		LocalDate toLessonDate,
+		LocalTime toStartTime,
+		CouponAction couponAction,
+		String memo
+	) {
 		final ReservationActorType validatedActorType = requireScheduleChangeActorType(actorType);
 		final ReservationStatus validatedStatus = requireScheduleChangeStatus(reservationStatus);
+		final CouponAction validatedCouponAction = requireScheduleChangeCouponAction(couponAction);
 		validateChangedSchedule(fromLessonDate, fromStartTime, toLessonDate, toStartTime);
 		return new ReservationChangeLog(
 			reservationId,
@@ -191,7 +237,7 @@ public class ReservationChangeLog {
 			toLessonDate,
 			toStartTime,
 			ReservationChangeType.SCHEDULE_CHANGED,
-			CouponAction.NONE,
+			validatedCouponAction,
 			validateScheduleChangeMemo(validatedActorType, memo));
 	}
 
@@ -255,6 +301,13 @@ public class ReservationChangeLog {
 			&& requireStartTime(fromStartTime).equals(requireStartTime(toStartTime))) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_REFERENCE);
 		}
+	}
+
+	private static CouponAction requireScheduleChangeCouponAction(CouponAction couponAction) {
+		if (couponAction != CouponAction.NONE && couponAction != CouponAction.FREE_CHANGE_USED) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
+		}
+		return couponAction;
 	}
 
 	private static String validateScheduleChangeMemo(ReservationActorType actorType, String memo) {

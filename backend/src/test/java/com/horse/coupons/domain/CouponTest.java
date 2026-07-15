@@ -117,6 +117,18 @@ class CouponTest {
 			.hasMessage(ExceptionCode.COUPON_INVALID_EXPIRY_DATE.message());
 	}
 
+	@Test
+	void 쿠폰은_무료_변경권을_한_번만_사용한다() {
+		final Coupon coupon = Coupon.create(1L, CouponType.GENERAL, 10, "admin-subject");
+
+		coupon.useFreeChange();
+
+		assertThat(coupon.isFreeChangeUsed()).isTrue();
+		assertThatThrownBy(coupon::useFreeChange)
+			.isInstanceOf(CouponException.class)
+			.hasMessage(ExceptionCode.COUPON_FREE_CHANGE_ALREADY_USED.message());
+	}
+
 	private Coupon usedCoupon() {
 		final Coupon coupon = Coupon.create(1L, CouponType.GENERAL, 10, "admin-subject");
 		final LocalDate firstLessonDate = LocalDate.of(2026, 8, 1);

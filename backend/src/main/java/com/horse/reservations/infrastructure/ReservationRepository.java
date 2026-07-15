@@ -35,7 +35,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	);
 
 	@Query("""
-		select reservation.lessonDate as lessonDate, reservation.startTime as startTime
+		select reservation.lessonDate as lessonDate,
+			reservation.startTime as startTime,
+			reservation.couponId as couponId
 		from Reservation reservation
 		where reservation.id = :reservationId
 		""")

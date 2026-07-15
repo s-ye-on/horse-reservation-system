@@ -11,12 +11,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.coupons.domain.Coupon;
+import com.horse.coupons.domain.CouponActorType;
+import com.horse.coupons.domain.CouponUsageAction;
+import com.horse.coupons.domain.CouponUsageLog;
 import com.horse.coupons.infrastructure.CouponRepository;
+import com.horse.coupons.infrastructure.CouponUsageLogRepository;
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.Member;
 import com.horse.members.domain.RidingClass;
 import com.horse.members.domain.exception.MemberException;
 import com.horse.members.infrastructure.MemberRepository;
+import com.horse.reservations.domain.CouponAction;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationActorType;
 import com.horse.reservations.domain.ReservationChangeDeadlinePolicy;
@@ -43,6 +48,7 @@ public class ReservationChangeService {
 	private final ReservationChangeLogRepository changeLogRepository;
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final CouponRepository couponRepository;
+	private final CouponUsageLogRepository couponUsageLogRepository;
 
 	public ReservationChangeService(
 		Clock clock,
@@ -50,7 +56,8 @@ public class ReservationChangeService {
 		ReservationRepository reservationRepository,
 		ReservationChangeLogRepository changeLogRepository,
 		TimeSlotCapacityRepository timeSlotRepository,
-		CouponRepository couponRepository
+		CouponRepository couponRepository,
+		CouponUsageLogRepository couponUsageLogRepository
 	) {
 		this.clock = clock;
 		this.memberRepository = memberRepository;
@@ -58,6 +65,7 @@ public class ReservationChangeService {
 		this.changeLogRepository = changeLogRepository;
 		this.timeSlotRepository = timeSlotRepository;
 		this.couponRepository = couponRepository;
+		this.couponUsageLogRepository = couponUsageLogRepository;
 	}
 
 	@Transactional
@@ -112,20 +120,39 @@ public class ReservationChangeService {
 			List.of(sourceTimeSlot.getId(), requireTargetTimeSlotId(targetTimeSlotId)));
 		final TimeSlotCapacity targetTimeSlot = findLockedTimeSlot(lockedTimeSlots, targetTimeSlotId);
 		findLockedTimeSlot(lockedTimeSlots, sourceTimeSlot.getId());
+		final Instant changedAt = Instant.now(clock);
+		final ReservationChangeTiming timing = ReservationChangeDeadlinePolicy.evaluate(
+			sourceProjection.getLessonDate(),
+			changedAt);
+		final Coupon lockedCoupon = lockCouponForChange(sourceProjection.getCouponId());
 
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
 		ensureExpectedMember(reservation, expectedMemberId);
 		ensureSourceUnchanged(reservation, sourceProjection);
 		reservation.ensureChangeable();
+
 		if (reservation.hasSchedule(targetTimeSlot.getLessonDate(), targetTimeSlot.getStartTime())) {
-			return ReservationChangeResult.beforeCutoff(reservation, false);
+			return unchangedResult(reservation);
 		}
 
-		final Instant changedAt = Instant.now(clock);
-		ensureBeforeCutoff(reservation.getLessonDate(), changedAt);
 		ensureReservableLessonDate(targetTimeSlot.getLessonDate());
-		ensureCouponValidForTarget(reservation, targetTimeSlot.getLessonDate());
+		if (timing != ReservationChangeTiming.BEFORE_CUTOFF) {
+			ensureCouponForAfterCutoffChange(
+				reservation,
+				lockedCoupon,
+				targetTimeSlot.getLessonDate());
+			ensureTargetCapacity(targetTimeSlot, reservation.getRidingClass());
+			return changeAfterCutoff(
+				reservation,
+				targetTimeSlot,
+				lockedCoupon,
+				actorAuthSubject,
+				actorType,
+				memo,
+				changedAt);
+		}
+		ensureCouponValidForTarget(reservation, lockedCoupon, targetTimeSlot.getLessonDate());
 		ensureTargetCapacity(targetTimeSlot, reservation.getRidingClass());
 
 		final LocalDate sourceLessonDate = reservation.getLessonDate();
@@ -144,6 +171,43 @@ public class ReservationChangeService {
 				memo));
 		}
 		return ReservationChangeResult.beforeCutoff(reservation, changed);
+	}
+
+	private ReservationChangeResult changeAfterCutoff(
+		Reservation reservation,
+		TimeSlotCapacity targetTimeSlot,
+		Coupon coupon,
+		String actorAuthSubject,
+		ReservationActorType actorType,
+		String memo,
+		Instant changedAt
+	) {
+		if (couponUsageLogRepository.existsByReservationIdAndAction(
+			reservation.getId(),
+			CouponUsageAction.FREE_CHANGE_USED)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_CHANGE_NOT_ALLOWED);
+		}
+
+		coupon.useFreeChange();
+		final LocalDate sourceLessonDate = reservation.getLessonDate();
+		final LocalTime sourceStartTime = reservation.getStartTime();
+		reservation.changeSchedule(targetTimeSlot.getLessonDate(), targetTimeSlot.getStartTime());
+		reservationRepository.saveAndFlush(reservation);
+		couponUsageLogRepository.save(CouponUsageLog.freeChangeUsed(
+			coupon.getId(),
+			reservation.getId(),
+			reservation.getMemberId(),
+			changedAt.atZone(clock.getZone()).toLocalDateTime(),
+			toCouponActorType(actorType)));
+		changeLogRepository.save(ReservationChangeLog.reservationChanged(
+			reservation,
+			actorAuthSubject,
+			actorType,
+			sourceLessonDate,
+			sourceStartTime,
+			CouponAction.FREE_CHANGE_USED,
+			memo));
+		return ReservationChangeResult.freeChangeUsed(reservation, true);
 	}
 
 	private void ensureTargetCapacity(TimeSlotCapacity targetTimeSlot, RidingClass ridingClass) {
@@ -165,20 +229,16 @@ public class ReservationChangeService {
 			classOccupied);
 	}
 
-	private void ensureCouponValidForTarget(Reservation reservation, LocalDate targetLessonDate) {
+	private void ensureCouponValidForTarget(
+		Reservation reservation,
+		Coupon coupon,
+		LocalDate targetLessonDate
+	) {
 		if (reservation.getCouponId() == null) {
 			return;
 		}
-		final Coupon coupon = couponRepository.findByIdForUpdate(reservation.getCouponId())
-			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ID));
+		ensureCouponReference(reservation, coupon);
 		coupon.ensureUsableForLesson(targetLessonDate);
-	}
-
-	private void ensureBeforeCutoff(LocalDate lessonDate, Instant changedAt) {
-		if (ReservationChangeDeadlinePolicy.evaluate(lessonDate, changedAt)
-			!= ReservationChangeTiming.BEFORE_CUTOFF) {
-			throw new ReservationException(ExceptionCode.RESERVATION_CHANGE_NOT_ALLOWED);
-		}
 	}
 
 	private void ensureReservableLessonDate(LocalDate lessonDate) {
@@ -236,5 +296,54 @@ public class ReservationChangeService {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_ADMIN_MEMO);
 		}
 		return memo.strip();
+	}
+
+	private Coupon lockCouponForChange(Long couponId) {
+		if (couponId == null) {
+			return null;
+		}
+		return couponRepository.findByIdForUpdate(couponId)
+			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ID));
+	}
+
+	private void ensureCouponForAfterCutoffChange(
+		Reservation reservation,
+		Coupon coupon,
+		LocalDate targetLessonDate
+	) {
+		if (coupon == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_CHANGE_NOT_ALLOWED);
+		}
+		ensureCouponReference(reservation, coupon);
+		coupon.ensureUsableForLesson(targetLessonDate);
+		if (coupon.isFreeChangeUsed()) {
+			throw new ReservationException(ExceptionCode.RESERVATION_CHANGE_NOT_ALLOWED);
+		}
+	}
+
+	private void ensureCouponReference(Reservation reservation, Coupon coupon) {
+		if (coupon == null
+			|| !coupon.getId().equals(reservation.getCouponId())
+			|| !coupon.getMemberId().equals(reservation.getMemberId())) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ID);
+		}
+	}
+
+	private ReservationChangeResult unchangedResult(Reservation reservation) {
+		if (reservation.getCouponId() != null
+			&& couponUsageLogRepository.existsByReservationIdAndAction(
+				reservation.getId(),
+				CouponUsageAction.FREE_CHANGE_USED)) {
+			return ReservationChangeResult.freeChangeUsed(reservation, false);
+		}
+		return ReservationChangeResult.beforeCutoff(reservation, false);
+	}
+
+	private CouponActorType toCouponActorType(ReservationActorType actorType) {
+		return switch (actorType) {
+			case MEMBER -> CouponActorType.MEMBER;
+			case ADMIN -> CouponActorType.ADMIN;
+			default -> throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_ACTOR);
+		};
 	}
 }

@@ -1,11 +1,14 @@
 package com.horse.reservations.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -24,6 +27,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
@@ -35,6 +39,9 @@ import com.horse.auth.UserRole;
 @AutoConfigureMockMvc
 class ReservationChangeApiTest {
 
+	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+	private static final Instant BEFORE_CUTOFF_INSTANT = Instant.parse("2026-07-15T01:00:00Z");
+	private static final Instant AFTER_CUTOFF_INSTANT = Instant.parse("2026-07-31T13:00:00Z");
 	private static final String CLASS_CAPACITIES = """
 		{
 		  "FIRST_RIDE": 8,
@@ -53,9 +60,14 @@ class ReservationChangeApiTest {
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
+	@MockitoBean
+	Clock clock;
+
 	@BeforeEach
 	void 데이터베이스를_초기화한다() {
 		clearDatabase();
+		when(clock.instant()).thenReturn(BEFORE_CUTOFF_INSTANT);
+		when(clock.getZone()).thenReturn(SEOUL_ZONE);
 	}
 
 	@AfterEach
@@ -68,7 +80,7 @@ class ReservationChangeApiTest {
 		final String authSubject = "change-member";
 		final Long memberId = insertMember(authSubject);
 		final LocalDate lessonDate = futureDate();
-		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1));
+		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1), false);
 		final Long sourceTimeSlotId = insertTimeSlot(lessonDate, "09:00:00", 8);
 		final Long targetTimeSlotId = insertTimeSlot(lessonDate.plusDays(1), "10:00:00", 8);
 		final Long reservationId = insertCouponReservation(
@@ -184,6 +196,125 @@ class ReservationChangeApiTest {
 	}
 
 	@Test
+	void 마감_후_쿠폰_예약은_무료_변경권을_소비하고_로그를_한_번만_남긴다() throws Exception {
+		when(clock.instant()).thenReturn(AFTER_CUTOFF_INSTANT);
+
+		final Long memberId = insertMember("after-cutoff-member");
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 1);
+		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1), false);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long targetTimeSlotId = insertTimeSlot(lessonDate.plusDays(1), "10:00:00", 8);
+		final Long reservationId = insertCouponReservation(
+			memberId, couponId, lessonDate, "09:00:00", "confirmed");
+
+		for (int attempt = 0; attempt < 2; attempt++) {
+			mockMvc.perform(post("/api/me/reservations/{reservationId}/change", reservationId)
+					.with(memberJwt("after-cutoff-member"))
+					.contentType(MediaType.APPLICATION_JSON)
+					.content(memberRequest(targetTimeSlotId, "마감 후 일정 변경")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.couponAction").value("free_change_used"))
+				.andExpect(jsonPath("$.freeChangeUsed").value(true))
+				.andExpect(jsonPath("$.changed").value(attempt == 0));
+		}
+
+		assertThat(reservationSchedule(reservationId)).containsExactly(
+			lessonDate.plusDays(1).toString(), "10:00:00");
+		assertThat(couponFreeChangeUsed(couponId)).isTrue();
+		assertThat(couponUsageCount(reservationId, "free_change_used")).isEqualTo(1);
+		assertThat(changeLogCount(reservationId)).isEqualTo(1);
+		assertThat(changeLogCouponAction(reservationId)).isEqualTo("free_change_used");
+	}
+
+	@Test
+	void 마감_후_일회_결제_예약과_이미_무료_변경권을_쓴_쿠폰_예약은_거부한다() throws Exception {
+		when(clock.instant()).thenReturn(AFTER_CUTOFF_INSTANT);
+
+		final Long singlePaymentMemberId = insertMember("after-cutoff-single-payment");
+		final Long usedCouponMemberId = insertMember("after-cutoff-used-coupon");
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 1);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long targetTimeSlotId = insertTimeSlot(lessonDate.plusDays(1), "10:00:00", 8);
+		final Long singlePaymentReservationId = insertSinglePaymentReservation(
+			singlePaymentMemberId, lessonDate, "09:00:00");
+		final Long usedCouponId = insertCoupon(usedCouponMemberId, lessonDate.plusMonths(1), true);
+		final Long usedCouponReservationId = insertCouponReservation(
+			usedCouponMemberId, usedCouponId, lessonDate, "09:00:00", "confirmed");
+
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", singlePaymentReservationId)
+				.with(memberJwt("after-cutoff-single-payment"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(targetTimeSlotId, "마감 후 변경 시도")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_CHANGE_NOT_ALLOWED"));
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", usedCouponReservationId)
+				.with(memberJwt("after-cutoff-used-coupon"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(targetTimeSlotId, "무료 변경권 재사용 시도")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_CHANGE_NOT_ALLOWED"));
+
+		assertThat(couponUsageCount(usedCouponReservationId, "free_change_used")).isZero();
+		assertThat(changeLogCount(usedCouponReservationId)).isZero();
+	}
+
+	@Test
+	void 마감_후_대상_정원이_가득_차면_무료_변경권과_원본_예약을_유지한다() throws Exception {
+		when(clock.instant()).thenReturn(AFTER_CUTOFF_INSTANT);
+
+		final Long memberId = insertMember("full-target-free-change-member");
+		final Long occupyingMemberId = insertMember("full-target-occupying-member");
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 1);
+		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1), false);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long targetTimeSlotId = insertTimeSlot(lessonDate.plusDays(1), "10:00:00", 1);
+		final Long reservationId = insertCouponReservation(
+			memberId, couponId, lessonDate, "09:00:00", "confirmed");
+		insertSinglePaymentReservation(
+			occupyingMemberId, lessonDate.plusDays(1), "10:00:00");
+
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", reservationId)
+				.with(memberJwt("full-target-free-change-member"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(targetTimeSlotId, "마감 후 정원 충돌")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("TIMESLOT_CAPACITY_EXCEEDED"));
+
+		assertThat(reservationSchedule(reservationId)).containsExactly(
+			lessonDate.toString(), "09:00:00");
+		assertThat(couponFreeChangeUsed(couponId)).isFalse();
+		assertThat(couponUsageCount(reservationId, "free_change_used")).isZero();
+		assertThat(changeLogCount(reservationId)).isZero();
+	}
+
+	@Test
+	void 같은_쿠폰의_동시_마감후_변경은_하나만_성공한다() throws Exception {
+		when(clock.instant()).thenReturn(AFTER_CUTOFF_INSTANT);
+
+		final Long memberId = insertMember("shared-coupon-member");
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 1);
+		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1), false);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		insertTimeSlot(lessonDate, "10:00:00", 8);
+		final Long firstTargetTimeSlotId = insertTimeSlot(lessonDate.plusDays(1), "11:00:00", 8);
+		final Long secondTargetTimeSlotId = insertTimeSlot(lessonDate.plusDays(1), "12:00:00", 8);
+		final Long firstReservationId = insertCouponReservation(
+			memberId, couponId, lessonDate, "09:00:00", "confirmed");
+		final Long secondReservationId = insertCouponReservation(
+			memberId, couponId, lessonDate, "10:00:00", "confirmed");
+
+		final List<Integer> statuses = concurrentChanges(
+			List.of("shared-coupon-member", "shared-coupon-member"),
+			List.of(firstReservationId, secondReservationId),
+			List.of(firstTargetTimeSlotId, secondTargetTimeSlotId));
+
+		assertThat(statuses).containsExactlyInAnyOrder(200, 409);
+		assertThat(couponFreeChangeUsed(couponId)).isTrue();
+		assertThat(couponUsageCountByCoupon(couponId, "free_change_used")).isEqualTo(1);
+		assertThat(changeLogCouponActions(couponId)).containsExactly("free_change_used");
+	}
+
+	@Test
 	void 두_예약이_한_자리로_동시에_변경되면_하나만_성공한다() throws Exception {
 		final Long firstMemberId = insertMember("concurrent-change-first");
 		final Long secondMemberId = insertMember("concurrent-change-second");
@@ -199,7 +330,7 @@ class ReservationChangeApiTest {
 		final List<Integer> statuses = concurrentChanges(
 			List.of("concurrent-change-first", "concurrent-change-second"),
 			List.of(firstReservationId, secondReservationId),
-			targetTimeSlotId);
+			List.of(targetTimeSlotId, targetTimeSlotId));
 
 		assertThat(statuses).containsExactlyInAnyOrder(200, 409);
 		assertThat(activeOccupancy(lessonDate, "11:00:00")).isEqualTo(1);
@@ -209,7 +340,7 @@ class ReservationChangeApiTest {
 	private List<Integer> concurrentChanges(
 		List<String> authSubjects,
 		List<Long> reservationIds,
-		Long targetTimeSlotId
+		List<Long> targetTimeSlotIds
 	) throws Exception {
 		final ExecutorService executor = Executors.newFixedThreadPool(2);
 		final CountDownLatch ready = new CountDownLatch(2);
@@ -222,7 +353,7 @@ class ReservationChangeApiTest {
 					return mockMvc.perform(post("/api/me/reservations/{reservationId}/change", reservationIds.get(index))
 							.with(memberJwt(authSubjects.get(index)))
 							.contentType(MediaType.APPLICATION_JSON)
-							.content(memberRequest(targetTimeSlotId, null)))
+							.content(memberRequest(targetTimeSlotIds.get(index), null)))
 						.andReturn().getResponse().getStatus();
 				}))
 				.toList();
@@ -252,13 +383,13 @@ class ReservationChangeApiTest {
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
-	private Long insertCoupon(Long memberId, LocalDate expiresAt) {
+	private Long insertCoupon(Long memberId, LocalDate expiresAt, boolean freeChangeUsed) {
 		jdbcTemplate.update("""
 			INSERT INTO coupons (
 				member_id, coupon_type, total_count, remaining_count, held_count,
-				first_used_at, expires_at, created_by
-			) VALUES (?, 'general', 10, 10, 1, ?, ?, 'change-test-admin')
-			""", memberId, futureDate().atStartOfDay(), expiresAt.atStartOfDay());
+				first_used_at, expires_at, free_change_used, created_by
+			) VALUES (?, 'general', 10, 10, 1, ?, ?, ?, 'change-test-admin')
+			""", memberId, expiresAt.minusMonths(3).atStartOfDay(), expiresAt.atStartOfDay(), freeChangeUsed);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
@@ -320,11 +451,49 @@ class ReservationChangeApiTest {
 			reservationId);
 	}
 
+	private String changeLogCouponAction(Long reservationId) {
+		return jdbcTemplate.queryForObject(
+			"SELECT coupon_action FROM reservation_change_logs WHERE reservation_id = ?",
+			String.class,
+			reservationId);
+	}
+
+	private List<String> changeLogCouponActions(Long couponId) {
+		return jdbcTemplate.queryForList("""
+			SELECT rcl.coupon_action
+			FROM reservation_change_logs rcl
+			JOIN reservations r ON r.id = rcl.reservation_id
+			WHERE r.coupon_id = ?
+			ORDER BY rcl.id
+			""", String.class, couponId);
+	}
+
 	private String changeLogMemo(Long reservationId) {
 		return jdbcTemplate.queryForObject(
 			"SELECT memo FROM reservation_change_logs WHERE reservation_id = ?",
 			String.class,
 			reservationId);
+	}
+
+	private boolean couponFreeChangeUsed(Long couponId) {
+		return jdbcTemplate.queryForObject(
+			"SELECT free_change_used FROM coupons WHERE id = ?",
+			Boolean.class,
+			couponId);
+	}
+
+	private int couponUsageCount(Long reservationId, String action) {
+		return jdbcTemplate.queryForObject("""
+			SELECT COUNT(*) FROM coupon_usage_logs
+			WHERE reservation_id = ? AND action = ?
+			""", Integer.class, reservationId, action);
+	}
+
+	private int couponUsageCountByCoupon(Long couponId, String action) {
+		return jdbcTemplate.queryForObject("""
+			SELECT COUNT(*) FROM coupon_usage_logs
+			WHERE coupon_id = ? AND action = ?
+			""", Integer.class, couponId, action);
 	}
 
 	private int activeOccupancy(LocalDate lessonDate, String startTime) {
@@ -336,7 +505,7 @@ class ReservationChangeApiTest {
 	}
 
 	private LocalDate futureDate() {
-		return LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(7);
+		return LocalDate.now(clock).plusDays(7);
 	}
 
 	private String memberRequest(Long targetTimeSlotId, String reason) {

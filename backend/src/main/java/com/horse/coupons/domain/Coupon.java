@@ -139,6 +139,13 @@ public class Coupon {
 		}
 	}
 
+	public void useFreeChange() {
+		if (freeChangeUsed) {
+			throw new CouponException(ExceptionCode.COUPON_FREE_CHANGE_ALREADY_USED);
+		}
+		freeChangeUsed = true;
+	}
+
 	public int expire(LocalDate currentDate) {
 		if (currentDate == null) {
 			throw new CouponException(ExceptionCode.COUPON_INVALID_EXPIRY_DATE);

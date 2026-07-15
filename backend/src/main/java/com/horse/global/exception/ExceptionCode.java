@@ -52,6 +52,7 @@ public enum ExceptionCode {
 	COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
 	COUPON_HOLD_NOT_AVAILABLE(HttpStatus.CONFLICT, "쿠폰에 사용 가능한 횟수가 없습니다."),
 	COUPON_EXPIRED_FOR_LESSON(HttpStatus.CONFLICT, "수업일에 만료된 쿠폰은 사용할 수 없습니다."),
+	COUPON_FREE_CHANGE_ALREADY_USED(HttpStatus.CONFLICT, "쿠폰의 무료 변경권을 이미 사용했습니다."),
 	COUPON_HOLD_STATE_CONFLICT(HttpStatus.CONFLICT, "쿠폰 임시 점유 상태가 일치하지 않습니다."),
 	COUPON_INVALID_PERSISTED_VALUE(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 쿠폰 값이 올바르지 않습니다."),
 

@@ -8,4 +8,6 @@ public interface ReservationTimeSlotProjection {
 	LocalDate getLessonDate();
 
 	LocalTime getStartTime();
+
+	Long getCouponId();
 }

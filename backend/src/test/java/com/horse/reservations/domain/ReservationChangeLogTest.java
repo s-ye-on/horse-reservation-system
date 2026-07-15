@@ -127,6 +127,24 @@ class ReservationChangeLogTest {
 	}
 
 	@Test
+	void 마감_후_무료_변경_이력은_쿠폰_행위를_기록한다() {
+		final ReservationChangeLog changeLog = ReservationChangeLog.reservationChanged(
+			1L,
+			"member-subject",
+			ReservationActorType.MEMBER,
+			ReservationStatus.CONFIRMED,
+			LESSON_DATE,
+			START_TIME,
+			LESSON_DATE.plusDays(1),
+			START_TIME.plusHours(1),
+			CouponAction.FREE_CHANGE_USED,
+			"마감 후 일정 변경");
+
+		assertThat(changeLog.getCouponAction()).isEqualTo(CouponAction.FREE_CHANGE_USED);
+		assertThat(changeLog.getMemo()).isEqualTo("마감 후 일정 변경");
+	}
+
+	@Test
 	void 예약_변경_이력은_행위자_상태_메모와_변경된_일정을_검증한다() {
 		assertReservationException(
 			() -> ReservationChangeLog.reservationChanged(
@@ -176,6 +194,19 @@ class ReservationChangeLogTest {
 				START_TIME,
 				" "),
 			ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_MEMO);
+		assertReservationException(
+			() -> ReservationChangeLog.reservationChanged(
+				1L,
+				"member-subject",
+				ReservationActorType.MEMBER,
+				ReservationStatus.CONFIRMED,
+				LESSON_DATE,
+				START_TIME,
+				LESSON_DATE.plusDays(1),
+				START_TIME,
+				CouponAction.RETURN,
+				"잘못된 쿠폰 처리"),
+			ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
 		assertReservationException(
 			() -> ReservationChangeLog.reservationChanged(
 				1L,

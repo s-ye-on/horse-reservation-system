@@ -98,6 +98,32 @@ class ReservationChangeLogRepositoryIntegrationTest {
 	}
 
 	@Test
+	void 마감_후_무료_변경_일정_이력을_저장한다() {
+		final Long reservationId = insertActiveReservation("free-change-log-member");
+		final ReservationChangeLog changeLog = ReservationChangeLog.reservationChanged(
+			reservationId,
+			"member-subject",
+			ReservationActorType.MEMBER,
+			ReservationStatus.CONFIRMED,
+			LocalDate.of(2026, 8, 1),
+			LocalTime.of(9, 0),
+			LocalDate.of(2026, 8, 2),
+			LocalTime.of(10, 0),
+			CouponAction.FREE_CHANGE_USED,
+			"마감 후 변경");
+
+		repository.save(changeLog);
+		entityManager.flush();
+		entityManager.clear();
+
+		final ReservationChangeLog saved = repository
+			.findAllByReservationIdOrderByCreatedAtAscIdAsc(reservationId)
+			.getFirst();
+		assertThat(saved.getCouponAction()).isEqualTo(CouponAction.FREE_CHANGE_USED);
+		assertThat(saved.getMemo()).isEqualTo("마감 후 변경");
+	}
+
+	@Test
 	void 데이터베이스가_잘못된_복구_조합과_빈_메모를_거부한다() {
 		final Long reservationId = insertExpiredReservation("constraint-log-member");
 

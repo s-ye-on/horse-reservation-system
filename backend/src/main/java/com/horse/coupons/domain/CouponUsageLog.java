@@ -169,6 +169,23 @@ public class CouponUsageLog {
 			CouponActorType.SYSTEM);
 	}
 
+	public static CouponUsageLog freeChangeUsed(
+		Long couponId,
+		Long reservationId,
+		Long memberId,
+		LocalDateTime occurredAt,
+		CouponActorType actorType
+	) {
+		return new CouponUsageLog(
+			couponId,
+			reservationId,
+			memberId,
+			CouponUsageAction.FREE_CHANGE_USED,
+			(short) 0,
+			occurredAt,
+			actorType);
+	}
+
 	private static Long requireId(Long id) {
 		if (id == null || id <= 0) {
 			throw new CouponException(ExceptionCode.COUPON_INVALID_USAGE_REFERENCE);
