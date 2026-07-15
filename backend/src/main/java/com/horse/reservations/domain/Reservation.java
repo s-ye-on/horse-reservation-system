@@ -299,6 +299,37 @@ public class Reservation {
 		return true;
 	}
 
+	public boolean cancelByAdmin(
+		LocalDateTime occurredAt,
+		CancellationResponsibility requestedResponsibility,
+		CouponAction requestedCouponAction,
+		String memo
+	) {
+		final CouponAction validatedCouponAction = requireCancellationCouponAction(
+			requestedCouponAction);
+		final CancellationResponsibility validatedResponsibility = requireCancellationResponsibility(
+			requestedResponsibility);
+		final String validatedMemo = requireAdminMemo(memo).strip();
+		if (status == ReservationStatus.CANCELLED) {
+			if (cancellationResponsibility == validatedResponsibility
+				&& couponAction == validatedCouponAction
+				&& Objects.equals(adminMemo, validatedMemo)) {
+				return false;
+			}
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+		ensureChangeable();
+		if (occurredAt == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CANCELLATION_AT);
+		}
+		status = ReservationStatus.CANCELLED;
+		cancelledAt = occurredAt;
+		cancellationResponsibility = validatedResponsibility;
+		couponAction = validatedCouponAction;
+		adminMemo = validatedMemo;
+		return true;
+	}
+
 	public boolean recordNoShow(CouponAction requestedCouponAction, String memo) {
 		final CouponAction validatedCouponAction = requireNoShowCouponAction(requestedCouponAction);
 		final String validatedMemo = requireAdminMemo(memo);
@@ -341,6 +372,16 @@ public class Reservation {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
 		}
 		return requestedCouponAction;
+	}
+
+	private CancellationResponsibility requireCancellationResponsibility(
+		CancellationResponsibility requestedResponsibility
+	) {
+		if (requestedResponsibility == null) {
+			throw new ReservationException(
+				ExceptionCode.RESERVATION_INVALID_CANCELLATION_RESPONSIBILITY);
+		}
+		return requestedResponsibility;
 	}
 
 	private String requireAdminMemo(String memo) {

@@ -347,6 +347,54 @@ class ReservationTest {
 	}
 
 	@Test
+	void 관리자_취소는_책임과_쿠폰_처리와_메모를_기록한다() {
+		final Reservation reservation = Reservation.createCouponPending(
+			1L, RidingClass.FIRST_RIDE, LESSON_DATE, START_TIME, 10L, REQUESTED_AT);
+
+		final boolean changed = reservation.cancelByAdmin(
+			REQUESTED_AT,
+			CancellationResponsibility.EXCEPTION,
+			CouponAction.RETURN,
+			" 질병 예외 반환 ");
+
+		assertThat(changed).isTrue();
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+		assertThat(reservation.getCancellationResponsibility())
+			.isEqualTo(CancellationResponsibility.EXCEPTION);
+		assertThat(reservation.getCouponAction()).isEqualTo(CouponAction.RETURN);
+		assertThat(reservation.getAdminMemo()).isEqualTo("질병 예외 반환");
+	}
+
+	@Test
+	void 관리자_취소는_같은_입력만_멱등으로_처리한다() {
+		final Reservation reservation = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			REQUESTED_AT.plusHours(2),
+			REQUESTED_AT);
+		reservation.cancelByAdmin(
+			REQUESTED_AT,
+			CancellationResponsibility.STABLE,
+			CouponAction.NONE,
+			"우천 취소");
+
+		assertThat(reservation.cancelByAdmin(
+			REQUESTED_AT.plusMinutes(1),
+			CancellationResponsibility.STABLE,
+			CouponAction.NONE,
+			"우천 취소")).isFalse();
+		assertReservationException(
+			() -> reservation.cancelByAdmin(
+				REQUESTED_AT.plusMinutes(1),
+				CancellationResponsibility.MEMBER,
+				CouponAction.NONE,
+				"우천 취소"),
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+	}
+
+	@Test
 	void 노쇼는_확정_예약과_오백자_이하_메모만_허용한다() {
 		final Reservation pending = Reservation.createCouponPending(
 			1L, RidingClass.FIRST_RIDE, LESSON_DATE, START_TIME, 10L, REQUESTED_AT);

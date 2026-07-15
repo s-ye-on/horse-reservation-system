@@ -442,6 +442,47 @@
         }
       }
     },
+    "/api/admin/reservations/{reservationId}/cancel": {
+      "post": {
+        "tags": [
+          "admin-reservation-cancel-controller"
+        ],
+        "operationId": "cancel_1",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminReservationCancelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationCancelResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/members/{memberId}/coupons": {
       "post": {
         "tags": [
@@ -874,6 +915,45 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminReservationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/reservations/{reservationId}/cancellation-preview": {
+      "get": {
+        "tags": [
+          "admin-reservation-cancel-controller"
+        ],
+        "operationId": "preview_1",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "responsibility",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationCancellationPreviewResponse"
                 }
               }
             }
@@ -1379,6 +1459,27 @@
             "type": "string"
           }
         }
+      },
+      "AdminReservationCancelRequest": {
+        "type": "object",
+        "properties": {
+          "responsibility": {
+            "type": "string"
+          },
+          "couponAction": {
+            "type": "string"
+          },
+          "memo": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "couponAction",
+          "memo",
+          "responsibility"
+        ]
       },
       "CouponRegistrationRequest": {
         "type": "object",

@@ -20,6 +20,18 @@ public enum CancellationResponsibility {
 		return databaseValue;
 	}
 
+	public static CancellationResponsibility fromRequestValue(String requestValue) {
+		if (requestValue == null || requestValue.isBlank()) {
+			throw new ReservationException(
+				ExceptionCode.RESERVATION_INVALID_CANCELLATION_RESPONSIBILITY);
+		}
+		return Arrays.stream(values())
+			.filter(responsibility -> responsibility.databaseValue.equalsIgnoreCase(requestValue.strip()))
+			.findFirst()
+			.orElseThrow(() -> new ReservationException(
+				ExceptionCode.RESERVATION_INVALID_CANCELLATION_RESPONSIBILITY));
+	}
+
 	public static CancellationResponsibility fromDatabaseValue(String databaseValue) {
 		return Arrays.stream(values())
 			.filter(responsibility -> responsibility.databaseValue.equals(databaseValue))

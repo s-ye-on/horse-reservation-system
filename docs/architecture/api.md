@@ -30,6 +30,7 @@ GET  /api/admin/reservations/{reservationId}
 POST /api/admin/reservations/{reservationId}/confirm
 POST /api/admin/reservations/{reservationId}/reject
 POST /api/admin/reservations/{reservationId}/change
+GET  /api/admin/reservations/{reservationId}/cancellation-preview
 POST /api/admin/reservations/{reservationId}/cancel
 POST /api/admin/reservations/{reservationId}/complete
 POST /api/admin/reservations/{reservationId}/no-show
@@ -38,7 +39,7 @@ POST /api/admin/reservations/complete-bulk
 
 반려 API는 관리자 승인 전 예약만 `rejected`로 전이한다. 취소 API는 `cancelled`로 전이하므로 서로 대체하지 않는다.
 
-취소·노쇼 요청은 `coupon_action`과 관리자 `memo`를 받는다. 서버는 허용 가능한 상태와 쿠폰 처리 조합을 검증한다.
+관리자 취소 preview는 선택한 `cancellation_responsibility`에 따른 권장 `coupon_action`을 반환한다. 실행 요청은 `cancellation_responsibility`, 최종 `coupon_action`, 필수 `memo`를 받으며 preview의 권고와 달라도 예약 유형별 허용 범위 안이면 관리자 선택을 적용한다. 노쇼 요청도 `coupon_action`과 관리자 `memo`를 받는다.
 
 ## 입금대기
 
