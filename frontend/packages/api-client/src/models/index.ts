@@ -8,6 +8,7 @@ export * from './AdminReservationQueryRequest';
 export * from './AdminReservationResponse';
 export * from './CouponRegistrationRequest';
 export * from './CouponResponse';
+export * from './GeneralRideCompletionResponse';
 export * from './MemberAvailableRidingClassesResponse';
 export * from './MemberAvailableTimeSlotResponse';
 export * from './MemberAvailableTimeSlotsResponse';

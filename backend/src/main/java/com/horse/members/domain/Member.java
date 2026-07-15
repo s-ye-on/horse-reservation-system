@@ -116,6 +116,10 @@ public class Member {
 		this.jumpingApproved = approved;
 	}
 
+	public void increaseGeneralRideCount() {
+		generalRideCount++;
+	}
+
 	public boolean canUseLargeArena() {
 		final GeneralRidingGrade grade = currentGeneralRidingGrade();
 		return grade == GeneralRidingGrade.LARGE_ARENA_BEGINNER

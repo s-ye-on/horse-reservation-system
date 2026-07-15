@@ -247,6 +247,37 @@
         }
       }
     },
+    "/api/admin/reservations/{reservationId}/complete": {
+      "post": {
+        "tags": [
+          "admin-general-ride-completion-controller"
+        ],
+        "operationId": "complete",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralRideCompletionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/members/{memberId}/coupons": {
       "post": {
         "tags": [
@@ -909,6 +940,29 @@
           "adminConfirmedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "GeneralRideCompletionResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "paymentSource": {
+            "type": "string"
+          },
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "generalRideCount": {
+            "type": "integer",
+            "format": "int32"
           }
         }
       },

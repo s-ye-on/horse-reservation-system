@@ -103,6 +103,24 @@ public class Coupon {
 		heldCount--;
 	}
 
+	public void useHeld(LocalDate lessonDate) {
+		if (lessonDate == null) {
+			throw new CouponException(ExceptionCode.COUPON_INVALID_LESSON_DATE);
+		}
+		if (heldCount <= 0 || remainingCount <= 0) {
+			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
+		}
+		if (firstUsedAt == null) {
+			firstUsedAt = lessonDate.atStartOfDay();
+			expiresAt = firstUsedAt.plusMonths(3);
+		}
+		heldCount--;
+		remainingCount--;
+		if (remainingCount == 0) {
+			status = CouponStatus.DEPLETED;
+		}
+	}
+
 	private static Long requireMemberId(Long memberId) {
 		if (memberId == null || memberId <= 0) {
 			throw new CouponException(ExceptionCode.COUPON_INVALID_MEMBER_ID);

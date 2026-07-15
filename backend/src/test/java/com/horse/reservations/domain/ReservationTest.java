@@ -236,6 +236,47 @@ class ReservationTest {
 	}
 
 	@Test
+	void 확정된_일반_기승을_한_번만_완료한다() {
+		final Reservation reservation = Reservation.createCouponPending(
+			1L,
+			RidingClass.ROUND_TROT,
+			LESSON_DATE,
+			START_TIME,
+			10L,
+			REQUESTED_AT);
+		reservation.confirm(REQUESTED_AT.plusMinutes(30));
+
+		assertThat(reservation.completeGeneralRide()).isTrue();
+		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
+		assertThat(reservation.completeGeneralRide()).isFalse();
+	}
+
+	@Test
+	void 특수_기승과_확정되지_않은_예약은_일반_기승으로_완료하지_않는다() {
+		final Reservation special = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.DRESSAGE,
+			LESSON_DATE,
+			START_TIME,
+			REQUESTED_AT.plusHours(2),
+			REQUESTED_AT);
+		final Reservation pending = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			REQUESTED_AT.plusHours(2),
+			REQUESTED_AT);
+
+		assertReservationException(
+			special::completeGeneralRide,
+			ExceptionCode.RESERVATION_INVALID_RIDING_CLASS);
+		assertReservationException(
+			pending::completeGeneralRide,
+			ExceptionCode.RESERVATION_INVALID_STATUS);
+	}
+
+	@Test
 	void 활성_점유_상태는_승인대기_입금대기_확정이다() {
 		assertThat(ReservationStatus.occupyingStatuses())
 			.containsExactlyInAnyOrder(

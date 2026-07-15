@@ -232,6 +232,20 @@ public class Reservation {
 		}
 	}
 
+	public boolean completeGeneralRide() {
+		if (!ridingClass.isGeneral()) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_RIDING_CLASS);
+		}
+		if (status == ReservationStatus.COMPLETED) {
+			return false;
+		}
+		if (status != ReservationStatus.CONFIRMED) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+		status = ReservationStatus.COMPLETED;
+		return true;
+	}
+
 	private static Long requireMemberId(Long memberId) {
 		if (memberId == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_MEMBER_ID);

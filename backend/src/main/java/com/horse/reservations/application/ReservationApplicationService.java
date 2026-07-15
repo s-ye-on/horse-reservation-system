@@ -30,6 +30,7 @@ import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
 public class ReservationApplicationService {
 
 	private static final Duration PAYMENT_WAIT_DURATION = Duration.ofHours(2);
+	private static final int RESERVATION_WINDOW_MONTHS = 3;
 
 	private final Clock clock;
 	private final MemberRepository memberRepository;
@@ -64,7 +65,7 @@ public class ReservationApplicationService {
 		final RidingClass ridingClass = parseRidingClass(classType);
 		ensureEligible(member, ridingClass);
 		final TimeSlotCapacity timeSlot = lockTimeSlot(timeSlotId);
-		ensureFutureLessonDate(timeSlot.getLessonDate());
+		ensureReservableLessonDate(timeSlot.getLessonDate());
 		final Optional<CouponSelectionResult> selection = couponSelectionService
 			.selectForUpdate(member.getId(), ridingClass, timeSlot.getLessonDate());
 		final LocalDateTime requestedAt = LocalDateTime.now(clock);
@@ -152,8 +153,9 @@ public class ReservationApplicationService {
 		}
 	}
 
-	private void ensureFutureLessonDate(LocalDate lessonDate) {
-		if (lessonDate.isBefore(LocalDate.now(clock))) {
+	private void ensureReservableLessonDate(LocalDate lessonDate) {
+		final LocalDate today = LocalDate.now(clock);
+		if (lessonDate.isBefore(today) || lessonDate.isAfter(today.plusMonths(RESERVATION_WINDOW_MONTHS))) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_LESSON_DATE);
 		}
 	}

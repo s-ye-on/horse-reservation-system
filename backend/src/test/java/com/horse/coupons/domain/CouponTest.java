@@ -52,4 +52,18 @@ class CouponTest {
 		assertThat(coupon.getHeldCount()).isZero();
 		assertThat(coupon.getRemainingCount()).isEqualTo(10);
 	}
+
+	@Test
+	void 점유된_쿠폰을_처음_사용하면_수업일로부터_삼개월의_유효기간을_설정하고_차감한다() {
+		final Coupon coupon = Coupon.create(1L, CouponType.GENERAL, 10, "admin-subject");
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 10);
+		coupon.hold(lessonDate);
+
+		coupon.useHeld(lessonDate);
+
+		assertThat(coupon.getRemainingCount()).isEqualTo(9);
+		assertThat(coupon.getHeldCount()).isZero();
+		assertThat(coupon.getFirstUsedAt()).isEqualTo(lessonDate.atStartOfDay());
+		assertThat(coupon.getExpiresAt()).isEqualTo(lessonDate.plusMonths(3).atStartOfDay());
+	}
 }
