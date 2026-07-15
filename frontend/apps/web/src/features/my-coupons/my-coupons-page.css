@@ -1,0 +1,50 @@
+.my-coupons-page {
+  --coupon-accent: #7a1f35; --coupon-soft: #f7e9ed; --coupon-ink: #292225; --coupon-muted: #71666a; --coupon-line: #ddd5d8;
+  width: 100%; min-height: 100vh; margin: 0; padding: 32px 16px 56px; color: var(--coupon-ink); background: #f6f5f5;
+}
+.my-coupons-shell { width: min(100%, 980px); margin: 0 auto; }
+.my-coupons-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 24px; }
+.my-coupons-header p { margin: 0 0 6px; color: var(--coupon-accent); font-size: .76rem; font-weight: 780; }
+.my-coupons-header h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.35rem); }
+.my-coupons-header span { display: block; margin-top: 7px; color: var(--coupon-muted); font-size: .86rem; }
+.my-coupons-header > a { display: inline-flex; min-height: 40px; align-items: center; padding: 0 13px; border: 1px solid var(--coupon-accent); border-radius: 6px; color: #fff; background: var(--coupon-accent); font-size: .8rem; font-weight: 720; text-decoration: none; }
+.my-coupons-section + .my-coupons-section { margin-top: 26px; }
+.my-coupons-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
+.my-coupons-section-heading h2 { margin: 0; font-size: 1.05rem; }
+.my-coupons-section-heading span { color: var(--coupon-muted); font-size: .78rem; }
+.my-coupon-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.my-coupon-card, .my-coupon-usage-item, .my-coupons-state { border: 1px solid var(--coupon-line); border-radius: 8px; background: #fff; }
+.my-coupon-card { min-width: 0; padding: 18px; }
+.my-coupon-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.my-coupon-card-heading p, .my-coupon-card-heading h3 { margin: 0; }
+.my-coupon-card-heading p { color: var(--coupon-muted); font-size: .68rem; }
+.my-coupon-card-heading h3 { margin-top: 4px; font-size: 1.05rem; }
+.my-coupon-status { padding: 5px 8px; border-radius: 999px; font-size: .7rem; font-weight: 740; }
+.my-coupon-status.active { color: #286143; background: #e7f3ec; }
+.my-coupon-status.expired { color: #7a2033; background: #fae5ea; }
+.my-coupon-status.depleted { color: #655d60; background: #ece9ea; }
+.my-coupon-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 16px 0; }
+.my-coupon-counts div { display: grid; gap: 3px; padding: 9px 6px; border-radius: 5px; background: #f3f1f2; text-align: center; }
+.my-coupon-counts div.available { color: var(--coupon-accent); background: var(--coupon-soft); }
+.my-coupon-counts span { color: var(--coupon-muted); font-size: .65rem; }
+.my-coupon-counts strong { font-size: 1.05rem; }
+.my-coupon-dates { display: grid; gap: 8px; margin: 0; padding-top: 13px; border-top: 1px solid var(--coupon-line); }
+.my-coupon-dates div { display: flex; justify-content: space-between; gap: 12px; }
+.my-coupon-dates dt { color: var(--coupon-muted); font-size: .73rem; }
+.my-coupon-dates dd { margin: 0; font-size: .76rem; font-weight: 680; text-align: right; }
+.my-coupon-usage-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.my-coupon-usage-item { display: grid; grid-template-columns: 1.2fr .8fr auto; gap: 12px; align-items: center; padding: 13px 15px; }
+.my-coupon-usage-item > div { display: flex; align-items: center; gap: 8px; }
+.my-coupon-action { padding: 4px 7px; border-radius: 999px; color: var(--coupon-accent); background: var(--coupon-soft); font-size: .68rem; font-weight: 720; }
+.my-coupon-usage-item strong { font-size: .8rem; }
+.my-coupon-usage-item p { margin: 0; color: var(--coupon-muted); font-size: .75rem; }
+.my-coupon-usage-item time { color: var(--coupon-muted); font-size: .72rem; text-align: right; }
+.my-coupons-state { padding: 30px 18px; color: var(--coupon-muted); text-align: center; }
+.my-coupons-state[role="alert"] { color: #742137; background: #fff6f8; }
+@media (max-width: 720px) { .my-coupon-list { grid-template-columns: minmax(0, 1fr); } .my-coupon-usage-item { grid-template-columns: minmax(0, 1fr); } .my-coupon-usage-item time { text-align: left; } }
+@media (max-width: 420px) {
+  .my-coupons-page { padding: 22px 12px 40px; }
+  .my-coupons-header { align-items: stretch; flex-direction: column; }
+  .my-coupons-header > a { align-self: flex-start; }
+  .my-coupon-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

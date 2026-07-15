@@ -7,6 +7,7 @@ import { AdminAttendancePage } from './features/admin-attendance/admin-attendanc
 import { ReservationCalendarPage } from './features/reservation-calendar/reservation-calendar-page'
 import { ReservationApplicationPage } from './features/reservation-application/reservation-application-page'
 import { MyReservationsPage } from './features/my-reservations/my-reservations-page'
+import { MyCouponsPage } from './features/my-coupons/my-coupons-page'
 import './app.css'
 
 function HomePage() {
@@ -16,6 +17,7 @@ function HomePage() {
       <nav aria-label="주요 메뉴">
         <Link to="/reservations">회원 예약</Link>
         <Link to="/my/reservations">내 예약</Link>
+        <Link to="/my/coupons">내 쿠폰</Link>
         <Link to="/admin">관리자</Link>
       </nav>
     </main>
@@ -45,6 +47,7 @@ export default function App() {
       <Route path="/reservations" element={<ReservationCalendarPage />} />
       <Route path="/reservations/new" element={<ReservationApplicationPage />} />
       <Route path="/my/reservations" element={<MyReservationsPage />} />
+      <Route path="/my/coupons" element={<MyCouponsPage />} />
       <Route path="/admin" element={<AdminHomePage />} />
       <Route path="/admin/members" element={<AdminMembersPage />} />
       <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
