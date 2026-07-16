@@ -541,3 +541,8 @@ pnpm --dir frontend/apps/web exec vitest run src/features/admin-attendance/Admin
 pnpm --dir frontend/apps/web lint
 pnpm --dir frontend/apps/web typecheck
 '''
+
+[tasks."verify:m3-06"]
+description = "Verify adopted coupon expiry job"
+dir = "backend"
+run = "./gradlew test --tests '*CouponTest' --tests '*CouponExpiryJobIntegrationTest' --tests '*MemberCouponQueryApiTest'"
