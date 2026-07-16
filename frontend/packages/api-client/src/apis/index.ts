@@ -2,11 +2,13 @@
 /* eslint-disable */
 export * from './AdminBulkReservationAttendanceControllerApi';
 export * from './AdminCouponRegistrationControllerApi';
+export * from './AdminCouponUsageExportControllerApi';
 export * from './AdminMemberQueryControllerApi';
 export * from './AdminMemberRidingPermissionControllerApi';
 export * from './AdminPendingPaymentExpiryJobControllerApi';
 export * from './AdminPendingPaymentQueryControllerApi';
 export * from './AdminPendingPaymentRestoreControllerApi';
+export * from './AdminReservationAuditExportControllerApi';
 export * from './AdminReservationAuditQueryControllerApi';
 export * from './AdminReservationCancelControllerApi';
 export * from './AdminReservationChangeControllerApi';

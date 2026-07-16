@@ -122,6 +122,31 @@ GET /api/admin/audit-logs
 
 기간을 생략하면 전체 예약 변경 이력을 조회하고 `occurredAt DESC`, `auditLogId DESC`로 정렬한다. `keyword`는 회원 이름과 전화번호를 통합 검색한다. 조회는 `ReservationChangeLog`를 수정하거나 현재 예약 상태에서 과거 이력을 합성하지 않으며 `ROLE_ADMIN`만 접근한다. 쿠폰 사용 원장은 M3-09에서 별도 다운로드 계약으로 제공한다.
 
+## 관리자 감사 내역 다운로드
+
+```text
+GET /api/admin/audit-logs/export
+  query:
+    keyword?
+    reservationId?
+    occurredDateFrom?
+    occurredDateTo?
+    actorType?
+    changeType?
+  response: text/csv attachment
+
+GET /api/admin/coupon-usage-logs/export
+  query:
+    keyword?
+    couponId?
+    reservationId?
+    occurredDateFrom?
+    occurredDateTo?
+  response: text/csv attachment
+```
+
+예약 감사 CSV는 `ReservationChangeLog`, 쿠폰 사용 CSV는 `CouponUsageLog`를 각각 직접 조회한다. 두 응답은 UTF-8 BOM과 CRLF를 사용하며 모든 필드를 CSV quoting하고 수식 주입을 방어한다. 회원 전화번호는 검색에만 사용하고 파일에는 포함하지 않으며, 예약 파일은 `actorAuthSubject`를 제외한다. 두 API는 `ROLE_ADMIN`만 접근할 수 있고 `Cache-Control: no-store`를 반환한다.
+
 ## 입금대기
 
 ```text

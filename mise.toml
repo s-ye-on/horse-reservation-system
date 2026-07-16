@@ -562,3 +562,10 @@ pnpm --dir frontend/apps/web exec vitest run src/features/admin-audit/AdminAudit
 pnpm --dir frontend/apps/web lint
 pnpm --dir frontend/apps/web typecheck
 '''
+
+[tasks."verify:m3-09"]
+description = "Verify admin reservation and coupon audit CSV downloads"
+run = '''
+./backend/gradlew -p backend test --tests '*CsvEncoderTest' --tests '*AdminAuditExportApiTest'
+mise run api:check
+'''

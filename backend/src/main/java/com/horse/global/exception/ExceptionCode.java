@@ -64,6 +64,7 @@ public enum ExceptionCode {
 	COUPON_INVALID_USAGE_REFERENCE(HttpStatus.BAD_REQUEST, "쿠폰 사용 이력 참조가 올바르지 않습니다."),
 	COUPON_INVALID_USAGE_OCCURRED_AT(HttpStatus.BAD_REQUEST, "쿠폰 사용 이력 발생 시각은 필수입니다."),
 	COUPON_INVALID_ACTOR_TYPE(HttpStatus.BAD_REQUEST, "쿠폰 처리 주체는 필수입니다."),
+	COUPON_INVALID_EXPORT_DATE_RANGE(HttpStatus.BAD_REQUEST, "쿠폰 사용 이력 다운로드 기간이 올바르지 않습니다."),
 	COUPON_NOT_FOUND(HttpStatus.NOT_FOUND, "쿠폰을 찾을 수 없습니다."),
 	COUPON_HOLD_NOT_AVAILABLE(HttpStatus.CONFLICT, "쿠폰에 사용 가능한 횟수가 없습니다."),
 	COUPON_EXPIRED_FOR_LESSON(HttpStatus.CONFLICT, "수업일에 만료된 쿠폰은 사용할 수 없습니다."),

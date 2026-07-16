@@ -2,6 +2,8 @@ package com.horse.coupons.domain;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.Immutable;
+
 import com.horse.coupons.domain.exception.CouponException;
 import com.horse.global.exception.ExceptionCode;
 
@@ -13,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
+@Immutable
 @Table(name = "coupon_usage_logs")
 public class CouponUsageLog {
 
@@ -20,28 +23,28 @@ public class CouponUsageLog {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "coupon_id", nullable = false)
+	@Column(name = "coupon_id", nullable = false, updatable = false)
 	private Long couponId;
 
-	@Column(name = "reservation_id")
+	@Column(name = "reservation_id", updatable = false)
 	private Long reservationId;
 
-	@Column(name = "member_id", nullable = false)
+	@Column(name = "member_id", nullable = false, updatable = false)
 	private Long memberId;
 
-	@Column(name = "action", nullable = false)
+	@Column(name = "action", nullable = false, updatable = false)
 	private CouponUsageAction action;
 
-	@Column(name = "count_delta", nullable = false)
+	@Column(name = "count_delta", nullable = false, updatable = false)
 	private short countDelta;
 
-	@Column(name = "occurred_at", nullable = false)
+	@Column(name = "occurred_at", nullable = false, updatable = false)
 	private LocalDateTime occurredAt;
 
-	@Column(name = "actor_type", nullable = false)
+	@Column(name = "actor_type", nullable = false, updatable = false)
 	private CouponActorType actorType;
 
-	@Column(name = "memo")
+	@Column(name = "memo", updatable = false)
 	private String memo;
 
 	@Column(name = "created_at", nullable = false, insertable = false, updatable = false)

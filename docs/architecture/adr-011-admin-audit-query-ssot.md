@@ -19,6 +19,9 @@ MVP-3 관리자는 회원·예약·기간을 기준으로 예약 변경 이력�
 - 전체 기간 최신순 조회를 위해 `reservation_change_logs(created_at, id)` 인덱스를 추가한다. 기존 예약별 `(reservation_id, created_at, id)` 인덱스는 유지한다.
 - 조회 중 예약, 회원, 쿠폰, 감사 행을 변경하지 않는다. 과거 예약의 현재 상태에서 존재하지 않는 이력을 추론하거나 backfill하지 않는다.
 - `CouponUsageLog`는 쿠폰 행위의 별도 SSOT로 유지한다. M3-09 다운로드는 두 원장을 각각의 조회 모델로 내보내며 하나의 쓰기 원장으로 합치지 않는다.
+- M3-09는 예약 변경 감사와 쿠폰 사용 이력을 별도 CSV endpoint로 제공한다. 검색에 사용하는 전화번호와 내부 `actorAuthSubject`는 파일에서 제외한다.
+- CSV는 UTF-8 BOM, CRLF, 필드 quoting과 수식 주입 방어를 적용하고 응답 캐시를 금지한다.
+- 두 이력 Entity는 immutable로 매핑하고 Repository는 추가와 필요한 조회 메서드만 노출해 수정·삭제 진입점을 제공하지 않는다.
 
 ## 검토한 대안
 
