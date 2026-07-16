@@ -5,6 +5,7 @@ import { AdminTimeSlotsPage } from './features/admin-timeslots/admin-timeslots-p
 import { AdminReservationsPage } from './features/admin-reservations/admin-reservations-page'
 import { AdminAttendancePage } from './features/admin-attendance/admin-attendance-page'
 import { AdminDashboardPage } from './features/admin-dashboard/admin-dashboard-page'
+import { AdminAuditPage } from './features/admin-audit/admin-audit-page'
 import { ReservationCalendarPage } from './features/reservation-calendar/reservation-calendar-page'
 import { ReservationApplicationPage } from './features/reservation-application/reservation-application-page'
 import { MyReservationsPage } from './features/my-reservations/my-reservations-page'
@@ -39,6 +40,7 @@ function AdminHomePage() {
         <Link to="/admin/timeslots">시간대 및 정원</Link>
         <Link to="/admin/reservations">예약 승인 및 입금 확인</Link>
         <Link to="/admin/attendance">수업 완료 및 노쇼</Link>
+        <Link to="/admin/audit-logs">예약 감사 이력</Link>
       </nav>
     </main>
   )
@@ -61,6 +63,7 @@ export default function App() {
       <Route path="/admin/timeslots" element={<AdminTimeSlotsPage />} />
       <Route path="/admin/reservations" element={<AdminReservationsPage />} />
       <Route path="/admin/attendance" element={<AdminAttendancePage />} />
+      <Route path="/admin/audit-logs" element={<AdminAuditPage />} />
     </Routes>
   )
 }

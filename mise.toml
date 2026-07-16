@@ -553,3 +553,12 @@ run = '''
 ./backend/gradlew -p backend test --tests '*AdminReservationAudit*Test'
 mise run api:check
 '''
+
+[tasks."verify:m3-08"]
+description = "Verify admin reservation audit screen"
+run = '''
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run src/features/admin-audit/AdminAuditPage.test.tsx src/test/admin-audit-api-contract.test.ts src/app.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+'''
