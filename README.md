@@ -27,6 +27,19 @@ mise run backend:dev
 mise run web:dev
 ```
 
+로그인 구현 전 회원·관리자 화면을 로컬에서 확인할 때는 인증된 데모 환경을 사용한다.
+백그라운드에서 MySQL, 백엔드, JWT 프록시, Vite를 함께 실행한다.
+
+```bash
+mise run demo:up
+mise run demo:status
+# 종료할 때
+mise run demo:down
+```
+
+데모 화면은 `http://127.0.0.1:5173`에서 확인한다. `web:dev`와 `backend:dev`는
+각 서버만 직접 실행하므로 로그인 토큰을 자동으로 주입하지 않는다.
+
 모바일은 Expo 개발 서버를 사용한다.
 
 ```bash

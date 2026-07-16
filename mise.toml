@@ -94,6 +94,22 @@ run = "pnpm --dir frontend/apps/web build"
 description = "Start Vite on port 5173"
 run = "pnpm --dir frontend/apps/web dev"
 
+[tasks."demo:up"]
+description = "Start the authenticated local web demo in the background"
+run = "./scripts/local-demo.sh up"
+
+[tasks."demo:down"]
+description = "Stop the authenticated local web demo"
+run = "./scripts/local-demo.sh down"
+
+[tasks."demo:status"]
+description = "Show authenticated local web demo status"
+run = "./scripts/local-demo.sh status"
+
+[tasks."demo:test"]
+description = "Test the authenticated local demo proxy"
+run = "node --test scripts/local-demo-proxy.test.mjs"
+
 [tasks."mobile:lint"]
 description = "Lint the Expo mobile application"
 run = "pnpm --dir frontend/apps/mobile lint"
