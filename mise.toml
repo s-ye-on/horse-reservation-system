@@ -569,3 +569,7 @@ run = '''
 ./backend/gradlew -p backend test --tests '*CsvEncoderTest' --tests '*AdminAuditExportApiTest'
 mise run api:check
 '''
+
+[tasks."verify:m3-10"]
+description = "Verify operational job failure observability"
+run = "./backend/gradlew -p backend test --tests '*OperationalJobLoggerTest' --tests '*OperationalJobBoundaryTest' --tests '*BulkReservationAttendanceServiceTest'"

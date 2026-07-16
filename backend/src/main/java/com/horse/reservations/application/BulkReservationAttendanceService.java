@@ -48,9 +48,10 @@ public class BulkReservationAttendanceService {
 		}
 		catch (RuntimeException exception) {
 			LOGGER.error(
-				"Bulk reservation attendance item failed. reservationId={}, action={}",
+				"Bulk reservation attendance item failed. reservationId={}, action={}, adminSubject={}",
 				command.reservationId(),
 				command.action(),
+				adminSubject,
 				exception);
 			return BulkReservationAttendanceItemResult.unexpectedFailure(
 				command.reservationId(), command.action());
