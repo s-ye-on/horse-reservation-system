@@ -48,6 +48,10 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_QUERY_CLASS_TYPE(HttpStatus.BAD_REQUEST, "조회할 예약 클래스가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_DATE_RANGE(HttpStatus.BAD_REQUEST, "예약 조회 날짜 범위가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_PAGE(HttpStatus.BAD_REQUEST, "예약 조회 페이지가 올바르지 않습니다."),
+	RESERVATION_INVALID_AUDIT_ACTOR_TYPE(HttpStatus.BAD_REQUEST, "감사 이력 행위자 유형이 올바르지 않습니다."),
+	RESERVATION_INVALID_AUDIT_CHANGE_TYPE(HttpStatus.BAD_REQUEST, "감사 이력 변경 유형이 올바르지 않습니다."),
+	RESERVATION_INVALID_AUDIT_DATE_RANGE(HttpStatus.BAD_REQUEST, "감사 이력 조회 날짜 범위가 올바르지 않습니다."),
+	RESERVATION_INVALID_AUDIT_PAGE(HttpStatus.BAD_REQUEST, "감사 이력 조회 페이지가 올바르지 않습니다."),
 	RESERVATION_INVALID_ATTENDANCE_ACTION(HttpStatus.BAD_REQUEST, "예약 출석 처리 유형이 올바르지 않습니다."),
 	RESERVATION_INVALID_PERSISTED_VALUE(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 예약 값이 올바르지 않습니다."),
 

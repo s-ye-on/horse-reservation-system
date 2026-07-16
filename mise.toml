@@ -546,3 +546,10 @@ pnpm --dir frontend/apps/web typecheck
 description = "Verify adopted coupon expiry job"
 dir = "backend"
 run = "./gradlew test --tests '*CouponTest' --tests '*CouponExpiryJobIntegrationTest' --tests '*MemberCouponQueryApiTest'"
+
+[tasks."verify:m3-07"]
+description = "Verify admin reservation audit query API"
+run = '''
+./backend/gradlew -p backend test --tests '*AdminReservationAudit*Test'
+mise run api:check
+'''

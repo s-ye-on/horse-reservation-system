@@ -2,6 +2,8 @@
 /* eslint-disable */
 export * from './AdminMemberResponse';
 export * from './AdminPendingPaymentResponse';
+export * from './AdminReservationAuditPageResponse';
+export * from './AdminReservationAuditResponse';
 export * from './AdminReservationCancelRequest';
 export * from './AdminReservationChangeRequest';
 export * from './AdminReservationCouponResponse';

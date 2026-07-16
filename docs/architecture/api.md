@@ -82,6 +82,46 @@ POST /api/admin/reservations/complete-bulk
 
 일괄 출석 처리는 `lesson_date`, `start_time`, 최대 8개의 `items`를 받는다. 각 항목은 `reservation_id`, `action`(`complete` 또는 `no_show`)을 포함하며 노쇼에는 `coupon_action`과 `memo`가 필요하다. 구조적으로 유효한 요청은 HTTP 200으로 항목별 성공 여부와 최종 상태 또는 오류 코드·메시지를 반환한다. 항목은 독립 트랜잭션으로 처리되므로 부분 성공할 수 있다.
 
+## 관리자 감사 이력
+
+```text
+GET /api/admin/audit-logs
+  query:
+    keyword?
+    reservationId?
+    occurredDateFrom?
+    occurredDateTo?
+    actorType?
+    changeType?
+    page? = 0
+    size? = 20 (max 100)
+  response:
+    content[] {
+      auditLogId
+      reservationId
+      memberId
+      memberName
+      actorAuthSubject
+      actorType
+      changeType
+      fromStatus
+      toStatus
+      fromLessonDate
+      fromStartTime
+      toLessonDate
+      toStartTime
+      couponAction
+      memo
+      occurredAt
+    }
+    page
+    size
+    totalElements
+    totalPages
+```
+
+기간을 생략하면 전체 예약 변경 이력을 조회하고 `occurredAt DESC`, `auditLogId DESC`로 정렬한다. `keyword`는 회원 이름과 전화번호를 통합 검색한다. 조회는 `ReservationChangeLog`를 수정하거나 현재 예약 상태에서 과거 이력을 합성하지 않으며 `ROLE_ADMIN`만 접근한다. 쿠폰 사용 원장은 M3-09에서 별도 다운로드 계약으로 제공한다.
+
 ## 입금대기
 
 ```text
