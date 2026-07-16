@@ -1001,6 +1001,46 @@
         }
       }
     },
+    "/api/admin/reservations/summary": {
+      "get": {
+        "tags": [
+          "admin-reservation-query-controller"
+        ],
+        "operationId": "getSummary",
+        "parameters": [
+          {
+            "name": "lessonDateFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "lessonDateTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReservationSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/pending-payments": {
       "get": {
         "tags": [
@@ -2090,6 +2130,66 @@
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "AdminReservationDailySummaryResponse": {
+        "type": "object",
+        "properties": {
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "statusCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReservationStatusCountResponse"
+            }
+          }
+        }
+      },
+      "AdminReservationSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "lessonDateFrom": {
+            "type": "string",
+            "format": "date"
+          },
+          "lessonDateTo": {
+            "type": "string",
+            "format": "date"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "statusCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReservationStatusCountResponse"
+            }
+          },
+          "dailyCounts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminReservationDailySummaryResponse"
+            }
+          }
+        }
+      },
+      "ReservationStatusCountResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },

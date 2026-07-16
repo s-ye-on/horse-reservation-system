@@ -23,6 +23,11 @@ import {
     AdminReservationResponseFromJSON,
     AdminReservationResponseToJSON,
 } from '../models/AdminReservationResponse';
+import {
+    type AdminReservationSummaryResponse,
+    AdminReservationSummaryResponseFromJSON,
+    AdminReservationSummaryResponseToJSON,
+} from '../models/AdminReservationSummaryResponse';
 
 export interface GetReservationRequest {
     reservationId: number;
@@ -36,6 +41,11 @@ export interface GetReservationsRequest {
     keyword?: string;
     page?: number;
     size?: number;
+}
+
+export interface GetSummaryRequest {
+    lessonDateFrom?: Date;
+    lessonDateTo?: Date;
 }
 
 /**
@@ -146,6 +156,49 @@ export class AdminReservationQueryControllerApi extends runtime.BaseAPI {
      */
     async getReservations(requestParameters: GetReservationsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdminReservationPageResponse> {
         const response = await this.getReservationsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getSummary without sending the request
+     */
+    async getSummaryRequestOpts(requestParameters: GetSummaryRequest): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        if (requestParameters['lessonDateFrom'] != null) {
+            queryParameters['lessonDateFrom'] = (requestParameters['lessonDateFrom'] as any).toISOString().substring(0,10);
+        }
+
+        if (requestParameters['lessonDateTo'] != null) {
+            queryParameters['lessonDateTo'] = (requestParameters['lessonDateTo'] as any).toISOString().substring(0,10);
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/admin/reservations/summary`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async getSummaryRaw(requestParameters: GetSummaryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdminReservationSummaryResponse>> {
+        const requestOptions = await this.getSummaryRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => AdminReservationSummaryResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getSummary(requestParameters: GetSummaryRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdminReservationSummaryResponse> {
+        const response = await this.getSummaryRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

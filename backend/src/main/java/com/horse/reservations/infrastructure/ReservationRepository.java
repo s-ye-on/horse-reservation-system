@@ -82,6 +82,20 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		Pageable pageable
 	);
 
+	@Query("""
+		select reservation.lessonDate as lessonDate,
+			reservation.status as status,
+			count(reservation) as reservationCount
+		from Reservation reservation
+		where reservation.lessonDate between :lessonDateFrom and :lessonDateTo
+		group by reservation.lessonDate, reservation.status
+		order by reservation.lessonDate, reservation.status
+		""")
+	List<ReservationSummaryProjection> findReservationSummary(
+		@Param("lessonDateFrom") LocalDate lessonDateFrom,
+		@Param("lessonDateTo") LocalDate lessonDateTo
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT reservation FROM Reservation reservation WHERE reservation.id = :reservationId")
 	Optional<Reservation> findByIdForUpdate(@Param("reservationId") Long reservationId);

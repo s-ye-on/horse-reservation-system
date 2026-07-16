@@ -504,3 +504,8 @@ pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp2-reservation-pol
 description = "Verify unified Spring MVC error responses"
 dir = "backend"
 run = "./gradlew test --tests '*GlobalExceptionHandlerTest' --tests '*GlobalExceptionHandlerApiTest'"
+
+[tasks."verify:m3-01"]
+description = "Verify admin reservation summary API and index"
+dir = "backend"
+run = "./gradlew test --tests '*AdminReservationSummaryApiTest' --tests '*ReservationSummaryRepositoryIntegrationTest'"

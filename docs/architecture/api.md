@@ -19,6 +19,25 @@ fieldErrors[] { field, message }
 `@Valid`와 바인딩 오류는 `COMMON_INVALID_REQUEST`와 필드별 공개 검증 메시지를 반환한다.
 거부된 입력값은 오류 응답에 포함하지 않는다. 상세 결정은 ADR-008을 따른다.
 
+## 관리자 예약 집계
+
+```text
+GET /api/admin/reservations/summary
+  query: lessonDateFrom?, lessonDateTo?
+  response:
+    lessonDateFrom
+    lessonDateTo
+    totalCount
+    statusCounts[] { status, count }
+    dailyCounts[] { lessonDate, totalCount, statusCounts[] { status, count } }
+```
+
+날짜를 모두 생략하면 `Asia/Seoul` 기준 오늘을 시작일과 종료일로 사용한다. 한쪽만
+지정하면 지정하지 않은 경계도 같은 날짜로 사용한다. 시작일이 종료일보다 늦으면
+`RESERVATION_INVALID_QUERY_DATE_RANGE`로 거부한다. 상태별 집계는 `ReservationStatus` 전체를 고정
+순서로 반환하고, 일자별 집계는 예약이 존재하는 날짜만 날짜·상태 순으로 반환한다.
+조회는 예약, 정원, 쿠폰과 감사 이력을 변경하지 않는다.
+
 ## 회원
 
 ```text
