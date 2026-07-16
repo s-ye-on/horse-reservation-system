@@ -4,6 +4,7 @@ import { AdminCouponRegistrationPage } from './features/admin-coupons/admin-coup
 import { AdminTimeSlotsPage } from './features/admin-timeslots/admin-timeslots-page'
 import { AdminReservationsPage } from './features/admin-reservations/admin-reservations-page'
 import { AdminAttendancePage } from './features/admin-attendance/admin-attendance-page'
+import { AdminDashboardPage } from './features/admin-dashboard/admin-dashboard-page'
 import { ReservationCalendarPage } from './features/reservation-calendar/reservation-calendar-page'
 import { ReservationApplicationPage } from './features/reservation-application/reservation-application-page'
 import { MyReservationsPage } from './features/my-reservations/my-reservations-page'
@@ -32,6 +33,7 @@ function AdminHomePage() {
       <Link to="/">홈</Link>
       <h1>관리자</h1>
       <nav aria-label="관리자 메뉴">
+        <Link to="/admin/dashboard">운영 대시보드</Link>
         <Link to="/admin/members">회원 및 기승 승인</Link>
         <Link to="/admin/coupons/new">10회권 쿠폰 등록</Link>
         <Link to="/admin/timeslots">시간대 및 정원</Link>
@@ -53,6 +55,7 @@ export default function App() {
       <Route path="/my/reservations/:reservationId/cancel" element={<ReservationCancelPage />} />
       <Route path="/my/coupons" element={<MyCouponsPage />} />
       <Route path="/admin" element={<AdminHomePage />} />
+      <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
       <Route path="/admin/members" element={<AdminMembersPage />} />
       <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
       <Route path="/admin/timeslots" element={<AdminTimeSlotsPage />} />

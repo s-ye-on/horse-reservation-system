@@ -516,3 +516,12 @@ run = '''
 ./backend/gradlew -p backend test --tests '*AdminReservationQueryApiTest' --tests '*AdminReservationOpenApiContractTest'
 mise run api:check
 '''
+
+[tasks."verify:m3-03"]
+description = "Verify admin operations dashboard"
+run = '''
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run src/features/admin-dashboard/AdminDashboardPage.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+'''
