@@ -2,6 +2,23 @@
 
 Spring Boot가 OpenAPI 계약을 제공하고 웹·모바일 TypeScript 클라이언트를 생성한다. 생성 클라이언트는 직접 수정하지 않는다.
 
+## 오류 응답
+
+Spring MVC의 업무 예외와 요청 검증·바인딩 예외는 다음 단일 형식을 사용한다.
+
+```text
+code
+message
+status
+timestamp
+path
+fieldErrors[] { field, message }
+```
+
+기존 `code`와 `message` 계약은 유지한다. 업무 예외의 `fieldErrors`는 빈 배열이며,
+`@Valid`와 바인딩 오류는 `COMMON_INVALID_REQUEST`와 필드별 공개 검증 메시지를 반환한다.
+거부된 입력값은 오류 응답에 포함하지 않는다. 상세 결정은 ADR-008을 따른다.
+
 ## 회원
 
 ```text

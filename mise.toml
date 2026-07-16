@@ -499,3 +499,8 @@ pnpm --dir frontend/apps/web lint
 pnpm --dir frontend/apps/web typecheck
 pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp2-reservation-policy.spec.ts
 '''
+
+[tasks."verify:m3-00"]
+description = "Verify unified Spring MVC error responses"
+dir = "backend"
+run = "./gradlew test --tests '*GlobalExceptionHandlerTest' --tests '*GlobalExceptionHandlerApiTest'"
