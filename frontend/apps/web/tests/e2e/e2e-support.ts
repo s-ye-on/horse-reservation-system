@@ -36,6 +36,23 @@ export interface MvpTwoFixture {
   todayIsWeekend: boolean
 }
 
+export interface MvpThreeFixture {
+  lessonDate: string
+  pendingMemberName: string
+  completedMemberName: string
+  pendingReservationId: number
+  completedReservationId: number
+  completedCouponId: number
+}
+
+export interface MvpThreeSnapshot {
+  status: string
+  remainingCount: number
+  heldCount: number
+  generalRideCount: number
+  usedLogCount: number
+}
+
 export interface ReservationPolicyFixture extends MemberFixture {
   reservationId: number
   targetLessonDate?: string
@@ -311,6 +328,148 @@ export function cleanupMvpTwoFixture(today: string) {
        OR (lesson_date = '${addDays(today, 4)}' AND start_time = '10:00:00')
        OR (lesson_date = '${today}' AND start_time IN ('10:00:00', '11:00:00', '12:00:00', '14:00:00', '15:00:00'));
   `)
+}
+
+export function prepareMvpThreeFixture(): MvpThreeFixture {
+  const lessonDate = addDays(seoulDateKey(), 20)
+  const pendingSubject = 'e2e-m3-11-pending-member'
+  const completedSubject = 'e2e-m3-11-completed-member'
+  const pendingMemberName = 'E2E 운영 승인대기'
+  const completedMemberName = 'E2E 운영 일괄완료'
+
+  cleanupMvpThreeFixture(lessonDate)
+  runSql(`
+    INSERT INTO members (auth_subject, name, phone, general_ride_count)
+    VALUES
+      ('${pendingSubject}', '${pendingMemberName}', '010-9300-0001', 6),
+      ('${completedSubject}', '${completedMemberName}', '010-9300-0002', 6);
+
+    INSERT INTO coupons (
+      member_id, coupon_type, total_count, remaining_count, held_count, status, created_by
+    )
+    SELECT id, 'general', 10, 10, 1, 'active', 'e2e-m3-11'
+    FROM members
+    WHERE auth_subject IN ('${pendingSubject}', '${completedSubject}');
+
+    INSERT INTO time_slot_capacities (
+      lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, is_closed
+    ) VALUES
+      ('${lessonDate}', '16:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${lessonDate}', '17:00:00', 8, 4, '${classCapacityJson()}', FALSE);
+
+    INSERT INTO reservations (
+      member_id, class_type, lesson_date, start_time, status, payment_source, coupon_id,
+      approval_requested_at, admin_confirmed_at
+    )
+    SELECT member.id, 'ROUND_TROT', '${lessonDate}', '16:00:00',
+      'pending_admin_approval', 'coupon', coupon.id, DATE_SUB(NOW(6), INTERVAL 3 HOUR), NULL
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${pendingSubject}'
+    UNION ALL
+    SELECT member.id, 'ROUND_TROT', '${lessonDate}', '17:00:00',
+      'confirmed', 'coupon', coupon.id, DATE_SUB(NOW(6), INTERVAL 2 HOUR), NOW(6)
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${completedSubject}';
+
+    INSERT INTO coupon_usage_logs (
+      coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
+    )
+    SELECT coupon.id, reservation.id, member.id, 'held', 1, NOW(6), 'member', 'M3-11 fixture'
+    FROM members member
+    JOIN coupons coupon ON coupon.member_id = member.id
+    JOIN reservations reservation ON reservation.member_id = member.id
+    WHERE member.auth_subject IN ('${pendingSubject}', '${completedSubject}');
+
+    INSERT INTO coupon_usage_logs (
+      coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
+    )
+    SELECT coupon.id, reservation.id, member.id, 'confirmed', 0, NOW(6), 'admin', 'M3-11 fixture'
+    FROM members member
+    JOIN coupons coupon ON coupon.member_id = member.id
+    JOIN reservations reservation ON reservation.member_id = member.id
+    WHERE member.auth_subject = '${completedSubject}';
+
+    INSERT INTO reservation_change_logs (
+      reservation_id, actor_auth_subject, actor_type, from_status, to_status,
+      from_lesson_date, from_start_time, to_lesson_date, to_start_time,
+      change_type, coupon_action, memo, created_at
+    )
+    SELECT reservation.id, '${completedSubject}', 'member', 'confirmed', 'confirmed',
+      '${lessonDate}', '16:30:00', '${lessonDate}', '17:00:00',
+      'schedule_changed', 'none', 'M3-11 감사 fixture', NOW(6)
+    FROM reservations reservation
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject = '${completedSubject}';
+  `)
+
+  const [pendingReservationId, completedReservationId, completedCouponId] = runSql(`
+    SELECT
+      (SELECT reservation.id FROM reservations reservation JOIN members member ON member.id = reservation.member_id
+        WHERE member.auth_subject = '${pendingSubject}'),
+      (SELECT reservation.id FROM reservations reservation JOIN members member ON member.id = reservation.member_id
+        WHERE member.auth_subject = '${completedSubject}'),
+      (SELECT coupon.id FROM coupons coupon JOIN members member ON member.id = coupon.member_id
+        WHERE member.auth_subject = '${completedSubject}');
+  `).split('\t').map(Number)
+
+  return {
+    lessonDate,
+    pendingMemberName,
+    completedMemberName,
+    pendingReservationId,
+    completedReservationId,
+    completedCouponId,
+  }
+}
+
+export function cleanupMvpThreeFixture(lessonDate: string) {
+  runSql(`
+    DELETE change_log
+    FROM reservation_change_logs change_log
+    JOIN reservations reservation ON reservation.id = change_log.reservation_id
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
+
+    DELETE usage_log
+    FROM coupon_usage_logs usage_log
+    JOIN members member ON member.id = usage_log.member_id
+    WHERE member.auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
+
+    DELETE reservation
+    FROM reservations reservation
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
+
+    DELETE coupon
+    FROM coupons coupon
+    JOIN members member ON member.id = coupon.member_id
+    WHERE member.auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
+
+    DELETE FROM members
+    WHERE auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
+
+    DELETE FROM time_slot_capacities
+    WHERE lesson_date = '${lessonDate}' AND start_time IN ('16:00:00', '17:00:00');
+  `)
+}
+
+export function readMvpThreeSnapshot(reservationId: number): MvpThreeSnapshot {
+  const values = runSql(`
+    SELECT reservation.status, coupon.remaining_count, coupon.held_count, member.general_ride_count,
+      (SELECT COUNT(*) FROM coupon_usage_logs usage_log
+        WHERE usage_log.reservation_id = reservation.id AND usage_log.action = 'used')
+    FROM reservations reservation
+    JOIN members member ON member.id = reservation.member_id
+    JOIN coupons coupon ON coupon.id = reservation.coupon_id
+    WHERE reservation.id = ${reservationId};
+  `).split('\t')
+  return {
+    status: values[0],
+    remainingCount: Number(values[1]),
+    heldCount: Number(values[2]),
+    generalRideCount: Number(values[3]),
+    usedLogCount: Number(values[4]),
+  }
 }
 
 export function readReservationPolicySnapshot(reservationId: number): ReservationPolicySnapshot {

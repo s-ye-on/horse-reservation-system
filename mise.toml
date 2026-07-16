@@ -573,3 +573,10 @@ mise run api:check
 [tasks."verify:m3-10"]
 description = "Verify operational job failure observability"
 run = "./backend/gradlew -p backend test --tests '*OperationalJobLoggerTest' --tests '*OperationalJobBoundaryTest' --tests '*BulkReservationAttendanceServiceTest'"
+
+[tasks."verify:m3-11"]
+description = "Verify MVP 1 through 3 quality gates and core browser flows"
+run = '''
+mise run verify:all
+pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp1-reservation.spec.ts tests/e2e/mvp2-reservation-policy.spec.ts tests/e2e/mvp3-admin-operations.spec.ts
+'''

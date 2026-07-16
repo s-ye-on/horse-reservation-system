@@ -109,7 +109,9 @@ async function confirmReservation(page: Page, memberName: string, actionName: st
   await card.getByRole('button', { name: '예약 확정 확인' }).click()
   const body = await (await confirmResponse).json()
   expect(body.status).toBe('confirmed')
-  await expect(card).toBeHidden()
+  await expect(card.getByRole('button', { name: actionName })).toHaveCount(0)
+  await expect(card.getByRole('button', { name: '시간 변경' })).toBeVisible()
+  await expect(card.getByRole('button', { name: '예약 취소' })).toBeVisible()
 }
 
 function reservationCard(page: Page, className: string) {
