@@ -509,3 +509,10 @@ run = "./gradlew test --tests '*GlobalExceptionHandlerTest' --tests '*GlobalExce
 description = "Verify admin reservation summary API and index"
 dir = "backend"
 run = "./gradlew test --tests '*AdminReservationSummaryApiTest' --tests '*ReservationSummaryRepositoryIntegrationTest'"
+
+[tasks."verify:m3-02"]
+description = "Verify adopted admin reservation search API contract"
+run = '''
+./backend/gradlew -p backend test --tests '*AdminReservationQueryApiTest' --tests '*AdminReservationOpenApiContractTest'
+mise run api:check
+'''
