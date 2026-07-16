@@ -80,6 +80,8 @@ POST /api/admin/reservations/complete-bulk
 
 관리자 취소 preview는 선택한 `cancellation_responsibility`에 따른 권장 `coupon_action`을 반환한다. 실행 요청은 `cancellation_responsibility`, 최종 `coupon_action`, 필수 `memo`를 받으며 preview의 권고와 달라도 예약 유형별 허용 범위 안이면 관리자 선택을 적용한다. 노쇼 요청도 `coupon_action`과 관리자 `memo`를 받는다.
 
+일괄 출석 처리는 `lesson_date`, `start_time`, 최대 8개의 `items`를 받는다. 각 항목은 `reservation_id`, `action`(`complete` 또는 `no_show`)을 포함하며 노쇼에는 `coupon_action`과 `memo`가 필요하다. 구조적으로 유효한 요청은 HTTP 200으로 항목별 성공 여부와 최종 상태 또는 오류 코드·메시지를 반환한다. 항목은 독립 트랜잭션으로 처리되므로 부분 성공할 수 있다.
+
 ## 입금대기
 
 ```text

@@ -525,3 +525,10 @@ pnpm --dir frontend/apps/web exec vitest run src/features/admin-dashboard/AdminD
 pnpm --dir frontend/apps/web lint
 pnpm --dir frontend/apps/web typecheck
 '''
+
+[tasks."verify:m3-04"]
+description = "Verify time-slot bulk attendance API"
+run = '''
+./backend/gradlew -p backend test --tests '*BulkReservationAttendance*Test'
+mise run api:check
+'''

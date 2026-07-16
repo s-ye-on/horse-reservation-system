@@ -483,6 +483,36 @@
         }
       }
     },
+    "/api/admin/reservations/complete-bulk": {
+      "post": {
+        "tags": [
+          "admin-bulk-reservation-attendance-controller"
+        ],
+        "operationId": "processBulkAttendance",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkReservationAttendanceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkReservationAttendanceResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/members/{memberId}/coupons": {
       "post": {
         "tags": [
@@ -1560,6 +1590,101 @@
           "memo",
           "responsibility"
         ]
+      },
+      "BulkReservationAttendanceItemRequest": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "couponAction": {
+            "type": "string"
+          },
+          "memo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "reservationId"
+        ]
+      },
+      "BulkReservationAttendanceRequest": {
+        "type": "object",
+        "properties": {
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkReservationAttendanceItemRequest"
+            },
+            "maxItems": 8,
+            "minItems": 0
+          }
+        },
+        "required": [
+          "items",
+          "lessonDate",
+          "startTime"
+        ]
+      },
+      "BulkReservationAttendanceItemResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "action": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string"
+          },
+          "errorMessage": {
+            "type": "string"
+          }
+        }
+      },
+      "BulkReservationAttendanceResponse": {
+        "type": "object",
+        "properties": {
+          "requestedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "succeededCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BulkReservationAttendanceItemResponse"
+            }
+          }
+        }
       },
       "CouponRegistrationRequest": {
         "type": "object",
