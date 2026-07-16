@@ -474,3 +474,12 @@ run = "pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typeche
 [tasks."verify:m2-10"]
 description = "Verify M2-10 admin reservation change and cancellation screen"
 run = "pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typecheck && pnpm --dir frontend/apps/web test -- AdminReservationsPage.test.tsx"
+
+[tasks."verify:m2-11"]
+description = "Verify M2-11 reservation change and cancellation policy matrix"
+run = '''
+./backend/gradlew -p backend test --tests '*ReservationChangeDeadlinePolicyTest' --tests '*ReservationChangeApiTest' --tests '*ReservationCancellationPolicyTest' --tests '*MemberReservationCancelApiTest' --tests '*AdminReservationCancelApiTest'
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp2-reservation-policy.spec.ts
+'''

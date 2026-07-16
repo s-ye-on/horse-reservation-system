@@ -167,8 +167,9 @@ function changeErrorMessage(error: unknown, fallback: string) {
 }
 
 function timingLabel(timing?: string) {
-  if (timing === 'BEFORE_CUTOFF') return '변경 마감 전'
-  if (timing === 'AFTER_CUTOFF') return '변경 마감 후'
+  const normalized = timing?.toUpperCase()
+  if (normalized === 'BEFORE_CUTOFF') return '변경 마감 전'
+  if (normalized?.startsWith('AFTER_CUTOFF')) return '변경 마감 후'
   return timing ?? '-'
 }
 

@@ -21,7 +21,7 @@ afterEach(cleanup)
 function createApi(overrides: Partial<ReservationCancelApi> = {}): ReservationCancelApi {
   return {
     getMyReservations: vi.fn().mockResolvedValue([RESERVATION]),
-    previewCancellation: vi.fn().mockResolvedValue({ reservationId: 12, timing: 'AFTER_CUTOFF', responsibility: 'MEMBER', couponAction: 'DEDUCT' }),
+    previewCancellation: vi.fn().mockResolvedValue({ reservationId: 12, timing: 'after_cutoff_weekday', responsibility: 'member', couponAction: 'deduct' }),
     cancelReservation: vi.fn().mockResolvedValue({ reservationId: 12, status: 'cancelled', responsibility: 'MEMBER', couponAction: 'DEDUCT', cancelledAt: new Date('2026-07-19T22:00:00+09:00'), changed: true }),
     ...overrides,
   }
@@ -56,7 +56,10 @@ describe('ReservationCancelPage', () => {
   })
 
   it('취소_성공_후_상태_시각과_최종_쿠폰_처리를_표시한다', async () => {
-    const api = createApi()
+    const getMyReservations = vi.fn()
+      .mockResolvedValueOnce([RESERVATION])
+      .mockResolvedValue([{ ...RESERVATION, status: 'cancelled' }])
+    const api = createApi({ getMyReservations })
     renderPage(api)
     fireEvent.change(await screen.findByLabelText(/취소 사유/), { target: { value: '  몸 상태가 좋지 않습니다.  ' } })
     const button = await screen.findByRole('button', { name: '예약 취소 확정' })
@@ -67,6 +70,7 @@ describe('ReservationCancelPage', () => {
     expect(within(result).getByText('최종 쿠폰 처리 1회 차감')).toBeInTheDocument()
     expect(within(result).getByText(/취소 시각/)).toBeInTheDocument()
     expect(api.cancelReservation).toHaveBeenCalledWith(12, '몸 상태가 좋지 않습니다.')
+    expect(getMyReservations).toHaveBeenCalledTimes(1)
   })
 
   it('preview_로딩_상태를_표시한다', async () => {

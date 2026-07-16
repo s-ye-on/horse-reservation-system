@@ -31,7 +31,7 @@ function createApi(overrides: Partial<ReservationChangeApi> = {}): ReservationCh
     }),
     previewChange: vi.fn().mockResolvedValue({
       reservationId: 12, targetTimeSlotId: 31, targetLessonDate: new Date('2026-07-21T00:00:00+09:00'),
-      targetStartTime: '10:00:00', timing: 'AFTER_CUTOFF', couponAction: 'FREE_CHANGE_USED', freeChangeUsed: true,
+      targetStartTime: '10:00:00', timing: 'after_cutoff_weekday', couponAction: 'free_change_used', freeChangeUsed: true,
     }),
     changeReservation: vi.fn().mockResolvedValue({
       reservationId: 12, lessonDate: new Date('2026-07-21T00:00:00+09:00'), startTime: '10:00:00',

@@ -37,7 +37,10 @@ export function ReservationCancelPage({ api = reservationCancelApi }: { api?: Re
   })
   const cancelMutation = useMutation({
     mutationFn: () => api.cancelReservation(reservationId, reason.trim()),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['member', 'reservations'] }),
+    onSuccess: () => queryClient.invalidateQueries({
+      queryKey: ['member', 'reservations'],
+      refetchType: 'none',
+    }),
   })
   const validReason = reason.trim().length > 0 && reason.trim().length <= 500
 
@@ -121,8 +124,9 @@ function cancelErrorMessage(error: unknown, fallback: string) {
 }
 
 function timingLabel(timing?: string) {
-  if (timing === 'BEFORE_CUTOFF') return '취소 마감 전'
-  if (timing === 'AFTER_CUTOFF') return '취소 마감 후'
+  const normalized = timing?.toUpperCase()
+  if (normalized === 'BEFORE_CUTOFF') return '취소 마감 전'
+  if (normalized?.startsWith('AFTER_CUTOFF')) return '취소 마감 후'
   return timing ?? '-'
 }
 

@@ -26,6 +26,34 @@ export interface MemberFixture {
   couponId?: number
 }
 
+export interface MvpTwoFixture {
+  beforeCutoffChange: ReservationPolicyFixture
+  afterCutoffChange: ReservationPolicyFixture
+  sameDayChange: ReservationPolicyFixture
+  beforeCutoffCancel: ReservationPolicyFixture
+  afterCutoffCancel: ReservationPolicyFixture
+  adminCancel: ReservationPolicyFixture
+  todayIsWeekend: boolean
+}
+
+export interface ReservationPolicyFixture extends MemberFixture {
+  reservationId: number
+  targetLessonDate?: string
+  targetStartTime?: string
+  targetTimeSlotId?: number
+}
+
+export interface ReservationPolicySnapshot {
+  status: string
+  lessonDate: string
+  startTime: string
+  remainingCount: number
+  heldCount: number
+  freeChangeUsed: boolean
+  freeChangeLogCount: number
+  changeLogCount: number
+}
+
 export async function createAuthenticatedPage(browser: Browser, authSubject: string, role: 'MEMBER' | 'ADMIN') {
   const context = await browser.newContext()
   const page = await context.newPage()
@@ -117,6 +145,198 @@ export function cleanupFixture(fixture: MvpOneFixture) {
   cleanupMvpOneFixture(fixture.couponMember.lessonDate, fixture.singlePaymentMember.lessonDate)
 }
 
+export function prepareMvpTwoFixture(): MvpTwoFixture {
+  const today = seoulDateKey()
+  const beforeLessonDate = addDays(today, 2)
+  const beforeTargetDate = addDays(today, 3)
+  const afterTargetDate = addDays(today, 4)
+  const subjects = mvpTwoSubjects()
+
+  cleanupMvpTwoFixture(today)
+  runSql(`
+    INSERT INTO members (auth_subject, name, phone, general_ride_count)
+    VALUES
+      ('${subjects.beforeChange}', 'E2E 마감전 변경', '010-9200-0001', 6),
+      ('${subjects.afterChange}', 'E2E 무료 변경', '010-9200-0002', 6),
+      ('${subjects.sameDayChange}', 'E2E 당일 변경', '010-9200-0003', 6),
+      ('${subjects.beforeCancel}', 'E2E 마감전 취소', '010-9200-0004', 6),
+      ('${subjects.afterCancel}', 'E2E 마감후 취소', '010-9200-0005', 6),
+      ('${subjects.adminCancel}', 'E2E 관리자 취소', '010-9200-0006', 6);
+
+    INSERT INTO coupons (
+      member_id, coupon_type, total_count, remaining_count, held_count, status, created_by
+    )
+    SELECT id, 'general', 10, 10, 1, 'active', 'e2e-m2-11'
+    FROM members
+    WHERE auth_subject IN (${quoteList(Object.values(subjects))});
+
+    INSERT INTO time_slot_capacities (
+      lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, is_closed
+    ) VALUES
+      ('${beforeLessonDate}', '09:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${beforeTargetDate}', '09:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${today}', '10:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${afterTargetDate}', '10:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${today}', '11:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${today}', '12:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${beforeLessonDate}', '13:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${today}', '14:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${today}', '15:00:00', 8, 4, '${classCapacityJson()}', FALSE);
+
+    INSERT INTO reservations (
+      member_id, class_type, lesson_date, start_time, status, payment_source, coupon_id,
+      approval_requested_at, admin_confirmed_at
+    )
+    SELECT member.id, 'ROUND_BEGINNER', '${beforeLessonDate}', '09:00:00',
+      'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${subjects.beforeChange}'
+    UNION ALL
+    SELECT member.id, 'ROUND_BEGINNER', '${today}', '10:00:00',
+      'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${subjects.afterChange}'
+    UNION ALL
+    SELECT member.id, 'ROUND_BEGINNER', '${today}', '11:00:00',
+      'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${subjects.sameDayChange}'
+    UNION ALL
+    SELECT member.id, 'ROUND_BEGINNER', '${beforeLessonDate}', '13:00:00',
+      'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${subjects.beforeCancel}'
+    UNION ALL
+    SELECT member.id, 'ROUND_BEGINNER', '${today}', '14:00:00',
+      'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${subjects.afterCancel}'
+    UNION ALL
+    SELECT member.id, 'ROUND_BEGINNER', '${today}', '15:00:00',
+      'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${subjects.adminCancel}';
+
+    INSERT INTO coupon_usage_logs (
+      coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
+    )
+    SELECT coupon.id, reservation.id, member.id, 'held', 1, NOW(6), 'member', 'M2-11 fixture'
+    FROM members member
+    JOIN coupons coupon ON coupon.member_id = member.id
+    JOIN reservations reservation ON reservation.member_id = member.id
+    WHERE member.auth_subject IN (${quoteList(Object.values(subjects))});
+  `)
+
+  const fixtures = Object.fromEntries(Object.entries(subjects).map(([key, subject]) => {
+    const [reservationId, couponId] = runSql(`
+      SELECT reservation.id, coupon.id
+      FROM members member
+      JOIN coupons coupon ON coupon.member_id = member.id
+      JOIN reservations reservation ON reservation.member_id = member.id
+      WHERE member.auth_subject = '${subject}';
+    `).split('\t').map(Number)
+    return [key, { authSubject: subject, reservationId, couponId }]
+  })) as Record<keyof ReturnType<typeof mvpTwoSubjects>, Pick<ReservationPolicyFixture, 'authSubject' | 'reservationId' | 'couponId'>>
+
+  return {
+    beforeCutoffChange: {
+      ...fixtures.beforeChange,
+      name: 'E2E 마감전 변경', lessonDate: beforeLessonDate, startTime: '09:00:00',
+      timeSlotId: findTimeSlot(beforeLessonDate, '09:00:00'),
+      targetLessonDate: beforeTargetDate, targetStartTime: '09:00:00',
+      targetTimeSlotId: findTimeSlot(beforeTargetDate, '09:00:00'),
+    },
+    afterCutoffChange: {
+      ...fixtures.afterChange,
+      name: 'E2E 무료 변경', lessonDate: today, startTime: '10:00:00',
+      timeSlotId: findTimeSlot(today, '10:00:00'),
+      targetLessonDate: afterTargetDate, targetStartTime: '10:00:00',
+      targetTimeSlotId: findTimeSlot(afterTargetDate, '10:00:00'),
+    },
+    sameDayChange: {
+      ...fixtures.sameDayChange,
+      name: 'E2E 당일 변경', lessonDate: today, startTime: '11:00:00',
+      timeSlotId: findTimeSlot(today, '11:00:00'),
+      targetLessonDate: today, targetStartTime: '12:00:00',
+      targetTimeSlotId: findTimeSlot(today, '12:00:00'),
+    },
+    beforeCutoffCancel: {
+      ...fixtures.beforeCancel,
+      name: 'E2E 마감전 취소', lessonDate: beforeLessonDate, startTime: '13:00:00',
+      timeSlotId: findTimeSlot(beforeLessonDate, '13:00:00'),
+    },
+    afterCutoffCancel: {
+      ...fixtures.afterCancel,
+      name: 'E2E 마감후 취소', lessonDate: today, startTime: '14:00:00',
+      timeSlotId: findTimeSlot(today, '14:00:00'),
+    },
+    adminCancel: {
+      ...fixtures.adminCancel,
+      name: 'E2E 관리자 취소', lessonDate: today, startTime: '15:00:00',
+      timeSlotId: findTimeSlot(today, '15:00:00'),
+    },
+    todayIsWeekend: isWeekend(today),
+  }
+}
+
+export function cleanupMvpTwoFixture(today: string) {
+  const subjects = Object.values(mvpTwoSubjects())
+  runSql(`
+    DELETE change_log
+    FROM reservation_change_logs change_log
+    JOIN reservations reservation ON reservation.id = change_log.reservation_id
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN (${quoteList(subjects)});
+
+    DELETE usage_log
+    FROM coupon_usage_logs usage_log
+    JOIN members member ON member.id = usage_log.member_id
+    WHERE member.auth_subject IN (${quoteList(subjects)});
+
+    DELETE reservation
+    FROM reservations reservation
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN (${quoteList(subjects)});
+
+    DELETE coupon
+    FROM coupons coupon
+    JOIN members member ON member.id = coupon.member_id
+    WHERE member.auth_subject IN (${quoteList(subjects)});
+
+    DELETE FROM members WHERE auth_subject IN (${quoteList(subjects)});
+
+    DELETE FROM time_slot_capacities
+    WHERE (lesson_date = '${addDays(today, 2)}' AND start_time IN ('09:00:00', '13:00:00'))
+       OR (lesson_date = '${addDays(today, 3)}' AND start_time = '09:00:00')
+       OR (lesson_date = '${addDays(today, 4)}' AND start_time = '10:00:00')
+       OR (lesson_date = '${today}' AND start_time IN ('10:00:00', '11:00:00', '12:00:00', '14:00:00', '15:00:00'));
+  `)
+}
+
+export function readReservationPolicySnapshot(reservationId: number): ReservationPolicySnapshot {
+  const values = runSql(`
+    SELECT reservation.status, reservation.lesson_date, reservation.start_time,
+      coupon.remaining_count, coupon.held_count, coupon.free_change_used,
+      (SELECT COUNT(*) FROM coupon_usage_logs usage_log
+        WHERE usage_log.reservation_id = reservation.id AND usage_log.action = 'free_change_used'),
+      (SELECT COUNT(*) FROM reservation_change_logs change_log
+        WHERE change_log.reservation_id = reservation.id)
+    FROM reservations reservation
+    JOIN coupons coupon ON coupon.id = reservation.coupon_id
+    WHERE reservation.id = ${reservationId};
+  `).split('\t')
+  return {
+    status: values[0],
+    lessonDate: values[1],
+    startTime: values[2],
+    remainingCount: Number(values[3]),
+    heldCount: Number(values[4]),
+    freeChangeUsed: values[5] === '1',
+    freeChangeLogCount: Number(values[6]),
+    changeLogCount: Number(values[7]),
+  }
+}
+
 function cleanupMvpOneFixture(couponLessonDate: string, singlePaymentLessonDate: string) {
   runSql(`
     DELETE change_log
@@ -196,6 +416,33 @@ function classCapacityJson() {
     DRESSAGE: 5,
     JUMPING: 5,
   })
+}
+
+function mvpTwoSubjects() {
+  return {
+    beforeChange: 'e2e-m2-11-before-change',
+    afterChange: 'e2e-m2-11-after-change',
+    sameDayChange: 'e2e-m2-11-same-day-change',
+    beforeCancel: 'e2e-m2-11-before-cancel',
+    afterCancel: 'e2e-m2-11-after-cancel',
+    adminCancel: 'e2e-m2-11-admin-cancel',
+  } as const
+}
+
+function findTimeSlot(lessonDate: string, startTime: string) {
+  return Number(runSql(`
+    SELECT id FROM time_slot_capacities
+    WHERE lesson_date = '${lessonDate}' AND start_time = '${startTime}';
+  `))
+}
+
+function quoteList(values: readonly string[]) {
+  return values.map((value) => `'${value}'`).join(', ')
+}
+
+function isWeekend(dateKey: string) {
+  const day = new Date(`${dateKey}T00:00:00Z`).getUTCDay()
+  return day === 0 || day === 6
 }
 
 function seoulDateKey() {
