@@ -48,6 +48,7 @@ afterEach(() => {
 function createApi(overrides: Partial<AdminAttendanceApi> = {}): AdminAttendanceApi {
   return {
     getConfirmedReservations: vi.fn().mockResolvedValue([GENERAL, DRESSAGE, JUMPING]),
+    processBulk: vi.fn().mockResolvedValue({ requestedCount: 3, succeededCount: 3, failedCount: 0, items: [] }),
     complete: vi.fn().mockResolvedValue({ reservationId: 31, status: 'completed', generalRideCount: 12, dressageRideCount: 3, jumpingRideCount: 2 }),
     noShow: vi.fn().mockResolvedValue({ reservationId: 31, status: 'no_show', paymentSource: 'coupon', couponId: 71, couponAction: 'deduct', adminMemo: '노쇼' }),
     ...overrides,

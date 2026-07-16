@@ -532,3 +532,12 @@ run = '''
 ./backend/gradlew -p backend test --tests '*BulkReservationAttendance*Test'
 mise run api:check
 '''
+
+[tasks."verify:m3-05"]
+description = "Verify time-slot bulk attendance screen"
+run = '''
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run src/features/admin-attendance/AdminBulkAttendancePanel.test.tsx src/features/admin-attendance/AdminAttendancePage.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+'''

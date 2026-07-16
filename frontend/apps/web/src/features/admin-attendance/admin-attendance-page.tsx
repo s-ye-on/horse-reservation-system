@@ -10,6 +10,7 @@ import {
   getAdminAttendanceErrorKind,
   type AdminAttendanceApi,
 } from './admin-attendance.api'
+import { AdminBulkAttendancePanel } from './admin-bulk-attendance-panel'
 import './admin-attendance-page.css'
 
 const ATTENDANCE_KEY = ['admin', 'confirmed-reservations'] as const
@@ -113,6 +114,12 @@ export function AdminAttendancePage({ api = adminAttendanceApi }: { api?: AdminA
           <div><p>LESSON OPERATIONS</p><h1>수업 완료 및 노쇼</h1><span>확정 예약을 한 건씩 처리하고 서버 반영 결과를 확인합니다.</span></div>
           <strong>확정 예약 {query.data.length}건</strong>
         </header>
+
+        <AdminBulkAttendancePanel
+          reservations={query.data}
+          api={api}
+          onProcessed={() => queryClient.invalidateQueries({ queryKey: ATTENDANCE_KEY })}
+        />
 
         {result ? <AttendanceResultPanel result={result} /> : null}
         {command.isError ? <p className="admin-attendance-error" role="alert">{getErrorMessage(command.error)}</p> : null}
