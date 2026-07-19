@@ -20,6 +20,11 @@ const COUPON_RESERVATION: AdminReservationResponse = {
   status: 'confirmed',
   paymentSource: 'coupon',
   coupon: { couponId: 81, couponType: 'GENERAL', remainingCount: 4, heldCount: 1 },
+  displayGroup: 'PAST',
+  actions: {
+    complete: { allowed: true }, noShow: { allowed: true },
+    change: { allowed: false }, cancel: { allowed: false }, approve: { allowed: false },
+  },
 }
 
 const PAYMENT_RESERVATION: AdminReservationResponse = {
@@ -36,6 +41,17 @@ const NEXT_SLOT_RESERVATION: AdminReservationResponse = {
   memberName: '박다음',
   lessonDate: new Date('2026-08-11T00:00:00.000Z'),
   startTime: '10:00:00',
+}
+
+const BLOCKED_RESERVATION: AdminReservationResponse = {
+  ...NEXT_SLOT_RESERVATION,
+  reservationId: 44,
+  memberName: '정예정',
+  actions: {
+    complete: { allowed: false, blockedReason: 'RESERVATION_LESSON_NOT_STARTED' },
+    noShow: { allowed: false, blockedReason: 'RESERVATION_LESSON_NOT_STARTED' },
+    change: { allowed: true }, cancel: { allowed: true }, approve: { allowed: false },
+  },
 }
 
 afterEach(() => {
@@ -78,6 +94,14 @@ describe('AdminBulkAttendancePanel', () => {
     expect(await screen.findByText('박다음')).toBeInTheDocument()
     expect(screen.getByLabelText('시작 시간')).toHaveValue('10:00:00')
     expect(screen.queryByText('김쿠폰')).not.toBeInTheDocument()
+  })
+
+  it('서버가_출석_처리를_허용한_예약만_일괄_대상으로_표시한다', () => {
+    renderPanel(createApi(), [COUPON_RESERVATION, BLOCKED_RESERVATION])
+
+    expect(screen.getByText('김쿠폰')).toBeInTheDocument()
+    expect(screen.queryByText('정예정')).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: '2026-08-11' })).not.toBeInTheDocument()
   })
 
   it('선택한_예약을_기본_수업_완료로_일괄_제출한다', async () => {

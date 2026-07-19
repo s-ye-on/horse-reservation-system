@@ -16,11 +16,16 @@ const GENERAL: AdminReservationResponse = {
   memberName: '김일반',
   memberPhone: '010-3131-3131',
   classType: 'ROUND_TROT',
-  lessonDate: new Date('2026-08-10'),
+  lessonDate: new Date(),
   startTime: '09:00:00',
   status: 'confirmed',
   paymentSource: 'coupon',
   coupon: { couponId: 71, couponType: 'GENERAL', remainingCount: 5, heldCount: 1 },
+  displayGroup: 'PAST',
+  actions: {
+    complete: { allowed: true }, noShow: { allowed: true },
+    change: { allowed: false }, cancel: { allowed: false }, approve: { allowed: false },
+  },
 }
 
 const DRESSAGE: AdminReservationResponse = {
@@ -38,6 +43,26 @@ const JUMPING: AdminReservationResponse = {
   classType: 'JUMPING',
   paymentSource: 'single_payment',
   coupon: undefined,
+}
+
+const OVERDUE: AdminReservationResponse = {
+  ...GENERAL,
+  reservationId: 34,
+  memberName: '최미처리',
+  lessonDate: new Date(Date.now() - 48 * 60 * 60 * 1000),
+}
+
+const UPCOMING: AdminReservationResponse = {
+  ...GENERAL,
+  reservationId: 35,
+  memberName: '정예정',
+  lessonDate: new Date(Date.now() + 48 * 60 * 60 * 1000),
+  displayGroup: 'UPCOMING',
+  actions: {
+    complete: { allowed: false, blockedReason: 'RESERVATION_LESSON_NOT_STARTED' },
+    noShow: { allowed: false, blockedReason: 'RESERVATION_LESSON_NOT_STARTED' },
+    change: { allowed: true }, cancel: { allowed: true }, approve: { allowed: false },
+  },
 }
 
 afterEach(() => {
@@ -87,6 +112,24 @@ describe('AdminAttendancePage', () => {
     expect(within(card).getByText('원형 속보')).toBeInTheDocument()
     expect(within(card).getByText('쿠폰')).toBeInTheDocument()
     expect(within(card).getByText('#71 · 잔여 5회')).toBeInTheDocument()
+  })
+
+  it('오늘_처리_가능과_지난_미처리_예약을_구분한다', async () => {
+    renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([GENERAL, OVERDUE]) }))
+
+    const todaySection = (await screen.findByRole('heading', { name: '오늘 처리 가능' })).closest('section') as HTMLElement
+    const overdueSection = screen.getByRole('heading', { name: '지난 미처리' }).closest('section') as HTMLElement
+    expect(within(todaySection).getByRole('heading', { name: '김일반' })).toBeInTheDocument()
+    expect(within(overdueSection).getByRole('heading', { name: '최미처리' })).toBeInTheDocument()
+  })
+
+  it('시작_전_수업은_처리_버튼_없이_서버_차단_이유를_표시한다', async () => {
+    renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([UPCOMING]) }))
+    const card = await cardFor('정예정')
+
+    expect(within(card).queryByRole('button', { name: '수업 완료' })).not.toBeInTheDocument()
+    expect(within(card).queryByRole('button', { name: '노쇼 처리' })).not.toBeInTheDocument()
+    expect(within(card).getByText('수업 시작 전에는 완료 또는 노쇼 처리할 수 없습니다.')).toBeInTheDocument()
   })
 
   it.each([

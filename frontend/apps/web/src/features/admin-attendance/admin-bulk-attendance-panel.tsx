@@ -6,6 +6,7 @@ import type {
   BulkReservationAttendanceResponse,
 } from '@horse/api-client'
 import { getAdminAttendanceErrorKind, type AdminAttendanceApi } from './admin-attendance.api'
+import { isAttendanceProcessable } from './reservation-attendance-eligibility'
 
 const MAX_MEMO_LENGTH = 500
 
@@ -36,15 +37,16 @@ export function AdminBulkAttendancePanel({
   onProcessed(): Promise<void>
 }) {
   const commandLocked = useRef(false)
-  const dates = useMemo(() => uniqueSorted(reservations.map((reservation) => dateValue(reservation.lessonDate))), [reservations])
+  const eligibleReservations = useMemo(() => reservations.filter(isAttendanceProcessable), [reservations])
+  const dates = useMemo(() => uniqueSorted(eligibleReservations.map((reservation) => dateValue(reservation.lessonDate))), [eligibleReservations])
   const [selectedDate, setSelectedDate] = useState(dates[0] ?? '')
-  const times = useMemo(() => uniqueSorted(reservations
+  const times = useMemo(() => uniqueSorted(eligibleReservations
     .filter((reservation) => dateValue(reservation.lessonDate) === selectedDate)
-    .map((reservation) => reservation.startTime ?? '')), [reservations, selectedDate])
+    .map((reservation) => reservation.startTime ?? '')), [eligibleReservations, selectedDate])
   const [selectedTime, setSelectedTime] = useState(times[0] ?? '')
-  const selectedReservations = useMemo(() => reservations.filter((reservation) =>
+  const selectedReservations = useMemo(() => eligibleReservations.filter((reservation) =>
     dateValue(reservation.lessonDate) === selectedDate && reservation.startTime === selectedTime),
-  [reservations, selectedDate, selectedTime])
+  [eligibleReservations, selectedDate, selectedTime])
   const [drafts, setDrafts] = useState<Record<number, DraftItem>>({})
   const [localError, setLocalError] = useState<string>()
   const [result, setResult] = useState<BulkReservationAttendanceResponse>()
@@ -106,7 +108,7 @@ export function AdminBulkAttendancePanel({
     })
   }
 
-  if (reservations.length === 0) {
+  if (eligibleReservations.length === 0) {
     return <section className="admin-bulk-attendance-panel"><h2>시간대 일괄 처리</h2><p className="admin-bulk-attendance-empty">일괄 처리할 확정 예약이 없습니다.</p>{result ? <BulkResultPanel result={result} /> : null}</section>
   }
 

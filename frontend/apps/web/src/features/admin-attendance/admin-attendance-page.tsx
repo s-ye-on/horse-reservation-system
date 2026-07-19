@@ -11,6 +11,11 @@ import {
   type AdminAttendanceApi,
 } from './admin-attendance.api'
 import { AdminBulkAttendancePanel } from './admin-bulk-attendance-panel'
+import {
+  attendanceBlockedMessage,
+  isAttendanceProcessable,
+  isLessonToday,
+} from './reservation-attendance-eligibility'
 import './admin-attendance-page.css'
 
 const ATTENDANCE_KEY = ['admin', 'confirmed-reservations'] as const
@@ -107,16 +112,21 @@ export function AdminAttendancePage({ api = adminAttendanceApi }: { api?: AdminA
   if (query.isPending) return <AttendanceState message="확정 예약을 불러오는 중입니다." />
   if (query.isError) return <AttendanceState error message={getErrorMessage(query.error)} />
 
+  const processableReservations = query.data.filter(isAttendanceProcessable)
+  const todayReservations = processableReservations.filter((reservation) => isLessonToday(reservation))
+  const overdueReservations = processableReservations.filter((reservation) => !isLessonToday(reservation))
+  const upcomingReservations = query.data.filter((reservation) => !isAttendanceProcessable(reservation))
+
   return (
     <main className="admin-attendance-page">
       <div className="admin-attendance-shell">
         <header className="admin-attendance-header">
-          <div><p>LESSON OPERATIONS</p><h1>수업 완료 및 노쇼</h1><span>확정 예약을 한 건씩 처리하고 서버 반영 결과를 확인합니다.</span></div>
-          <strong>확정 예약 {query.data.length}건</strong>
+          <div><p>LESSON OPERATIONS</p><h1>수업 완료 및 노쇼</h1><span>시작한 수업만 처리하고, 예정 수업은 처리 가능 시각을 확인합니다.</span></div>
+          <strong>처리 가능 {processableReservations.length}건</strong>
         </header>
 
         <AdminBulkAttendancePanel
-          reservations={query.data}
+          reservations={processableReservations}
           api={api}
           onProcessed={() => queryClient.invalidateQueries({ queryKey: ATTENDANCE_KEY })}
         />
@@ -125,30 +135,89 @@ export function AdminAttendancePage({ api = adminAttendanceApi }: { api?: AdminA
         {command.isError ? <p className="admin-attendance-error" role="alert">{getErrorMessage(command.error)}</p> : null}
         {localError ? <p className="admin-attendance-error" role="alert">{localError}</p> : null}
 
-        {query.data.length === 0 ? <AttendanceState embedded message="처리할 확정 예약이 없습니다." /> : (
-          <section className="admin-attendance-list" aria-label="확정 예약 목록">
-            {query.data.map((reservation) => (
-              <AttendanceCard
-                key={reservation.reservationId}
-                reservation={reservation}
-                selectedAction={selectedAction}
-                couponAction={couponAction}
-                memo={memo}
-                pending={command.isPending}
-                onChooseAction={chooseAction}
-                onChangeCouponAction={setCouponAction}
-                onChangeMemo={setMemo}
-                onCancel={() => { setSelectedAction(undefined); setMemo(''); setLocalError(undefined) }}
-                onSubmit={runCommand}
-              />
-            ))}
-          </section>
-        )}
+        {query.data.length === 0 ? <AttendanceState embedded message="조회된 확정 예약이 없습니다." /> : null}
+        <AttendanceSection title="오늘 처리 가능" description="오늘 시작한 수업입니다." reservations={todayReservations} emptyMessage="오늘 처리할 수업이 없습니다.">
+          {(reservation) => (
+            <AttendanceCard
+              key={reservation.reservationId}
+              reservation={reservation}
+              selectedAction={selectedAction}
+              couponAction={couponAction}
+              memo={memo}
+              pending={command.isPending}
+              onChooseAction={chooseAction}
+              onChangeCouponAction={setCouponAction}
+              onChangeMemo={setMemo}
+              onCancel={() => { setSelectedAction(undefined); setMemo(''); setLocalError(undefined) }}
+              onSubmit={runCommand}
+            />
+          )}
+        </AttendanceSection>
+        <AttendanceSection title="지난 미처리" description="수업 시간이 지났지만 아직 출석 결과가 없는 예약입니다." reservations={overdueReservations} emptyMessage="지난 미처리 예약이 없습니다.">
+          {(reservation) => (
+            <AttendanceCard
+              key={reservation.reservationId}
+              reservation={reservation}
+              selectedAction={selectedAction}
+              couponAction={couponAction}
+              memo={memo}
+              pending={command.isPending}
+              onChooseAction={chooseAction}
+              onChangeCouponAction={setCouponAction}
+              onChangeMemo={setMemo}
+              onCancel={() => { setSelectedAction(undefined); setMemo(''); setLocalError(undefined) }}
+              onSubmit={runCommand}
+            />
+          )}
+        </AttendanceSection>
+        <AttendanceSection title="시작 전 수업" description="수업 시작 시각이 지나면 완료 또는 노쇼 처리가 열립니다." reservations={upcomingReservations} emptyMessage="시작 전 수업이 없습니다.">
+          {(reservation) => (
+            <AttendanceCard
+              key={reservation.reservationId}
+              reservation={reservation}
+              selectedAction={selectedAction}
+              couponAction={couponAction}
+              memo={memo}
+              pending={command.isPending}
+              onChooseAction={chooseAction}
+              onChangeCouponAction={setCouponAction}
+              onChangeMemo={setMemo}
+              onCancel={() => { setSelectedAction(undefined); setMemo(''); setLocalError(undefined) }}
+              onSubmit={runCommand}
+            />
+          )}
+        </AttendanceSection>
       </div>
     </main>
   )
 }
 
+function AttendanceSection({ title, description, reservations, emptyMessage, children }: {
+  title: string
+  description: string
+  reservations: AdminReservationResponse[]
+  emptyMessage: string
+  children(reservation: AdminReservationResponse): React.ReactNode
+}) {
+  return (
+    <section className="admin-attendance-section" aria-labelledby={`attendance-${title.replaceAll(' ', '-')}`}>
+      <div className="admin-attendance-section-heading">
+        <div><h2 id={`attendance-${title.replaceAll(' ', '-')}`}>{title}</h2><p>{description}</p></div>
+        <strong>{reservations.length}건</strong>
+      </div>
+      {reservations.length === 0 ? <p className="admin-attendance-section-empty">{emptyMessage}</p> : (
+        <div className="admin-attendance-list">
+          {reservations.map((reservation) => children(reservation))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/*
+ * 단건과 일괄 처리는 모두 서버의 actions 판정을 사용한다. 이 컴포넌트는 허용된
+ * 행동만 명령 UI로 바꾸고, 차단된 행동의 시간 정책을 재계산하지 않는다.
+ */
 function AttendanceCard({ reservation, selectedAction, couponAction, memo, pending, onChooseAction, onChangeCouponAction, onChangeMemo, onCancel, onSubmit }: {
   reservation: AdminReservationResponse
   selectedAction?: SelectedAction
@@ -164,10 +233,12 @@ function AttendanceCard({ reservation, selectedAction, couponAction, memo, pendi
   const reservationId = reservation.reservationId as number
   const action = selectedAction?.reservationId === reservationId ? selectedAction.kind : undefined
   const isCoupon = reservation.paymentSource === 'coupon'
+  const canComplete = reservation.actions?.complete?.allowed === true
+  const canNoShow = reservation.actions?.noShow?.allowed === true
   return (
     <article className="admin-attendance-card">
       <div className="admin-attendance-card-heading">
-        <div><h2>{reservation.memberName ?? '이름 없음'}</h2><a href={`tel:${reservation.memberPhone ?? ''}`}>{reservation.memberPhone ?? '전화번호 없음'}</a></div>
+        <div><h3>{reservation.memberName ?? '이름 없음'}</h3><a href={`tel:${reservation.memberPhone ?? ''}`}>{reservation.memberPhone ?? '전화번호 없음'}</a></div>
         <span>{CLASS_LABELS[reservation.classType ?? ''] ?? reservation.classType ?? '-'}</span>
       </div>
       <dl>
@@ -175,10 +246,12 @@ function AttendanceCard({ reservation, selectedAction, couponAction, memo, pendi
         <div><dt>결제 방식</dt><dd>{isCoupon ? '쿠폰' : '1회 결제'}</dd></div>
         {reservation.coupon ? <div><dt>사용 쿠폰</dt><dd>#{reservation.coupon.couponId} · 잔여 {reservation.coupon.remainingCount ?? 0}회</dd></div> : null}
       </dl>
-      {!action ? (
+      {!canComplete && !canNoShow ? (
+        <p className="admin-attendance-blocked">{attendanceBlockedMessage(reservation)}</p>
+      ) : !action ? (
         <div className="admin-attendance-actions">
-          <button type="button" disabled={pending} onClick={() => onChooseAction(reservation, 'complete')}>수업 완료</button>
-          <button className="secondary" type="button" disabled={pending} onClick={() => onChooseAction(reservation, 'no-show')}>노쇼 처리</button>
+          {canComplete ? <button type="button" disabled={pending} onClick={() => onChooseAction(reservation, 'complete')}>수업 완료</button> : null}
+          {canNoShow ? <button className="secondary" type="button" disabled={pending} onClick={() => onChooseAction(reservation, 'no-show')}>노쇼 처리</button> : null}
         </div>
       ) : (
         <div className="admin-attendance-confirmation">
