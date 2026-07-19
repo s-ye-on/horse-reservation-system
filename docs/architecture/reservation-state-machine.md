@@ -7,6 +7,7 @@
 | `pending_admin_approval` | 쿠폰 예약 관리자 승인대기 | 예 |
 | `pending_payment` | 쿠폰 없는 1회 결제 입금대기 | 예 |
 | `payment_expired` | 입금대기 2시간 만료 | 아니요 |
+| `approval_expired` | 수업 시작까지 승인되지 않은 쿠폰 예약 | 아니요 |
 | `confirmed` | 관리자 확정 | 예 |
 | `completed` | 수업 완료 | 아니요 |
 | `rejected` | 관리자가 예약 신청을 승인하지 않음 | 아니요 |
@@ -30,6 +31,10 @@
 
 반려하면 `rejected`, 취소하면 `cancelled`로 전이한다. 반환 대상이면 정원과 쿠폰 임시 점유를 함께 해제한다.
 
+수업 시작까지 관리자가 승인하지 않으면 `approval_expired`로 전이하고 정원과 쿠폰 임시
+점유를 함께 해제한다. Job이 아직 실행되지 않았더라도 수업 시작 이후 승인 Command는
+실패한다.
+
 ## 1회 결제 예약
 
 ```text
@@ -42,7 +47,9 @@
   -> completed
 ```
 
-2시간이 지나면 `payment_expired`가 되고 정원을 반환한다. 관리자가 복구할 때는 정원을 다시 확보한 뒤 `confirmed`로 전이한다.
+신청 후 2시간 또는 수업 시작 시각 중 먼저 도래한 시점에 `payment_expired`가 되고
+정원을 반환한다. 관리자가 복구할 때는 수업 시작 전이고 정원이 남아 있을 때만 정원을
+다시 확보한 뒤 `confirmed`로 전이한다.
 
 자동 만료는 운영 자동화 규칙이며 최종 결제 실패 판정이 아니다. Spring Scheduler와 관리자 수동 실행은 동일한 만료 Service를 사용하고, 늦은 입금 확인 시 관리자는 복구 API를 사용할 수 있다.
 
@@ -64,3 +71,6 @@ critical   신청 후 24시간 초과 또는 수업 시작 24시간 이내
 - 점유 상태로 생성·복구·변경할 때는 `TimeSlotCapacity`를 먼저 비관적 잠금하고 활성 Reservation을 잠금 조회한다.
 - 관리자 예외 처리에는 행위자와 사유를 기록한다.
 - `rejected`에는 관리자와 반려 사유를, `cancelled`에는 취소 행위자·책임·사유를 기록한다.
+- 승인, 변경, 취소는 `now < lessonStartAt`인 경우에만 허용한다.
+- 완료와 노쇼는 `now >= lessonStartAt`이고 `confirmed`인 경우에만 허용한다.
+- Scheduler는 지연된 상태를 정리하며 Command의 현재 시각 검증을 대신하지 않는다.

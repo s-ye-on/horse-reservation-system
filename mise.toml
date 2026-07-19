@@ -580,3 +580,49 @@ run = '''
 mise run verify:all
 pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp1-reservation.spec.ts tests/e2e/mvp2-reservation-policy.spec.ts tests/e2e/mvp3-admin-operations.spec.ts
 '''
+
+[tasks."verify:m3-12"]
+description = "Verify time-based reservation lifecycle documentation and task contracts"
+run = "mise run docs:check"
+
+[tasks."verify:m3-13"]
+description = "Verify reservation command lesson-start guards"
+dir = "backend"
+run = "./gradlew test --tests '*ReservationLessonTimePolicyTest' --tests '*AdminReservationConfirmApiTest' --tests '*ReservationChangeApiTest' --tests '*MemberReservationCancelApiTest' --tests '*AdminReservationCancelApiTest' --tests '*GeneralRideCompletionApiTest' --tests '*SpecialRideCompletionApiTest' --tests '*AdminNoShowApiTest' --tests '*BulkReservationAttendanceApiTest'"
+
+[tasks."verify:m3-14"]
+description = "Verify approval expiry state and cleanup job"
+dir = "backend"
+run = "./gradlew test --tests '*ReservationRepositoryIntegrationTest' --tests '*ApprovalExpiryJobIntegrationTest' --tests '*PendingPaymentExpiryJobIntegrationTest'"
+
+[tasks."verify:m3-15"]
+description = "Verify reservation action availability read model API"
+run = '''
+./backend/gradlew -p backend test --tests '*MemberReservationQueryApiTest' --tests '*AdminReservationQueryApiTest' --tests '*ReservationActionAvailabilityTest'
+mise run api:check
+'''
+
+[tasks."verify:m3-16"]
+description = "Verify member upcoming and past reservation UX"
+run = '''
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run src/features/my-reservations/MyReservationsPage.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+'''
+
+[tasks."verify:m3-17"]
+description = "Verify admin attendance eligibility UX"
+run = '''
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run src/features/admin-attendance/AdminBulkAttendancePanel.test.tsx src/features/admin-attendance/AdminAttendancePage.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+'''
+
+[tasks."verify:m3-18"]
+description = "Verify time-based reservation lifecycle regression"
+run = '''
+mise run verify:all
+pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp3-reservation-lifecycle.spec.ts
+'''
