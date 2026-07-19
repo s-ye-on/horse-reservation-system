@@ -53,6 +53,14 @@ export interface MvpThreeSnapshot {
   usedLogCount: number
 }
 
+export interface ReservationLifecycleFixture {
+  memberSubject: string
+  pastLessonDate: string
+  futureLessonDate: string
+  overdueMemberName: string
+  upcomingMemberName: string
+}
+
 export interface ReservationPolicyFixture extends MemberFixture {
   reservationId: number
   targetLessonDate?: string
@@ -470,6 +478,95 @@ export function readMvpThreeSnapshot(reservationId: number): MvpThreeSnapshot {
     generalRideCount: Number(values[3]),
     usedLogCount: Number(values[4]),
   }
+}
+
+export function prepareReservationLifecycleFixture(): ReservationLifecycleFixture {
+  const memberSubject = 'e2e-m3-18-member'
+  const overdueSubject = 'e2e-m3-18-overdue'
+  const upcomingSubject = 'e2e-m3-18-upcoming'
+  const pastLessonDate = addDays(seoulDateKey(), -1)
+  const futureLessonDate = addDays(seoulDateKey(), 1)
+  const overdueMemberName = 'E2E 지난 미처리'
+  const upcomingMemberName = 'E2E 시작 전 수업'
+
+  cleanupReservationLifecycleFixture()
+  runSql(`
+    INSERT INTO members (auth_subject, name, phone, general_ride_count)
+    VALUES
+      ('${memberSubject}', 'E2E 생명주기 회원', '010-9318-0001', 6),
+      ('${overdueSubject}', '${overdueMemberName}', '010-9318-0002', 6),
+      ('${upcomingSubject}', '${upcomingMemberName}', '010-9318-0003', 6);
+
+    INSERT INTO coupons (
+      member_id, coupon_type, total_count, remaining_count, held_count, status, created_by
+    )
+    SELECT id, 'general', 10, 10, 2, 'active', 'e2e-m3-18'
+    FROM members
+    WHERE auth_subject = '${memberSubject}';
+
+    INSERT INTO reservations (
+      member_id, class_type, lesson_date, start_time, status, payment_source, coupon_id,
+      approval_requested_at, admin_confirmed_at
+    )
+    SELECT member.id, 'ROUND_TROT', '${pastLessonDate}', '09:00:00',
+      'pending_admin_approval', 'coupon', coupon.id, DATE_SUB(NOW(6), INTERVAL 2 DAY), NULL
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${memberSubject}'
+    UNION ALL
+    SELECT member.id, 'ROUND_BEGINNER', '${futureLessonDate}', '09:00:00',
+      'pending_admin_approval', 'coupon', coupon.id, NOW(6), NULL
+    FROM members member JOIN coupons coupon ON coupon.member_id = member.id
+    WHERE member.auth_subject = '${memberSubject}'
+    UNION ALL
+    SELECT member.id, 'ROUND_TROT', '${pastLessonDate}', '10:00:00',
+      'confirmed', 'single_payment', NULL, DATE_SUB(NOW(6), INTERVAL 2 DAY), DATE_SUB(NOW(6), INTERVAL 2 DAY)
+    FROM members member
+    WHERE member.auth_subject = '${overdueSubject}'
+    UNION ALL
+    SELECT member.id, 'ROUND_TROT', '${futureLessonDate}', '10:00:00',
+      'confirmed', 'single_payment', NULL, NOW(6), NOW(6)
+    FROM members member
+    WHERE member.auth_subject = '${upcomingSubject}';
+
+    INSERT INTO coupon_usage_logs (
+      coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
+    )
+    SELECT coupon.id, reservation.id, member.id, 'held', 1, NOW(6), 'member', 'M3-18 fixture'
+    FROM members member
+    JOIN coupons coupon ON coupon.member_id = member.id
+    JOIN reservations reservation ON reservation.member_id = member.id
+    WHERE member.auth_subject = '${memberSubject}';
+  `)
+
+  return { memberSubject, pastLessonDate, futureLessonDate, overdueMemberName, upcomingMemberName }
+}
+
+export function cleanupReservationLifecycleFixture() {
+  runSql(`
+    DELETE change_log
+    FROM reservation_change_logs change_log
+    JOIN reservations reservation ON reservation.id = change_log.reservation_id
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('e2e-m3-18-member', 'e2e-m3-18-overdue', 'e2e-m3-18-upcoming');
+
+    DELETE usage_log
+    FROM coupon_usage_logs usage_log
+    JOIN members member ON member.id = usage_log.member_id
+    WHERE member.auth_subject IN ('e2e-m3-18-member', 'e2e-m3-18-overdue', 'e2e-m3-18-upcoming');
+
+    DELETE reservation
+    FROM reservations reservation
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('e2e-m3-18-member', 'e2e-m3-18-overdue', 'e2e-m3-18-upcoming');
+
+    DELETE coupon
+    FROM coupons coupon
+    JOIN members member ON member.id = coupon.member_id
+    WHERE member.auth_subject = 'e2e-m3-18-member';
+
+    DELETE FROM members
+    WHERE auth_subject IN ('e2e-m3-18-member', 'e2e-m3-18-overdue', 'e2e-m3-18-upcoming');
+  `)
 }
 
 export function readReservationPolicySnapshot(reservationId: number): ReservationPolicySnapshot {
