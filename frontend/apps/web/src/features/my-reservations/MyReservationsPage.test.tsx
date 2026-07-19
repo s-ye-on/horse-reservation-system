@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { ResponseError, type MemberReservationResponse } from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -7,25 +7,59 @@ import type { ReactNode } from 'react'
 import type { MyReservationsApi } from './my-reservations.api'
 import { MyReservationsPage } from './my-reservations-page'
 
-const STATUSES = [
-  'pending_admin_approval', 'pending_payment', 'payment_expired', 'confirmed',
-  'completed', 'rejected', 'cancelled', 'no_show',
-] as const
+const ALLOWED_ACTIONS = {
+  change: { allowed: true }, cancel: { allowed: true }, complete: { allowed: false },
+  noShow: { allowed: false }, approve: { allowed: false },
+}
 
-const RESERVATIONS: MemberReservationResponse[] = STATUSES.map((status, index) => ({
-  reservationId: index + 1,
-  classType: index === 5 ? 'DRESSAGE' : index === 6 ? 'JUMPING' : 'ROUND_BEGINNER',
-  lessonDate: new Date(`2026-08-${String(10 + index).padStart(2, '0')}`),
-  startTime: `${String(9 + index).padStart(2, '0')}:00:00`,
-  status,
-  paymentSource: index === 1 || index === 2 ? 'single_payment' : 'coupon',
-  paymentDueAt: index === 1 || index === 2 ? new Date('2026-08-01T14:00:00+09:00') : undefined,
-  rejectionReason: status === 'rejected' ? '해당 수업 운영이 어렵습니다.' : undefined,
-  couponAction: status === 'completed' ? 'deduct' : status === 'cancelled' ? 'return' : status === 'no_show' ? 'deduct' : undefined,
-  coupon: index === 1 || index === 2 ? undefined : { couponId: 40 + index, couponType: 'GENERAL', remainingCount: 5, heldCount: 1, availableCount: 4, expiresAt: new Date('2026-10-01') },
-}))
+const PAST_ACTIONS = {
+  change: { allowed: false, blockedReason: 'RESERVATION_LESSON_ALREADY_STARTED' },
+  cancel: { allowed: false, blockedReason: 'RESERVATION_LESSON_ALREADY_STARTED' },
+  complete: { allowed: false }, noShow: { allowed: false }, approve: { allowed: false },
+}
+
+const RESERVATIONS: MemberReservationResponse[] = [
+  reservation(1, 'pending_admin_approval', 'UPCOMING', '2026-08-10', ALLOWED_ACTIONS),
+  reservation(2, 'pending_payment', 'UPCOMING', '2026-08-11', ALLOWED_ACTIONS, 'single_payment'),
+  reservation(3, 'confirmed', 'UPCOMING', '2026-08-12', ALLOWED_ACTIONS),
+  reservation(4, 'approval_expired', 'UPCOMING', '2026-08-13', {
+    ...PAST_ACTIONS,
+    change: { allowed: false, blockedReason: 'RESERVATION_INVALID_STATUS' },
+    cancel: { allowed: false, blockedReason: 'RESERVATION_INVALID_STATUS' },
+  }),
+  reservation(8, 'no_show', 'PAST', '2026-07-18', PAST_ACTIONS),
+  reservation(7, 'cancelled', 'PAST', '2026-07-17', PAST_ACTIONS),
+  reservation(6, 'rejected', 'PAST', '2026-07-16', PAST_ACTIONS),
+  reservation(5, 'completed', 'PAST', '2026-07-15', PAST_ACTIONS),
+]
 
 afterEach(cleanup)
+
+function reservation(
+  reservationId: number,
+  status: string,
+  displayGroup: string,
+  lessonDate: string,
+  actions: MemberReservationResponse['actions'],
+  paymentSource = 'coupon',
+): MemberReservationResponse {
+  return {
+    reservationId,
+    classType: reservationId === 6 ? 'DRESSAGE' : reservationId === 7 ? 'JUMPING' : 'ROUND_BEGINNER',
+    lessonDate: new Date(lessonDate),
+    startTime: '09:00:00',
+    status,
+    displayGroup,
+    actions,
+    paymentSource,
+    paymentDueAt: paymentSource === 'single_payment' ? new Date('2026-08-01T14:00:00+09:00') : undefined,
+    rejectionReason: status === 'rejected' ? '해당 수업 운영이 어렵습니다.' : undefined,
+    couponAction: status === 'completed' || status === 'no_show' ? 'deduct' : status === 'cancelled' ? 'return' : undefined,
+    coupon: paymentSource === 'coupon'
+      ? { couponId: 40 + reservationId, couponType: 'GENERAL', remainingCount: 5, heldCount: 1, availableCount: 4, expiresAt: new Date('2026-10-01') }
+      : undefined,
+  }
+}
 
 function createApi(overrides: Partial<MyReservationsApi> = {}): MyReservationsApi {
   return { getMyReservations: vi.fn().mockResolvedValue(RESERVATIONS), ...overrides }
@@ -38,49 +72,61 @@ function renderPage(api: MyReservationsApi) {
 }
 
 describe('MyReservationsPage', () => {
-  it('예약의_클래스_일시_결제와_상태를_표시한다', async () => {
+  it('예정_예약을_기본_탭으로_표시한다', async () => {
     renderPage(createApi())
-    const cards = await screen.findAllByRole('article')
-    expect(within(cards[0]).getByRole('heading', { name: '원형초보' })).toBeInTheDocument()
-    expect(within(cards[0]).getByText('09:00')).toBeInTheDocument()
-    expect(within(cards[0]).getByText('쿠폰')).toBeInTheDocument()
-    expect(within(cards[0]).getByText('관리자 승인대기')).toBeInTheDocument()
+    const upcomingTab = await screen.findByRole('tab', { name: /예정 예약/ })
+    expect(upcomingTab).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getAllByRole('article')).toHaveLength(4)
+    expect(screen.getByText('관리자 승인대기')).toBeInTheDocument()
+    expect(screen.queryByText('수업 완료')).not.toBeInTheDocument()
   })
 
-  it('예약_상태_여덟_개를_각각_다른_문구로_표시한다', async () => {
+  it('방향키로_지난_예약_탭을_선택하고_서버_순서를_유지한다', async () => {
     renderPage(createApi())
-    for (const label of ['관리자 승인대기', '입금 확인 대기', '입금 기한 만료', '예약 확정', '수업 완료', '예약 반려', '예약 취소', '노쇼']) {
-      expect(await screen.findByText(label)).toBeInTheDocument()
-    }
+    const upcomingTab = await screen.findByRole('tab', { name: /예정 예약/ })
+    fireEvent.keyDown(upcomingTab, { key: 'ArrowRight' })
+
+    expect(screen.getByRole('tab', { name: /지난 예약/ })).toHaveAttribute('aria-selected', 'true')
+    const cards = screen.getAllByRole('article')
+    expect(within(cards[0]).getByText('노쇼')).toBeInTheDocument()
+    expect(within(cards[3]).getByText('수업 완료')).toBeInTheDocument()
   })
 
-  it('반려와_취소를_구분하고_반려_사유를_표시한다', async () => {
+  it('예정_예약을_상태별로_필터링한다', async () => {
     renderPage(createApi())
-    expect(await screen.findByText('예약 반려')).toBeInTheDocument()
+    await screen.findByRole('tab', { name: /예정 예약/ })
+    fireEvent.click(screen.getByRole('button', { name: '입금대기' }))
+
+    expect(screen.getAllByRole('article')).toHaveLength(1)
+    expect(screen.getByText('입금 확인 대기')).toBeInTheDocument()
+    expect(screen.getByText('입금 기한')).toBeInTheDocument()
+  })
+
+  it('서버가_허용한_예약만_변경과_취소_링크를_제공한다', async () => {
+    renderPage(createApi())
+    expect(await screen.findAllByRole('link', { name: '예약 변경' })).toHaveLength(3)
+    expect(screen.getAllByRole('link', { name: '취소하기' })).toHaveLength(3)
+    expect(screen.getByText('현재 예약 상태에서는 변경하거나 취소할 수 없습니다.')).toBeInTheDocument()
+  })
+
+  it('지난_예약에는_행동_버튼_대신_서버_차단_이유를_표시한다', async () => {
+    renderPage(createApi())
+    fireEvent.click(await screen.findByRole('tab', { name: /지난 예약/ }))
+
+    expect(screen.queryByRole('link', { name: '예약 변경' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '취소하기' })).not.toBeInTheDocument()
+    expect(screen.getAllByText('수업 시작 이후에는 예약을 변경하거나 취소할 수 없습니다.')).toHaveLength(4)
+  })
+
+  it('반려와_취소_및_쿠폰_처리_결과를_구분한다', async () => {
+    renderPage(createApi())
+    fireEvent.click(await screen.findByRole('tab', { name: /지난 예약/ }))
+
+    expect(screen.getByText('예약 반려')).toBeInTheDocument()
     expect(screen.getByText('예약 취소')).toBeInTheDocument()
     expect(screen.getByText('해당 수업 운영이 어렵습니다.')).toBeInTheDocument()
-  })
-
-  it('쿠폰_예정_사용과_최종_처리_결과를_표시한다', async () => {
-    renderPage(createApi())
-    const coupon = (await screen.findByText(/사용 예정 쿠폰 #40/)).parentElement
-    expect(coupon).toHaveTextContent('점유 후 사용 가능 4회')
-    expect(screen.getAllByText('최종 쿠폰 처리')).toHaveLength(3)
     expect(screen.getAllByText('1회 차감')).toHaveLength(2)
     expect(screen.getByText('반환')).toBeInTheDocument()
-  })
-
-  it('입금_기한과_만료_후_관리자_연락을_안내한다', async () => {
-    renderPage(createApi())
-    expect((await screen.findAllByText('입금 기한')).length).toBeGreaterThan(0)
-    expect(screen.getByText('입금 확인이 늦었다면 관리자에게 연락해 주세요.')).toBeInTheDocument()
-  })
-
-  it('서버가_반환한_예약_순서를_유지한다', async () => {
-    renderPage(createApi())
-    const cards = await screen.findAllByRole('article')
-    expect(within(cards[0]).getByText('관리자 승인대기')).toBeInTheDocument()
-    expect(within(cards[7]).getByText('노쇼')).toBeInTheDocument()
   })
 
   it('빈_예약_목록을_표시한다', async () => {
@@ -94,25 +140,11 @@ describe('MyReservationsPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
 
-  it('320px_화면에서도_전체_상태와_새_예약_링크를_확인할_수_있다', async () => {
+  it('320px_화면에서도_탭과_새_예약_링크를_확인할_수_있다', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 320 })
     renderPage(createApi())
-    expect(await screen.findByText('관리자 승인대기')).toBeInTheDocument()
-    expect(screen.getByText('노쇼')).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: /예정 예약/ })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /지난 예약/ })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '새 예약' })).toHaveAttribute('href', '/reservations')
-  })
-
-  it('활성_예약에만_변경_링크를_표시한다', async () => {
-    renderPage(createApi())
-    const links = await screen.findAllByRole('link', { name: '예약 변경' })
-    expect(links).toHaveLength(3)
-    expect(links[0]).toHaveAttribute('href', '/my/reservations/1/change')
-  })
-
-  it('활성_예약에만_취소_링크를_표시한다', async () => {
-    renderPage(createApi())
-    const links = await screen.findAllByRole('link', { name: '취소하기' })
-    expect(links).toHaveLength(3)
-    expect(links[0]).toHaveAttribute('href', '/my/reservations/1/cancel')
   })
 })

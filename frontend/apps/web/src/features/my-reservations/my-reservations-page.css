@@ -8,6 +8,17 @@
 .my-reservations-header h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.35rem); }
 .my-reservations-header span { display: block; margin-top: 7px; color: var(--my-muted); font-size: .86rem; }
 .my-reservations-header > a { display: inline-flex; min-height: 40px; align-items: center; padding: 0 13px; border: 1px solid var(--my-accent); border-radius: 6px; color: #fff; background: var(--my-accent); font-size: .8rem; font-weight: 720; text-decoration: none; }
+.my-reservations-tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--my-line); }
+.my-reservations-tabs button { display: inline-flex; min-height: 46px; align-items: center; gap: 7px; padding: 0 15px; border: 0; border-bottom: 3px solid transparent; color: var(--my-muted); background: transparent; cursor: pointer; font: inherit; font-size: .86rem; font-weight: 720; }
+.my-reservations-tabs button[aria-selected="true"] { border-bottom-color: var(--my-accent); color: var(--my-accent); }
+.my-reservations-tabs button span { min-width: 22px; padding: 2px 6px; border-radius: 999px; background: #ebe7e8; font-size: .68rem; text-align: center; }
+.my-reservations-tabs button[aria-selected="true"] span { background: var(--my-soft); }
+.my-reservations-tabs button:focus-visible, .my-reservations-filters button:focus-visible { outline: 3px solid #e2aaba; outline-offset: 2px; }
+.my-reservations-panel:focus { outline: none; }
+.my-reservations-panel:focus-visible { outline: 3px solid #e2aaba; outline-offset: 4px; }
+.my-reservations-filters { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.my-reservations-filters button { min-height: 36px; padding: 0 12px; border: 1px solid var(--my-line); border-radius: 999px; color: var(--my-muted); background: #fff; cursor: pointer; font: inherit; font-size: .75rem; font-weight: 680; }
+.my-reservations-filters button[aria-pressed="true"] { border-color: var(--my-accent); color: var(--my-accent); background: var(--my-soft); }
 .my-reservations-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .my-reservation-card, .my-reservations-state { border: 1px solid var(--my-line); border-radius: 8px; background: #fff; }
 .my-reservation-card { min-width: 0; padding: 17px; }
@@ -30,9 +41,13 @@
 .my-reservation-coupon span, .my-reservation-coupon small { color: var(--my-muted); }
 .my-reservation-notice { display: grid; grid-template-columns: auto 1fr; gap: 9px; margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--my-line); color: var(--my-muted); font-size: .77rem; }
 .my-reservation-notice strong { color: var(--my-ink); }
-.my-reservation-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--my-line); }
-.my-reservation-actions a { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; padding: 0 12px; border: 1px solid var(--my-accent); border-radius: 6px; color: var(--my-accent); font-size: .78rem; font-weight: 720; text-decoration: none; }
+.my-reservation-action-section, .my-reservation-action-reason { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--my-line); }
+.my-reservation-action-section .my-reservation-action-reason { margin: 8px 0 0; padding-top: 0; border-top: 0; }
+.my-reservation-actions { display: flex; gap: 8px; }
+.my-reservation-actions a, .my-reservation-actions button { display: inline-flex; min-height: 38px; align-items: center; justify-content: center; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--my-accent); border-radius: 6px; color: var(--my-accent); background: #fff; font: inherit; font-size: .78rem; font-weight: 720; text-decoration: none; }
+.my-reservation-actions button:disabled { border-color: var(--my-line); color: #8b8386; background: #f3f1f2; cursor: not-allowed; }
 .my-reservation-actions a:focus-visible { outline: 3px solid #e2aaba; outline-offset: 2px; }
+.my-reservation-action-reason { margin-bottom: 0; color: var(--my-muted); font-size: .74rem; line-height: 1.45; }
 .my-reservations-state { padding: 32px 18px; color: var(--my-muted); text-align: center; }
 .my-reservations-state[role="alert"] { color: #742137; background: #fff6f8; }
 @media (max-width: 700px) { .my-reservations-list { grid-template-columns: minmax(0, 1fr); } }
@@ -42,4 +57,5 @@
   .my-reservations-header > a { align-self: flex-start; }
   .my-reservation-status { align-self: flex-start; }
   .my-reservation-details { grid-template-columns: minmax(0, 1fr); }
+  .my-reservations-tabs button { flex: 1; justify-content: center; padding-inline: 8px; }
 }
