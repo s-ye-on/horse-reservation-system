@@ -29,7 +29,9 @@ public record AdminReservationResponse(
 	String adminMemo,
 	String approvalWarning,
 	LocalDateTime createdAt,
-	LocalDateTime updatedAt
+	LocalDateTime updatedAt,
+	String displayGroup,
+	ReservationActionsResponse actions
 ) {
 
 	public static AdminReservationResponse from(AdminReservationResult result) {
@@ -56,6 +58,8 @@ public record AdminReservationResponse(
 			result.adminMemo(),
 			result.approvalWarning(),
 			result.createdAt(),
-			result.updatedAt());
+			result.updatedAt(),
+			result.displayGroup(),
+			ReservationActionsResponse.from(result.actions()));
 	}
 }

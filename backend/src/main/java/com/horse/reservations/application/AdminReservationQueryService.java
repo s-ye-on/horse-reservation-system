@@ -98,11 +98,13 @@ public class AdminReservationQueryService {
 			? null
 			: couponRepository.findById(reservation.getCouponId())
 				.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_INVALID_PERSISTED_VALUE));
+		final LocalDateTime now = LocalDateTime.now(clock);
 		return AdminReservationResult.from(
 			reservation,
 			member,
 			coupon,
-			getApprovalWarning(reservation, LocalDateTime.now(clock)));
+			getApprovalWarning(reservation, now),
+			now);
 	}
 
 	private Map<Long, Member> getMembers(Page<Reservation> reservations) {
@@ -144,7 +146,8 @@ public class AdminReservationQueryService {
 			reservation,
 			member,
 			coupon,
-			getApprovalWarning(reservation, now));
+			getApprovalWarning(reservation, now),
+			now);
 	}
 
 	private ReservationApprovalWarningLevel getApprovalWarning(

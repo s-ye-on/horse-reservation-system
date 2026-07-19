@@ -70,3 +70,4 @@ export function ApprovalExpiryResponseToJSONTyped(value?: ApprovalExpiryResponse
         'executedAt': value['executedAt'] == null ? value['executedAt'] : value['executedAt'].toISOString(),
     };
 }
+

@@ -21,10 +21,16 @@ public record MemberReservationResult(
 	LocalDateTime approvalRequestedAt,
 	LocalDateTime adminConfirmedAt,
 	LocalDateTime rejectedAt,
-	LocalDateTime cancelledAt
+	LocalDateTime cancelledAt,
+	String displayGroup,
+	ReservationActionsResult actions
 ) {
 
-	public static MemberReservationResult from(Reservation reservation, Coupon coupon) {
+	public static MemberReservationResult from(
+		Reservation reservation,
+		Coupon coupon,
+		LocalDateTime actionAt
+	) {
 		return new MemberReservationResult(
 			reservation.getId(),
 			reservation.getRidingClass().name(),
@@ -39,6 +45,8 @@ public record MemberReservationResult(
 			reservation.getApprovalRequestedAt(),
 			reservation.getAdminConfirmedAt(),
 			reservation.getRejectedAt(),
-			reservation.getCancelledAt());
+			reservation.getCancelledAt(),
+			reservation.displayGroupAt(actionAt).name(),
+			ReservationActionsResult.from(reservation, actionAt));
 	}
 }

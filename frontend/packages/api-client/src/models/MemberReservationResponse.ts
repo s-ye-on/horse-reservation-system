@@ -20,6 +20,13 @@ import {
     MemberReservationCouponResponseToJSON,
     MemberReservationCouponResponseToJSONTyped,
 } from './MemberReservationCouponResponse';
+import type { ReservationActionsResponse } from './ReservationActionsResponse';
+import {
+    ReservationActionsResponseFromJSON,
+    ReservationActionsResponseFromJSONTyped,
+    ReservationActionsResponseToJSON,
+    ReservationActionsResponseToJSONTyped,
+} from './ReservationActionsResponse';
 
 /**
  *
@@ -111,6 +118,18 @@ export interface MemberReservationResponse {
      * @memberof MemberReservationResponse
      */
     cancelledAt?: Date;
+    /**
+     *
+     * @type {string}
+     * @memberof MemberReservationResponse
+     */
+    displayGroup?: string;
+    /**
+     *
+     * @type {ReservationActionsResponse}
+     * @memberof MemberReservationResponse
+     */
+    actions?: ReservationActionsResponse;
 }
 
 /**
@@ -144,6 +163,8 @@ export function MemberReservationResponseFromJSONTyped(json: any, ignoreDiscrimi
         'adminConfirmedAt': json['adminConfirmedAt'] == null ? undefined : (new Date(json['adminConfirmedAt'])),
         'rejectedAt': json['rejectedAt'] == null ? undefined : (new Date(json['rejectedAt'])),
         'cancelledAt': json['cancelledAt'] == null ? undefined : (new Date(json['cancelledAt'])),
+        'displayGroup': json['displayGroup'] == null ? undefined : json['displayGroup'],
+        'actions': json['actions'] == null ? undefined : ReservationActionsResponseFromJSON(json['actions']),
     };
 }
 
@@ -172,6 +193,8 @@ export function MemberReservationResponseToJSONTyped(value?: MemberReservationRe
         'adminConfirmedAt': value['adminConfirmedAt'] == null ? value['adminConfirmedAt'] : value['adminConfirmedAt'].toISOString(),
         'rejectedAt': value['rejectedAt'] == null ? value['rejectedAt'] : value['rejectedAt'].toISOString(),
         'cancelledAt': value['cancelledAt'] == null ? value['cancelledAt'] : value['cancelledAt'].toISOString(),
+        'displayGroup': value['displayGroup'],
+        'actions': ReservationActionsResponseToJSON(value['actions']),
     };
 }
 

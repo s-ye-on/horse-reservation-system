@@ -29,6 +29,8 @@ export * from './MemberReservationCouponResponse';
 export * from './MemberReservationResponse';
 export * from './MemberRidingPermissionUpdateRequest';
 export * from './PendingPaymentExpiryResponse';
+export * from './ReservationActionAvailabilityResponse';
+export * from './ReservationActionsResponse';
 export * from './ReservationApplicationRequest';
 export * from './ReservationApplicationResponse';
 export * from './ReservationCancelResponse';

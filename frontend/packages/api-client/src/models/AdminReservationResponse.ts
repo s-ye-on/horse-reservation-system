@@ -20,6 +20,13 @@ import {
     AdminReservationCouponResponseToJSON,
     AdminReservationCouponResponseToJSONTyped,
 } from './AdminReservationCouponResponse';
+import type { ReservationActionsResponse } from './ReservationActionsResponse';
+import {
+    ReservationActionsResponseFromJSON,
+    ReservationActionsResponseFromJSONTyped,
+    ReservationActionsResponseToJSON,
+    ReservationActionsResponseToJSONTyped,
+} from './ReservationActionsResponse';
 
 /**
  *
@@ -165,6 +172,18 @@ export interface AdminReservationResponse {
      * @memberof AdminReservationResponse
      */
     updatedAt?: Date;
+    /**
+     *
+     * @type {string}
+     * @memberof AdminReservationResponse
+     */
+    displayGroup?: string;
+    /**
+     *
+     * @type {ReservationActionsResponse}
+     * @memberof AdminReservationResponse
+     */
+    actions?: ReservationActionsResponse;
 }
 
 /**
@@ -207,6 +226,8 @@ export function AdminReservationResponseFromJSONTyped(json: any, ignoreDiscrimin
         'approvalWarning': json['approvalWarning'] == null ? undefined : json['approvalWarning'],
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
         'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
+        'displayGroup': json['displayGroup'] == null ? undefined : json['displayGroup'],
+        'actions': json['actions'] == null ? undefined : ReservationActionsResponseFromJSON(json['actions']),
     };
 }
 
@@ -244,6 +265,8 @@ export function AdminReservationResponseToJSONTyped(value?: AdminReservationResp
         'approvalWarning': value['approvalWarning'],
         'createdAt': value['createdAt'] == null ? value['createdAt'] : value['createdAt'].toISOString(),
         'updatedAt': value['updatedAt'] == null ? value['updatedAt'] : value['updatedAt'].toISOString(),
+        'displayGroup': value['displayGroup'],
+        'actions': ReservationActionsResponseToJSON(value['actions']),
     };
 }
 

@@ -160,7 +160,35 @@ class AdminReservationQueryApiTest {
 			.andExpect(jsonPath("$.coupon.couponType").value("general"))
 			.andExpect(jsonPath("$.coupon.remainingCount").value(10))
 			.andExpect(jsonPath("$.approvalRequestedAt").value("2026-07-15T09:00:00"))
-			.andExpect(jsonPath("$.approvalWarning").value("normal"));
+			.andExpect(jsonPath("$.approvalWarning").value("normal"))
+			.andExpect(jsonPath("$.displayGroup").value("UPCOMING"))
+			.andExpect(jsonPath("$.actions.change.allowed").value(true))
+			.andExpect(jsonPath("$.actions.cancel.allowed").value(true))
+			.andExpect(jsonPath("$.actions.approve.allowed").value(true))
+			.andExpect(jsonPath("$.actions.complete.allowed").value(false))
+			.andExpect(jsonPath("$.actions.complete.blockedReason")
+				.value("RESERVATION_INVALID_STATUS"));
+	}
+
+	@Test
+	void 수업_시작_시각의_확정_예약은_완료와_노쇼만_허용한다() throws Exception {
+		final Long memberId = insertMember(
+			"started-query-member", "시작 회원", "010-1212-3434");
+		final Long reservationId = insertConfirmedReservation(
+			memberId, "2026-07-15", "10:00:00");
+
+		mockMvc.perform(get(ENDPOINT + "/{reservationId}", reservationId).with(adminJwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.displayGroup").value("PAST"))
+			.andExpect(jsonPath("$.actions.change.allowed").value(false))
+			.andExpect(jsonPath("$.actions.change.blockedReason")
+				.value("RESERVATION_LESSON_ALREADY_STARTED"))
+			.andExpect(jsonPath("$.actions.cancel.allowed").value(false))
+			.andExpect(jsonPath("$.actions.complete.allowed").value(true))
+			.andExpect(jsonPath("$.actions.noShow.allowed").value(true))
+			.andExpect(jsonPath("$.actions.approve.allowed").value(false))
+			.andExpect(jsonPath("$.actions.approve.blockedReason")
+				.value("RESERVATION_INVALID_STATUS"));
 	}
 
 	@Test
@@ -290,6 +318,17 @@ class AdminReservationQueryApiTest {
 			) VALUES (?, 'FIRST_RIDE', ?, ?, ?, 'single_payment',
 				'2026-07-15 12:00:00', '2026-07-15 09:00:00')
 			""", memberId, lessonDate, startTime, status);
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
+	private Long insertConfirmedReservation(Long memberId, String lessonDate, String startTime) {
+		jdbcTemplate.update("""
+			INSERT INTO reservations (
+				member_id, class_type, lesson_date, start_time, status, payment_source,
+				payment_due_at, approval_requested_at, admin_confirmed_at
+			) VALUES (?, 'FIRST_RIDE', ?, ?, 'confirmed', 'single_payment',
+				'2026-07-15 09:00:00', '2026-07-15 08:00:00', '2026-07-15 09:00:00')
+			""", memberId, lessonDate, startTime);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 

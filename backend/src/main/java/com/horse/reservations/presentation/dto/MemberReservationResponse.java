@@ -20,7 +20,9 @@ public record MemberReservationResponse(
 	LocalDateTime approvalRequestedAt,
 	LocalDateTime adminConfirmedAt,
 	LocalDateTime rejectedAt,
-	LocalDateTime cancelledAt
+	LocalDateTime cancelledAt,
+	String displayGroup,
+	ReservationActionsResponse actions
 ) {
 
 	public static MemberReservationResponse from(MemberReservationResult result) {
@@ -38,6 +40,8 @@ public record MemberReservationResponse(
 			result.approvalRequestedAt(),
 			result.adminConfirmedAt(),
 			result.rejectedAt(),
-			result.cancelledAt());
+			result.cancelledAt(),
+			result.displayGroup(),
+			ReservationActionsResponse.from(result.actions()));
 	}
 }

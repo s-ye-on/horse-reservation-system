@@ -31,14 +31,17 @@ public record AdminReservationResult(
 	String adminMemo,
 	String approvalWarning,
 	LocalDateTime createdAt,
-	LocalDateTime updatedAt
+	LocalDateTime updatedAt,
+	String displayGroup,
+	ReservationActionsResult actions
 ) {
 
 	public static AdminReservationResult from(
 		Reservation reservation,
 		Member member,
 		Coupon coupon,
-		ReservationApprovalWarningLevel approvalWarning
+		ReservationApprovalWarningLevel approvalWarning,
+		LocalDateTime actionAt
 	) {
 		return new AdminReservationResult(
 			reservation.getId(),
@@ -64,6 +67,8 @@ public record AdminReservationResult(
 			reservation.getAdminMemo(),
 			approvalWarning == null ? null : approvalWarning.apiValue(),
 			reservation.getCreatedAt(),
-			reservation.getUpdatedAt());
+			reservation.getUpdatedAt(),
+			reservation.displayGroupAt(actionAt).name(),
+			ReservationActionsResult.from(reservation, actionAt));
 	}
 }

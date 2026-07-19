@@ -394,6 +394,25 @@ public class Reservation {
 		ensureLessonStarted(requireActionAt(actionAt));
 	}
 
+	public ReservationDisplayGroup displayGroupAt(LocalDateTime actionAt) {
+		return requireActionAt(actionAt).isBefore(lessonStartAt())
+			? ReservationDisplayGroup.UPCOMING
+			: ReservationDisplayGroup.PAST;
+	}
+
+	public ReservationActionAvailability actionAvailability(
+		ReservationAction action,
+		LocalDateTime actionAt
+	) {
+		try {
+			action.validate(this, requireActionAt(actionAt));
+			return ReservationActionAvailability.allow();
+		}
+		catch (ReservationException exception) {
+			return ReservationActionAvailability.block(exception.code());
+		}
+	}
+
 	private void ensureConfirmed() {
 		if (status != ReservationStatus.CONFIRMED) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
