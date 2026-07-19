@@ -574,6 +574,26 @@
         }
       }
     },
+    "/api/admin/jobs/expire-pending-approvals": {
+      "post": {
+        "tags": [
+          "admin-approval-expiry-job-controller"
+        ],
+        "operationId": "expirePendingApprovals",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalExpiryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/timeslots/{timeSlotId}": {
       "delete": {
         "tags": [
@@ -1987,6 +2007,19 @@
         }
       },
       "PendingPaymentExpiryResponse": {
+        "type": "object",
+        "properties": {
+          "expiredCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "executedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ApprovalExpiryResponse": {
         "type": "object",
         "properties": {
           "expiredCount": {

@@ -11,6 +11,7 @@ export * from './AdminReservationDailySummaryResponse';
 export * from './AdminReservationPageResponse';
 export * from './AdminReservationResponse';
 export * from './AdminReservationSummaryResponse';
+export * from './ApprovalExpiryResponse';
 export * from './BulkReservationAttendanceItemRequest';
 export * from './BulkReservationAttendanceItemResponse';
 export * from './BulkReservationAttendanceRequest';

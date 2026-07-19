@@ -100,17 +100,38 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	@Query("SELECT reservation FROM Reservation reservation WHERE reservation.id = :reservationId")
 	Optional<Reservation> findByIdForUpdate(@Param("reservationId") Long reservationId);
 
-	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
-		select reservation
+		select reservation.id
 		from Reservation reservation
 		where reservation.status = :status
-		  and reservation.paymentDueAt <= :dueAt
+		  and (
+			reservation.paymentDueAt <= :dueAt
+			or reservation.lessonDate < :lessonDate
+			or (reservation.lessonDate = :lessonDate and reservation.startTime <= :startTime)
+		  )
 		order by reservation.id
 		""")
-	List<Reservation> findPaymentDueReservationsForUpdate(
+	List<Long> findPaymentExpiryCandidateIds(
 		@Param("status") ReservationStatus status,
-		@Param("dueAt") LocalDateTime dueAt
+		@Param("dueAt") LocalDateTime dueAt,
+		@Param("lessonDate") LocalDate lessonDate,
+		@Param("startTime") LocalTime startTime
+	);
+
+	@Query("""
+		select reservation.id
+		from Reservation reservation
+		where reservation.status = :status
+		  and (
+			reservation.lessonDate < :lessonDate
+			or (reservation.lessonDate = :lessonDate and reservation.startTime <= :startTime)
+		  )
+		order by reservation.id
+		""")
+	List<Long> findApprovalExpiryCandidateIds(
+		@Param("status") ReservationStatus status,
+		@Param("lessonDate") LocalDate lessonDate,
+		@Param("startTime") LocalTime startTime
 	);
 
 	@Query("""

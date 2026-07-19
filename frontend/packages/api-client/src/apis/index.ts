@@ -1,5 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './AdminApprovalExpiryJobControllerApi';
 export * from './AdminBulkReservationAttendanceControllerApi';
 export * from './AdminCouponRegistrationControllerApi';
 export * from './AdminCouponUsageExportControllerApi';

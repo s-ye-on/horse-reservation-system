@@ -215,10 +215,24 @@ public class Reservation {
 		if (paymentDueAt == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_PERSISTED_VALUE);
 		}
-		if (expiredAt.isBefore(paymentDueAt)) {
+		if (expiredAt.isBefore(paymentDueAt) && expiredAt.isBefore(lessonStartAt())) {
 			return false;
 		}
 		status = ReservationStatus.PAYMENT_EXPIRED;
+		return true;
+	}
+
+	public boolean expireApproval(LocalDateTime expiredAt) {
+		if (expiredAt == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_APPROVAL_EXPIRY_AT);
+		}
+		if (status != ReservationStatus.PENDING_ADMIN_APPROVAL) {
+			return false;
+		}
+		if (expiredAt.isBefore(lessonStartAt())) {
+			return false;
+		}
+		status = ReservationStatus.APPROVAL_EXPIRED;
 		return true;
 	}
 

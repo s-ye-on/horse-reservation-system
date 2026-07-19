@@ -109,6 +109,22 @@ class PendingPaymentExpiryJobIntegrationTest {
 	}
 
 	@Test
+	void 입금_마감이_남아_있어도_수업_시작_시각이면_만료한다() throws Exception {
+		final Long memberId = insertMember("lesson-start-expiry-member");
+		final Long reservationId = insertPaymentReservation(
+			memberId, "2026-07-15 11:00:00", "10:00:00");
+		jdbcTemplate.update(
+			"UPDATE reservations SET lesson_date = '2026-07-15' WHERE id = ?", reservationId);
+
+		mockMvc.perform(post(ENDPOINT).with(adminJwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.expiredCount").value(1));
+
+		assertThat(reservationStatus(reservationId)).isEqualTo("payment_expired");
+		assertThat(occupyingReservationCount()).isZero();
+	}
+
+	@Test
 	void 동시에_만료를_실행해도_한_요청만_예약을_변경한다() throws Exception {
 		final Long memberId = insertMember("concurrent-expiry-member");
 		final Long reservationId = insertPaymentReservation(

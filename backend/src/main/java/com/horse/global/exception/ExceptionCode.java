@@ -40,6 +40,7 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_REJECTION_ACTOR(HttpStatus.BAD_REQUEST, "예약 반려 관리자 식별자는 필수입니다."),
 	RESERVATION_INVALID_REJECTION_REASON(HttpStatus.BAD_REQUEST, "예약 반려 사유가 올바르지 않습니다."),
 	RESERVATION_INVALID_PAYMENT_EXPIRY_AT(HttpStatus.BAD_REQUEST, "입금대기 만료 처리 시각은 필수입니다."),
+	RESERVATION_INVALID_APPROVAL_EXPIRY_AT(HttpStatus.BAD_REQUEST, "승인대기 만료 처리 시각은 필수입니다."),
 	RESERVATION_INVALID_PAYMENT_RESTORE_AT(HttpStatus.BAD_REQUEST, "입금대기 복구 처리 시각은 필수입니다."),
 	RESERVATION_INVALID_CHANGE_LOG_REFERENCE(HttpStatus.BAD_REQUEST, "예약 변경 이력 참조가 올바르지 않습니다."),
 	RESERVATION_INVALID_CHANGE_LOG_ACTOR(HttpStatus.BAD_REQUEST, "예약 변경 이력 처리 주체가 올바르지 않습니다."),

@@ -10,6 +10,7 @@ public enum ReservationStatus {
 	PENDING_ADMIN_APPROVAL("pending_admin_approval", true),
 	PENDING_PAYMENT("pending_payment", true),
 	PAYMENT_EXPIRED("payment_expired", false),
+	APPROVAL_EXPIRED("approval_expired", false),
 	CONFIRMED("confirmed", true),
 	COMPLETED("completed", false),
 	REJECTED("rejected", false),
