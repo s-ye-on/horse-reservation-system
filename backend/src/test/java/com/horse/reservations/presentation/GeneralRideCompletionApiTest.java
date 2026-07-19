@@ -40,7 +40,8 @@ import com.horse.auth.UserRole;
 class GeneralRideCompletionApiTest {
 
 	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
-	private static final Instant COMPLETED_INSTANT = Instant.parse("2026-07-14T01:00:00Z");
+	private static final Instant COMPLETED_INSTANT = Instant.parse("2026-08-09T01:00:00Z");
+	private static final Instant RESERVATION_REQUESTED_INSTANT = Instant.parse("2026-07-14T01:00:00Z");
 	private static final String CLASS_CAPACITIES = """
 		{
 		  "FIRST_RIDE": 8,
@@ -97,6 +98,21 @@ class GeneralRideCompletionApiTest {
 		assertThat(couponDate(couponId, "expires_at")).isEqualTo("2026-11-01 00:00:00");
 		assertThat(usageActionCount(reservationId, "used")).isEqualTo(1);
 		assertThat(usedLog(reservationId)).containsExactly("-1", "admin");
+	}
+
+	@Test
+	void 수업_시작_전에는_완료_처리를_거부한다() throws Exception {
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-01T00:00:00Z").minusNanos(1));
+		final Long memberId = insertMember("early-completion-member", 0);
+		final Long reservationId = insertConfirmedReservation(
+			memberId, null, "FIRST_RIDE", "single_payment", LocalDate.of(2026, 8, 1));
+
+		mockMvc.perform(post(completionEndpoint(reservationId)).with(adminJwt()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_NOT_STARTED"));
+
+		assertThat(reservationStatus(reservationId)).isEqualTo("confirmed");
+		assertThat(memberGeneralRideCount(memberId)).isZero();
 	}
 
 	@Test
@@ -173,6 +189,7 @@ class GeneralRideCompletionApiTest {
 
 	@Test
 	void 신청일로부터_정확히_삼개월인_수업은_쿠폰으로_예약할_수_있다() throws Exception {
+		when(clock.instant()).thenReturn(RESERVATION_REQUESTED_INSTANT);
 		final String authSubject = "reservation-window-coupon-member";
 		final Long memberId = insertMember(authSubject, 0);
 		insertCoupon(memberId, 10, 0, null, null, "active");
@@ -188,6 +205,7 @@ class GeneralRideCompletionApiTest {
 
 	@Test
 	void 쿠폰과_일회_결제_모두_신청일로부터_삼개월을_넘는_수업은_예약할_수_없다() throws Exception {
+		when(clock.instant()).thenReturn(RESERVATION_REQUESTED_INSTANT);
 		final String couponSubject = "reservation-window-over-coupon-member";
 		final Long couponMemberId = insertMember(couponSubject, 0);
 		insertCoupon(couponMemberId, 10, 0, null, null, "active");

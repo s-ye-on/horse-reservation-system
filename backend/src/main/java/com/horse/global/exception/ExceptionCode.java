@@ -34,6 +34,8 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_APPROVAL_REQUESTED_AT(HttpStatus.BAD_REQUEST, "예약 신청 시각은 필수입니다."),
 	RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예약을 찾을 수 없습니다."),
 	RESERVATION_INVALID_STATUS(HttpStatus.CONFLICT, "현재 예약 상태에서는 요청한 처리를 할 수 없습니다."),
+	RESERVATION_LESSON_ALREADY_STARTED(HttpStatus.CONFLICT, "수업 시작 이후에는 요청한 처리를 할 수 없습니다."),
+	RESERVATION_LESSON_NOT_STARTED(HttpStatus.CONFLICT, "수업 시작 전에는 출석을 처리할 수 없습니다."),
 	RESERVATION_PAYMENT_EXPIRED(HttpStatus.CONFLICT, "입금 마감 시각이 지난 예약은 확정할 수 없습니다."),
 	RESERVATION_INVALID_REJECTION_ACTOR(HttpStatus.BAD_REQUEST, "예약 반려 관리자 식별자는 필수입니다."),
 	RESERVATION_INVALID_REJECTION_REASON(HttpStatus.BAD_REQUEST, "예약 반려 사유가 올바르지 않습니다."),

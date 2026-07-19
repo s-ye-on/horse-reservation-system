@@ -53,10 +53,11 @@ public class AdminReservationCancellationService {
 		final CancellationResponsibility responsibility =
 			CancellationResponsibility.fromRequestValue(requestedResponsibility);
 		final Reservation reservation = findReservation(reservationId);
-		reservation.ensureChangeable();
+		final Instant previewedAt = Instant.now(clock);
+		reservation.validateCanCancel(LocalDateTime.ofInstant(previewedAt, clock.getZone()));
 		final ReservationCancellationDecision decision = ReservationCancellationPolicy.evaluate(
 			reservation.getLessonDate(),
-			Instant.now(clock),
+			previewedAt,
 			reservation.getPaymentSource(),
 			responsibility);
 		return new ReservationCancellationPreviewResult(

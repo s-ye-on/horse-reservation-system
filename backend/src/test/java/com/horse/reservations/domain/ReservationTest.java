@@ -17,6 +17,7 @@ class ReservationTest {
 
 	private static final LocalDate LESSON_DATE = LocalDate.of(2026, 7, 20);
 	private static final LocalTime START_TIME = LocalTime.of(9, 0);
+	private static final LocalDateTime LESSON_START = LocalDateTime.of(LESSON_DATE, START_TIME);
 	private static final LocalDateTime REQUESTED_AT = LocalDateTime.of(2026, 7, 14, 10, 0);
 
 	@Test
@@ -246,9 +247,9 @@ class ReservationTest {
 			REQUESTED_AT);
 		reservation.confirm(REQUESTED_AT.plusMinutes(30));
 
-		assertThat(reservation.completeRide()).isTrue();
+		assertThat(reservation.completeRide(LESSON_START)).isTrue();
 		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.COMPLETED);
-		assertThat(reservation.completeRide()).isFalse();
+		assertThat(reservation.completeRide(LESSON_START.plusMinutes(1))).isFalse();
 	}
 
 	@Test
@@ -257,19 +258,22 @@ class ReservationTest {
 		final LocalDate targetLessonDate = LESSON_DATE.plusDays(1);
 		final LocalTime targetStartTime = START_TIME.plusHours(1);
 
-		assertThat(reservation.changeSchedule(targetLessonDate, targetStartTime)).isTrue();
+		assertThat(reservation.changeSchedule(targetLessonDate, targetStartTime, REQUESTED_AT)).isTrue();
 		assertThat(reservation.getLessonDate()).isEqualTo(targetLessonDate);
 		assertThat(reservation.getStartTime()).isEqualTo(targetStartTime);
-		assertThat(reservation.changeSchedule(targetLessonDate, targetStartTime)).isFalse();
+		assertThat(reservation.changeSchedule(targetLessonDate, targetStartTime, REQUESTED_AT)).isFalse();
 	}
 
 	@Test
 	void 비활성_예약은_일정을_변경할_수_없다() {
 		final Reservation reservation = confirmedCouponReservation();
-		reservation.completeRide();
+		reservation.completeRide(LESSON_START);
 
 		assertReservationException(
-			() -> reservation.changeSchedule(LESSON_DATE.plusDays(1), START_TIME.plusHours(1)),
+			() -> reservation.changeSchedule(
+				LESSON_DATE.plusDays(1),
+				START_TIME.plusHours(1),
+				LESSON_START.plusMinutes(1)),
 			ExceptionCode.RESERVATION_INVALID_STATUS);
 	}
 
@@ -287,13 +291,22 @@ class ReservationTest {
 	void 확정된_쿠폰_예약은_차감이나_반환으로만_노쇼_처리한다() {
 		final Reservation reservation = confirmedCouponReservation();
 
-		assertThat(reservation.recordNoShow(CouponAction.DEDUCT, "회원 미방문")).isTrue();
+		assertThat(reservation.recordNoShow(
+			LESSON_START,
+			CouponAction.DEDUCT,
+			"회원 미방문")).isTrue();
 		assertThat(reservation.getStatus()).isEqualTo(ReservationStatus.NO_SHOW);
 		assertThat(reservation.getCouponAction()).isEqualTo(CouponAction.DEDUCT);
 		assertThat(reservation.getAdminMemo()).isEqualTo("회원 미방문");
-		assertThat(reservation.recordNoShow(CouponAction.DEDUCT, "회원 미방문")).isFalse();
+		assertThat(reservation.recordNoShow(
+			LESSON_START.plusMinutes(1),
+			CouponAction.DEDUCT,
+			"회원 미방문")).isFalse();
 		assertReservationException(
-			() -> reservation.recordNoShow(CouponAction.RETURN, "정책 변경"),
+			() -> reservation.recordNoShow(
+				LESSON_START.plusMinutes(1),
+				CouponAction.RETURN,
+				"정책 변경"),
 			ExceptionCode.RESERVATION_INVALID_STATUS);
 	}
 
@@ -303,12 +316,18 @@ class ReservationTest {
 		final Reservation singlePaymentReservation = confirmedSinglePaymentReservation();
 
 		assertReservationException(
-			() -> couponReservation.recordNoShow(CouponAction.NONE, "처리 없음"),
+			() -> couponReservation.recordNoShow(LESSON_START, CouponAction.NONE, "처리 없음"),
 			ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
 		assertReservationException(
-			() -> singlePaymentReservation.recordNoShow(CouponAction.DEDUCT, "차감"),
+			() -> singlePaymentReservation.recordNoShow(
+				LESSON_START,
+				CouponAction.DEDUCT,
+				"차감"),
 			ExceptionCode.RESERVATION_INVALID_COUPON_ACTION);
-		assertThat(singlePaymentReservation.recordNoShow(CouponAction.NONE, "쿠폰 없음")).isTrue();
+		assertThat(singlePaymentReservation.recordNoShow(
+			LESSON_START,
+			CouponAction.NONE,
+			"쿠폰 없음")).isTrue();
 	}
 
 	@Test
@@ -401,13 +420,16 @@ class ReservationTest {
 		final Reservation confirmed = confirmedCouponReservation();
 
 		assertReservationException(
-			() -> pending.recordNoShow(CouponAction.DEDUCT, "미방문"),
+			() -> pending.recordNoShow(LESSON_START, CouponAction.DEDUCT, "미방문"),
 			ExceptionCode.RESERVATION_INVALID_STATUS);
 		assertReservationException(
-			() -> confirmed.recordNoShow(CouponAction.DEDUCT, " "),
+			() -> confirmed.recordNoShow(LESSON_START, CouponAction.DEDUCT, " "),
 			ExceptionCode.RESERVATION_INVALID_ADMIN_MEMO);
 		assertReservationException(
-			() -> confirmed.recordNoShow(CouponAction.DEDUCT, "가".repeat(501)),
+			() -> confirmed.recordNoShow(
+				LESSON_START,
+				CouponAction.DEDUCT,
+				"가".repeat(501)),
 			ExceptionCode.RESERVATION_INVALID_ADMIN_MEMO);
 	}
 
@@ -441,7 +463,7 @@ class ReservationTest {
 			REQUESTED_AT);
 
 		assertReservationException(
-			pending::completeRide,
+			() -> pending.completeRide(LESSON_START),
 			ExceptionCode.RESERVATION_INVALID_STATUS);
 	}
 

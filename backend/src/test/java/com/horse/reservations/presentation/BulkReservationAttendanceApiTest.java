@@ -38,7 +38,7 @@ class BulkReservationAttendanceApiTest {
 
 	private static final String ENDPOINT = "/api/admin/reservations/complete-bulk";
 	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
-	private static final Instant PROCESSED_INSTANT = Instant.parse("2026-07-17T01:00:00Z");
+	private static final Instant PROCESSED_INSTANT = Instant.parse("2026-08-01T01:00:00Z");
 	private static final LocalDate LESSON_DATE = LocalDate.of(2026, 8, 1);
 
 	@Autowired

@@ -43,21 +43,21 @@ public class ReservationCompletionService {
 	public ReservationCompletionResult complete(Long reservationId) {
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
-		final boolean changed = reservation.completeRide();
+		final LocalDateTime completedAt = LocalDateTime.now(clock);
+		final boolean changed = reservation.completeRide(completedAt);
 		final Member member = memberRepository.findByIdForUpdate(reservation.getMemberId())
 			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));
 		if (changed) {
-			completeCouponUsage(reservation);
+			completeCouponUsage(reservation, completedAt);
 			increaseRideCount(member, reservation);
 		}
 		return ReservationCompletionResult.from(reservation, member);
 	}
 
-	private void completeCouponUsage(Reservation reservation) {
+	private void completeCouponUsage(Reservation reservation, LocalDateTime completedAt) {
 		if (reservation.getPaymentSource() != PaymentSource.COUPON) {
 			return;
 		}
-		final LocalDateTime completedAt = LocalDateTime.now(clock);
 		couponHoldService.use(
 			reservation.getId(),
 			reservation.getLessonDate(),

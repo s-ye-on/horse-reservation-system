@@ -57,8 +57,9 @@ public class MemberReservationCancellationService {
 		final Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
 		ensureOwner(reservation, member.getId());
-		reservation.ensureChangeable();
-		final ReservationCancellationDecision decision = decide(reservation, Instant.now(clock));
+		final Instant previewedAt = Instant.now(clock);
+		reservation.validateCanCancel(LocalDateTime.ofInstant(previewedAt, clock.getZone()));
+		final ReservationCancellationDecision decision = decide(reservation, previewedAt);
 		return new ReservationCancellationPreviewResult(
 			reservation.getId(),
 			decision.timing(),

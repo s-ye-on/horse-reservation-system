@@ -112,6 +112,21 @@ class AdminReservationConfirmApiTest {
 	}
 
 	@Test
+	void 수업_시작_시각에_도달한_승인대기_예약은_확정하지_않는다() throws Exception {
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-01T00:00:00Z"));
+		final Long memberId = insertMember("started-confirm-member");
+		final Long couponId = insertCoupon(memberId);
+		final Long reservationId = insertCouponReservation(memberId, couponId);
+
+		mockMvc.perform(post(endpoint(reservationId)).with(adminJwt()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+
+		assertThat(reservationStatus(reservationId)).isEqualTo("pending_admin_approval");
+		assertThat(adminConfirmedAt(reservationId)).isNull();
+	}
+
+	@Test
 	void 중복_확정_요청은_예약과_쿠폰_감사를_한_번만_반영한다() throws Exception {
 		final Long memberId = insertMember("idempotent-confirm-member");
 		final Long couponId = insertCoupon(memberId);

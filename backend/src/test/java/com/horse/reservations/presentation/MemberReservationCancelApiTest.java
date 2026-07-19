@@ -154,6 +154,29 @@ class MemberReservationCancelApiTest {
 	}
 
 	@Test
+	void 수업_시작_시각에는_회원_취소_preview와_실행을_모두_거부한다() throws Exception {
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-03T00:00:00Z"));
+		final String authSubject = "started-member-cancel";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId);
+		final Long reservationId = insertCouponReservation(memberId, couponId);
+		insertHeldLog(memberId, couponId, reservationId);
+
+		mockMvc.perform(get(previewEndpoint(reservationId)).with(memberJwt(authSubject)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+		mockMvc.perform(post(cancelEndpoint(reservationId))
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request("수업 시작 후 취소")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+
+		assertThat(reservationStatus(reservationId)).isEqualTo("pending_admin_approval");
+		assertThat(couponCounts(couponId)).containsExactly(10, 1);
+	}
+
+	@Test
 	void 회원은_다른_회원_예약과_빈_사유와_종료된_예약을_취소할_수_없다() throws Exception {
 		final Long ownerId = insertMember("cancel-owner");
 		insertMember("cancel-other");
@@ -252,6 +275,11 @@ class MemberReservationCancelApiTest {
 
 	private int totalCouponUsageCount() {
 		return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM coupon_usage_logs", Integer.class);
+	}
+
+	private String reservationStatus(Long reservationId) {
+		return jdbcTemplate.queryForObject(
+			"SELECT status FROM reservations WHERE id = ?", String.class, reservationId);
 	}
 
 	private void assertCancellationAudit(

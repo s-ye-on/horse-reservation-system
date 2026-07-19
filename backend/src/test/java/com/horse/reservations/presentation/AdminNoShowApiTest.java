@@ -40,7 +40,7 @@ import com.horse.auth.UserRole;
 class AdminNoShowApiTest {
 
 	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
-	private static final Instant PROCESSED_INSTANT = Instant.parse("2026-07-15T02:00:00Z");
+	private static final Instant PROCESSED_INSTANT = Instant.parse("2026-08-01T01:00:00Z");
 	private static final LocalDate LESSON_DATE = LocalDate.of(2026, 8, 1);
 
 	@Autowired
@@ -86,6 +86,23 @@ class AdminNoShowApiTest {
 		assertThat(couponUsageCount(reservationId, "deducted")).isEqualTo(1);
 		assertThat(couponDatesAreNull(couponId)).isTrue();
 		assertNoShowAudit(reservationId, "no-show-admin", "deduct", "연락 없이 미방문");
+	}
+
+	@Test
+	void 수업_시작_전에는_노쇼_처리를_거부한다() throws Exception {
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-01T00:00:00Z").minusNanos(1));
+		final Long memberId = insertMember("early-no-show-member");
+		final Long reservationId = insertConfirmedReservation(memberId, null, "single_payment");
+
+		mockMvc.perform(post(endpoint(reservationId))
+				.with(adminJwt("early-no-show-admin"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request("none", "수업 시작 전 노쇼")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_NOT_STARTED"));
+
+		assertThat(reservationValues(reservationId).getFirst()).isEqualTo("confirmed");
+		assertThat(changeLogCount()).isZero();
 	}
 
 	@Test

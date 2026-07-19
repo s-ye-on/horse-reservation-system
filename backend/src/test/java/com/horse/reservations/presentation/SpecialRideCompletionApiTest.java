@@ -39,7 +39,7 @@ import com.horse.auth.UserRole;
 class SpecialRideCompletionApiTest {
 
 	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
-	private static final Instant COMPLETED_INSTANT = Instant.parse("2026-07-14T01:00:00Z");
+	private static final Instant COMPLETED_INSTANT = Instant.parse("2026-08-09T01:00:00Z");
 
 	@Autowired
 	MockMvc mockMvc;

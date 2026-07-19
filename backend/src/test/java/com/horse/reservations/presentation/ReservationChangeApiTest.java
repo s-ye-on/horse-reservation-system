@@ -139,6 +139,35 @@ class ReservationChangeApiTest {
 	}
 
 	@Test
+	void 수업_시작_시각에는_변경_preview와_실행을_모두_거부한다() throws Exception {
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 3);
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-03T00:00:00Z"));
+		final String authSubject = "started-change-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, lessonDate.plusMonths(1), false);
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long targetTimeSlotId = insertTimeSlot(lessonDate, "10:00:00", 8);
+		final Long reservationId = insertCouponReservation(
+			memberId, couponId, lessonDate, "09:00:00", "confirmed");
+
+		mockMvc.perform(get("/api/me/reservations/{reservationId}/change/preview", reservationId)
+				.param("targetTimeSlotId", targetTimeSlotId.toString())
+				.with(memberJwt(authSubject)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", reservationId)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(targetTimeSlotId, "수업 시작 후 변경")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+
+		assertThat(reservationSchedule(reservationId)).containsExactly(
+			lessonDate.toString(), "09:00:00");
+		assertThat(changeLogCount(reservationId)).isZero();
+	}
+
+	@Test
 	void 관리자는_필수_메모와_함께_입금대기_예약을_변경하고_기존_마감을_유지한다() throws Exception {
 		final Long memberId = insertMember("admin-change-member");
 		final LocalDate lessonDate = futureDate();

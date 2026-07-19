@@ -129,6 +129,30 @@ class AdminReservationCancelApiTest {
 	}
 
 	@Test
+	void 수업_시작_시각에는_관리자_취소_preview와_실행을_모두_거부한다() throws Exception {
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-03T00:00:00Z"));
+		final Long memberId = insertMember();
+		final Long couponId = insertCoupon(memberId, 1);
+		final Long reservationId = insertCouponReservation(memberId, couponId, "09:00:00");
+		insertHeldLog(memberId, couponId, reservationId);
+
+		mockMvc.perform(get(previewEndpoint(reservationId))
+				.param("responsibility", "stable")
+				.with(adminJwt()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+		mockMvc.perform(post(cancelEndpoint(reservationId))
+				.with(adminJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request("stable", "return", "수업 시작 후 취소")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+
+		assertThat(reservationStatus(reservationId)).isEqualTo("pending_admin_approval");
+		assertThat(couponCounts(couponId)).containsExactly(1, 1);
+	}
+
+	@Test
 	void 관리자는_잘못된_쿠폰_처리와_빈_메모를_사용할_수_없고_회원은_접근할_수_없다() throws Exception {
 		final Long memberId = insertMember();
 		final Long couponId = insertCoupon(memberId, 1);

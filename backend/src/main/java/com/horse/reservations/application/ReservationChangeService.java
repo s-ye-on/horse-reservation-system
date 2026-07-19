@@ -3,6 +3,7 @@ package com.horse.reservations.application;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Collection;
 import java.util.List;
@@ -97,7 +98,7 @@ public class ReservationChangeService {
 		final Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
 		ensureExpectedMember(reservation, member.getId());
-		reservation.ensureChangeable();
+		reservation.validateCanChange(LocalDateTime.now(clock));
 		final TimeSlotCapacity targetTimeSlot = timeSlotRepository.findById(
 			requireTargetTimeSlotId(targetTimeSlotId))
 			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
@@ -164,6 +165,7 @@ public class ReservationChangeService {
 		final TimeSlotCapacity targetTimeSlot = findLockedTimeSlot(lockedTimeSlots, targetTimeSlotId);
 		findLockedTimeSlot(lockedTimeSlots, sourceTimeSlot.getId());
 		final Instant changedAt = Instant.now(clock);
+		final LocalDateTime changedDateTime = LocalDateTime.ofInstant(changedAt, clock.getZone());
 		final ReservationChangeTiming timing = ReservationChangeDeadlinePolicy.evaluate(
 			sourceProjection.getLessonDate(),
 			changedAt);
@@ -173,7 +175,7 @@ public class ReservationChangeService {
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
 		ensureExpectedMember(reservation, expectedMemberId);
 		ensureSourceUnchanged(reservation, sourceProjection);
-		reservation.ensureChangeable();
+		reservation.validateCanChange(changedDateTime);
 
 		if (reservation.hasSchedule(targetTimeSlot.getLessonDate(), targetTimeSlot.getStartTime())) {
 			return unchangedResult(reservation);
@@ -193,7 +195,8 @@ public class ReservationChangeService {
 				targetTimeSlot,
 				actorAuthSubject,
 				actorType,
-				memo);
+				memo,
+				changedDateTime);
 		}
 		ensureCouponForAfterCutoffChange(
 			reservation,
@@ -215,13 +218,15 @@ public class ReservationChangeService {
 		TimeSlotCapacity targetTimeSlot,
 		String actorAuthSubject,
 		ReservationActorType actorType,
-		String memo
+		String memo,
+		LocalDateTime changedAt
 	) {
 		final LocalDate sourceLessonDate = reservation.getLessonDate();
 		final LocalTime sourceStartTime = reservation.getStartTime();
 		final boolean changed = reservation.changeSchedule(
 			targetTimeSlot.getLessonDate(),
-			targetTimeSlot.getStartTime());
+			targetTimeSlot.getStartTime(),
+			changedAt);
 		if (changed) {
 			reservationRepository.saveAndFlush(reservation);
 			changeLogRepository.save(ReservationChangeLog.reservationChanged(
@@ -253,7 +258,10 @@ public class ReservationChangeService {
 		coupon.useFreeChange();
 		final LocalDate sourceLessonDate = reservation.getLessonDate();
 		final LocalTime sourceStartTime = reservation.getStartTime();
-		reservation.changeSchedule(targetTimeSlot.getLessonDate(), targetTimeSlot.getStartTime());
+		reservation.changeSchedule(
+			targetTimeSlot.getLessonDate(),
+			targetTimeSlot.getStartTime(),
+			LocalDateTime.ofInstant(changedAt, clock.getZone()));
 		reservationRepository.saveAndFlush(reservation);
 		couponUsageLogRepository.save(CouponUsageLog.freeChangeUsed(
 			coupon.getId(),

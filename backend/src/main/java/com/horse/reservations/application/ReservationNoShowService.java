@@ -47,12 +47,12 @@ public class ReservationNoShowService {
 		final CouponAction couponAction = CouponAction.fromRequestValue(requestedCouponAction);
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
-		final boolean changed = reservation.recordNoShow(couponAction, memo);
+		final LocalDateTime processedAt = LocalDateTime.now(clock);
+		final boolean changed = reservation.recordNoShow(processedAt, couponAction, memo);
 		if (!changed) {
 			return ReservationNoShowResult.from(reservation);
 		}
 
-		final LocalDateTime processedAt = LocalDateTime.now(clock);
 		processCoupon(reservation, couponAction, processedAt);
 		changeLogRepository.save(ReservationChangeLog.noShowProcessed(
 			reservation.getId(),

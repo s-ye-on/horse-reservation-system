@@ -163,22 +163,25 @@ public class Reservation {
 	}
 
 	public boolean confirm(LocalDateTime confirmedAt) {
-		if (confirmedAt == null) {
-			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_APPROVAL_REQUESTED_AT);
-		}
 		if (status == ReservationStatus.CONFIRMED) {
 			return false;
 		}
+		validateCanApprove(confirmedAt);
+		status = ReservationStatus.CONFIRMED;
+		adminConfirmedAt = confirmedAt;
+		return true;
+	}
+
+	public void validateCanApprove(LocalDateTime actionAt) {
+		final LocalDateTime validatedActionAt = requireActionAt(actionAt);
 		if (status != ReservationStatus.PENDING_ADMIN_APPROVAL
 			&& status != ReservationStatus.PENDING_PAYMENT) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
 		}
-		if (status == ReservationStatus.PENDING_PAYMENT && !confirmedAt.isBefore(paymentDueAt)) {
+		ensureLessonNotStarted(validatedActionAt);
+		if (status == ReservationStatus.PENDING_PAYMENT && !validatedActionAt.isBefore(paymentDueAt)) {
 			throw new ReservationException(ExceptionCode.RESERVATION_PAYMENT_EXPIRED);
 		}
-		status = ReservationStatus.CONFIRMED;
-		adminConfirmedAt = confirmedAt;
-		return true;
 	}
 
 	public boolean reject(LocalDateTime occurredAt, String adminSubject, String reason) {
@@ -220,12 +223,17 @@ public class Reservation {
 	}
 
 	public void restorePayment(LocalDateTime restoredAt) {
-		if (restoredAt == null) {
+		validateCanRestorePayment(restoredAt);
+		status = ReservationStatus.CONFIRMED;
+		adminConfirmedAt = restoredAt;
+	}
+
+	public void validateCanRestorePayment(LocalDateTime actionAt) {
+		if (actionAt == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_PAYMENT_RESTORE_AT);
 		}
 		ensurePaymentRestorable();
-		status = ReservationStatus.CONFIRMED;
-		adminConfirmedAt = restoredAt;
+		ensureLessonNotStarted(actionAt);
 	}
 
 	public void ensurePaymentRestorable() {
@@ -234,21 +242,28 @@ public class Reservation {
 		}
 	}
 
-	public boolean completeRide() {
+	public boolean completeRide(LocalDateTime completedAt) {
 		if (status == ReservationStatus.COMPLETED) {
 			return false;
 		}
-		if (status != ReservationStatus.CONFIRMED) {
-			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
-		}
+		validateCanComplete(completedAt);
 		status = ReservationStatus.COMPLETED;
 		return true;
 	}
 
-	public boolean changeSchedule(LocalDate targetLessonDate, LocalTime targetStartTime) {
+	public void validateCanComplete(LocalDateTime actionAt) {
+		ensureConfirmed();
+		ensureLessonStarted(requireActionAt(actionAt));
+	}
+
+	public boolean changeSchedule(
+		LocalDate targetLessonDate,
+		LocalTime targetStartTime,
+		LocalDateTime changedAt
+	) {
 		final LocalDate validatedLessonDate = requireLessonDate(targetLessonDate);
 		final LocalTime validatedStartTime = requireStartTime(targetStartTime);
-		ensureChangeable();
+		validateCanChange(changedAt);
 		if (lessonDate.equals(validatedLessonDate) && startTime.equals(validatedStartTime)) {
 			return false;
 		}
@@ -271,6 +286,16 @@ public class Reservation {
 		}
 	}
 
+	public void validateCanChange(LocalDateTime actionAt) {
+		ensureChangeable();
+		ensureLessonNotStarted(requireActionAt(actionAt));
+	}
+
+	public void validateCanCancel(LocalDateTime actionAt) {
+		ensureChangeable();
+		ensureLessonNotStarted(requireActionAt(actionAt));
+	}
+
 	public boolean hasSchedule(LocalDate expectedLessonDate, LocalTime expectedStartTime) {
 		return lessonDate.equals(requireLessonDate(expectedLessonDate))
 			&& startTime.equals(requireStartTime(expectedStartTime));
@@ -285,10 +310,10 @@ public class Reservation {
 			}
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
 		}
-		ensureChangeable();
 		if (occurredAt == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CANCELLATION_AT);
 		}
+		validateCanCancel(occurredAt);
 		final CouponAction validatedCouponAction = requireCancellationCouponAction(
 			requestedCouponAction);
 		status = ReservationStatus.CANCELLED;
@@ -318,10 +343,10 @@ public class Reservation {
 			}
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
 		}
-		ensureChangeable();
 		if (occurredAt == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CANCELLATION_AT);
 		}
+		validateCanCancel(occurredAt);
 		status = ReservationStatus.CANCELLED;
 		cancelledAt = occurredAt;
 		cancellationResponsibility = validatedResponsibility;
@@ -330,7 +355,11 @@ public class Reservation {
 		return true;
 	}
 
-	public boolean recordNoShow(CouponAction requestedCouponAction, String memo) {
+	public boolean recordNoShow(
+		LocalDateTime processedAt,
+		CouponAction requestedCouponAction,
+		String memo
+	) {
 		final CouponAction validatedCouponAction = requireNoShowCouponAction(requestedCouponAction);
 		final String validatedMemo = requireAdminMemo(memo);
 		if (status == ReservationStatus.NO_SHOW) {
@@ -339,13 +368,45 @@ public class Reservation {
 			}
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
 		}
-		if (status != ReservationStatus.CONFIRMED) {
-			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
-		}
+		validateCanNoShow(processedAt);
 		status = ReservationStatus.NO_SHOW;
 		couponAction = validatedCouponAction;
 		adminMemo = validatedMemo;
 		return true;
+	}
+
+	public void validateCanNoShow(LocalDateTime actionAt) {
+		ensureConfirmed();
+		ensureLessonStarted(requireActionAt(actionAt));
+	}
+
+	private void ensureConfirmed() {
+		if (status != ReservationStatus.CONFIRMED) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
+	}
+
+	private void ensureLessonNotStarted(LocalDateTime actionAt) {
+		if (!actionAt.isBefore(lessonStartAt())) {
+			throw new ReservationException(ExceptionCode.RESERVATION_LESSON_ALREADY_STARTED);
+		}
+	}
+
+	private void ensureLessonStarted(LocalDateTime actionAt) {
+		if (actionAt.isBefore(lessonStartAt())) {
+			throw new ReservationException(ExceptionCode.RESERVATION_LESSON_NOT_STARTED);
+		}
+	}
+
+	private LocalDateTime lessonStartAt() {
+		return LocalDateTime.of(lessonDate, startTime);
+	}
+
+	private LocalDateTime requireActionAt(LocalDateTime actionAt) {
+		if (actionAt == null) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_REQUESTED_AT);
+		}
+		return actionAt;
 	}
 
 	private CouponAction requireNoShowCouponAction(CouponAction requestedCouponAction) {
