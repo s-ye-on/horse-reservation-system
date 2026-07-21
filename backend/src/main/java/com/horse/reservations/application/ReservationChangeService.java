@@ -22,6 +22,7 @@ import com.horse.members.domain.Member;
 import com.horse.members.domain.RidingClass;
 import com.horse.members.domain.exception.MemberException;
 import com.horse.members.infrastructure.MemberRepository;
+import com.horse.reservations.domain.ActiveReservationUniquenessPolicy;
 import com.horse.reservations.domain.CouponAction;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationActorType;
@@ -119,7 +120,7 @@ public class ReservationChangeService {
 			targetTimeSlot,
 			timing,
 			coupon);
-		ensurePreviewTargetCapacity(targetTimeSlot, reservation.getRidingClass());
+		ensurePreviewTargetCapacity(targetTimeSlot, reservation);
 		return new ReservationChangePreviewResult(
 			reservation.getId(),
 			targetTimeSlot.getId(),
@@ -189,7 +190,7 @@ public class ReservationChangeService {
 		if (timing == ReservationChangeTiming.BEFORE_CUTOFF
 			|| isWeekdaySameDayChange(reservation, targetTimeSlot, timing)) {
 			ensureCouponValidForTarget(reservation, lockedCoupon, targetTimeSlot.getLessonDate());
-			ensureTargetCapacity(targetTimeSlot, reservation.getRidingClass());
+			ensureTargetCapacity(targetTimeSlot, reservation);
 			return changeWithoutCouponAction(
 				reservation,
 				targetTimeSlot,
@@ -202,7 +203,7 @@ public class ReservationChangeService {
 			reservation,
 			lockedCoupon,
 			targetTimeSlot.getLessonDate());
-		ensureTargetCapacity(targetTimeSlot, reservation.getRidingClass());
+		ensureTargetCapacity(targetTimeSlot, reservation);
 		return changeAfterCutoff(
 			reservation,
 			targetTimeSlot,
@@ -280,12 +281,16 @@ public class ReservationChangeService {
 		return ReservationChangeResult.freeChangeUsed(reservation, true);
 	}
 
-	private void ensureTargetCapacity(TimeSlotCapacity targetTimeSlot, RidingClass ridingClass) {
+	private void ensureTargetCapacity(TimeSlotCapacity targetTimeSlot, Reservation reservation) {
 		final List<Reservation> occupyingReservations = reservationRepository
 			.findOccupyingByLessonDateAndStartTimeForUpdate(
 				targetTimeSlot.getLessonDate(),
 				targetTimeSlot.getStartTime(),
 				ReservationStatus.occupyingStatuses());
+		ActiveReservationUniquenessPolicy.ensureNoDuplicate(
+			reservation.getMemberId(),
+			occupyingReservations);
+		final RidingClass ridingClass = reservation.getRidingClass();
 		final int roundArenaOccupied = (int)occupyingReservations.stream()
 			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))
 			.count();
@@ -301,7 +306,7 @@ public class ReservationChangeService {
 
 	private void ensurePreviewTargetCapacity(
 		TimeSlotCapacity targetTimeSlot,
-		RidingClass ridingClass
+		Reservation reservation
 	) {
 		final List<Reservation> occupyingReservations = reservationRepository
 			.findOccupyingByLessonDate(
@@ -309,6 +314,10 @@ public class ReservationChangeService {
 				ReservationStatus.occupyingStatuses()).stream()
 			.filter(current -> current.getStartTime().equals(targetTimeSlot.getStartTime()))
 			.toList();
+		ActiveReservationUniquenessPolicy.ensureNoDuplicate(
+			reservation.getMemberId(),
+			occupyingReservations);
+		final RidingClass ridingClass = reservation.getRidingClass();
 		final int roundArenaOccupied = (int)occupyingReservations.stream()
 			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))
 			.count();

@@ -236,6 +236,36 @@ class ReservationChangeApiTest {
 	}
 
 	@Test
+	void 같은_회원의_활성_예약이_있는_시간대로는_변경할_수_없다() throws Exception {
+		final Long memberId = insertMember("duplicate-target-change-member");
+		final LocalDate lessonDate = futureDate();
+		insertTimeSlot(lessonDate, "09:00:00", 8);
+		final Long targetTimeSlotId = insertTimeSlot(lessonDate, "10:00:00", 8);
+		final Long sourceReservationId = insertSinglePaymentReservation(
+			memberId,
+			lessonDate,
+			"09:00:00");
+		insertSinglePaymentReservation(memberId, lessonDate, "10:00:00");
+
+		mockMvc.perform(get("/api/me/reservations/{reservationId}/change/preview", sourceReservationId)
+				.param("targetTimeSlotId", targetTimeSlotId.toString())
+				.with(memberJwt("duplicate-target-change-member")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT"));
+		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", sourceReservationId)
+				.with(memberJwt("duplicate-target-change-member"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(memberRequest(targetTimeSlotId, "중복 시간대 변경")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT"));
+
+		assertThat(reservationSchedule(sourceReservationId)).containsExactly(
+			lessonDate.toString(),
+			"09:00:00");
+		assertThat(changeLogCount(sourceReservationId)).isZero();
+	}
+
+	@Test
 	void 동일한_대상으로_재시도하면_변경_이력을_중복_생성하지_않는다() throws Exception {
 		final Long memberId = insertMember("retry-change-member");
 		final LocalDate lessonDate = futureDate();

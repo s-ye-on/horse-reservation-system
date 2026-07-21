@@ -661,3 +661,22 @@ run = "./gradlew test --tests '*PendingPaymentDeadlinePolicyTest' --tests '*Rese
 description = "Verify past time slot administration guards and history query"
 dir = "backend"
 run = "./gradlew test --tests '*TimeSlotOperationTimePolicyTest' --tests '*AdminTimeSlotApiTest' --tests '*TimeSlotCapacityConcurrencyIntegrationTest' --tests '*TimeSlotDeletionConcurrencyIntegrationTest'"
+
+[tasks."verify:m31-05"]
+description = "Verify active reservation uniqueness preflight database constraint and commands"
+run = '''
+mise run db:up
+mise run db:preflight-active-reservations
+./backend/gradlew -p backend test \
+  --tests '*ActiveReservationUniqueness*' \
+  --tests '*ReservationRepositoryIntegrationTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*ReservationChangeApiTest' \
+  --tests '*AdminPendingPaymentQueryApiTest' \
+  --tests '*AdminPendingPaymentRestoreApiTest' \
+  --tests '*TimeSlotCapacityConcurrencyIntegrationTest'
+'''
+
+[tasks."db:preflight-active-reservations"]
+description = "Report duplicate active reservations before Flyway V15"
+run = "./scripts/check-active-reservation-duplicates.sh"

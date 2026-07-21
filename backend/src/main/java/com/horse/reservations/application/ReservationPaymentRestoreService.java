@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
+import com.horse.reservations.domain.ActiveReservationUniquenessPolicy;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationChangeLog;
 import com.horse.reservations.domain.ReservationChangeType;
@@ -62,7 +63,7 @@ public class ReservationPaymentRestoreService {
 		}
 
 		reservation.ensurePaymentRestorable();
-		ensureCapacity(timeSlot, reservation.getRidingClass(), occupyingReservations);
+		ensureCapacity(timeSlot, reservation, occupyingReservations);
 		final LocalDateTime restoredAt = LocalDateTime.now(clock);
 		reservation.restorePayment(restoredAt);
 		changeLogRepository.save(ReservationChangeLog.paymentRestored(
@@ -87,9 +88,13 @@ public class ReservationPaymentRestoreService {
 
 	private void ensureCapacity(
 		TimeSlotCapacity timeSlot,
-		RidingClass ridingClass,
+		Reservation reservation,
 		List<Reservation> occupyingReservations
 	) {
+		ActiveReservationUniquenessPolicy.ensureNoDuplicate(
+			reservation.getMemberId(),
+			occupyingReservations);
+		final RidingClass ridingClass = reservation.getRidingClass();
 		final int roundArenaOccupied = (int)occupyingReservations.stream()
 			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))
 			.count();

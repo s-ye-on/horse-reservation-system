@@ -92,7 +92,8 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 
 	@Test
 	void 전체_원형_클래스_정원_경계를_각각_검증한다() {
-		final TestMember member = createMemberWithCoupon("capacity-boundary-member");
+		final TestMember firstMember = createMemberWithCoupon("capacity-boundary-first-member");
+		final TestMember secondMember = createMemberWithCoupon("capacity-boundary-second-member");
 		final TimeSlotCapacity totalLimited = createTimeSlot(
 			LESSON_DATE,
 			START_TIME,
@@ -100,10 +101,10 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 			1,
 			RidingClass.LARGE_ARENA_BEGINNER,
 			2);
-		reserveWithCoupon(totalLimited, member, RidingClass.LARGE_ARENA_BEGINNER);
+		reserveWithCoupon(totalLimited, firstMember, RidingClass.LARGE_ARENA_BEGINNER);
 
 		assertCapacityExceeded(
-			() -> reserveWithCoupon(totalLimited, member, RidingClass.LARGE_ARENA_BEGINNER));
+			() -> reserveWithCoupon(totalLimited, secondMember, RidingClass.LARGE_ARENA_BEGINNER));
 
 		final TimeSlotCapacity roundLimited = createTimeSlot(
 			LESSON_DATE,
@@ -112,9 +113,9 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 			1,
 			RidingClass.ROUND_BEGINNER,
 			2);
-		reserveWithCoupon(roundLimited, member, RidingClass.ROUND_BEGINNER);
+		reserveWithCoupon(roundLimited, firstMember, RidingClass.ROUND_BEGINNER);
 
-		assertCapacityExceeded(() -> reserveWithCoupon(roundLimited, member, RidingClass.ROUND_BEGINNER));
+		assertCapacityExceeded(() -> reserveWithCoupon(roundLimited, secondMember, RidingClass.ROUND_BEGINNER));
 
 		final TimeSlotCapacity classLimited = createTimeSlot(
 			LESSON_DATE,
@@ -123,14 +124,17 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 			2,
 			RidingClass.ROUND_BEGINNER,
 			1);
-		reserveWithCoupon(classLimited, member, RidingClass.ROUND_BEGINNER);
+		reserveWithCoupon(classLimited, firstMember, RidingClass.ROUND_BEGINNER);
 
-		assertCapacityExceeded(() -> reserveWithCoupon(classLimited, member, RidingClass.ROUND_BEGINNER));
+		assertCapacityExceeded(() -> reserveWithCoupon(classLimited, secondMember, RidingClass.ROUND_BEGINNER));
 	}
 
 	@Test
 	void 세_활성_상태만_점유하고_비점유_상태가_되면_다시_예약한다() {
-		final TestMember member = createMemberWithCoupon("occupying-status-member");
+		final TestMember confirmedMember = createMemberWithCoupon("occupying-confirmed-member");
+		final TestMember paymentMember = createMemberWithCoupon("occupying-payment-member");
+		final TestMember pendingMember = createMemberWithCoupon("occupying-pending-member");
+		final TestMember capacityMember = createMemberWithCoupon("occupying-capacity-member");
 		final TimeSlotCapacity timeSlot = createTimeSlot(
 			LESSON_DATE,
 			START_TIME,
@@ -138,7 +142,10 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 			3,
 			RidingClass.ROUND_BEGINNER,
 			3);
-		final Reservation confirmed = reserveWithCoupon(timeSlot, member, RidingClass.ROUND_BEGINNER);
+		final Reservation confirmed = reserveWithCoupon(
+			timeSlot,
+			confirmedMember,
+			RidingClass.ROUND_BEGINNER);
 		jdbcTemplate.update("""
 			UPDATE reservations
 			SET status = 'confirmed', admin_confirmed_at = '2026-07-14 10:10:00'
@@ -146,13 +153,16 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 			""", confirmed.getId());
 		final Reservation pendingPayment = reservationCapacityService.reserveWithSinglePayment(
 			timeSlot.getId(),
-			member.memberId(),
+			paymentMember.memberId(),
 			RidingClass.ROUND_BEGINNER,
 			REQUESTED_AT.plusHours(2),
 			REQUESTED_AT);
-		reserveWithCoupon(timeSlot, member, RidingClass.ROUND_BEGINNER);
+		reserveWithCoupon(timeSlot, pendingMember, RidingClass.ROUND_BEGINNER);
 
-		assertCapacityExceeded(() -> reserveWithCoupon(timeSlot, member, RidingClass.ROUND_BEGINNER));
+		assertCapacityExceeded(() -> reserveWithCoupon(
+			timeSlot,
+			capacityMember,
+			RidingClass.ROUND_BEGINNER));
 
 		jdbcTemplate.update(
 			"UPDATE reservations SET status = 'payment_expired' WHERE id = ?",
@@ -160,7 +170,7 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 
 		final Reservation replacement = reserveWithCoupon(
 			timeSlot,
-			member,
+			paymentMember,
 			RidingClass.ROUND_BEGINNER);
 
 		assertThat(replacement.getId()).isNotNull();
@@ -195,7 +205,6 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 
 	@Test
 	void 동일_시간대_병렬_예약은_허용된_수만_성공한다() throws Exception {
-		final TestMember member = createMemberWithCoupon("concurrency-member");
 		final TimeSlotCapacity timeSlot = createTimeSlot(
 			LESSON_DATE,
 			START_TIME,
@@ -204,13 +213,16 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 			RidingClass.ROUND_BEGINNER,
 			2);
 		final int requestCount = 4;
+		final List<TestMember> members = IntStream.range(0, requestCount)
+			.mapToObj(index -> createMemberWithCoupon("concurrency-member-" + index))
+			.toList();
 		final CountDownLatch startSignal = new CountDownLatch(1);
 		final ExecutorService executor = Executors.newFixedThreadPool(requestCount);
 
 		try {
 			final List<Future<Boolean>> results = IntStream.range(0, requestCount)
 				.mapToObj(index -> executor.submit(() ->
-					attemptReservation(startSignal, timeSlot, member)))
+					attemptReservation(startSignal, timeSlot, members.get(index))))
 				.toList();
 			startSignal.countDown();
 

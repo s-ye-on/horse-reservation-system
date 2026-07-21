@@ -129,6 +129,44 @@ class CouponReservationApplicationApiTest {
 	}
 
 	@Test
+	void 동일_회원의_동일_시간대_동시_신청은_하나만_성공한다() throws Exception {
+		final String authSubject = "duplicate-active-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, "general", 10, 0);
+		final Long timeSlotId = insertTimeSlot(futureDate(), "11:30:00", 8, 4);
+
+		final List<Integer> statuses = concurrentApplications(
+			List.of(authSubject, authSubject),
+			List.of(timeSlotId, timeSlotId));
+
+		assertThat(statuses).containsExactlyInAnyOrder(201, 409);
+		assertThat(reservationCount()).isEqualTo(1);
+		assertThat(couponHeldCount(couponId)).isEqualTo(1);
+		assertThat(usageActionCount(couponId, "held")).isEqualTo(1);
+	}
+
+	@Test
+	void 동일_회원의_동일_시간대_재신청은_명시적인_중복_오류를_반환한다() throws Exception {
+		final String authSubject = "duplicate-error-member";
+		final Long memberId = insertMember(authSubject);
+		insertCoupon(memberId, "general", 10, 0);
+		final Long timeSlotId = insertTimeSlot(futureDate(), "11:45:00", 8, 4);
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isCreated());
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT"));
+	}
+
+	@Test
 	void 잔여_한_회_쿠폰의_경쟁_예약은_하나만_쿠폰을_점유한다() throws Exception {
 		final String authSubject = "single-coupon-member";
 		final Long memberId = insertMember(authSubject);

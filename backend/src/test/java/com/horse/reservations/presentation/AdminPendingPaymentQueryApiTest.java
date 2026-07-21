@@ -60,9 +60,13 @@ class AdminPendingPaymentQueryApiTest {
 	@Test
 	void 입금대기와_만료_예약을_마감_시각순으로_조회한다() throws Exception {
 		final Long memberId = insertMember("pending-query-member");
+		final Long boundaryMemberId = insertMember("pending-query-boundary-member");
 		final Long laterId = insertReservation(memberId, "pending_payment", "2026-07-15 11:00:00");
 		final Long expiredId = insertReservation(memberId, "payment_expired", "2026-07-15 09:00:00");
-		final Long boundaryId = insertReservation(memberId, "pending_payment", "2026-07-15 10:00:00");
+		final Long boundaryId = insertReservation(
+			boundaryMemberId,
+			"pending_payment",
+			"2026-07-15 10:00:00");
 		insertConfirmedReservation(memberId);
 
 		mockMvc.perform(get(ENDPOINT).with(adminJwt()))

@@ -122,6 +122,24 @@ class AdminPendingPaymentRestoreApiTest {
 	}
 
 	@Test
+	void 같은_회원의_활성_예약이_있으면_만료_예약을_복구할_수_없다() throws Exception {
+		final Long memberId = insertMember("duplicate-restore-member");
+		insertTimeSlot("10:30:00", 2, 2);
+		final Long expiredReservationId = insertExpiredReservation(memberId, "10:30:00");
+		insertConfirmedReservation(memberId, "10:30:00");
+
+		mockMvc.perform(post(endpoint(expiredReservationId))
+				.with(adminJwt("restore-admin"))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request("중복 확인 후 복구")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT"));
+
+		assertThat(reservationStatus(expiredReservationId)).isEqualTo("payment_expired");
+		assertThat(changeLogCount(expiredReservationId)).isZero();
+	}
+
+	@Test
 	void 마지막_한_자리를_경쟁하는_복구는_한_예약만_성공한다() throws Exception {
 		final Long firstMemberId = insertMember("race-first-member");
 		final Long secondMemberId = insertMember("race-second-member");

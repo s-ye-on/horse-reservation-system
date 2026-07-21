@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
+import com.horse.reservations.domain.ActiveReservationUniquenessPolicy;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.infrastructure.ReservationRepository;
@@ -73,6 +74,9 @@ public class ReservationCapacityService {
 				timeSlot.getLessonDate(),
 				timeSlot.getStartTime(),
 				ReservationStatus.occupyingStatuses());
+		ActiveReservationUniquenessPolicy.ensureNoDuplicate(
+			reservation.getMemberId(),
+			occupyingReservations);
 		final RidingClass ridingClass = reservation.getRidingClass();
 		final int roundArenaOccupied = (int)occupyingReservations.stream()
 			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))

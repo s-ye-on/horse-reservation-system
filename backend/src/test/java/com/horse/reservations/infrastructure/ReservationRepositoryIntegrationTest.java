@@ -82,16 +82,19 @@ class ReservationRepositoryIntegrationTest {
 
 	@Test
 	void 허용된_예약_상태를_서로_다른_값으로_저장한다() {
-		final Long memberId = insertMember("reservation-status-member");
-		final Long couponId = insertCoupon(memberId);
-
-		RESERVATION_STATUSES.forEach(status -> insertValidReservation(memberId, couponId, status));
+		RESERVATION_STATUSES.forEach(status -> {
+			final Long memberId = insertMember("reservation-status-" + status);
+			final Long couponId = insertCoupon(memberId);
+			insertValidReservation(memberId, couponId, status);
+		});
 
 		assertThat(jdbcTemplate.queryForList(
 			"SELECT status FROM reservations ORDER BY id", String.class))
 			.containsExactlyElementsOf(RESERVATION_STATUSES);
+		final Long invalidMemberId = insertMember("reservation-status-invalid");
+		final Long invalidCouponId = insertCoupon(invalidMemberId);
 		assertThatThrownBy(() -> insertReservation(
-			memberId, couponId, "invalid", "coupon", null, null, null, null))
+			invalidMemberId, invalidCouponId, "invalid", "coupon", null, null, null, null))
 			.isInstanceOf(DataAccessException.class);
 	}
 
