@@ -86,6 +86,7 @@ public enum ExceptionCode {
 	TIMESLOT_INVALID_CLOSED_STATUS(HttpStatus.BAD_REQUEST, "시간대 마감 상태는 필수입니다."),
 	TIMESLOT_ALREADY_EXISTS(HttpStatus.CONFLICT, "같은 날짜와 시작 시각의 시간대가 이미 존재합니다."),
 	TIMESLOT_NOT_FOUND(HttpStatus.NOT_FOUND, "시간대를 찾을 수 없습니다."),
+	TIMESLOT_LESSON_ALREADY_STARTED(HttpStatus.CONFLICT, "시작된 수업 시간대는 일반 관리 기능으로 변경할 수 없습니다."),
 	TIMESLOT_CLOSED(HttpStatus.CONFLICT, "마감된 시간대에는 예약할 수 없습니다."),
 	TIMESLOT_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "시간대 정원이 마감되었습니다."),
 	TIMESLOT_CAPACITY_BELOW_OCCUPANCY(HttpStatus.CONFLICT, "현재 예약 인원보다 정원을 작게 설정할 수 없습니다."),

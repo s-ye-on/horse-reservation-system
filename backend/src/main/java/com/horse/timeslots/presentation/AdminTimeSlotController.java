@@ -37,6 +37,13 @@ public class AdminTimeSlotController {
 			.toList();
 	}
 
+	@GetMapping("/history")
+	public List<TimeSlotResponse> getTimeSlotHistory() {
+		return service.getTimeSlotHistory().stream()
+			.map(TimeSlotResponse::from)
+			.toList();
+	}
+
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
 	public TimeSlotResponse createTimeSlot(@RequestBody TimeSlotCreateRequest request) {

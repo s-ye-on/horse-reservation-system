@@ -251,6 +251,41 @@ export class AdminTimeSlotControllerApi extends runtime.BaseAPI {
     }
 
     /**
+     * Creates request options for getTimeSlotHistory without sending the request
+     */
+    async getTimeSlotHistoryRequestOpts(): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/admin/timeslots/history`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async getTimeSlotHistoryRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<TimeSlotResponse>>> {
+        const requestOptions = await this.getTimeSlotHistoryRequestOpts();
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(TimeSlotResponseFromJSON));
+    }
+
+    /**
+     */
+    async getTimeSlotHistory(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<TimeSlotResponse>> {
+        const response = await this.getTimeSlotHistoryRaw(initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for getTimeSlots without sending the request
      */
     async getTimeSlotsRequestOpts(): Promise<runtime.RequestOpts> {

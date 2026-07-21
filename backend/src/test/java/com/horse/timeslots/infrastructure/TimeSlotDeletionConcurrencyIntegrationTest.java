@@ -1,10 +1,14 @@
 package com.horse.timeslots.infrastructure;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.given;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import com.horse.TestcontainersConfiguration;
 import com.horse.members.domain.RidingClass;
@@ -48,8 +53,13 @@ class TimeSlotDeletionConcurrencyIntegrationTest {
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
+	@MockitoBean
+	Clock clock;
+
 	@BeforeEach
 	void 데이터베이스를_초기화한다() {
+		given(clock.instant()).willReturn(Instant.parse("2026-07-14T01:00:00Z"));
+		given(clock.getZone()).willReturn(ZoneId.of("Asia/Seoul"));
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
 		jdbcTemplate.update("DELETE FROM reservations");
 		jdbcTemplate.update("DELETE FROM coupons");

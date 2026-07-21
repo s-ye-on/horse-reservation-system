@@ -10,6 +10,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -56,6 +61,15 @@ class AdminTimeSlotApiTest {
 	@MockitoBean
 	TimeSlotReservationHistoryQuery reservationHistoryQuery;
 
+	@MockitoBean
+	Clock clock;
+
+	@BeforeEach
+	void setUpClock() {
+		given(clock.instant()).willReturn(Instant.parse("2026-08-01T01:00:00Z"));
+		given(clock.getZone()).willReturn(ZoneId.of("Asia/Seoul"));
+	}
+
 	@Test
 	void 비인증과_회원_권한은_관리자_시간대_API에_접근할_수_없다() throws Exception {
 		mockMvc.perform(get(ENDPOINT))
@@ -85,6 +99,49 @@ class AdminTimeSlotApiTest {
 			.andExpect(jsonPath("$.length()").value(2))
 			.andExpect(jsonPath("$[0].lessonDate").value("2026-08-05"))
 			.andExpect(jsonPath("$[1].lessonDate").value("2026-08-06"));
+	}
+
+	@Test
+	void 기본_조회는_미래_시간대만_과거_조회는_시작된_시간대만_반환한다() throws Exception {
+		insertTimeSlot("2026-07-31", "11:00:00");
+		insertTimeSlot("2026-08-01", "09:00:00");
+		insertTimeSlot("2026-08-01", "10:00:00");
+		insertTimeSlot("2026-08-01", "10:00:01");
+		insertTimeSlot("2026-08-02", "09:00:00");
+
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(2))
+			.andExpect(jsonPath("$[0].startTime").value("10:00:01"))
+			.andExpect(jsonPath("$[1].lessonDate").value("2026-08-02"));
+
+		mockMvc.perform(get(ENDPOINT + "/history").with(adminJwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.length()").value(3))
+			.andExpect(jsonPath("$[0].startTime").value("10:00:00"))
+			.andExpect(jsonPath("$[1].startTime").value("09:00:00"))
+			.andExpect(jsonPath("$[2].lessonDate").value("2026-07-31"));
+	}
+
+	@Test
+	void 수업_시작_정각부터_시간대_생성과_일반_관리를_차단한다() throws Exception {
+		mockMvc.perform(post(ENDPOINT)
+				.with(adminJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(createRequest("2026-08-01", "10:00:00", 8, 4, CLASS_CAPACITIES)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("TIMESLOT_LESSON_ALREADY_STARTED"));
+
+		final Long timeSlotId = insertTimeSlot("2026-08-01", "10:00:00");
+		assertStartedTimeSlotIsRejected(patch(ENDPOINT + "/{timeSlotId}", timeSlotId)
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("{\"closed\": true}"));
+		assertStartedTimeSlotIsRejected(put(ENDPOINT + "/{timeSlotId}/capacity", timeSlotId)
+			.contentType(MediaType.APPLICATION_JSON)
+			.content(capacityRequest(7, 3, CLASS_CAPACITIES)));
+		assertStartedTimeSlotIsRejected(delete(ENDPOINT + "/{timeSlotId}", timeSlotId));
+
+		assertThatTimeSlotCount(timeSlotId, 1);
 	}
 
 	@Test
@@ -224,6 +281,14 @@ class AdminTimeSlotApiTest {
 				.content(request))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.code").value("TIMESLOT_CAPACITY_BELOW_OCCUPANCY"));
+	}
+
+	private void assertStartedTimeSlotIsRejected(
+		org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request
+	) throws Exception {
+		mockMvc.perform(request.with(adminJwt()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("TIMESLOT_LESSON_ALREADY_STARTED"));
 	}
 
 	private void assertThatTimeSlotCount(Long timeSlotId, int expectedCount) {

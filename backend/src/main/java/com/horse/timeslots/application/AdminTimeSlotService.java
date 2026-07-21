@@ -1,6 +1,8 @@
 package com.horse.timeslots.application;
 
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
@@ -14,26 +16,39 @@ import org.springframework.transaction.annotation.Transactional;
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
 import com.horse.timeslots.domain.TimeSlotCapacity;
+import com.horse.timeslots.domain.TimeSlotOperationTimePolicy;
 import com.horse.timeslots.domain.exception.TimeSlotException;
 import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
 
 @Service
 public class AdminTimeSlotService {
 
+	private final Clock clock;
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final TimeSlotReservationHistoryQuery reservationHistoryQuery;
 
 	public AdminTimeSlotService(
+		Clock clock,
 		TimeSlotCapacityRepository timeSlotRepository,
 		TimeSlotReservationHistoryQuery reservationHistoryQuery
 	) {
+		this.clock = clock;
 		this.timeSlotRepository = timeSlotRepository;
 		this.reservationHistoryQuery = reservationHistoryQuery;
 	}
 
 	@Transactional(readOnly = true)
 	public List<TimeSlotResult> getTimeSlots() {
-		return timeSlotRepository.findAllByOrderByLessonDateAscStartTimeAsc().stream()
+		final LocalDateTime requestedAt = LocalDateTime.now(clock);
+		return timeSlotRepository.findUpcoming(requestedAt.toLocalDate(), requestedAt.toLocalTime()).stream()
+			.map(TimeSlotResult::from)
+			.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<TimeSlotResult> getTimeSlotHistory() {
+		final LocalDateTime requestedAt = LocalDateTime.now(clock);
+		return timeSlotRepository.findHistory(requestedAt.toLocalDate(), requestedAt.toLocalTime()).stream()
 			.map(TimeSlotResult::from)
 			.toList();
 	}
@@ -46,6 +61,7 @@ public class AdminTimeSlotService {
 		Integer roundArenaCapacity,
 		Map<String, Integer> classCapacities
 	) {
+		ensureNotStartedIfPresent(lessonDate, startTime);
 		if (lessonDate != null
 			&& startTime != null
 			&& timeSlotRepository.existsByLessonDateAndStartTime(lessonDate, startTime)) {
@@ -67,7 +83,8 @@ public class AdminTimeSlotService {
 
 	@Transactional
 	public TimeSlotResult changeClosedStatus(Long timeSlotId, Boolean closed) {
-		final TimeSlotCapacity timeSlot = getTimeSlot(timeSlotId);
+		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
+		ensureNotStarted(timeSlot);
 		timeSlot.changeClosedStatus(closed);
 		return TimeSlotResult.from(timeSlot);
 	}
@@ -80,6 +97,7 @@ public class AdminTimeSlotService {
 		Map<String, Integer> classCapacities
 	) {
 		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
+		ensureNotStarted(timeSlot);
 		final List<RidingClass> activeRidingClasses = reservationHistoryQuery.findActiveRidingClassesForUpdate(
 			timeSlot.getLessonDate(),
 			timeSlot.getStartTime());
@@ -101,6 +119,7 @@ public class AdminTimeSlotService {
 	@Transactional
 	public void deleteTimeSlot(Long timeSlotId) {
 		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
+		ensureNotStarted(timeSlot);
 		if (reservationHistoryQuery.existsByLessonDateAndStartTime(
 			timeSlot.getLessonDate(), timeSlot.getStartTime())) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_RESERVATION_HISTORY_EXISTS);
@@ -109,9 +128,17 @@ public class AdminTimeSlotService {
 		timeSlotRepository.flush();
 	}
 
-	private TimeSlotCapacity getTimeSlot(Long timeSlotId) {
-		return timeSlotRepository.findById(timeSlotId)
-			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
+	private void ensureNotStartedIfPresent(LocalDate lessonDate, LocalTime startTime) {
+		if (lessonDate != null && startTime != null) {
+			TimeSlotOperationTimePolicy.ensureNotStarted(lessonDate, startTime, LocalDateTime.now(clock));
+		}
+	}
+
+	private void ensureNotStarted(TimeSlotCapacity timeSlot) {
+		TimeSlotOperationTimePolicy.ensureNotStarted(
+			timeSlot.getLessonDate(),
+			timeSlot.getStartTime(),
+			LocalDateTime.now(clock));
 	}
 
 	private TimeSlotCapacity getTimeSlotForUpdate(Long timeSlotId) {

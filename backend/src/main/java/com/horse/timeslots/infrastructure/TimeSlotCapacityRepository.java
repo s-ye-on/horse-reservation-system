@@ -23,6 +23,30 @@ public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapaci
 
 	List<TimeSlotCapacity> findAllByOrderByLessonDateAscStartTimeAsc();
 
+	@Query("""
+		select timeSlot
+		from TimeSlotCapacity timeSlot
+		where timeSlot.lessonDate > :date
+		   or (timeSlot.lessonDate = :date and timeSlot.startTime > :time)
+		order by timeSlot.lessonDate, timeSlot.startTime, timeSlot.id
+		""")
+	List<TimeSlotCapacity> findUpcoming(
+		@Param("date") LocalDate date,
+		@Param("time") LocalTime time
+	);
+
+	@Query("""
+		select timeSlot
+		from TimeSlotCapacity timeSlot
+		where timeSlot.lessonDate < :date
+		   or (timeSlot.lessonDate = :date and timeSlot.startTime <= :time)
+		order by timeSlot.lessonDate desc, timeSlot.startTime desc, timeSlot.id desc
+		""")
+	List<TimeSlotCapacity> findHistory(
+		@Param("date") LocalDate date,
+		@Param("time") LocalTime time
+	);
+
 	List<TimeSlotCapacity> findAllByLessonDateOrderByStartTimeAsc(LocalDate lessonDate);
 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)

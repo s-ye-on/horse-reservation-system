@@ -656,3 +656,8 @@ run = "./gradlew test --tests '*MemberAvailableTimeSlotsApiTest' --tests '*Pendi
 description = "Verify approval rejection and pending payment time consistency"
 dir = "backend"
 run = "./gradlew test --tests '*PendingPaymentDeadlinePolicyTest' --tests '*ReservationLessonTimePolicyTest' --tests '*PendingPaymentReservationApiTest' --tests '*AdminReservationConfirmApiTest' --tests '*AdminReservationRejectApiTest' --tests '*PendingPaymentExpiryJobIntegrationTest'"
+
+[tasks."verify:m31-04"]
+description = "Verify past time slot administration guards and history query"
+dir = "backend"
+run = "./gradlew test --tests '*TimeSlotOperationTimePolicyTest' --tests '*AdminTimeSlotApiTest' --tests '*TimeSlotCapacityConcurrencyIntegrationTest' --tests '*TimeSlotDeletionConcurrencyIntegrationTest'"

@@ -896,6 +896,29 @@
         }
       }
     },
+    "/api/admin/timeslots/history": {
+      "get": {
+        "tags": [
+          "admin-time-slot-controller"
+        ],
+        "operationId": "getTimeSlotHistory",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TimeSlotResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/reservations": {
       "get": {
         "tags": [
