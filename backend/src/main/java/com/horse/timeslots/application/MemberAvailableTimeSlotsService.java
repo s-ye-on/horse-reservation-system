@@ -1,5 +1,7 @@
 package com.horse.timeslots.application;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
@@ -16,6 +18,7 @@ import com.horse.members.application.MemberAvailableRidingClassesResult;
 import com.horse.members.application.MemberAvailableRidingClassesService;
 import com.horse.members.domain.RidingClass;
 import com.horse.reservations.domain.Reservation;
+import com.horse.reservations.domain.ReservationBookingTimePolicy;
 import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.infrastructure.ReservationRepository;
 import com.horse.timeslots.domain.TimeSlotCapacity;
@@ -27,15 +30,18 @@ public class MemberAvailableTimeSlotsService {
 
 	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 
+	private final Clock clock;
 	private final MemberAvailableRidingClassesService ridingClassesService;
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final ReservationRepository reservationRepository;
 
 	public MemberAvailableTimeSlotsService(
+		Clock clock,
 		MemberAvailableRidingClassesService ridingClassesService,
 		TimeSlotCapacityRepository timeSlotRepository,
 		ReservationRepository reservationRepository
 	) {
+		this.clock = clock;
 		this.ridingClassesService = ridingClassesService;
 		this.timeSlotRepository = timeSlotRepository;
 		this.reservationRepository = reservationRepository;
@@ -52,6 +58,7 @@ public class MemberAvailableTimeSlotsService {
 		final MemberAvailableRidingClassesResult member =
 			ridingClassesService.getAvailableRidingClasses(authSubject);
 		final boolean eligible = member.availableRidingClasses().contains(ridingClass);
+		final Instant requestedAt = clock.instant();
 		final Map<java.time.LocalTime, List<Reservation>> reservationsByStartTime =
 			reservationRepository.findOccupyingByLessonDate(
 				date,
@@ -60,6 +67,10 @@ public class MemberAvailableTimeSlotsService {
 
 		final List<MemberAvailableTimeSlotResult> timeSlots = timeSlotRepository
 			.findAllByLessonDateOrderByStartTimeAsc(date).stream()
+			.filter(timeSlot -> ReservationBookingTimePolicy.evaluate(
+				timeSlot.getLessonDate(),
+				timeSlot.getStartTime(),
+				requestedAt).allowed())
 			.map(timeSlot -> toResult(
 				timeSlot,
 				ridingClass,
@@ -121,7 +132,7 @@ public class MemberAvailableTimeSlotsService {
 	private LocalDate parseDate(String dateValue) {
 		try {
 			final LocalDate date = LocalDate.parse(dateValue);
-			if (date.isBefore(LocalDate.now(SEOUL_ZONE))) {
+			if (date.isBefore(LocalDate.ofInstant(clock.instant(), SEOUL_ZONE))) {
 				throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_QUERY_DATE);
 			}
 			return date;

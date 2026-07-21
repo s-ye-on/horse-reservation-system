@@ -1,20 +1,25 @@
 package com.horse.timeslots.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +32,9 @@ import com.horse.TestcontainersConfiguration;
 class MemberAvailableTimeSlotsApiTest {
 
 	private static final String ENDPOINT = "/api/timeslots";
+	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
+	private static final Instant CURRENT_INSTANT = Instant.parse("2026-07-21T01:00:00Z");
+	private static final LocalDate CURRENT_DATE = LocalDate.of(2026, 7, 21);
 	private static final String CLASS_CAPACITIES = """
 		{
 		  "FIRST_RIDE": 2,
@@ -44,6 +52,15 @@ class MemberAvailableTimeSlotsApiTest {
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
+
+	@MockitoBean
+	Clock clock;
+
+	@BeforeEach
+	void 서울_기준_현재_시각을_고정한다() {
+		when(clock.instant()).thenReturn(CURRENT_INSTANT);
+		when(clock.getZone()).thenReturn(SEOUL_ZONE);
+	}
 
 	@Test
 	void 인증되지_않은_시간대_조회는_거부한다() throws Exception {
@@ -126,6 +143,23 @@ class MemberAvailableTimeSlotsApiTest {
 			.andExpect(jsonPath("$.code").value("TIMESLOT_INVALID_CLASS_TYPE"));
 	}
 
+	@Test
+	void 당일_수업은_현재_시각보다_뒤인_시간대만_노출한다() throws Exception {
+		insertMember("same-day-member", 1);
+		insertTimeSlot(CURRENT_DATE, "09:00:00", 2, 2, false);
+		insertTimeSlot(CURRENT_DATE, "10:00:00", 2, 2, false);
+		insertTimeSlot(CURRENT_DATE, "10:00:01", 2, 2, false);
+
+		mockMvc.perform(get(ENDPOINT)
+				.param("date", CURRENT_DATE.toString())
+				.param("classType", "ROUND_BEGINNER")
+				.with(jwt().jwt(token -> token.subject("same-day-member"))))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.timeSlots.length()").value(1))
+			.andExpect(jsonPath("$.timeSlots[0].startTime").value("10:00:01"))
+			.andExpect(jsonPath("$.timeSlots[0].reservable").value(true));
+	}
+
 	private Long insertMember(String authSubject, int generalRideCount) {
 		jdbcTemplate.update("""
 			INSERT INTO members (auth_subject, name, phone, general_ride_count)
@@ -177,6 +211,6 @@ class MemberAvailableTimeSlotsApiTest {
 	}
 
 	private LocalDate futureDate() {
-		return LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(1);
+		return CURRENT_DATE.plusDays(1);
 	}
 }

@@ -2,6 +2,7 @@ package com.horse.reservations.application;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -21,6 +22,7 @@ import com.horse.members.domain.RidingClass;
 import com.horse.members.domain.exception.MemberException;
 import com.horse.members.infrastructure.MemberRepository;
 import com.horse.reservations.domain.Reservation;
+import com.horse.reservations.domain.ReservationBookingTimePolicy;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
@@ -66,9 +68,14 @@ public class ReservationApplicationService {
 		ensureEligible(member, ridingClass);
 		final TimeSlotCapacity timeSlot = lockTimeSlot(timeSlotId);
 		ensureReservableLessonDate(timeSlot.getLessonDate());
+		final Instant bookingRequestedAt = clock.instant();
+		ReservationBookingTimePolicy.ensureCanBook(
+			timeSlot.getLessonDate(),
+			timeSlot.getStartTime(),
+			bookingRequestedAt);
 		final Optional<CouponSelectionResult> selection = couponSelectionService
 			.selectForUpdate(member.getId(), ridingClass, timeSlot.getLessonDate());
-		final LocalDateTime requestedAt = LocalDateTime.now(clock);
+		final LocalDateTime requestedAt = LocalDateTime.ofInstant(bookingRequestedAt, clock.getZone());
 		if (selection.isEmpty()) {
 			return applySinglePayment(
 				timeSlotId,

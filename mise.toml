@@ -646,3 +646,8 @@ rg -Fq '`America/Los_Angeles`' docs/architecture/mvp-3-1-stabilization-plan.md
 description = "Verify same-day reservation booking time policy"
 dir = "backend"
 run = "./gradlew test --tests '*ReservationBookingTimePolicyTest' --tests '*ExceptionCodeTest'"
+
+[tasks."verify:m31-02"]
+description = "Verify member availability and booking command time guards"
+dir = "backend"
+run = "./gradlew test --tests '*MemberAvailableTimeSlotsApiTest' --tests '*PendingPaymentReservationApiTest'"

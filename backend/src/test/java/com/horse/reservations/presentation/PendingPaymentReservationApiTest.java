@@ -173,6 +173,40 @@ class PendingPaymentReservationApiTest {
 		assertThat(reservationCount()).isZero();
 	}
 
+	@Test
+	void 당일_수업_시작_직전까지_회원_예약을_허용한다() throws Exception {
+		final String authSubject = "same-day-booking-member";
+		insertMember(authSubject);
+		final Long timeSlotId = insertTimeSlot(LESSON_DATE, "09:00:00", 8, 4);
+		when(clock.instant()).thenReturn(Instant.parse("2026-07-31T23:59:59.999999999Z"));
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.status").value("pending_payment"));
+
+		assertThat(reservationCount()).isEqualTo(1);
+	}
+
+	@Test
+	void 정확한_수업_시작_시각부터_직접_예약_신청을_거부한다() throws Exception {
+		final String authSubject = "started-lesson-member";
+		insertMember(authSubject);
+		final Long timeSlotId = insertTimeSlot(LESSON_DATE, "09:00:00", 8, 4);
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-01T00:00:00Z"));
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+
+		assertThat(reservationCount()).isZero();
+	}
+
 	private List<Integer> concurrentApplications(List<String> authSubjects, Long timeSlotId)
 		throws Exception {
 		final ExecutorService executor = Executors.newFixedThreadPool(authSubjects.size());
@@ -242,12 +276,21 @@ class PendingPaymentReservationApiTest {
 	}
 
 	private Long insertTimeSlot(String startTime, int totalCapacity, int roundArenaCapacity) {
+		return insertTimeSlot(LESSON_DATE, startTime, totalCapacity, roundArenaCapacity);
+	}
+
+	private Long insertTimeSlot(
+		LocalDate lessonDate,
+		String startTime,
+		int totalCapacity,
+		int roundArenaCapacity
+	) {
 		jdbcTemplate.update("""
 			INSERT INTO time_slot_capacities (
 				lesson_date, start_time, total_capacity, round_arena_capacity,
 				class_capacity_json, is_closed
 			) VALUES (?, ?, ?, ?, ?, FALSE)
-			""", LESSON_DATE, startTime, totalCapacity, roundArenaCapacity, CLASS_CAPACITIES);
+			""", lessonDate, startTime, totalCapacity, roundArenaCapacity, CLASS_CAPACITIES);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
