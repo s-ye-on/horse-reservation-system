@@ -198,6 +198,7 @@ public class Reservation {
 		if (reason == null || reason.isBlank() || reason.length() > MAX_REJECTION_REASON_LENGTH) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_REJECTION_REASON);
 		}
+		ensureLessonNotStarted(occurredAt);
 		status = ReservationStatus.REJECTED;
 		rejectedAt = occurredAt;
 		rejectedBy = adminSubject;

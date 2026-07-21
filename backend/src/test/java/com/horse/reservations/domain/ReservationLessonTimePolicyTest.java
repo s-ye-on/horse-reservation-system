@@ -37,13 +37,17 @@ class ReservationLessonTimePolicyTest {
 	}
 
 	@Test
-	void 승인_변경_취소는_정확히_수업_시작_시각부터_거부한다() {
+	void 승인_반려_변경_취소는_정확히_수업_시작_시각부터_거부한다() {
 		final Reservation approval = couponPending();
+		final Reservation rejection = couponPending();
 		final Reservation change = confirmed();
 		final Reservation cancellation = confirmed();
 
 		assertReservationException(
 			() -> approval.confirm(LESSON_START),
+			ExceptionCode.RESERVATION_LESSON_ALREADY_STARTED);
+		assertReservationException(
+			() -> rejection.reject(LESSON_START, "admin", "수업 시작 후 반려"),
 			ExceptionCode.RESERVATION_LESSON_ALREADY_STARTED);
 		assertReservationException(
 			() -> change.changeSchedule(LESSON_DATE.plusDays(1), START_TIME, LESSON_START),

@@ -651,3 +651,8 @@ run = "./gradlew test --tests '*ReservationBookingTimePolicyTest' --tests '*Exce
 description = "Verify member availability and booking command time guards"
 dir = "backend"
 run = "./gradlew test --tests '*MemberAvailableTimeSlotsApiTest' --tests '*PendingPaymentReservationApiTest'"
+
+[tasks."verify:m31-03"]
+description = "Verify approval rejection and pending payment time consistency"
+dir = "backend"
+run = "./gradlew test --tests '*PendingPaymentDeadlinePolicyTest' --tests '*ReservationLessonTimePolicyTest' --tests '*PendingPaymentReservationApiTest' --tests '*AdminReservationConfirmApiTest' --tests '*AdminReservationRejectApiTest' --tests '*PendingPaymentExpiryJobIntegrationTest'"

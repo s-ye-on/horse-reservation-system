@@ -132,6 +132,23 @@ class AdminReservationRejectApiTest {
 	}
 
 	@Test
+	void 수업_시작_시각에_도달한_승인대기_예약은_반려하지_않는다() throws Exception {
+		when(clock.instant()).thenReturn(Instant.parse("2026-08-01T00:00:00Z"));
+		final Long memberId = insertMember("started-reject-member");
+		final Long couponId = insertCoupon(memberId);
+		final Long reservationId = insertCouponReservation(memberId, couponId);
+		insertHeldLog(memberId, couponId, reservationId);
+
+		mockMvc.perform(rejectRequest(reservationId, REASON).with(adminJwt()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_LESSON_ALREADY_STARTED"));
+
+		assertThat(reservationStatus(reservationId)).isEqualTo("pending_admin_approval");
+		assertThat(couponHeldCount(couponId)).isEqualTo(1);
+		assertThat(usageActionCount(reservationId, "released")).isZero();
+	}
+
+	@Test
 	void 반려_사유는_필수이며_오백자를_넘을_수_없다() throws Exception {
 		mockMvc.perform(rejectRequest(1L, " ").with(adminJwt()))
 			.andExpect(status().isBadRequest());

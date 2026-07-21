@@ -1,7 +1,6 @@
 package com.horse.reservations.application;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,6 +20,7 @@ import com.horse.members.domain.Member;
 import com.horse.members.domain.RidingClass;
 import com.horse.members.domain.exception.MemberException;
 import com.horse.members.infrastructure.MemberRepository;
+import com.horse.reservations.domain.PendingPaymentDeadlinePolicy;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationBookingTimePolicy;
 import com.horse.reservations.domain.exception.ReservationException;
@@ -31,7 +31,6 @@ import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
 @Service
 public class ReservationApplicationService {
 
-	private static final Duration PAYMENT_WAIT_DURATION = Duration.ofHours(2);
 	private static final int RESERVATION_WINDOW_MONTHS = 3;
 
 	private final Clock clock;
@@ -79,6 +78,7 @@ public class ReservationApplicationService {
 		if (selection.isEmpty()) {
 			return applySinglePayment(
 				timeSlotId,
+				timeSlot,
 				member.getId(),
 				ridingClass,
 				requestedAt);
@@ -121,15 +121,20 @@ public class ReservationApplicationService {
 
 	private ReservationApplicationResult applySinglePayment(
 		Long timeSlotId,
+		TimeSlotCapacity timeSlot,
 		Long memberId,
 		RidingClass ridingClass,
 		LocalDateTime requestedAt
 	) {
+		final LocalDateTime paymentDueAt = PendingPaymentDeadlinePolicy.calculate(
+			timeSlot.getLessonDate(),
+			timeSlot.getStartTime(),
+			requestedAt);
 		final Reservation reservation = reservationCapacityService.reserveWithSinglePayment(
 			timeSlotId,
 			memberId,
 			ridingClass,
-			requestedAt.plus(PAYMENT_WAIT_DURATION),
+			paymentDueAt,
 			requestedAt);
 		return ReservationApplicationResult.singlePayment(reservation);
 	}

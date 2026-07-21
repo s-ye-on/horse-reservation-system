@@ -185,9 +185,11 @@ class PendingPaymentReservationApiTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
-			.andExpect(jsonPath("$.status").value("pending_payment"));
+			.andExpect(jsonPath("$.status").value("pending_payment"))
+			.andExpect(jsonPath("$.paymentDueAt").value("2026-08-01T09:00:00"));
 
 		assertThat(reservationCount()).isEqualTo(1);
+		assertThat(paymentDueAt()).isEqualTo("2026-08-01 09:00:00");
 	}
 
 	@Test
