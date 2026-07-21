@@ -626,3 +626,18 @@ run = '''
 mise run verify:all
 pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp3-reservation-lifecycle.spec.ts
 '''
+
+[tasks."verify:m31-00"]
+description = "Verify MVP 3.1 and 3.2 policy and task contracts"
+run = '''
+mise run docs:check
+test "$(rg -c '^\| M31-' docs/tasks/mvp-3.1.md)" -eq 18
+test "$(rg -c '^\| M32-' docs/tasks/mvp-3.2.md)" -eq 11
+rg -Fq '회원 신규 예약은 당일 수업도 신청할 수 있다.' docs/product/policies.md
+rg -Fq '기존 예약 변경 마감은 수업 전날 21:00을 유지한다.' docs/architecture/mvp-3-1-stabilization-plan.md
+rg -Fq 'MySQL `EXPLAIN FORMAT=JSON` 결과' docs/architecture/mvp-3-1-stabilization-plan.md
+rg -Fq 'MySQL deadlock 오류 `1213`만 전체 트랜잭션 경계 밖에서 제한적으로 재시도한다.' docs/architecture/mvp-3-1-stabilization-plan.md
+rg -Fq 'Reservation 저장 이후 idempotency 완료 기록 직전에 장애를 주입했을 때 전체 변경이 rollback되는 통합 테스트를 둔다.' docs/architecture/mvp-3-1-stabilization-plan.md
+rg -Fq 'ORDER BY (expires_at IS NULL) ASC' docs/architecture/mvp-3-1-stabilization-plan.md
+rg -Fq '`America/Los_Angeles`' docs/architecture/mvp-3-1-stabilization-plan.md
+'''
