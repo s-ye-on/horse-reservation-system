@@ -641,3 +641,8 @@ rg -Fq 'Reservation 저장 이후 idempotency 완료 기록 직전에 장애를 
 rg -Fq 'ORDER BY (expires_at IS NULL) ASC' docs/architecture/mvp-3-1-stabilization-plan.md
 rg -Fq '`America/Los_Angeles`' docs/architecture/mvp-3-1-stabilization-plan.md
 '''
+
+[tasks."verify:m31-01"]
+description = "Verify same-day reservation booking time policy"
+dir = "backend"
+run = "./gradlew test --tests '*ReservationBookingTimePolicyTest' --tests '*ExceptionCodeTest'"

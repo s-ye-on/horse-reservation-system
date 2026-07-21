@@ -16,6 +16,7 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_RIDING_CLASS(HttpStatus.BAD_REQUEST, "예약 클래스는 필수입니다."),
 	RESERVATION_INVALID_LESSON_DATE(HttpStatus.BAD_REQUEST, "예약 수업 날짜는 필수입니다."),
 	RESERVATION_INVALID_START_TIME(HttpStatus.BAD_REQUEST, "예약 수업 시작 시각은 필수입니다."),
+	RESERVATION_INVALID_BOOKING_REQUESTED_AT(HttpStatus.BAD_REQUEST, "예약 신청 시각은 필수입니다."),
 	RESERVATION_INVALID_CHANGE_REQUESTED_AT(HttpStatus.BAD_REQUEST, "예약 변경 요청 시각은 필수입니다."),
 	RESERVATION_INVALID_CHANGE_REASON(HttpStatus.BAD_REQUEST, "예약 변경 사유가 올바르지 않습니다."),
 	RESERVATION_INVALID_CANCELLATION_REASON(HttpStatus.BAD_REQUEST, "예약 취소 사유가 올바르지 않습니다."),
