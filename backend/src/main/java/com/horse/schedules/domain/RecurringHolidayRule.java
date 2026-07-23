@@ -94,6 +94,33 @@ public class RecurringHolidayRule {
 			actorAuthSubject);
 	}
 
+	public void change(
+		DayOfWeek dayOfWeek,
+		LocalDate effectiveFrom,
+		LocalDate effectiveTo,
+		String reason,
+		String actorAuthSubject
+	) {
+		final DayOfWeek changedDayOfWeek = requireDayOfWeek(dayOfWeek);
+		final LocalDate changedEffectiveFrom = requireEffectiveFrom(effectiveFrom);
+		validateDateRange(changedEffectiveFrom, effectiveTo);
+		this.dayOfWeek = changedDayOfWeek;
+		this.effectiveFrom = changedEffectiveFrom;
+		this.effectiveTo = effectiveTo;
+		this.reason = requireReason(reason);
+		this.updatedBy = requireActor(actorAuthSubject);
+	}
+
+	public void activate(String actorAuthSubject) {
+		active = true;
+		updatedBy = requireActor(actorAuthSubject);
+	}
+
+	public void deactivate(String actorAuthSubject) {
+		active = false;
+		updatedBy = requireActor(actorAuthSubject);
+	}
+
 	private static DayOfWeek requireDayOfWeek(DayOfWeek dayOfWeek) {
 		if (dayOfWeek == null) {
 			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_DAY_OF_WEEK);

@@ -157,14 +157,16 @@ class ScheduleRepositoryIntegrationTest {
 	}
 
 	@Test
-	void 설정_Guard는_정확히_하나의_ACTIVE_행으로_시작한다() {
+	void 기본_월요일_휴일은_설정_Guard를_SYNCING으로_시작한다() {
 		final Integer count = jdbcTemplate.queryForObject(
 			"SELECT COUNT(*) FROM schedule_config_guard",
 			Integer.class);
 
 		assertThat(count).isEqualTo(1);
-		assertThat(configGuardRepository.findSingletonForShare().getStatus())
-			.isEqualTo(ScheduleConfigStatus.ACTIVE);
+		final var guard = configGuardRepository.findSingletonForShare();
+		assertThat(guard.getStatus()).isEqualTo(ScheduleConfigStatus.SYNCING);
+		assertThat(guard.getActiveVersion()).isEqualTo(1L);
+		assertThat(guard.getPendingVersion()).isEqualTo(2L);
 	}
 
 	@Test
@@ -296,6 +298,20 @@ class ScheduleRepositoryIntegrationTest {
 		assertThat(indexes).containsExactly(
 			"fk_time_slot_capacities_template",
 			"uk_time_slot_capacities_lesson_date_start_time");
+	}
+
+	@Test
+	void 정기_휴일_겹침_조회는_요일과_활성_기간_인덱스를_사용한다() {
+		final String plan = explain("""
+			SELECT id
+			FROM recurring_holiday_rules
+			WHERE day_of_week = 'MONDAY'
+			  AND active = TRUE
+			  AND effective_from <= '2026-12-31'
+			  AND COALESCE(effective_to, '9999-12-31') >= '2026-07-01'
+			""");
+
+		assertThat(plan).contains("\"key\": \"idx_recurring_holiday_rules_day_active_dates\"");
 	}
 
 	private String explain(String sql) {

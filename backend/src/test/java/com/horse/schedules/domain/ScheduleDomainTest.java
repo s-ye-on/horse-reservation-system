@@ -135,6 +135,33 @@ class ScheduleDomainTest {
 	}
 
 	@Test
+	void 정기_휴일은_도메인_메서드로_변경하고_활성화한다() {
+		final RecurringHolidayRule rule = RecurringHolidayRule.create(
+			DayOfWeek.MONDAY,
+			LocalDate.of(2026, 7, 1),
+			null,
+			"정기 휴무",
+			"schedule-admin");
+
+		rule.deactivate("schedule-admin");
+		assertThat(rule.isActive()).isFalse();
+
+		rule.change(
+			DayOfWeek.TUESDAY,
+			LocalDate.of(2026, 8, 1),
+			LocalDate.of(2026, 8, 31),
+			"변경 휴무",
+			"schedule-admin");
+		rule.activate("schedule-admin");
+
+		assertThat(rule.getDayOfWeek()).isEqualTo(DayOfWeek.TUESDAY);
+		assertThat(rule.getEffectiveFrom()).isEqualTo(LocalDate.of(2026, 8, 1));
+		assertThat(rule.getEffectiveTo()).isEqualTo(LocalDate.of(2026, 8, 31));
+		assertThat(rule.getReason()).isEqualTo("변경 휴무");
+		assertThat(rule.isActive()).isTrue();
+	}
+
+	@Test
 	void 운영_날짜는_NORMAL_상태로_생성한다() {
 		final ScheduleDate scheduleDate = ScheduleDate.create(
 			LocalDate.of(2026, 8, 1),

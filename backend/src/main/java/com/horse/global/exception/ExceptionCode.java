@@ -118,7 +118,9 @@ public enum ExceptionCode {
 		"시간표를 갱신하고 있습니다. 잠시 후 다시 시도해 주세요."),
 	SCHEDULE_CONFIG_VERSION_CONFLICT(HttpStatus.CONFLICT, "일정 설정 버전이 변경되었습니다."),
 	SCHEDULE_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "정규 시간표 Template을 찾을 수 없습니다."),
-	SCHEDULE_TEMPLATE_ALREADY_EXISTS(HttpStatus.CONFLICT, "같은 요일과 시작 시각의 Template이 이미 존재합니다.");
+	SCHEDULE_TEMPLATE_ALREADY_EXISTS(HttpStatus.CONFLICT, "같은 요일과 시작 시각의 Template이 이미 존재합니다."),
+	SCHEDULE_RECURRING_HOLIDAY_NOT_FOUND(HttpStatus.NOT_FOUND, "정기 휴일 규칙을 찾을 수 없습니다."),
+	SCHEDULE_RECURRING_HOLIDAY_OVERLAP(HttpStatus.CONFLICT, "같은 요일에 적용 기간이 겹치는 정기 휴일이 있습니다.");
 
 	private final HttpStatus status;
 	private final String message;

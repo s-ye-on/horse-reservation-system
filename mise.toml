@@ -739,3 +739,16 @@ mise run db:up
   --tests '*ScheduleRepositoryIntegrationTest' \
   --tests '*ExceptionCodeTest'
 '''
+
+[tasks."verify:m31-r05"]
+description = "Verify M31-R05 recurring holiday management"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*M31R05DefaultMondayHolidayMigrationIntegrationTest' \
+  --tests '*RecurringHolidayRuleServiceIntegrationTest' \
+  --tests '*ScheduleDomainTest' \
+  --tests '*ScheduleRepositoryIntegrationTest' \
+  --tests '*ScheduleLockingIntegrationTest' \
+  --tests '*ExceptionCodeTest'
+'''
