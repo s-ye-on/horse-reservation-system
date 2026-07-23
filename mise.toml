@@ -728,3 +728,14 @@ mise run db:up
   --tests '*M31R03ScheduleDateHorizonMigrationIntegrationTest' \
   --tests '*ScheduleDateHorizonServiceIntegrationTest'
 '''
+
+[tasks."verify:m31-r04"]
+description = "Verify M31-R04 regular schedule template management"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*RegularScheduleTemplateServiceIntegrationTest' \
+  --tests '*ScheduleDomainTest' \
+  --tests '*ScheduleRepositoryIntegrationTest' \
+  --tests '*ExceptionCodeTest'
+'''

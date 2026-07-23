@@ -125,6 +125,39 @@ public class RegularScheduleTemplate {
 			actorAuthSubject);
 	}
 
+	public void change(
+		DayOfWeek dayOfWeek,
+		LocalTime startTime,
+		LocalTime endTime,
+		Integer totalCapacity,
+		Integer roundArenaCapacity,
+		Map<String, Integer> classCapacities,
+		String actorAuthSubject
+	) {
+		final DayOfWeek changedDayOfWeek = requireDayOfWeek(dayOfWeek);
+		final LocalTime changedStartTime = requireStartTime(startTime);
+		final LocalTime changedEndTime = requireEndTime(endTime);
+		validateLessonInterval(changedStartTime, changedEndTime);
+		validateCapacity(totalCapacity, roundArenaCapacity, classCapacities);
+		this.dayOfWeek = changedDayOfWeek;
+		this.startTime = changedStartTime;
+		this.endTime = changedEndTime;
+		this.totalCapacity = totalCapacity.byteValue();
+		this.roundArenaCapacity = roundArenaCapacity.byteValue();
+		this.classCapacities = Map.copyOf(classCapacities);
+		this.updatedBy = requireActor(actorAuthSubject);
+	}
+
+	public void activate(String actorAuthSubject) {
+		this.active = true;
+		this.updatedBy = requireActor(actorAuthSubject);
+	}
+
+	public void deactivate(String actorAuthSubject) {
+		this.active = false;
+		this.updatedBy = requireActor(actorAuthSubject);
+	}
+
 	private static DayOfWeek requireDayOfWeek(DayOfWeek dayOfWeek) {
 		if (dayOfWeek == null) {
 			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_DAY_OF_WEEK);

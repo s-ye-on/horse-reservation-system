@@ -2,6 +2,9 @@ package com.horse.schedules.domain;
 
 import java.time.LocalDateTime;
 
+import com.horse.global.exception.ExceptionCode;
+import com.horse.schedules.domain.exception.ScheduleException;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -52,6 +55,40 @@ public class ScheduleConfigGuard {
 	private long version;
 
 	protected ScheduleConfigGuard() {
+	}
+
+	public long beginSynchronization(
+		long expectedActiveVersion,
+		LocalDateTime startedAt,
+		String actorAuthSubject
+	) {
+		ensureCanBeginSynchronization(expectedActiveVersion);
+		if (startedAt == null) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_SYNC_STARTED_AT);
+		}
+		if (actorAuthSubject == null || actorAuthSubject.isBlank()) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_ACTOR);
+		}
+		status = ScheduleConfigStatus.SYNCING;
+		pendingVersion = activeVersion + 1;
+		syncStartedAt = startedAt;
+		syncStartedBy = actorAuthSubject;
+		lastFailedAt = null;
+		lastFailureCode = null;
+		lastFailureSummary = null;
+		return pendingVersion;
+	}
+
+	public void ensureCanBeginSynchronization(long expectedActiveVersion) {
+		if (status != ScheduleConfigStatus.ACTIVE) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_CONFIG_SYNC_IN_PROGRESS);
+		}
+		if (activeVersion != expectedActiveVersion) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_CONFIG_VERSION_CONFLICT);
+		}
+		if (activeVersion == Long.MAX_VALUE) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_CONFIG_VERSION);
+		}
 	}
 
 	public byte getId() {

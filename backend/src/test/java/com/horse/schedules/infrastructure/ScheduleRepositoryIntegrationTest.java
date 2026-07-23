@@ -279,6 +279,25 @@ class ScheduleRepositoryIntegrationTest {
 			""".formatted(member.getId()))).contains("\"key\": \"PRIMARY\"");
 	}
 
+	@Test
+	void 템플릿_영향_조회에_필요한_인덱스를_유지한다() {
+		final List<String> indexes = jdbcTemplate.queryForList("""
+			SELECT DISTINCT index_name
+			FROM information_schema.statistics
+			WHERE table_schema = DATABASE()
+			  AND table_name = 'time_slot_capacities'
+			  AND index_name IN (
+				'fk_time_slot_capacities_template',
+				'uk_time_slot_capacities_lesson_date_start_time'
+			  )
+			ORDER BY index_name
+			""", String.class);
+
+		assertThat(indexes).containsExactly(
+			"fk_time_slot_capacities_template",
+			"uk_time_slot_capacities_lesson_date_start_time");
+	}
+
 	private String explain(String sql) {
 		return jdbcTemplate.queryForObject("EXPLAIN FORMAT=JSON " + sql, String.class);
 	}

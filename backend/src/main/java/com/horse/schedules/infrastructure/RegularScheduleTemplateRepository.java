@@ -14,4 +14,10 @@ public interface RegularScheduleTemplateRepository extends JpaRepository<Regular
 		DayOfWeek dayOfWeek,
 		LocalTime startTime
 	);
+
+	boolean existsByDayOfWeekAndStartTimeAndIdNot(
+		DayOfWeek dayOfWeek,
+		LocalTime startTime,
+		Long id
+	);
 }

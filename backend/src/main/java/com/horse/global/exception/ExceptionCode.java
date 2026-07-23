@@ -111,7 +111,14 @@ public enum ExceptionCode {
 	SCHEDULE_INVALID_SCHEDULE_DATE(HttpStatus.BAD_REQUEST, "운영 날짜는 필수입니다."),
 	SCHEDULE_INVALID_MEMBER_DAY_GUARD(HttpStatus.BAD_REQUEST, "회원 일정 잠금 기준이 올바르지 않습니다."),
 	SCHEDULE_INVALID_AUDIT_TARGET(HttpStatus.BAD_REQUEST, "일정 감사 대상이 올바르지 않습니다."),
-	SCHEDULE_INVALID_AUDIT_ACTION(HttpStatus.BAD_REQUEST, "일정 감사 작업이 올바르지 않습니다.");
+	SCHEDULE_INVALID_AUDIT_ACTION(HttpStatus.BAD_REQUEST, "일정 감사 작업이 올바르지 않습니다."),
+	SCHEDULE_INVALID_SYNC_STARTED_AT(HttpStatus.BAD_REQUEST, "일정 동기화 시작 시각이 올바르지 않습니다."),
+	SCHEDULE_CONFIG_SYNC_IN_PROGRESS(
+		HttpStatus.SERVICE_UNAVAILABLE,
+		"시간표를 갱신하고 있습니다. 잠시 후 다시 시도해 주세요."),
+	SCHEDULE_CONFIG_VERSION_CONFLICT(HttpStatus.CONFLICT, "일정 설정 버전이 변경되었습니다."),
+	SCHEDULE_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "정규 시간표 Template을 찾을 수 없습니다."),
+	SCHEDULE_TEMPLATE_ALREADY_EXISTS(HttpStatus.CONFLICT, "같은 요일과 시작 시각의 Template이 이미 존재합니다.");
 
 	private final HttpStatus status;
 	private final String message;
