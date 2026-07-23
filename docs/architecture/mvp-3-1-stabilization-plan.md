@@ -5,11 +5,18 @@
 MVP-3.1과 MVP-3.2의 구현 순서와 품질 Gate를 정의한다. 개별 구조 결정은 각 Task에서
 ADR로 확정하며 이 문서는 실행 순서의 SSOT다.
 
+2026-07-23 최신 운영 정책에 따라 Checkpoint 1을 다시 열었다. 기존 M31-01~M31-05의
+커밋과 완료 증거는 당시 정책의 이력으로 보존하고, 별도 M31-R Task가 이를 보정한다.
+M31-06은 Checkpoint 1 재검증이 끝날 때까지 시작하지 않는다.
+
 ## 시간 정책
 
 - 모든 시간 판정과 마장 표시 시각은 `Asia/Seoul` 기준이다.
-- 회원 신규 예약은 당일에도 가능하며 `now < lessonStartAt`일 때만 허용한다.
-- 정확히 수업 시작 시각부터 신규 예약, 승인과 반려를 거부한다.
+- 회원 신규 예약은 당일에도 가능하며 `now <= lessonStartAt - 3시간`일 때 허용한다.
+- 회원 신규 예약 마감 이후에는 `RESERVATION_BOOKING_DEADLINE_PASSED`, 정확히 수업 시작
+  시각부터는 `RESERVATION_LESSON_ALREADY_STARTED`를 반환한다.
+- 관리자는 별도 수동 예약 Command에서 3시간 마감을 우회하지만 수업 시작 시각부터는
+  예약할 수 없다.
 - 기존 예약 변경 마감은 수업 전날 21:00을 유지한다.
 - Scheduler는 지연 상태를 정리하지만 조회와 Command의 시간 검증을 대신하지 않는다.
 
@@ -17,18 +24,29 @@ ADR로 확정하며 이 문서는 실행 순서의 SSOT다.
 `Asia/Seoul`로 표시한다. 계약 테스트는 최소 `UTC`, `America/Los_Angeles`,
 `Asia/Seoul` 환경에서 같은 마장 시각이 표시되는지 검증한다.
 
-## TimeSlot과 중복 범위
+## 일정 운영과 중복 범위
 
-현재 TimeSlot은 `lessonDate`와 `startTime`으로 식별되는 비중첩 고정 시간대다. 종료
-시각이나 duration이 없으므로 동일 회원 중복 금지는 동일 `lessonDate/startTime`의 활성
-Reservation을 대상으로 한다. 활성 상태는 다음과 같다.
+정규 시간표는 요일·시작 시각별 Template로 정의하고 `TimeSlotCapacity` concrete
+occurrence를 오늘부터 3개월 후까지 생성한다. 정규 및 수동 TimeSlot은 모두 45분이며
+서로 겹칠 수 있다. Template은 정기 휴일과 독립적이고 월요일 OPEN에도 사용할 월요일
+행을 보유한다.
+
+날짜 운영 상태는 실제 ScheduleDate 행의 `NORMAL`, `OPEN`, `CLOSING`, `CLOSED`로
+관리한다. 날짜 상태, 개별 TimeSlot 마감, OPEN, 정기 휴일, Template 순으로 판정한다.
+자동 occurrence는 삭제하지 않고 닫힌 행을 유지하며 마감 원인으로 자동 재개 범위를
+구분한다. 단일 마감 원인을 사용하지 않고 `admin`, `recurring holiday`,
+`template inactive` 원인을 독립적으로 보존한다. 상세 결정은 ADR-015를 따른다.
+
+동일 회원은 같은 날짜에 `[startTime, endTime)`이 겹치는 활성 Reservation을 둘 수 없다.
+활성 상태는 다음과 같다.
 
 - `pending_admin_approval`
 - `pending_payment`
 - `confirmed`
 
-향후 duration 또는 겹치는 수업을 허용하면 날짜·시각 동일성 제약을 재사용하지 않고
-수업 구간 중복 정책과 저장 모델을 새 ADR로 결정한다.
+V15 exact-start UNIQUE는 부분집합 최종 방어로 유지한다. 정상 Command는 회원·날짜 guard
+행을 먼저 잠그고 overlap을 검사하며 외부 오류는
+`RESERVATION_OVERLAPPING_ACTIVE_RESERVATION`으로 통합한다. 상세 결정은 ADR-016을 따른다.
 
 ## 관리자 수동 예약
 
@@ -48,13 +66,24 @@ Phase A에서는 개인 소유 쿠폰 후보를 사용한다. Phase B에서 동�
 ### Canonical order
 
 1. Idempotency row: 생성 API만 해당
-2. TimeSlot row: 변경은 source/target을 ID 오름차순으로 잠금
-3. 해당 시간대의 활성 Reservation rows: ID 오름차순
-4. 대상 Reservation row: 기존 예약 Command
-5. FamilyGroup row: 가족 후보 선택 시
-6. 선택된 Coupon row 한 건
-7. Member row: 횟수 변경 시
-8. 추가 전용 감사 로그
+2. ScheduleConfigGuard: 일정 신규 유입은 `FOR SHARE`, 설정 변경은 `FOR UPDATE`
+3. ScheduleDate rows: 날짜 오름차순
+4. Member-day guard rows: 회원·날짜 오름차순
+5. TimeSlot rows: ID 오름차순
+6. overlap과 정원 집계 Reservation rows: 시작 시각·ID 오름차순
+7. 대상 Reservation row: 앞 단계에서 잠기지 않은 기존 예약 Command
+8. FamilyGroup row: 가족 후보 선택 시
+9. 선택된 Coupon row 한 건
+10. Member row: 횟수 변경 시
+11. 추가 전용 감사 로그
+
+Template·정기 휴일 변경은 ScheduleConfigGuard를 `SYNCING`으로 전환한 뒤 version별
+날짜 동기화를 수행한다. 설정 변경 커밋과 occurrence 반영 사이에는 신규 예약·예약
+변경·복구·관리자 수동 예약·수동 TimeSlot 생성을 허용하지 않는다. 기존 예약을 안전한
+종료 상태로 보내는 반려, 자동 만료와 휴무 정리 취소는 이 설정 상태에 종속되지 않는다.
+예약 가능 TimeSlot 조회도 `SYNCING` 동안 503으로 차단하지만 기존 예약·쿠폰·휴무 정리
+조회와 동기화 상태·재시도는 허용한다. 미완료 pending version은 재시작 후 이어서
+처리하며 경과 시간만으로 강제 ACTIVE 전환하지 않는다.
 
 M31-06은 Command별로 다음 근거를 문서화해야 완료할 수 있다.
 
@@ -108,10 +137,12 @@ FOR UPDATE
 
 ## Checkpoint
 
-### Checkpoint 1: M31-00~M31-05
+### Checkpoint 1: M31-00~M31-05 + M31-R00~M31-R14
 
-정책·Task 계약, 시간 경계, 회원 조회·신청, 승인·반려·입금 만료, 과거 TimeSlot과 활성
-중복 DB 제약을 완료한다. 종료 시 데이터 이관 위험과 동시성 선행 조건을 보고한다.
+기존 완료 이력에 최신 3시간 예약 마감, 45분 interval, ScheduleDate, 정규 Template,
+정기 휴일, occurrence 동기화, 날짜·개별 휴무와 활성 overlap 불변식을 보정한다. API,
+정규 시간표 웹, 휴무 웹을 독립 Task로 검증한다. 세부 순서는
+[Checkpoint 1 보정 Backlog](../tasks/mvp-3.1-checkpoint-1-remediation.md)를 따른다.
 
 ### Checkpoint 2: M31-06~M31-12
 
@@ -128,12 +159,17 @@ Phase B와 모바일 진행 가능 여부를 판정한다.
 
 ## 데이터 이관 전략
 
-- M31-05 migration 전에 활성 상태의 동일 회원·동일 `lessonDate/startTime` 중복을 조회하는
-  preflight를 실행한다. 중복이 있으면 임의 병합하거나 삭제하지 않고 migration을 중단해
-  예약 ID 목록을 운영자에게 보고한다.
+- 기존 TimeSlot은 `source = MANUAL`, `end_time = start_time + 45분`으로 backfill한다.
+- 기존 Reservation은 `end_time = start_time + 45분`으로 backfill한다. 자정을 넘는 기존
+  행이나 활성 overlap이 있으면 임의 보정하지 않고 migration을 중단해 ID를 보고한다.
+- ScheduleDate는 현재 3개월 범위뿐 아니라 기존 TimeSlot과 Reservation의 distinct 날짜도
+  생성하여 기존 이력이 참조하는 날짜 행을 보존한다.
+- 기존 TimeSlot과 Reservation을 근거로 Template, 정기 휴일 또는 OPEN 상태를 추정하지 않는다.
+- M31-R migration 전에 활성 상태의 구간 중복을 self-join preflight로 검사한다.
 - 활성 중복 제약은 상태에 따라 값을 갖는 generated marker와 UNIQUE key를 사용하고 종료
-  상태 이력은 그대로 보존한다. 실제 컬럼 표현은 M31-05에서 현재 MySQL 버전과 Flyway
-  호환성을 확인한 뒤 ADR로 확정한다.
+  상태 이력은 그대로 보존한다. V15는 수정하지 않고 신규 migration과 인덱스를 추가한다.
+- 기본 월요일 정기 휴일은 등록하지만 Template별 정원 값은 운영 입력 없이 기존 TimeSlot
+  값에서 임의 추정하지 않는다. Template 활성화 전에 관리자가 정원을 확정한다.
 - Idempotency 원장과 관리자 수동 예약 감사 필드는 additive migration으로 추가한다. 기존
   예약에 멱등성 키를 역생성하지 않는다.
 - Page와 RFC3339 변경은 저장 데이터를 재해석하지 않는다. 기존 날짜·시각 컬럼을
@@ -143,12 +179,13 @@ Phase B와 모바일 진행 가능 여부를 판정한다.
 
 ## ADR 계획
 
-- ADR-014: 회원 신규 예약 시간 경계와 관리자 수동 예약 Command
-- ADR-015: 활성 예약 중복 DB 불변식과 canonical lock order
-- ADR-016: Horse `Idempotency-Key` 원장, 원자성, TTL과 정리 Job
-- ADR-017: Coupon 소유권 유지형 가족 공유와 snapshot 감사
-- ADR-018: calculated/manual/effective class와 기승 횟수 조정 원장
-- ADR-019: Page 응답과 RFC3339 외부 API 시간 계약
+- ADR-014: exact-start 활성 예약 DB 불변식. ADR-016이 부분 대체한다.
+- ADR-015: 정규 Template, 정기 휴일, ScheduleDate와 materialized occurrence
+- ADR-016: 회원·날짜 guard와 활성 예약 구간 overlap
+- ADR-017: Horse `Idempotency-Key` 원장, 원자성, TTL과 정리 Job
+- ADR-018: Coupon 소유권 유지형 가족 공유와 snapshot 감사
+- ADR-019: calculated/manual/effective class와 기승 횟수 조정 원장
+- ADR-020: Page 응답과 RFC3339 외부 API 시간 계약
 
 M31-00은 위 ADR의 입력과 결정 범위만 고정한다. 실제 스키마와 클래스 배치는 각 구현
 Task가 현재 코드와 실행 계획을 검증한 뒤 독립 ADR과 커밋으로 확정한다.

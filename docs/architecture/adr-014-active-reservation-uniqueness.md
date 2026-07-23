@@ -2,7 +2,7 @@
 
 ## 상태
 
-확정
+ADR-016으로 부분 대체
 
 ## 맥락
 
@@ -18,7 +18,9 @@
 - marker를 포함한 UNIQUE key로 활성 행 하나만 허용하고 종료 이력의 중복은 보존한다.
 - 생성·변경·입금복구는 이미 잠근 TimeSlot과 활성 Reservation 목록을 이용해 저장 전 같은
   도메인 정책을 검사한다.
-- DB 제약은 최종 방어선이며 정상 API는 `RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT`을 먼저 반환한다.
+- ADR-016 적용 전 정상 API는 `RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT`을 반환한다.
+  보정 후에는 V15를 최종 방어로 유지하되 외부 오류를
+  `RESERVATION_OVERLAPPING_ACTIVE_RESERVATION`으로 대체한다.
 - migration 전 preflight는 중복 그룹과 예약 ID를 출력한다. 중복이 있으면 자동 정리하지
   않고 migration을 중단한다.
 
@@ -41,3 +43,7 @@
 
 고정 슬롯 모델에서는 DB가 활성 중복을 원자적으로 차단한다. 수업 duration이나 겹치는
 구간이 도입되면 이 UNIQUE를 확장하지 않고 별도 구간 중복 ADR과 migration을 작성한다.
+
+ADR-016은 45분 수업과 서로 다른 시작 시각의 구간 중복을 도입한다. V15 exact-start
+UNIQUE는 부분집합 최종 방어로 유지하지만 외부 오류는
+`RESERVATION_OVERLAPPING_ACTIVE_RESERVATION`으로 통합한다.

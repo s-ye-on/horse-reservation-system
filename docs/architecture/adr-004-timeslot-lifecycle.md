@@ -2,7 +2,7 @@
 
 ## 상태
 
-확정
+확정, ADR-015가 날짜 운영과 자동 occurrence 범위를 부분 대체
 
 ## 맥락
 
@@ -23,6 +23,10 @@
 - 삭제 가능성은 TimeSlot application port로 조회하고 예약 영속화 시 reservations adapter가 구현한다.
 - `close_reason`은 현재 범위에서 제외하고 감사 요구가 생기면 별도 상태 변경 이력으로 설계한다.
 - TimeSlot은 독립 도메인이므로 업무 오류는 `TIMESLOT_*` 접두사를 사용한다.
+
+ADR-015 이후 이 결정은 개별 TimeSlot 휴강에 적용한다. 날짜 전체 휴무,
+정규 시간표, 정기 휴일과 자동 occurrence의 생명주기는 ADR-015를 따른다. 자동 생성된
+TimeSlot은 일반 운영에서 물리 삭제하지 않고 행과 마감 원인을 유지한다.
 
 ## 결과
 

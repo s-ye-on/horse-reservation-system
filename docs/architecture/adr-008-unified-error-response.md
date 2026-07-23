@@ -15,11 +15,15 @@ Accepted
 
 - Spring MVC에서 처리하는 업무 예외와 요청 검증·바인딩 예외는 하나의
   `ErrorResponse` 형식을 사용한다.
-- 응답 필드는 `code`, `message`, `status`, `timestamp`, `path`, `fieldErrors`로 한다.
+- 응답 필드는 `code`, `message`, `status`, `timestamp`, `path`, `fieldErrors`와 선택적
+  `details`로 한다.
 - 기존 `code`와 `message`의 의미는 변경하지 않는다.
 - 업무 예외의 `fieldErrors`는 빈 배열로 반환한다.
 - 검증 오류는 `COMMON_INVALID_REQUEST`를 사용하며 필드명과 공개 가능한 검증 메시지만
   `fieldErrors`에 담는다. 거부된 입력값은 노출하지 않는다.
+- `details`는 클라이언트가 후속 조치를 수행하는 데 필요한 구조화된 공개 정보에만
+  사용한다. 날짜 휴무 확정 충돌은 `activeReservationCount`를 제공하며 회원 개인정보,
+  JWT subject와 내부 예외 정보는 포함하지 않는다.
 - 오류 응답 생성은 `ErrorResponse` 정적 팩토리와 `GlobalExceptionHandler`에서 담당한다.
   Controller는 `ErrorResponse`를 직접 생성하지 않는다.
 - `MethodArgumentNotValidException`과 `BindException`은 같은 변환 규칙을 사용한다.

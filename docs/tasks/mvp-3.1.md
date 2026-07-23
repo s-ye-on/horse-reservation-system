@@ -2,6 +2,10 @@
 
 각 Checkpoint가 끝나면 검증 결과, 남은 위험과 다음 구간 진행 가능 여부를 보고한다.
 
+2026-07-23 운영 정책 변경으로 Checkpoint 1을 다시 열었다. 기존 M31-00~M31-05의 완료
+이력은 유지하고 [Checkpoint 1 보정 Backlog](mvp-3.1-checkpoint-1-remediation.md)의
+M31-R00~M31-R14를 완료해야 M31-06을 시작할 수 있다.
+
 ## Checkpoint 1: M31-00~M31-05
 
 | ID | 단일 작업 | 의존성 | 완료 신호 | 제외 범위 | 검증 명령 |
@@ -17,10 +21,10 @@
 
 | ID | 단일 작업 | 의존성 | 완료 신호 | 제외 범위 | 검증 명령 |
 |---|---|---|---|---|---|
-| M31-06 | Command lock matrix와 MySQL 실행 계획 | M31-05 | Command별 SQL·잠금·인덱스·EXPLAIN 문서와 회귀 기준 확정 | 잠금 구현 변경 | `mise run verify:m31-06` |
+| M31-06 | Command lock matrix와 MySQL 실행 계획 | M31-R14 | Command별 SQL·잠금·인덱스·EXPLAIN 문서와 회귀 기준 확정 | 잠금 구현 변경 | `mise run verify:m31-06` |
 | M31-07 | Canonical lock order와 deadlock 제한 재시도 | M31-06 | 구조적 역전 제거·1213 최대 3회·논리적 exactly-once 성공 | 일반 업무 예외 재시도 | `mise run verify:m31-07` |
 | M31-08 | 예약 생성 멱등성 원장 | M31-07 | 원자 커밋·동일 응답·hash 충돌·장애 주입 rollback 성공 | 변경·취소 API 멱등성 확장 | `mise run verify:m31-08` |
-| M31-09 | 관리자 수동 예약 생성 | M31-08 | 쿠폰 `confirmed`·무쿠폰 `pending_payment`·감사 성공 | 가족 쿠폰 후보 확장 | `mise run verify:m31-09` |
+| M31-09 | 관리자 수동 예약 생성 | M31-08, M31-R11 | 쿠폰 `confirmed`·무쿠폰 `pending_payment`·ScheduleDate 검증·감사 성공 | 가족 쿠폰 후보 확장 | `mise run verify:m31-09` |
 | M31-10 | MVC·Security ErrorResponse 통일 | M31-00 | 400·401·403·404·405·409·500 계약 성공 | 외부 오류 추적 서비스 | `mise run verify:m31-10` |
 | M31-11 | Page 기반 조회 계약과 누락 상세 API | M31-05 | 공통 6필드 Page·안정 정렬·소유권 있는 상세 조회 성공 | Cursor 페이지네이션 | `mise run verify:m31-11` |
 | M31-12 | RFC3339·required OpenAPI와 생성 Client | M31-09, M31-11 | offset·required·다중 기기 시간대 표시 계약 성공 | 모바일 예약 화면 | `mise run verify:m31-12` |

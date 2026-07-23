@@ -5,15 +5,63 @@
 ## 시간대 운영과 삭제
 
 - `PATCH /api/admin/timeslots/{id}`는 `is_closed`를 변경해 신규 예약 가능 여부만 제어한다.
-- 휴무, 우천, 시설 점검 등의 운영 마감은 `is_closed = true`, 재개는 `is_closed = false`로 처리한다.
+- 개별 수업의 휴강, 우천, 시설 점검 등의 운영 마감은 `is_closed = true`, 재개는 `is_closed = false`로 처리한다.
 - 마감과 재개는 기존 예약을 변경하거나 삭제하지 않는다. 기존 예약 처리는 관리자 예약 변경·취소 절차를 사용한다.
 - `DELETE /api/admin/timeslots/{id}`는 잘못 생성된 시간대를 정리하는 물리 삭제다.
 - 예약 또는 예약 이력이 존재하는 시간대의 삭제는 `409 Conflict`로 거부한다.
-- 마감 사유 감사 요구가 생기면 현재 행의 단일 사유가 아니라 별도 상태 변경 이력으로 추가한다.
+- 자동 생성된 TimeSlot은 동기화에서 물리 삭제하지 않는다. 운영 제외가 필요하면 행을 유지한 채 닫아 재생성을 막는다.
+- TimeSlot의 현재 마감 원인과 변경 이력은 각각 현재 행과 추가 전용 `ScheduleAuditLog`로 구분한다.
 - `lessonStartAt <= now`인 지난 TimeSlot은 일반 관리자 API에서 생성, 정원 수정, 마감·재개와 삭제를 허용하지 않는다.
 - 지난 TimeSlot은 기본 시간대·정원 화면에서 숨기고 과거 일정·감사·통계용 별도 조회에서만 제공한다.
 - 개발 데이터나 특별 운영 데이터 정리는 일반 관리자 API가 아닌 별도 유지보수 절차로 처리한다.
 - Scheduler가 시간대 상태를 갱신하지 않았더라도 각 Command는 서버 현재 시각으로 지난 시간대 여부를 검증한다.
+
+## 정규 시간표와 운영일
+
+- 정규 수업 시작 시각은 `09:00`, `10:00`, `11:00`, `13:30`, `14:30`, `15:30`, `16:30`이다.
+- 정규 및 관리자 수동 TimeSlot은 모두 45분이며 같은 날짜 안에서 종료되어야 한다.
+- 정규 시간표 Template은 요일, 시작·종료 시각, `totalCapacity`, `roundArenaCapacity`, `classCapacities`를 직접 보유한다. 별도 CapacityProfile은 사용하지 않는다.
+- 정규 시간표 Template과 정기 휴일은 독립적으로 관리한다. 기본 정기 휴일인 월요일에도 `OPEN` 시 적용할 정규 Template이 존재해야 한다.
+- 정기 휴일은 휴무 요일, 적용 시작일, 선택적 종료일, 사유, 활성 여부와 변경 관리자를 보존한다.
+- 날짜별 운영 상태는 실제 `ScheduleDate` 행으로 관리하며 `NORMAL`, `OPEN`, `CLOSING`, `CLOSED`를 사용한다.
+- `ScheduleDate`는 `Asia/Seoul` 기준 오늘부터 `today.plusMonths(3)`까지 양 끝 날짜를 포함해 미리 생성한다. Scheduler는 매일 새 범위 끝 날짜를 보충한다.
+- 행이 없음을 `NORMAL`로 해석하지 않는다. 예약·변경·관리자 수동 예약·휴무 전환처럼 정합성이 필요한 Command는 같은 `ScheduleDate` 행을 잠그고 상태를 재검증한다.
+- 과거 `ScheduleDate`는 현재 범위에서 삭제하지 않는다. 보존 기간은 예약·TimeSlot·감사 이력의 전체 보존 정책이 정해진 뒤 별도 Task에서 결정한다.
+- 정규 TimeSlot 동기화 범위는 오늘부터 `today.plusMonths(3)`까지이며 누락 occurrence만 보충한다. 반복 또는 동시 실행에도 같은 `lessonDate/startTime` 행을 중복 생성하지 않는다.
+- Template 또는 정기 휴일 변경은 일정 설정 version을 `SYNCING`으로 전환한 뒤 날짜별 occurrence에 반영한다. 전체 범위가 같은 version으로 동기화될 때까지 신규 예약, 해당 날짜로의 예약 변경·복구, 관리자 수동 예약과 수동 TimeSlot 생성을 허용하지 않는다.
+- `SYNCING` 중 회원 예약 가능 TimeSlot 조회도 일시 차단한다. 기존 예약·쿠폰·휴무 정리 조회, 휴무 정리 취소, 반려, 자동 입금·승인 만료, 동기화 상태 조회와 동일 version 재시도는 계속 허용한다.
+- `SYNCING` 차단은 `SCHEDULE_CONFIG_SYNC_IN_PROGRESS`와 `503 Service Unavailable`을 반환한다. 안정적인 예상 완료 시간을 계산할 수 있을 때만 `Retry-After`를 제공한다.
+- 미완료 `SYNCING`은 서버 재시작 또는 복구 Scheduler에서 같은 pending version으로 재개한다. 모든 대상 날짜의 적용 version이 일치하기 전에는 오래됐다는 이유로 강제 `ACTIVE` 전환하지 않는다.
+- 같은 요일에 적용 기간이 겹치는 활성 정기 휴일 규칙은 허용하지 않는다. 동시에 등록해도 하나만 성공해야 한다.
+- 날짜 `OPEN`은 정기 휴일을 우회하여 해당 요일의 정규 Template 전체를 생성한다. 일부 수업만 운영하려면 관리자가 수동 TimeSlot을 추가한다.
+- 정기 휴일에도 수동 TimeSlot 추가는 허용하지만, 날짜가 `CLOSING` 또는 `CLOSED`이면 수동 추가도 금지한다.
+- 운영 우선순위는 날짜 `CLOSING/CLOSED`, 개별 TimeSlot 마감, 날짜 `OPEN`, 정기 휴일, 정규 Template 순이다.
+- 개별 TimeSlot의 관리자 휴강, 정기 휴일, Template 비활성화 원인은 독립적으로 보존한다. 하나의 원인이 해제되어도 다른 원인이 남아 있으면 TimeSlot을 재개하지 않는다.
+- 정기 휴일과 Template 비활성화는 자동 생성된 `TEMPLATE` TimeSlot에만 적용한다. `MANUAL` TimeSlot은 날짜 휴무 또는 관리자 휴강이 아닌 설정 동기화로 닫지 않는다.
+- 설정 변경으로 TEMPLATE TimeSlot이 닫혀도 기존 활성 예약은 자동 취소하지 않는다. 설정 version 동기화가 끝나면 `ACTIVE`로 복귀하고 남은 예약은 별도 휴무 정리 목록과 진행 상태로 관리한다.
+- 날짜 전체 휴무는 미래 날짜만 허용한다. 당일 일부 또는 전체 휴장은 개별 TimeSlot 휴강 절차를 사용한다.
+
+### 날짜 전체 휴무
+
+- 활성 예약이 없으면 미래 `ScheduleDate`를 즉시 `CLOSED`로 확정할 수 있다.
+- 활성 예약이 있으면 먼저 `CLOSING`으로 전환하여 회원 신규 예약, 해당 날짜로의 예약 변경, 관리자 수동 예약, 수동 TimeSlot 추가와 자동 생성을 차단한다.
+- 활성 예약은 `pending_admin_approval`, `pending_payment`, `confirmed`다.
+- 영향 예약은 자동 일괄 취소하지 않는다. 관리자는 영향 건수·대상 목록·진행률을 확인하고 휴무 정리 전용 취소 Command로 한 건씩 정리한다.
+- 휴무 정리 취소는 `stable` 책임을 강제한다. 쿠폰 예약은 `RETURN`, 1회 결제 예약은 기존 쿠폰 정책에 따라 `NONE`을 적용한다.
+- 활성 예약이 0건일 때만 같은 트랜잭션에서 다시 확인한 뒤 `CLOSED`로 확정한다. 남아 있으면 `TIMESLOT_ACTIVE_RESERVATIONS_EXIST_ON_CLOSURE_DATE`와 `409 Conflict`를 반환한다.
+- `CLOSING` 중 회원 직접 취소는 허용하지 않는다.
+- `CLOSING` 중 예약 승인, 입금 확인, 입금 만료 복구와 해당 날짜로의 예약 변경은 허용하지 않는다.
+- `CLOSING` 중 예약 반려, 자동 입금 만료, 자동 승인 만료와 휴무 정리 전용 관리자 취소는 허용한다.
+- `CLOSING` 취소 시 직전의 `NORMAL` 또는 `OPEN` 상태로 돌아가지만 이미 취소된 예약은 자동 복구하지 않는다.
+- 회원 알림과 일괄 취소는 현재 범위에서 제외한다.
+
+### 개별 TimeSlot 휴강
+
+- 개별 휴강 시작 시 즉시 `is_closed = true`로 바꾸어 신규 예약과 해당 TimeSlot으로의 변경을 차단한다.
+- 활성 예약이 있으면 영향 건수·대상 목록·진행률을 제공하고 날짜 휴무와 같은 전용 취소 정책으로 정리한다.
+- 활성 예약이 0건일 때 휴강 확정을 감사 로그에 기록한다. `is_closed`와 활성 예약 건수로 진행 중과 확정 상태를 구분한다.
+- 휴강을 취소하거나 재개해도 이미 취소된 예약은 자동 복구하지 않는다.
+- 지난 TimeSlot은 휴강·재개할 수 없다. 당일 휴강은 아직 시작하지 않은 TimeSlot만 허용한다.
 
 ## 예약 승인
 
@@ -25,8 +73,10 @@
 ### 회원 신규 예약 신청 시간
 
 - 회원 신규 예약은 당일 수업도 신청할 수 있다.
-- 신규 예약은 `Asia/Seoul` 기준 `now < lessonStartAt`일 때 허용한다.
-- 정확히 수업 시작 시각부터는 `LESSON_STARTED`로 거부한다.
+- 회원 예약 마감은 `bookingDeadlineAt = lessonStartAt - 3시간`이다.
+- `Asia/Seoul` 기준 `now <= bookingDeadlineAt`이면 신청할 수 있고, 그 이후에는 `RESERVATION_BOOKING_DEADLINE_PASSED`로 거부한다.
+- 정확히 수업 시작 시각부터는 `RESERVATION_LESSON_ALREADY_STARTED`로 거부한다.
+- 회원 예약 가능 조회에서도 마감된 TimeSlot은 노출하지 않는다.
 - 수업 전날 21:00 기준은 신규 예약 마감이 아니라 기존 예약의 변경 정책에만 적용한다.
 - 조회에서 예약 가능하다고 표시했더라도 예약 Command는 트랜잭션 실행 시각으로 다시 검증한다.
 - Scheduler 실행 여부나 `is_closed` 자동 변경 여부는 시간 판정의 선행 조건이 아니다.
@@ -36,6 +86,7 @@
 ### 관리자 수동 예약
 
 - 관리자는 별도 관리자 Command로 수업 시작 전까지 특정 회원의 예약을 추가할 수 있다.
+- 관리자는 회원의 3시간 신규 예약 마감을 우회하지만 `now >= lessonStartAt`이면 예약할 수 없다.
 - 유효한 사용 가능 쿠폰이 있으면 관리자가 생성한 예약은 즉시 `confirmed`가 된다.
 - 사용 가능 쿠폰이 없으면 `pending_payment`로 생성하며, 관리자가 입금을 확인한 뒤 `confirmed`로 전이한다.
 - 입금 마감은 신청 후 2시간과 수업 시작 시각 중 먼저 도래한 시각이다.
@@ -161,14 +212,19 @@ Command는 트랜잭션 실행 시점에 같은 정책을 다시 검증한다. �
 
 회원에게 선택된 쿠폰, 만료일, 현재 잔여 횟수와 점유 후 사용 가능 횟수를 보여준다.
 
-## 동일 회원의 동일 시간대 중복 예약
+## 동일 회원의 수업 구간 중복 예약
 
 - 하나의 회원 계정은 한 명의 실제 기승자를 나타내며 다른 가족 구성원을 대신 예약하지 않는다.
-- 동일 회원은 같은 `lessonDate`와 `startTime`에 활성 예약을 두 개 이상 가질 수 없다.
+- 동일 회원은 같은 날짜에 실제 수업 구간이 겹치는 활성 예약을 두 개 이상 가질 수 없다.
 - 활성 예약은 `pending_admin_approval`, `pending_payment`, `confirmed`다.
-- 현재 `TimeSlot`은 `lessonDate`와 `startTime`으로 식별되는 비중첩 고정 수업 시간대이며 수업 종료 시각을 저장하지 않는다.
-- 따라서 MVP-3.1의 중복 판정은 동일 `lessonDate/startTime` 기준이다. 향후 수업 시간 구간이 겹칠 수 있는 모델을 도입하면 구간 중복 정책과 DB 제약을 별도로 재설계한다.
-- Application 선검사와 MySQL 제약을 함께 사용하여 동시 요청에서도 불변식을 지킨다.
+- 구간은 `[startTime, endTime)`이며 `existingStartTime < candidateEndTime AND candidateStartTime < existingEndTime`이면 겹친다.
+- 종료 시각과 다음 수업 시작 시각이 같은 경우는 겹치지 않는다.
+- 클래스나 장소가 달라도 같은 회원의 활성 예약 전체에 적용한다.
+- `member_id`, `lesson_date` 단위의 직렬화 행, Application overlap 검사와 exact-start MySQL UNIQUE를 함께 사용해 동시 요청에서도 불변식을 지킨다.
+- 실제 겹치는 활성 예약이 확인되면 선검사, 동시성 경쟁과 exact-start UNIQUE 재검증 경로에서 `RESERVATION_OVERLAPPING_ACTIVE_RESERVATION`과 `409 Conflict`를 반환한다.
+- overlap 잠금 조회는 DB generated column인 `active_slot_guard = 1`을 활성 상태 조건의 SSOT로 사용하고 같은 상태 목록의 `status IN`을 중복 적용하지 않는다.
+- Java의 활성 상태 집합과 DB generated expression은 모든 ReservationStatus를 순회하는 MySQL 계약 테스트로 일치 여부를 검증한다.
+- 기존 `RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT`은 신규 API 응답에서 사용하지 않고 호환 기간 동안 내부 상수로만 유지한 뒤 제거한다.
 
 ## 예약 생성 요청 멱등성
 

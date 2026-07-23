@@ -1,5 +1,8 @@
 # 도메인 모델
 
+이 문서는 현재 구현 모델과 승인된 Checkpoint 1 보정 목표를 함께 설명한다. 아래 일정 관련
+추가 필드는 `docs/tasks/mvp-3.1-checkpoint-1-remediation.md` 완료 전까지 구현 대기 상태다.
+
 ## Member
 
 ```text
@@ -47,6 +50,7 @@ member_id
 class_type
 lesson_date
 start_time
+end_time
 status
 payment_source: coupon | single_payment
 coupon_id nullable
@@ -68,6 +72,7 @@ updated_at
 `coupon_id`는 임시 점유부터 실제 사용 완료까지 같은 쿠폰을 추적한다. 임시 점유 여부와 단계는 쿠폰 사용 로그로 구분한다.
 
 정원 점유는 별도 모델로 저장하지 않고 `pending_admin_approval`, `pending_payment`, `confirmed` 상태의 Reservation을 집계해 계산한다.
+수업 구간은 날짜와 `[start_time, end_time)` 스냅샷으로 보존한다.
 
 ## TimeSlotCapacity
 
@@ -75,15 +80,130 @@ updated_at
 id
 lesson_date
 start_time
+end_time
+source: template | manual
+template_id nullable
 total_capacity
 round_arena_capacity
 class_capacity_json
 is_closed
+admin_closed
+recurring_holiday_closed
+template_inactive_closed
 created_at
 updated_at
 ```
 
-`TimeSlotCapacity`는 정원 설정과 운영 마감 상태만 저장한다. 현재 점유 수는 Reservation에서 파생한다.
+`TimeSlotCapacity`는 45분 concrete occurrence, 정원과 개별 휴강 상태를 저장한다. 현재 점유
+수는 Reservation에서 파생한다. `is_closed`는 세 마감 원인의 OR과 일치해야 하며 자동
+occurrence는 물리 삭제하지 않는다.
+
+## RegularScheduleTemplate
+
+```text
+id
+day_of_week
+start_time
+end_time
+total_capacity
+round_arena_capacity
+class_capacity_json
+active
+version
+created_by
+updated_by
+created_at
+updated_at
+```
+
+요일과 시작 시각별 행을 사용한다. 월요일 정기 휴일과 독립적으로 월요일 Template도
+존재하므로 날짜 OPEN 시 정규 시간표 전체를 생성할 수 있다.
+
+## RecurringHolidayRule
+
+```text
+id
+day_of_week
+effective_from
+effective_to nullable
+reason
+active
+version
+created_by
+updated_by
+created_at
+updated_at
+```
+
+정기 휴일은 Template을 삭제하지 않고 자동 occurrence 생성을 억제한다.
+
+## ScheduleDate
+
+```text
+id
+schedule_date unique
+status: normal | open | closing | closed
+resume_status: normal | open nullable
+reason nullable
+changed_by nullable
+applied_config_version
+version
+created_at
+updated_at
+```
+
+오늘부터 3개월 후까지 NORMAL을 포함한 실제 행을 유지한다. 예약, 변경, 수동 예약과
+휴무 전환 Command는 이 행을 공통 날짜 잠금으로 사용한다.
+
+## ScheduleConfigGuard
+
+```text
+id: 1
+status: active | syncing
+active_version
+pending_version nullable
+sync_started_at nullable
+sync_started_by nullable
+last_completed_at nullable
+last_failed_at nullable
+last_failure_code nullable
+last_failure_summary nullable
+version
+```
+
+설정 변경과 신규 일정 유입이 공유하는 singleton 직렬화 행이다. 일반 Command는 공유
+잠금으로 ACTIVE를 확인하고 설정 변경은 배타 잠금으로 SYNCING에 진입한다. 모든
+ScheduleDate가 pending version을 적용한 뒤에만 active version을 전환한다. 진행률은
+ScheduleDate의 적용 version에서 파생하고 미완료 version은 재시작 후에도 이어서 처리한다.
+
+## ReservationMemberDayGuard
+
+```text
+member_id
+lesson_date
+created_at
+PRIMARY KEY(member_id, lesson_date)
+```
+
+점유나 예약 상태를 복제하지 않고 같은 회원·날짜의 구간 중복 검사만 직렬화한다.
+
+## ScheduleAuditLog
+
+```text
+id
+target_type: template | recurring_holiday | schedule_date | time_slot
+target_key
+action
+from_state nullable
+to_state nullable
+actor_auth_subject
+reason
+metadata_json nullable
+created_at
+```
+
+일정 설정과 휴무 처리 행위를 추가만 하는 감사 이력이다. 현재 상태는 각 Aggregate가
+보유하며 감사 로그에서 재구성하지 않는다.
 
 ## CouponUsageLog
 
@@ -132,3 +252,7 @@ created_at
 - 완료·노쇼·취소의 쿠폰 처리는 예약당 한 번만 확정된다.
 - 일반 탑승 횟수는 일반 기승 수업 완료당 한 번만 증가한다.
 - 반려와 취소는 각각 `rejected`, `cancelled` 상태로 기록되며 서로 대체하지 않는다.
+- 정규 및 수동 TimeSlot과 Reservation 일정 스냅샷은 45분이며 자정을 넘지 않는다.
+- 행이 없는 ScheduleDate를 정상 운영일로 간주하지 않는다.
+- 날짜 CLOSING/CLOSED와 개별 TimeSlot 마감은 신규 예약과 해당 대상으로의 변경을 차단한다.
+- 동일 회원의 활성 Reservation 수업 구간은 같은 날짜에 서로 겹칠 수 없다.

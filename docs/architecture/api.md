@@ -13,11 +13,14 @@ status
 timestamp
 path
 fieldErrors[] { field, message }
+details? { ... }
 ```
 
 기존 `code`와 `message` 계약은 유지한다. 업무 예외의 `fieldErrors`는 빈 배열이며,
 `@Valid`와 바인딩 오류는 `COMMON_INVALID_REQUEST`와 필드별 공개 검증 메시지를 반환한다.
 거부된 입력값은 오류 응답에 포함하지 않는다. 상세 결정은 ADR-008을 따른다.
+업무 오류의 선택적 `details`는 후속 조치에 필요한 공개 값만 제공한다. 예를 들어 날짜
+휴무 확정 충돌은 `activeReservationCount`를 반환한다.
 
 ## 관리자 예약 집계
 
@@ -56,6 +59,8 @@ GET  /api/me/coupon-usage-logs
 ```
 
 예약 신청 응답은 `status`, `payment_source`, 선택된 쿠폰과 임시 점유 정보, `payment_due_at`을 포함한다.
+회원 신규 예약은 `lessonStartAt - 3시간`까지 허용하며, 겹치는 활성 예약은
+`RESERVATION_OVERLAPPING_ACTIVE_RESERVATION` 409로 반환한다.
 
 변경 preview는 선택한 `target_time_slot_id`의 현재 정원과 변경 정책을 검증해 예상 쿠폰 처리를 반환하지만 데이터를 변경하지 않는다. 실제 변경 실행은 실행 시점에 같은 정책과 정원을 다시 검증한다.
 
@@ -169,6 +174,71 @@ PUT    /api/admin/timeslots/{timeslotId}/capacity
 
 `PATCH`는 `is_closed`만 변경해 신규 예약을 마감하거나 재개한다. 기존 예약은 변경하지 않는다.
 `DELETE`는 예약 이력이 없는 오생성 시간대만 물리 삭제하며, 예약 이력이 있으면 `409 Conflict`를 반환한다.
+
+### Checkpoint 1 보정 예정 계약
+
+아래 계약은 M31-R11에서 구현·OpenAPI 생성 전까지 계획 상태다.
+
+```text
+GET    /api/admin/schedule-templates
+POST   /api/admin/schedule-templates
+PUT    /api/admin/schedule-templates/{templateId}
+PATCH  /api/admin/schedule-templates/{templateId}/activation
+
+GET    /api/admin/recurring-holidays
+POST   /api/admin/recurring-holidays
+PUT    /api/admin/recurring-holidays/{holidayId}
+PATCH  /api/admin/recurring-holidays/{holidayId}/activation
+GET    /api/admin/recurring-holidays/{holidayId}/impact
+
+GET    /api/admin/schedule-dates?dateFrom=&dateTo=
+GET    /api/admin/schedule-dates/{date}/closure-impact
+POST   /api/admin/schedule-dates/{date}/open
+POST   /api/admin/schedule-dates/{date}/closing
+POST   /api/admin/schedule-dates/{date}/closing/cancel
+POST   /api/admin/schedule-dates/{date}/close
+POST   /api/admin/schedule-dates/{date}/normalize
+GET    /api/admin/schedule-dates/{date}/active-reservations
+POST   /api/admin/schedule-dates/{date}/reservations/{reservationId}/cancel-for-closure
+
+GET    /api/admin/timeslots/{timeslotId}/closure-impact
+POST   /api/admin/timeslots/{timeslotId}/closure
+POST   /api/admin/timeslots/{timeslotId}/closure/cancel
+POST   /api/admin/timeslots/{timeslotId}/closure/confirm
+POST   /api/admin/timeslots/{timeslotId}/reservations/{reservationId}/cancel-for-closure
+
+POST   /api/admin/jobs/sync-schedule-occurrences
+GET    /api/admin/schedule-sync
+POST   /api/admin/jobs/sync-schedule-occurrences/retry
+```
+
+일정 설정과 휴무 API는 모두 `ROLE_ADMIN`만 접근한다. 관리자 식별자는 요청 본문에서
+받지 않고 JWT `sub`를 사용한다. 휴무 정리 취소는 요청에서 책임이나 쿠폰 처리를 받지
+않으며 서버가 쿠폰 예약은 `stable/RETURN`, 1회 결제 예약은 `stable/NONE`으로 고정한다.
+
+날짜와 TimeSlot closure impact 응답은 활성 예약 건수, 대상 예약 ID와 회원 운영 정보를
+Page로 제공한다. 휴무 확정 시 활성 예약이 남아 있으면
+`TIMESLOT_ACTIVE_RESERVATIONS_EXIST_ON_CLOSURE_DATE` 409와
+`details.activeReservationCount`를 반환한다.
+
+기존 `PATCH /api/admin/timeslots/{id}`는 호환 기간 동안 유지하되 같은 휴강 Application
+Service를 호출한다. `is_closed = true`는 활성 예약이 있으면 휴강 정리를 시작하고,
+없으면 즉시 확정한다. `is_closed = false`는 날짜 상태가 허용할 때 휴강을 취소하거나
+재개한다. 웹은 진행률이 필요한 신규 closure API를 우선 사용한다.
+
+`GET /api/admin/schedule-sync`는 active/pending version, 전체·완료 날짜 수, 시작·완료
+시각과 마지막 실패 코드·요약을 반환한다. retry API는 현재 pending version만 다시
+실행하며 새 version을 만들지 않는다.
+
+ScheduleConfigGuard가 `SYNCING`이면 회원 예약 가능 TimeSlot 조회, 회원 예약 생성,
+예약 변경, 관리자 수동 예약과 수동 TimeSlot 생성은
+`SCHEDULE_CONFIG_SYNC_IN_PROGRESS` 503을 반환한다. 기존 예약·쿠폰·휴무 정리 조회와
+휴무 정리 취소, 반려, 자동 입금·승인 만료, 상태 조회와 retry는 허용한다.
+`Retry-After`는 안정적인 완료 예상값이 있을 때만 포함한다.
+
+Template·정기 휴일 관리 Controller는 occurrence 동기화 엔진이 완료된 M31-R06 이후
+M31-R11에서 함께 공개한다. R04·R05의 내부 Service만으로 외부에서 `ACTIVE → SYNCING`
+전환을 실행할 수 없다.
 
 ## 회원과 쿠폰
 

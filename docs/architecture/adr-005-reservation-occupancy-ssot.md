@@ -22,13 +22,15 @@ M1에서는 Reservation을 정원 점유의 Single Source of Truth로 사용한�
 
 예약 생성과 점유 상태 진입은 하나의 트랜잭션에서 다음 순서를 지킨다.
 
-1. 대상 `TimeSlotCapacity` 행을 `PESSIMISTIC_WRITE`로 잠근다.
-2. 마감 여부와 정원 설정을 확인한다.
-3. 활성 Reservation을 잠금 조회하여 전체·원형·클래스별 점유를 계산한다.
-4. 정원 제한을 검증한다.
-5. Reservation을 활성 점유 상태로 생성하거나 전이한다.
+1. 대상 날짜의 `ScheduleDate` 행을 `PESSIMISTIC_WRITE`로 잠그고 운영 상태를 재검증한다.
+2. 일정 충돌이 가능한 Command는 회원·날짜 직렬화 행을 잠근다.
+3. 대상 `TimeSlotCapacity` 행을 `PESSIMISTIC_WRITE`로 잠근다.
+4. 마감 여부와 정원 설정을 확인한다.
+5. 활성 Reservation을 잠금 조회하여 전체·원형·클래스별 점유를 계산한다.
+6. 정원 제한을 검증한다.
+7. Reservation을 활성 점유 상태로 생성하거나 전이한다.
 
-Reservation이 비점유 상태로 전이되면 별도 점유 수를 감소시키지 않는다. 이후 활성 Reservation 집계에서 자연스럽게 제외한다. 모든 점유 진입 경로는 TimeSlot 우선 잠금 순서를 동일하게 적용한다.
+Reservation이 비점유 상태로 전이되면 별도 점유 수를 감소시키지 않는다. 이후 활성 Reservation 집계에서 자연스럽게 제외한다. 구체적인 확장 잠금 순서는 ADR-015와 ADR-016을 따른다.
 
 별도의 `TimeSlotOccupancy`, Occupancy Ledger 또는 점유 카운터는 M1에 도입하지 않는다.
 
