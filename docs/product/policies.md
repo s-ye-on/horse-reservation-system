@@ -28,6 +28,10 @@
 - 행이 없음을 `NORMAL`로 해석하지 않는다. 예약·변경·관리자 수동 예약·휴무 전환처럼 정합성이 필요한 Command는 같은 `ScheduleDate` 행을 잠그고 상태를 재검증한다.
 - 과거 `ScheduleDate`는 현재 범위에서 삭제하지 않는다. 보존 기간은 예약·TimeSlot·감사 이력의 전체 보존 정책이 정해진 뒤 별도 Task에서 결정한다.
 - 정규 TimeSlot 동기화 범위는 오늘부터 `today.plusMonths(3)`까지이며 누락 occurrence만 보충한다. 반복 또는 동시 실행에도 같은 `lessonDate/startTime` 행을 중복 생성하지 않는다.
+- Template 정원은 새 `TEMPLATE` occurrence를 생성할 때만 기본값으로 복사한다.
+- 관리자가 개별 TimeSlot에 적용한 정원 보정은 자동 동기화가 덮어쓰지 않는다.
+- Template 변경을 기존 미래 TimeSlot에 반영하려면 영향 미리보기 후 명시적 동기화 Command를 실행해야 한다.
+- 자동 동기화는 활성 예약 수보다 작게 TimeSlot 정원을 축소하지 않는다.
 - Template 또는 정기 휴일 변경은 일정 설정 version을 `SYNCING`으로 전환한 뒤 날짜별 occurrence에 반영한다. 전체 범위가 같은 version으로 동기화될 때까지 신규 예약, 해당 날짜로의 예약 변경·복구, 관리자 수동 예약과 수동 TimeSlot 생성을 허용하지 않는다.
 - `SYNCING` 중 회원 예약 가능 TimeSlot 조회도 일시 차단한다. 기존 예약·쿠폰·휴무 정리 조회, 휴무 정리 취소, 반려, 자동 입금·승인 만료, 동기화 상태 조회와 동일 version 재시도는 계속 허용한다.
 - `SYNCING` 차단은 `SCHEDULE_CONFIG_SYNC_IN_PROGRESS`와 `503 Service Unavailable`을 반환한다. 안정적인 예상 완료 시간을 계산할 수 있을 때만 `Retry-After`를 제공한다.

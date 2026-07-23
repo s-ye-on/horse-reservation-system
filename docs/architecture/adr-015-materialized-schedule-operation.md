@@ -199,11 +199,10 @@ guard 직렬화와 Application 검사로 보장한다.
 
 ### TimeSlotCapacity occurrence
 
-기존 행에 다음 값을 추가한다.
+R01은 기존 행에 `end_time`, `source`만 먼저 추가하고 기존 행을 `MANUAL`로 이관한다.
+R02에서 다음 운영 필드를 추가한다.
 
 ```text
-end_time
-source: TEMPLATE | MANUAL
 template_id nullable
 admin_closed
 recurring_holiday_closed
@@ -215,18 +214,36 @@ template_inactive_closed
 것으로 간주하고 덮어쓰거나 TEMPLATE 행으로 바꾸지 않는다.
 
 단일 `closure_origin`은 동시에 존재하는 여러 마감 원인을 보존할 수 없으므로 사용하지
-않는다. 고정된 세 원인을 독립 boolean으로 저장한다. `is_closed` 표현은 R01에서 다음
-두 방식을 현재 JPA 쓰기 경로와 migration으로 비교해 결정한다.
+않는다. 고정된 세 원인을 독립 boolean으로 저장한다. R01에서는 기존 mutable
+`is_closed`와 개별 마감·재개 API를 변경하지 않고 다음 두 방식을 R02 입력으로 비교한다.
 
 | 방식 | 장점 | 위험 |
 |---|---|---|
 | 세 원인의 OR인 generated column | DB 불변식의 단일 SSOT | 기존 mutable JPA 매핑과 상태 변경 메서드의 변경 범위가 커질 수 있음 |
 | mutable `is_closed`와 OR CHECK | 기존 JPA 변경 범위가 작음 | 모든 쓰기 경로가 파생값을 함께 갱신해야 함 |
 
-generated column이 기존 JPA 변경 범위를 과도하게 키우지 않으면 우선한다. 어느 방식이든
-모든 쓰기 경로와 migration 계약 테스트로
+현재 쓰기 경로는 `TimeSlotCapacity.closed`, `changeClosedStatus`,
+`AdminTimeSlotService.changeClosedStatus`, 관리자 PATCH API와 직접 SQL 테스트
+fixture다. 원인 컬럼이 없는 R01에서 generated column을 도입하면 기존 PATCH의 쓰기
+대상이 없어지므로 안전하지 않다.
+
+R02에서는 세 원인 컬럼을 쓰기 SSOT로 두고 `is_closed`를 generated column으로 계산하는
+방식을 우선한다. DB 불변식을 한 곳에서 보장할 수 있고 운영 쓰기 경로가 위 목록으로
+한정되어 있어 변경 범위가 통제 가능하기 때문이다. 단, JPA가 generated 값을 같은
+트랜잭션 응답에 안정적으로 다시 읽지 못하거나 기존 API 응답 계약을 유지할 수 없으면
+mutable+CHECK를 대안으로 선택한다. 어느 방식이든 모든 쓰기 경로와 migration 계약
+테스트로
 `is_closed = admin_closed OR recurring_holiday_closed OR template_inactive_closed`를
 검증한다. 기존 닫힌 TimeSlot은 `admin_closed = true`, 나머지 원인은 false로 이관한다.
+
+R01의 `end_time`은 단계적 이관을 위해 DB에서 nullable로 추가하지만 사전 점검을 통과한
+기존 행은 모두 backfill하고 애플리케이션 신규 쓰기는 항상 45분 종료 시각을 저장한다.
+최종 NOT NULL은 R02의 운영 필드와 함께 적용한다.
+
+Template의 정원은 새 occurrence 생성 시점에만 기본값으로 복사한다. 기존 occurrence의
+수동 정원 보정은 자동 동기화가 덮어쓰지 않는다. Template 변경을 기존 미래 TimeSlot에
+반영하려면 영향 미리보기와 명시적 동기화 Command가 필요하며, 활성 예약 수보다 작게
+정원을 자동 축소하지 않는다.
 
 자동 occurrence는 운영 동기화에서 물리 삭제하지 않는다. 자동 동기화는
 `admin_closed`를 변경하지 않으며 자신이 소유한 정기 휴일·Template 플래그만 변경한다.

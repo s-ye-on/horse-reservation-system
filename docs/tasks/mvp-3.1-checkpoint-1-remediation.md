@@ -5,7 +5,7 @@
 `ACTIVE`
 
 - `M31-R00`: COMPLETED
-- `M31-R01`: READY, 사용자 확인 전 시작하지 않음
+- `M31-R01`: COMPLETED
 
 최신 일정 운영 정책이 기존 M31-01~M31-05의 시간, TimeSlot과 중복 예약 가정을
 대체하므로 Checkpoint 1을 다시 연다. 기존 완료 Task와 커밋은 당시 정책의 증거로
@@ -22,8 +22,8 @@
 | ID | 단일 작업 | 선행 작업 | 완료 조건 | 제외 범위 | 검증 명령 |
 |---|---|---|---|---|---|
 | M31-R00 | 정책·ADR·보정 Task 계약 | M31-05 | 설정 변경 경쟁 대안·version guard, 다중 마감 원인 전이, CLOSING matrix, 정기 휴일 동시 등록, migration·잠금·API 경계 문서 일치 | 운영 코드·DB | `mise run docs:check` |
-| M31-R01 | 45분 수업 구간과 source migration | M31-R00 | TimeSlot·Reservation endTime backfill, 기존 슬롯 MANUAL, generated isClosed와 mutable+CHECK 비교·선택, 전체 쓰기·migration 계약, 자정·overlap preflight 성공 | Template·휴일 API | `mise run verify:m31-r01` |
-| M31-R02 | 일정 운영 기반 스키마 | M31-R01 | Template·휴일·ScheduleConfigGuard·ScheduleDate·ScheduleAuditLog·member-day guard·독립 마감 원인 제약과 Repository 통합 테스트 성공 | 동기화 Job·웹 | `mise run verify:m31-r02` |
+| M31-R01 | 45분 수업 구간과 source migration | M31-R00 | NULL·비정상 시각·자정·계산 불가·활성 overlap read-only preflight, TimeSlot·Reservation endTime backfill, 기존·신규 슬롯 MANUAL, 기존 마감 API 회귀, isClosed 저장 방식 비교와 R02 권고 성공 | Template·휴일·마감 원인 컬럼과 API | `mise run verify:m31-r01` |
+| M31-R02 | 일정 운영 기반 스키마 | M31-R01 | Template·휴일·ScheduleConfigGuard·ScheduleDate·ScheduleAuditLog·member-day guard·독립 마감 원인과 R01 권고 isClosed 제약·Repository 통합 테스트 성공 | 동기화 Job·웹 | `mise run verify:m31-r02` |
 | M31-R03 | ScheduleDate 3개월 horizon | M31-R02 | 양 끝 날짜 포함 초기화·다음 날 보충·동시 실행 중복 없음·과거 보존 | TimeSlot 생성 | `mise run verify:m31-r03` |
 | M31-R04 | 정규 Template 관리 backend | M31-R02 | 설정 guard 배타 잠금·요일별 CRUD·45분·정원·월요일 Template·SYNCING version·감사 테스트 성공 | Controller·운영 진입점·정기 휴일·occurrence sync | `mise run verify:m31-r04` |
 | M31-R05 | 정기 휴일 관리 backend | M31-R04 | 설정 guard 직렬화·같은 요일 기간 중복 및 동시 등록 방지·월요일 기본 규칙·영향 건수·감사 테스트 성공 | Controller·운영 진입점·날짜 휴무·웹 | `mise run verify:m31-r05` |
@@ -39,15 +39,21 @@
 
 ## Migration 순서
 
-1. 기존 활성 예약의 자정 초과와 45분 구간 overlap을 읽기 전용 preflight로 출력한다.
-2. `time_slot_capacities.end_time`, `source`, `template_id`, 세 마감 원인 플래그를 nullable로 추가한다.
+1. 기존 TimeSlot·Reservation의 NULL·비정상 시작 시각, 자정 도달·초과, 종료 시각 계산
+   불가와 동일 회원 활성 예약의 45분 구간 overlap을 읽기 전용 preflight로 출력한다.
+   문제 유형, 테이블·ID, 날짜·시작·계산 종료 시각, 충돌 예약 ID와 유형별·전체 건수를
+   보고하며 데이터를 자동 수정·삭제·병합하지 않는다.
+2. R01에서 `time_slot_capacities.end_time`, `source`와 `reservations.end_time`만
+   additive migration으로 추가한다.
 3. 기존 TimeSlot을 `source = MANUAL`, `end_time = start_time + 45분`으로 backfill한다.
-   기존 `is_closed = true` 행은 `admin_closed = true`, 나머지 마감 원인은 false로 이관한다.
-4. `reservations.end_time`을 추가하고 45분으로 backfill한다.
-5. Template, 정기 휴일, ScheduleConfigGuard, ScheduleDate, ScheduleAuditLog와 member-day guard 테이블을 추가한다.
+4. 기존 Reservation을 `end_time = start_time + 45분`으로 backfill한다.
+5. R02에서 `template_id`, 세 마감 원인 플래그, Template, 정기 휴일,
+   ScheduleConfigGuard, ScheduleDate, ScheduleAuditLog와 member-day guard를 추가한다.
 6. 기존 TimeSlot·Reservation의 distinct 날짜와 현재 3개월 horizon으로 ScheduleDate를 채운다.
    ScheduleDate의 `applied_config_version`은 초기 active version으로 설정한다.
-7. NOT NULL, 45분·자정·enum·FK·UNIQUE, 마감 원인 OR CHECK와 overlap 조회 인덱스를 마지막에 적용한다.
+7. R01은 45분·자정·source CHECK를 적용하고 애플리케이션 신규 쓰기가 `end_time`을 항상
+   저장하게 한다. 단계적 이관의 최종 NOT NULL, FK·UNIQUE, 마감 원인 OR 제약과 overlap
+   조회 인덱스는 R02·R08의 소유 범위에서 적용한다.
 8. V15는 수정하지 않는다. preflight가 실패하면 데이터를 자동 삭제하거나 병합하지 않고 중단한다.
 
 ## Lock matrix 목표
@@ -93,8 +99,9 @@ ID 오름차순으로 잠근다. 설정 상태에 종속되지 않는 안전한 
 
 ## 추가 필수 검증 시나리오
 
-- M31-R01: generated `is_closed`와 mutable+CHECK를 현재 JPA 쓰기 경로로 비교하고 선택
-  근거를 기록한다. 선택한 방식의 모든 상태 변경과 migration 계약 테스트를 통과한다.
+- M31-R01: generated `is_closed`와 mutable+CHECK를 현재 JPA·직접 SQL 쓰기 경로로
+  비교하고 R02 권고와 영향 경로를 기록한다. R01은 기존 mutable 필드와 개별 마감·재개
+  API 회귀를 유지하고 마감 원인 컬럼을 조기 구현하지 않는다.
 - M31-R06: 일부 ScheduleDate만 pending version을 적용한 뒤 프로세스를 중단하고
   재시작해 같은 version으로 완료한다. 이미 적용한 날짜는 중복 변경하지 않는다.
 - M31-R06: 정기 휴일과 Template 비활성화가 TEMPLATE 행만 닫고 MANUAL 행은 유지한다.

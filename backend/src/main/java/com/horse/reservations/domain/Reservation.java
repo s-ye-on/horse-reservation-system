@@ -24,6 +24,7 @@ import jakarta.persistence.Version;
 public class Reservation {
 	private static final int MAX_REJECTION_REASON_LENGTH = 500;
 	private static final int MAX_ADMIN_MEMO_LENGTH = 500;
+	private static final int LESSON_DURATION_MINUTES = 45;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -41,6 +42,9 @@ public class Reservation {
 
 	@Column(name = "start_time", nullable = false)
 	private LocalTime startTime;
+
+	@Column(name = "end_time", nullable = false)
+	private LocalTime endTime;
 
 	@Column(name = "status", nullable = false)
 	private ReservationStatus status;
@@ -109,6 +113,7 @@ public class Reservation {
 		this.ridingClass = requireRidingClass(ridingClass);
 		this.lessonDate = requireLessonDate(lessonDate);
 		this.startTime = requireStartTime(startTime);
+		this.endTime = calculateEndTime(this.startTime);
 		this.status = status;
 		this.paymentSource = paymentSource;
 		this.couponId = couponId;
@@ -278,12 +283,14 @@ public class Reservation {
 	) {
 		final LocalDate validatedLessonDate = requireLessonDate(targetLessonDate);
 		final LocalTime validatedStartTime = requireStartTime(targetStartTime);
+		final LocalTime validatedEndTime = calculateEndTime(validatedStartTime);
 		validateCanChange(changedAt);
 		if (lessonDate.equals(validatedLessonDate) && startTime.equals(validatedStartTime)) {
 			return false;
 		}
 		lessonDate = validatedLessonDate;
 		startTime = validatedStartTime;
+		endTime = validatedEndTime;
 		return true;
 	}
 
@@ -514,6 +521,14 @@ public class Reservation {
 		return startTime;
 	}
 
+	private static LocalTime calculateEndTime(LocalTime startTime) {
+		final LocalTime endTime = startTime.plusMinutes(LESSON_DURATION_MINUTES);
+		if (!endTime.isAfter(startTime)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_LESSON_INTERVAL);
+		}
+		return endTime;
+	}
+
 	private static LocalDateTime requireApprovalRequestedAt(LocalDateTime approvalRequestedAt) {
 		if (approvalRequestedAt == null) {
 			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_APPROVAL_REQUESTED_AT);
@@ -539,6 +554,10 @@ public class Reservation {
 
 	public LocalTime getStartTime() {
 		return startTime;
+	}
+
+	public LocalTime getEndTime() {
+		return endTime;
 	}
 
 	public ReservationStatus getStatus() {

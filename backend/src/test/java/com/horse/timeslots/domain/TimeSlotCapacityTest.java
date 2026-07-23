@@ -18,6 +18,9 @@ class TimeSlotCapacityTest {
 	void 시간대를_생성하고_운영_마감과_재개_상태를_변경한다() {
 		final TimeSlotCapacity timeSlot = createTimeSlot();
 
+		assertThat(timeSlot.getEndTime()).isEqualTo(LocalTime.of(9, 45));
+		assertThat(timeSlot.getSource()).isEqualTo(TimeSlotSource.MANUAL);
+
 		timeSlot.changeClosedStatus(true);
 
 		assertThat(timeSlot.isClosed()).isTrue();
@@ -25,6 +28,18 @@ class TimeSlotCapacityTest {
 		timeSlot.changeClosedStatus(false);
 
 		assertThat(timeSlot.isClosed()).isFalse();
+	}
+
+	@Test
+	void 자정에_닿거나_넘어가는_시간대는_생성할_수_없다() {
+		assertTimeSlotException(
+			() -> TimeSlotCapacity.create(
+				LocalDate.of(2026, 8, 1),
+				LocalTime.of(23, 15),
+				8,
+				4,
+				validClassCapacities()),
+			ExceptionCode.TIMESLOT_INVALID_LESSON_INTERVAL);
 	}
 
 	@Test

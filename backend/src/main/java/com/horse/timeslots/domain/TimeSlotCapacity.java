@@ -15,6 +15,8 @@ import com.horse.timeslots.domain.exception.TimeSlotException;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,6 +28,7 @@ public class TimeSlotCapacity {
 
 	private static final int MAX_TOTAL_CAPACITY = 8;
 	private static final int MAX_ROUND_ARENA_CAPACITY = 4;
+	private static final int LESSON_DURATION_MINUTES = 45;
 	private static final Set<String> REQUIRED_CLASS_NAMES = Set.of(
 		"FIRST_RIDE",
 		"ROUND_BEGINNER",
@@ -48,6 +51,13 @@ public class TimeSlotCapacity {
 
 	@Column(name = "start_time", nullable = false)
 	private LocalTime startTime;
+
+	@Column(name = "end_time", nullable = false)
+	private LocalTime endTime;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "source", nullable = false)
+	private TimeSlotSource source;
 
 	@Column(name = "total_capacity", nullable = false)
 	private byte totalCapacity;
@@ -80,6 +90,8 @@ public class TimeSlotCapacity {
 	) {
 		this.lessonDate = requireLessonDate(lessonDate);
 		this.startTime = requireStartTime(startTime);
+		this.endTime = calculateEndTime(this.startTime);
+		this.source = TimeSlotSource.MANUAL;
 		initializeCapacity(totalCapacity, roundArenaCapacity, classCapacities);
 	}
 
@@ -176,6 +188,14 @@ public class TimeSlotCapacity {
 		return startTime;
 	}
 
+	private static LocalTime calculateEndTime(LocalTime startTime) {
+		final LocalTime endTime = startTime.plusMinutes(LESSON_DURATION_MINUTES);
+		if (!endTime.isAfter(startTime)) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_LESSON_INTERVAL);
+		}
+		return endTime;
+	}
+
 	private static void validateTotalCapacity(Integer totalCapacity) {
 		if (totalCapacity == null || totalCapacity < 0 || totalCapacity > MAX_TOTAL_CAPACITY) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_TOTAL_CAPACITY);
@@ -227,6 +247,14 @@ public class TimeSlotCapacity {
 
 	public LocalTime getStartTime() {
 		return startTime;
+	}
+
+	public LocalTime getEndTime() {
+		return endTime;
+	}
+
+	public TimeSlotSource getSource() {
+		return source;
 	}
 
 	public int getTotalCapacity() {

@@ -34,6 +34,7 @@ class ReservationTest {
 		assertThat(reservation.getPaymentSource()).isEqualTo(PaymentSource.COUPON);
 		assertThat(reservation.getCouponId()).isEqualTo(10L);
 		assertThat(reservation.getPaymentDueAt()).isNull();
+		assertThat(reservation.getEndTime()).isEqualTo(LocalTime.of(9, 45));
 	}
 
 	@Test
@@ -261,7 +262,35 @@ class ReservationTest {
 		assertThat(reservation.changeSchedule(targetLessonDate, targetStartTime, REQUESTED_AT)).isTrue();
 		assertThat(reservation.getLessonDate()).isEqualTo(targetLessonDate);
 		assertThat(reservation.getStartTime()).isEqualTo(targetStartTime);
+		assertThat(reservation.getEndTime()).isEqualTo(targetStartTime.plusMinutes(45));
 		assertThat(reservation.changeSchedule(targetLessonDate, targetStartTime, REQUESTED_AT)).isFalse();
+	}
+
+	@Test
+	void 자정에_닿거나_넘어가는_예약은_생성하거나_변경할_수_없다() {
+		assertReservationException(
+			() -> Reservation.createCouponPending(
+				1L,
+				RidingClass.FIRST_RIDE,
+				LESSON_DATE,
+				LocalTime.of(23, 15),
+				10L,
+				REQUESTED_AT),
+			ExceptionCode.RESERVATION_INVALID_LESSON_INTERVAL);
+		final Reservation reservation = Reservation.createCouponPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			10L,
+			REQUESTED_AT);
+
+		assertReservationException(
+			() -> reservation.changeSchedule(
+				LESSON_DATE.plusDays(1),
+				LocalTime.of(23, 30),
+				REQUESTED_AT),
+			ExceptionCode.RESERVATION_INVALID_LESSON_INTERVAL);
 	}
 
 	@Test

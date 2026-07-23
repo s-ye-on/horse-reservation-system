@@ -680,3 +680,22 @@ mise run db:preflight-active-reservations
 [tasks."db:preflight-active-reservations"]
 description = "Report duplicate active reservations before Flyway V15"
 run = "./scripts/check-active-reservation-duplicates.sh"
+
+[tasks."verify:m31-r01"]
+description = "Verify M31-R01 interval backfill source migration and preflight"
+run = '''
+mise run db:up
+mise run db:preflight-m31-r01
+./backend/gradlew -p backend test \
+  --tests '*M31R01LessonIntervalMigrationIntegrationTest' \
+  --tests '*M31R01PreflightIntegrationTest' \
+  --tests '*TimeSlotCapacityTest' \
+  --tests '*ReservationTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*TimeSlotCapacityConcurrencyIntegrationTest' \
+  --tests '*TimeSlotDeletionConcurrencyIntegrationTest'
+'''
+
+[tasks."db:preflight-m31-r01"]
+description = "Report invalid lesson interval data before Flyway M31-R01 migration"
+run = "./scripts/check-m31-r01-preflight.sh"

@@ -16,6 +16,7 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_RIDING_CLASS(HttpStatus.BAD_REQUEST, "예약 클래스는 필수입니다."),
 	RESERVATION_INVALID_LESSON_DATE(HttpStatus.BAD_REQUEST, "예약 수업 날짜는 필수입니다."),
 	RESERVATION_INVALID_START_TIME(HttpStatus.BAD_REQUEST, "예약 수업 시작 시각은 필수입니다."),
+	RESERVATION_INVALID_LESSON_INTERVAL(HttpStatus.BAD_REQUEST, "예약 수업은 같은 날짜 안에서 45분이어야 합니다."),
 	RESERVATION_INVALID_BOOKING_REQUESTED_AT(HttpStatus.BAD_REQUEST, "예약 신청 시각은 필수입니다."),
 	RESERVATION_INVALID_CHANGE_REQUESTED_AT(HttpStatus.BAD_REQUEST, "예약 변경 요청 시각은 필수입니다."),
 	RESERVATION_INVALID_CHANGE_REASON(HttpStatus.BAD_REQUEST, "예약 변경 사유가 올바르지 않습니다."),
@@ -79,6 +80,7 @@ public enum ExceptionCode {
 
 	TIMESLOT_INVALID_LESSON_DATE(HttpStatus.BAD_REQUEST, "수업 날짜는 필수입니다."),
 	TIMESLOT_INVALID_START_TIME(HttpStatus.BAD_REQUEST, "수업 시작 시각은 필수입니다."),
+	TIMESLOT_INVALID_LESSON_INTERVAL(HttpStatus.BAD_REQUEST, "수업은 같은 날짜 안에서 45분이어야 합니다."),
 	TIMESLOT_INVALID_QUERY_DATE(HttpStatus.BAD_REQUEST, "조회 날짜는 오늘 이후의 유효한 날짜여야 합니다."),
 	TIMESLOT_INVALID_CLASS_TYPE(HttpStatus.BAD_REQUEST, "조회할 클래스가 올바르지 않습니다."),
 	TIMESLOT_INVALID_TOTAL_CAPACITY(HttpStatus.BAD_REQUEST, "전체 정원은 0명 이상 8명 이하여야 합니다."),
