@@ -9,6 +9,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -83,6 +84,11 @@ class ScheduleRepositoryIntegrationTest {
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
+
+	@BeforeEach
+	void 운영_날짜_fixture를_초기화한다() {
+		jdbcTemplate.update("DELETE FROM schedule_dates");
+	}
 
 	@Test
 	void 정규_템플릿과_정기_휴일을_저장하고_조회한다() {

@@ -719,3 +719,12 @@ mise run db:preflight-m31-r02
 [tasks."db:preflight-m31-r02"]
 description = "Report invalid R01 data before Flyway M31-R02 migration"
 run = "./scripts/check-m31-r02-preflight.sh"
+
+[tasks."verify:m31-r03"]
+description = "Verify M31-R03 ScheduleDate horizon migration service and concurrency"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*M31R03ScheduleDateHorizonMigrationIntegrationTest' \
+  --tests '*ScheduleDateHorizonServiceIntegrationTest'
+'''

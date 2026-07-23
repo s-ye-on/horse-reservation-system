@@ -49,3 +49,7 @@ coupon:
   expiry:
     fixed-delay: ${COUPON_EXPIRY_FIXED_DELAY:PT1M}
     initial-delay: ${COUPON_EXPIRY_INITIAL_DELAY:PT1M}
+
+schedule:
+  horizon:
+    cron: ${SCHEDULE_HORIZON_CRON:0 5 0 * * *}
