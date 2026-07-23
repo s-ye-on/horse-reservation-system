@@ -98,8 +98,9 @@ updated_at
 수는 Reservation에서 파생한다. `is_closed`는 세 마감 원인의 OR과 일치해야 하며 자동
 occurrence는 물리 삭제하지 않는다.
 
-R01에서는 `end_time`, `source`만 먼저 이관하고 기존 `is_closed` 쓰기 계약을 유지한다.
-`template_id`와 세 마감 원인 및 최종 `is_closed` 파생 제약은 R02에서 추가한다.
+R01에서 `end_time`, `source`를 먼저 이관했고 R02에서 `end_time` NOT NULL,
+`template_id`, 세 마감 원인과 generated `is_closed` 파생 제약을 추가했다. JPA는
+generated 값을 읽기 전용으로 매핑하고 도메인은 세 원인의 OR로 현재 상태를 계산한다.
 
 ## RegularScheduleTemplate
 

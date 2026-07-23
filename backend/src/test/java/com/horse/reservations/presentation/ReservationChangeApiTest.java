@@ -588,7 +588,7 @@ class ReservationChangeApiTest {
 		jdbcTemplate.update("""
 			INSERT INTO time_slot_capacities (
 				lesson_date, start_time, total_capacity, round_arena_capacity,
-				class_capacity_json, is_closed
+				class_capacity_json, admin_closed
 			) VALUES (?, ?, ?, ?, ?, FALSE)
 			""", lessonDate, startTime, totalCapacity, Math.min(totalCapacity, 4), CLASS_CAPACITIES);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);

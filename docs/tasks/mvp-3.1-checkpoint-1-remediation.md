@@ -6,6 +6,7 @@
 
 - `M31-R00`: COMPLETED
 - `M31-R01`: COMPLETED
+- `M31-R02`: COMPLETED
 
 최신 일정 운영 정책이 기존 M31-01~M31-05의 시간, TimeSlot과 중복 예약 가정을
 대체하므로 Checkpoint 1을 다시 연다. 기존 완료 Task와 커밋은 당시 정책의 증거로
@@ -49,11 +50,12 @@
 4. 기존 Reservation을 `end_time = start_time + 45분`으로 backfill한다.
 5. R02에서 `template_id`, 세 마감 원인 플래그, Template, 정기 휴일,
    ScheduleConfigGuard, ScheduleDate, ScheduleAuditLog와 member-day guard를 추가한다.
-6. 기존 TimeSlot·Reservation의 distinct 날짜와 현재 3개월 horizon으로 ScheduleDate를 채운다.
-   ScheduleDate의 `applied_config_version`은 초기 active version으로 설정한다.
-7. R01은 45분·자정·source CHECK를 적용하고 애플리케이션 신규 쓰기가 `end_time`을 항상
-   저장하게 한다. 단계적 이관의 최종 NOT NULL, FK·UNIQUE, 마감 원인 OR 제약과 overlap
-   조회 인덱스는 R02·R08의 소유 범위에서 적용한다.
+6. R03에서 기존 TimeSlot·Reservation의 distinct 날짜와 현재 3개월 horizon으로
+   ScheduleDate를 채운다. ScheduleDate의 `applied_config_version`은 초기 active
+   version으로 설정한다.
+7. R01은 45분·자정·source CHECK를 적용하고, R02는 단계적 이관의 최종 NOT NULL,
+   Template FK·UNIQUE와 generated 마감 원인 OR 제약을 적용한다. overlap 조회 인덱스는
+   실제 조회를 연결하는 R08의 소유 범위에서 적용한다.
 8. V15는 수정하지 않는다. preflight가 실패하면 데이터를 자동 삭제하거나 병합하지 않고 중단한다.
 
 ## Lock matrix 목표

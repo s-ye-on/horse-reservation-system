@@ -278,7 +278,7 @@ class AdminPendingPaymentRestoreApiTest {
 		jdbcTemplate.update("""
 			INSERT INTO time_slot_capacities (
 				lesson_date, start_time, total_capacity, round_arena_capacity,
-				class_capacity_json, is_closed
+				class_capacity_json, admin_closed
 			) VALUES (?, ?, ?, ?, ?, FALSE)
 			""", LESSON_DATE, startTime, totalCapacity, roundArenaCapacity, CLASS_CAPACITIES);
 	}

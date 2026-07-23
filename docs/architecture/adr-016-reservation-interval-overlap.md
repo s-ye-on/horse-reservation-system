@@ -2,7 +2,7 @@
 
 ## 상태
 
-확정, Checkpoint 1 보정 구현 대기
+확정, R02 guard 스키마·Repository 구현 완료 / R08 overlap 적용 대기
 
 ## 맥락
 
@@ -38,12 +38,11 @@ PRIMARY KEY(member_id, lesson_date)
 필요한 행은 다음 순서로 원자 확보한다.
 
 ```sql
-INSERT INTO reservation_member_day_guards(member_id, lesson_date, created_at)
-VALUES (:memberId, :lessonDate, CURRENT_TIMESTAMP(6))
-ON DUPLICATE KEY UPDATE
-    created_at = reservation_member_day_guards.created_at;
+INSERT INTO reservation_member_day_guards(member_id, lesson_date)
+VALUES (:memberId, :lessonDate)
+ON DUPLICATE KEY UPDATE created_at = created_at;
 
-SELECT member_id, lesson_date
+SELECT *
 FROM reservation_member_day_guards
 WHERE member_id = :memberId
   AND lesson_date = :lessonDate
@@ -59,6 +58,13 @@ upsert와 `SELECT ... FOR UPDATE`는 반드시 같은 트랜잭션에서 실행�
 Repository 계약으로 통일하고 실제 guard 행을 읽어 존재와 키를 검증하며 이후 로직이
 명시적인 잠금 객체를 사용하게 한다. 별도 트랜잭션으로 분리하면 upsert 커밋과 재잠금
 사이에 다른 Command가 진입할 수 있으므로 허용하지 않는다.
+
+R02 Repository는 두 SQL을 하나의 `acquire` 메서드에 감추고
+`Propagation.MANDATORY`를 요구한다. 호출자가 트랜잭션을 열지 않으면 SQL 실행 전에
+실패하며, 복수 키는 `(member_id, lesson_date)` 오름차순으로 획득한다. 두 쿼리는
+`PRIMARY KEY(member_id, lesson_date)`를 사용한다. 실제 MySQL 경쟁 테스트에서 같은
+키는 upsert부터 직렬화되고 다른 회원 키는 대기하지 않았다. 이 행에는 점유 수나 예약
+상태를 저장하지 않는다.
 
 신규 예약, 관리자 수동 예약, 예약 변경과 입금 만료 복구처럼 활성 구간을 생성·이동·복구하는
 Command는 반드시 이 guard를 사용한다. 수업 시작 전 활성 예약을 반려·만료·취소하는

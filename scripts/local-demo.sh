@@ -86,7 +86,7 @@ WHERE auth_subject = 'local-demo-member'
   );
 
 INSERT IGNORE INTO time_slot_capacities (
-  lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, is_closed
+  lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, admin_closed
 ) VALUES
   (DATE_ADD(CURDATE(), INTERVAL 1 DAY), '10:00:00', 8, 4, '{"FIRST_RIDE":4,"ROUND_BEGINNER":4,"ROUND_TROT":4,"LARGE_ARENA_BEGINNER":5,"LARGE_ARENA_TROT":5,"DRESSAGE":5,"JUMPING":5}', FALSE),
   (DATE_ADD(CURDATE(), INTERVAL 2 DAY), '10:00:00', 8, 4, '{"FIRST_RIDE":4,"ROUND_BEGINNER":4,"ROUND_TROT":4,"LARGE_ARENA_BEGINNER":5,"LARGE_ARENA_TROT":5,"DRESSAGE":5,"JUMPING":5}', FALSE),

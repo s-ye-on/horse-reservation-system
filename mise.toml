@@ -699,3 +699,23 @@ mise run db:preflight-m31-r01
 [tasks."db:preflight-m31-r01"]
 description = "Report invalid lesson interval data before Flyway M31-R01 migration"
 run = "./scripts/check-m31-r01-preflight.sh"
+
+[tasks."verify:m31-r02"]
+description = "Verify M31-R02 schedule foundation schema repositories and locks"
+run = '''
+mise run db:up
+mise run db:preflight-m31-r02
+./backend/gradlew -p backend test \
+  --tests '*M31R02ScheduleFoundationMigrationIntegrationTest' \
+  --tests '*ScheduleDomainTest' \
+  --tests '*ScheduleRepositoryIntegrationTest' \
+  --tests '*ScheduleLockingIntegrationTest' \
+  --tests '*TimeSlotCapacityTest' \
+  --tests '*TimeSlotCapacityRepositoryIntegrationTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*ExceptionCodeTest'
+'''
+
+[tasks."db:preflight-m31-r02"]
+description = "Report invalid R01 data before Flyway M31-R02 migration"
+run = "./scripts/check-m31-r02-preflight.sh"

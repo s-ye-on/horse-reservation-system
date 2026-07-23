@@ -93,7 +93,25 @@ public enum ExceptionCode {
 	TIMESLOT_CLOSED(HttpStatus.CONFLICT, "마감된 시간대에는 예약할 수 없습니다."),
 	TIMESLOT_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "시간대 정원이 마감되었습니다."),
 	TIMESLOT_CAPACITY_BELOW_OCCUPANCY(HttpStatus.CONFLICT, "현재 예약 인원보다 정원을 작게 설정할 수 없습니다."),
-	TIMESLOT_RESERVATION_HISTORY_EXISTS(HttpStatus.CONFLICT, "예약 이력이 있는 시간대는 삭제할 수 없습니다.");
+	TIMESLOT_RESERVATION_HISTORY_EXISTS(HttpStatus.CONFLICT, "예약 이력이 있는 시간대는 삭제할 수 없습니다."),
+
+	SCHEDULE_INVALID_DAY_OF_WEEK(HttpStatus.BAD_REQUEST, "일정 요일은 필수입니다."),
+	SCHEDULE_INVALID_START_TIME(HttpStatus.BAD_REQUEST, "일정 시작 시각은 필수입니다."),
+	SCHEDULE_INVALID_END_TIME(HttpStatus.BAD_REQUEST, "일정 종료 시각은 필수입니다."),
+	SCHEDULE_INVALID_LESSON_INTERVAL(HttpStatus.BAD_REQUEST, "일정 수업은 같은 날짜 안에서 45분이어야 합니다."),
+	SCHEDULE_INVALID_TOTAL_CAPACITY(HttpStatus.BAD_REQUEST, "일정 전체 정원은 0명 이상 8명 이하여야 합니다."),
+	SCHEDULE_INVALID_ROUND_ARENA_CAPACITY(
+		HttpStatus.BAD_REQUEST,
+		"일정 원형 정원은 전체 정원 이하이며 4명을 넘을 수 없습니다."),
+	SCHEDULE_INVALID_CLASS_CAPACITIES(HttpStatus.BAD_REQUEST, "일정 클래스별 정원이 올바르지 않습니다."),
+	SCHEDULE_INVALID_ACTOR(HttpStatus.BAD_REQUEST, "일정 변경 관리자 식별자는 필수입니다."),
+	SCHEDULE_INVALID_EFFECTIVE_DATE(HttpStatus.BAD_REQUEST, "일정 적용 기간이 올바르지 않습니다."),
+	SCHEDULE_INVALID_REASON(HttpStatus.BAD_REQUEST, "일정 변경 사유가 올바르지 않습니다."),
+	SCHEDULE_INVALID_CONFIG_VERSION(HttpStatus.BAD_REQUEST, "일정 설정 버전이 올바르지 않습니다."),
+	SCHEDULE_INVALID_SCHEDULE_DATE(HttpStatus.BAD_REQUEST, "운영 날짜는 필수입니다."),
+	SCHEDULE_INVALID_MEMBER_DAY_GUARD(HttpStatus.BAD_REQUEST, "회원 일정 잠금 기준이 올바르지 않습니다."),
+	SCHEDULE_INVALID_AUDIT_TARGET(HttpStatus.BAD_REQUEST, "일정 감사 대상이 올바르지 않습니다."),
+	SCHEDULE_INVALID_AUDIT_ACTION(HttpStatus.BAD_REQUEST, "일정 감사 작업이 올바르지 않습니다.");
 
 	private final HttpStatus status;
 	private final String message;

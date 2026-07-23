@@ -8,6 +8,7 @@ RuntimeException
    -> MemberException
    -> ReservationException
    -> AuthException
+   -> ScheduleException
 ```
 
 ## Required
@@ -34,6 +35,7 @@ throw new MemberException(ExceptionCode.MEMBER_INVALID_NAME);
 - 예약: `RESERVATION_*`
 - 쿠폰: `COUPON_*`
 - 시간대: `TIMESLOT_*`
+- 일정 운영: `SCHEDULE_*`
 - 말: `HORSE_*`
 - 공통: `COMMON_*`
 

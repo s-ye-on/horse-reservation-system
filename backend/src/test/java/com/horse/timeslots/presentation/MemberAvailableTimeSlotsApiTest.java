@@ -183,7 +183,7 @@ class MemberAvailableTimeSlotsApiTest {
 				total_capacity,
 				round_arena_capacity,
 				class_capacity_json,
-				is_closed
+				admin_closed
 			) VALUES (?, ?, ?, ?, ?, ?)
 			""", lessonDate, startTime, totalCapacity, roundArenaCapacity, CLASS_CAPACITIES, closed);
 	}

@@ -340,7 +340,7 @@ class GeneralRideCompletionApiTest {
 		jdbcTemplate.update("""
 			INSERT INTO time_slot_capacities (
 				lesson_date, start_time, total_capacity, round_arena_capacity,
-				class_capacity_json, is_closed
+				class_capacity_json, admin_closed
 			) VALUES (?, ?, 8, 4, ?, FALSE)
 			""", lessonDate, startTime, CLASS_CAPACITIES);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);

@@ -59,6 +59,9 @@ public class TimeSlotCapacity {
 	@Column(name = "source", nullable = false)
 	private TimeSlotSource source;
 
+	@Column(name = "template_id")
+	private Long templateId;
+
 	@Column(name = "total_capacity", nullable = false)
 	private byte totalCapacity;
 
@@ -69,7 +72,16 @@ public class TimeSlotCapacity {
 	@Column(name = "class_capacity_json", nullable = false, columnDefinition = "json")
 	private Map<String, Integer> classCapacities;
 
-	@Column(name = "is_closed", nullable = false)
+	@Column(name = "admin_closed", nullable = false)
+	private boolean adminClosed;
+
+	@Column(name = "recurring_holiday_closed", nullable = false)
+	private boolean recurringHolidayClosed;
+
+	@Column(name = "template_inactive_closed", nullable = false)
+	private boolean templateInactiveClosed;
+
+	@Column(name = "is_closed", nullable = false, insertable = false, updatable = false)
 	private boolean closed;
 
 	@Column(name = "created_at", nullable = false, insertable = false, updatable = false)
@@ -92,6 +104,9 @@ public class TimeSlotCapacity {
 		this.startTime = requireStartTime(startTime);
 		this.endTime = calculateEndTime(this.startTime);
 		this.source = TimeSlotSource.MANUAL;
+		this.adminClosed = false;
+		this.recurringHolidayClosed = false;
+		this.templateInactiveClosed = false;
 		initializeCapacity(totalCapacity, roundArenaCapacity, classCapacities);
 	}
 
@@ -147,10 +162,28 @@ public class TimeSlotCapacity {
 	}
 
 	public void changeClosedStatus(Boolean closed) {
-		if (closed == null) {
+		changeAdminClosed(closed);
+	}
+
+	public void changeAdminClosed(Boolean adminClosed) {
+		if (adminClosed == null) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_CLOSED_STATUS);
 		}
-		this.closed = closed;
+		this.adminClosed = adminClosed;
+	}
+
+	public void changeRecurringHolidayClosed(Boolean recurringHolidayClosed) {
+		if (recurringHolidayClosed == null) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_CLOSED_STATUS);
+		}
+		this.recurringHolidayClosed = recurringHolidayClosed;
+	}
+
+	public void changeTemplateInactiveClosed(Boolean templateInactiveClosed) {
+		if (templateInactiveClosed == null) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_CLOSED_STATUS);
+		}
+		this.templateInactiveClosed = templateInactiveClosed;
 	}
 
 	public void ensureCanReserve(
@@ -159,7 +192,7 @@ public class TimeSlotCapacity {
 		int roundArenaOccupied,
 		int classOccupied
 	) {
-		if (closed) {
+		if (isClosed()) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_CLOSED);
 		}
 		final int classCapacity = classCapacities.get(ridingClass.name());
@@ -257,6 +290,10 @@ public class TimeSlotCapacity {
 		return source;
 	}
 
+	public Long getTemplateId() {
+		return templateId;
+	}
+
 	public int getTotalCapacity() {
 		return totalCapacity;
 	}
@@ -270,7 +307,19 @@ public class TimeSlotCapacity {
 	}
 
 	public boolean isClosed() {
-		return closed;
+		return adminClosed || recurringHolidayClosed || templateInactiveClosed;
+	}
+
+	public boolean isAdminClosed() {
+		return adminClosed;
+	}
+
+	public boolean isRecurringHolidayClosed() {
+		return recurringHolidayClosed;
+	}
+
+	public boolean isTemplateInactiveClosed() {
+		return templateInactiveClosed;
 	}
 
 	public LocalDateTime getCreatedAt() {

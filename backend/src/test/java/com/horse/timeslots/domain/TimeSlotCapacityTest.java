@@ -31,6 +31,68 @@ class TimeSlotCapacityTest {
 	}
 
 	@Test
+	void 관리자_휴강은_관리자_원인만_변경한다() {
+		final TimeSlotCapacity timeSlot = createTimeSlot();
+
+		timeSlot.changeAdminClosed(true);
+
+		assertThat(timeSlot.isAdminClosed()).isTrue();
+		assertThat(timeSlot.isRecurringHolidayClosed()).isFalse();
+		assertThat(timeSlot.isTemplateInactiveClosed()).isFalse();
+		assertThat(timeSlot.isClosed()).isTrue();
+	}
+
+	@Test
+	void 관리자_휴강을_해제해도_정기_휴일_원인이_남으면_마감은_유지된다() {
+		final TimeSlotCapacity timeSlot = createTimeSlot();
+		timeSlot.changeAdminClosed(true);
+		timeSlot.changeRecurringHolidayClosed(true);
+
+		timeSlot.changeAdminClosed(false);
+
+		assertThat(timeSlot.isAdminClosed()).isFalse();
+		assertThat(timeSlot.isRecurringHolidayClosed()).isTrue();
+		assertThat(timeSlot.isClosed()).isTrue();
+	}
+
+	@Test
+	void 정기_휴일_원인을_적용하고_해제한다() {
+		final TimeSlotCapacity timeSlot = createTimeSlot();
+
+		timeSlot.changeRecurringHolidayClosed(true);
+		assertThat(timeSlot.isClosed()).isTrue();
+
+		timeSlot.changeRecurringHolidayClosed(false);
+		assertThat(timeSlot.isClosed()).isFalse();
+	}
+
+	@Test
+	void 비활성_템플릿_원인을_적용하고_해제한다() {
+		final TimeSlotCapacity timeSlot = createTimeSlot();
+
+		timeSlot.changeTemplateInactiveClosed(true);
+		assertThat(timeSlot.isClosed()).isTrue();
+
+		timeSlot.changeTemplateInactiveClosed(false);
+		assertThat(timeSlot.isClosed()).isFalse();
+	}
+
+	@Test
+	void 여러_마감_원인_중_하나만_해제하면_마감은_유지된다() {
+		final TimeSlotCapacity timeSlot = createTimeSlot();
+		timeSlot.changeAdminClosed(true);
+		timeSlot.changeRecurringHolidayClosed(true);
+		timeSlot.changeTemplateInactiveClosed(true);
+
+		timeSlot.changeRecurringHolidayClosed(false);
+
+		assertThat(timeSlot.isAdminClosed()).isTrue();
+		assertThat(timeSlot.isRecurringHolidayClosed()).isFalse();
+		assertThat(timeSlot.isTemplateInactiveClosed()).isTrue();
+		assertThat(timeSlot.isClosed()).isTrue();
+	}
+
+	@Test
 	void 자정에_닿거나_넘어가는_시간대는_생성할_수_없다() {
 		assertTimeSlotException(
 			() -> TimeSlotCapacity.create(
