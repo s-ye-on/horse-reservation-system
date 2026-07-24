@@ -163,7 +163,120 @@ class CouponReservationApplicationApiTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isConflict())
-			.andExpect(jsonPath("$.code").value("RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT"));
+			.andExpect(jsonPath("$.code").value("RESERVATION_OVERLAPPING_ACTIVE_RESERVATION"))
+			.andExpect(jsonPath("$.message").value("이미 시간이 겹치는 활성 예약이 있습니다."));
+	}
+
+	@Test
+	void 같은_회원의_수업_구간이_겹치면_거부하고_맞닿은_구간은_허용한다() throws Exception {
+		final String authSubject = "interval-overlap-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, "general", 10, 0);
+		final LocalDate lessonDate = futureDate();
+		final Long firstTimeSlotId = insertTimeSlot(lessonDate, "10:00:00", 8, 4);
+		final Long overlapTimeSlotId = insertTimeSlot(lessonDate, "10:29:00", 8, 4);
+		final Long lateOverlapTimeSlotId = insertTimeSlot(lessonDate, "10:44:00", 8, 4);
+		final Long adjacentTimeSlotId = insertTimeSlot(lessonDate, "10:45:00", 8, 4);
+
+		applyAndExpectCreated(authSubject, firstTimeSlotId);
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(overlapTimeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_OVERLAPPING_ACTIVE_RESERVATION"));
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(lateOverlapTimeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_OVERLAPPING_ACTIVE_RESERVATION"));
+		applyAndExpectCreated(authSubject, adjacentTimeSlotId);
+
+		assertThat(reservationCount()).isEqualTo(2);
+		assertThat(couponHeldCount(couponId)).isEqualTo(2);
+		assertThat(usageActionCount(couponId, "held")).isEqualTo(2);
+	}
+
+	@Test
+	void 같은_회원의_서로_다른_겹침_TimeSlot_동시_신청은_하나만_성공한다() throws Exception {
+		final String authSubject = "interval-overlap-concurrency-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, "general", 10, 0);
+		final LocalDate lessonDate = futureDate();
+		final Long firstTimeSlotId = insertTimeSlot(lessonDate, "10:00:00", 8, 4);
+		final Long overlapTimeSlotId = insertTimeSlot(lessonDate, "10:29:00", 8, 4);
+
+		final List<Integer> statuses = concurrentApplications(
+			List.of(authSubject, authSubject),
+			List.of(firstTimeSlotId, overlapTimeSlotId));
+
+		assertThat(statuses).containsExactlyInAnyOrder(201, 409);
+		assertThat(reservationCount()).isEqualTo(1);
+		assertThat(couponHeldCount(couponId)).isEqualTo(1);
+		assertThat(usageActionCount(couponId, "held")).isEqualTo(1);
+	}
+
+	@Test
+	void 정원_검증_실패는_새_member_day_guard와_쿠폰_점유를_남기지_않는다() throws Exception {
+		final String authSubject = "capacity-rollback-guard-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, "general", 10, 0);
+		final LocalDate lessonDate = futureDate();
+		final Long timeSlotId = insertTimeSlot(lessonDate, "15:00:00", 0, 0);
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("TIMESLOT_CAPACITY_EXCEEDED"));
+
+		assertThat(reservationCount()).isZero();
+		assertThat(couponHeldCount(couponId)).isZero();
+		assertThat(memberDayGuardCount(memberId, lessonDate)).isZero();
+
+		jdbcTemplate.update("""
+			UPDATE time_slot_capacities
+			SET total_capacity = 1,
+				round_arena_capacity = 1,
+				class_capacity_json = JSON_SET(class_capacity_json, '$.FIRST_RIDE', 1)
+			WHERE id = ?
+			""", timeSlotId);
+		applyAndExpectCreated(authSubject, timeSlotId);
+
+		assertThat(reservationCount()).isOne();
+		assertThat(couponHeldCount(couponId)).isOne();
+		assertThat(memberDayGuardCount(memberId, lessonDate)).isOne();
+	}
+
+	@Test
+	void 시간표_설정_동기화_중에는_예약과_점유를_시작하지_않는다() throws Exception {
+		final String authSubject = "sync-blocked-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, "general", 10, 0);
+		final LocalDate lessonDate = futureDate();
+		final Long timeSlotId = insertTimeSlot(lessonDate, "15:30:00", 8, 4);
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'SYNCING',
+				pending_version = active_version + 1,
+				sync_started_at = '2026-07-24 20:00:00',
+				sync_started_by = 'sync-test-admin'
+			WHERE id = 1
+			""");
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isServiceUnavailable())
+			.andExpect(jsonPath("$.code").value("SCHEDULE_CONFIG_SYNC_IN_PROGRESS"));
+
+		assertThat(reservationCount()).isZero();
+		assertThat(couponHeldCount(couponId)).isZero();
+		assertThat(memberDayGuardCount(memberId, lessonDate)).isZero();
 	}
 
 	@Test
@@ -246,6 +359,14 @@ class CouponReservationApplicationApiTest {
 			.getStatus();
 	}
 
+	private void applyAndExpectCreated(String authSubject, Long timeSlotId) throws Exception {
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isCreated());
+	}
+
 	private int getResult(Future<Integer> future) {
 		try {
 			return future.get();
@@ -278,13 +399,23 @@ class CouponReservationApplicationApiTest {
 		int totalCapacity,
 		int roundArenaCapacity
 	) {
+		insertScheduleDate(lessonDate);
 		jdbcTemplate.update("""
 			INSERT INTO time_slot_capacities (
-				lesson_date, start_time, total_capacity, round_arena_capacity,
+				lesson_date, start_time, end_time, total_capacity, round_arena_capacity,
 				class_capacity_json, admin_closed
-			) VALUES (?, ?, ?, ?, ?, FALSE)
-			""", lessonDate, startTime, totalCapacity, roundArenaCapacity, CLASS_CAPACITIES);
+			) VALUES (?, ?, ADDTIME(?, '00:45:00'), ?, ?, ?, FALSE)
+			""", lessonDate, startTime, startTime, totalCapacity, roundArenaCapacity, CLASS_CAPACITIES);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
+	private void insertScheduleDate(LocalDate lessonDate) {
+		jdbcTemplate.update("""
+			INSERT IGNORE INTO schedule_dates (schedule_date, status, applied_config_version)
+			SELECT ?, 'NORMAL', active_version
+			FROM schedule_config_guard
+			WHERE id = 1
+			""", lessonDate);
 	}
 
 	private String request(Long timeSlotId, String classType) {
@@ -338,15 +469,40 @@ class CouponReservationApplicationApiTest {
 			"SELECT COUNT(*) FROM time_slot_capacities WHERE id = ?", Integer.class, timeSlotId);
 	}
 
+	private int memberDayGuardCount(Long memberId, LocalDate lessonDate) {
+		return jdbcTemplate.queryForObject("""
+			SELECT COUNT(*)
+			FROM reservation_member_day_guards
+			WHERE member_id = ? AND lesson_date = ?
+			""", Integer.class, memberId, lessonDate);
+	}
+
 	private LocalDate futureDate() {
 		return LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(7);
 	}
 
 	private void clearDatabase() {
+		resetScheduleConfigGuard();
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
 		jdbcTemplate.update("DELETE FROM reservations");
+		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");
+		jdbcTemplate.update("DELETE FROM schedule_dates");
 		jdbcTemplate.update("DELETE FROM coupons");
 		jdbcTemplate.update("DELETE FROM members");
+	}
+
+	private void resetScheduleConfigGuard() {
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'ACTIVE',
+				pending_version = NULL,
+				sync_started_at = NULL,
+				sync_started_by = NULL,
+				last_failed_at = NULL,
+				last_failure_code = NULL,
+				last_failure_summary = NULL
+			WHERE id = 1
+			""");
 	}
 }

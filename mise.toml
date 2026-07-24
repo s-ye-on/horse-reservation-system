@@ -779,3 +779,22 @@ mise run db:up
   --tests '*CouponReservationApplicationApiTest' \
   --tests '*ExceptionCodeTest'
 '''
+
+[tasks."verify:m31-r08"]
+description = "Verify M31-R08 active reservation interval overlap invariant"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*ReservationIntervalOverlapPolicyTest' \
+  --tests '*ReservationIntervalOverlapRepositoryIntegrationTest' \
+  --tests '*ReservationExactStartConstraintTranslationIntegrationTest' \
+  --tests '*M31R08ReservationOverlapIndexMigrationIntegrationTest' \
+  --tests '*ReservationRepositoryIntegrationTest' \
+  --tests '*ActiveReservationUniquenessMigrationIntegrationTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*PendingPaymentReservationApiTest' \
+  --tests '*ScheduleLockingIntegrationTest' \
+  --tests '*TimeSlotCapacityConcurrencyIntegrationTest' \
+  --tests '*TimeSlotDeletionConcurrencyIntegrationTest' \
+  --tests '*ExceptionCodeTest'
+'''

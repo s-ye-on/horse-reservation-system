@@ -2,7 +2,7 @@
 
 ## 상태
 
-확정, R02 guard 스키마·Repository 구현 완료 / R08 overlap 적용 대기
+확정, R02 guard 스키마·Repository 및 R08 회원 신규 예약 overlap 적용 완료
 
 ## 맥락
 
@@ -91,7 +91,7 @@ ORDER BY start_time, id
 FOR UPDATE;
 ```
 
-후보 인덱스는 다음과 같다.
+V28에서 적용한 인덱스는 다음과 같다.
 
 ```text
 (member_id, lesson_date, active_slot_guard, start_time, id, end_time)
@@ -102,14 +102,21 @@ FOR UPDATE;
 한쪽만 변경됐을 때 결과가 조용히 누락될 수 있다. `member_id`, `lesson_date`,
 `active_slot_guard`는 동등 조건, `start_time`은 range 조건, `end_time`은 residual
 filter다. M31 보정 migration 이후 실제 데이터로
-`EXPLAIN ANALYZE`를 실행해 선택 인덱스, 예상·실제 행 수, filesort와 잠금 범위를
-검증한다.
+`EXPLAIN ANALYZE`와 `EXPLAIN FORMAT=JSON`을 실행해 해당 인덱스의 range 접근,
+사용 key part와 실제 실행을 검증한다.
 
 MySQL `REPEATABLE READ`에서 overlap `FOR UPDATE`는 후보 인덱스의 같은
 `member_id/lesson_date/active_slot_guard`와 `start_time < candidateEndTime` 범위에
 record/next-key lock을 만들 수 있다. 구간 부재 자체의 직렬화는 이 range lock에 의존하지
 않고 먼저 획득한 정확한 member-day guard record lock이 책임진다. 따라서 실행 계획이
 바뀌어도 두 경쟁 요청이 동시에 빈 overlap 결과를 보고 저장할 수 없다.
+
+회원 신규 예약은 TimeSlot 잠금 후 overlap rows를 `start_time, id` 순서로 먼저
+잠금 조회한다. 한 건이라도 존재하면 즉시 예외로 종료하고 정원 집계 rows를 추가로
+잠그지 않는다. overlap이 없을 때만 같은 TimeSlot의 정원 점유 rows를 단일 시작 시각의
+`id` 순서로 잠근다. 같은 TimeSlot 경쟁은 선행 TimeSlot 잠금이, 같은 회원·다른
+TimeSlot 경쟁은 선행 member-day guard가 직렬화하므로 두 Reservation 조회 사이에
+서로 다른 row 순서 역전이 생기지 않는다.
 
 현재 V15 스키마에서 2026-07-22의 대표 데이터를 대상으로 45분을 식으로 계산한
 `EXPLAIN ANALYZE`는 `uk_reservations_active_member_slot`의
@@ -124,8 +131,13 @@ record/next-key lock을 만들 수 있다. 구간 부재 자체의 직렬화는 
 - member-day guard로 정상 API 경쟁을 직렬화하므로 서로 다른 TimeSlot 경쟁도 같은
   선검사 경로를 사용한다.
 - V15 exact-start UNIQUE는 부분집합 최종 방어로 유지한다.
-- V15 위반으로 트랜잭션이 실패하면 rollback 뒤 별도 조회에서 실제 overlap을 재검증한
-  경우에만 같은 오류로 변환한다. 원인을 확인할 수 없으면 일반 동시성 오류를 반환한다.
+- V15 `uk_reservations_active_member_slot` 위반은 동일 회원·날짜·시작 시각의 활성 예약을
+  DB가 직접 증명한다. 모든 수업이 45분인 현재 계약에서는 exact-start가 실제 overlap의
+  부분집합이므로, Hibernate가 반환한 constraint name이 정확히 일치할 때만 같은 오류로
+  변환하고 전체 예약 트랜잭션을 rollback한다.
+- constraint name이 다르거나 확인되지 않는 DB 오류는 overlap으로 추측 변환하지 않는다.
+  향후 exact-start 이외의 모호한 DB 경쟁 오류를 변환해야 한다면 rollback 뒤 별도
+  트랜잭션 재검증을 추가한다.
 - 기존 `RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT`은 외부 응답에서 사용하지 않는다.
   이미 배포된 모바일 클라이언트가 없으므로 생성 Client와 웹을 같은 Task에서 새 코드로
   전환하고, enum 상수는 한 호환 기간 뒤 제거한다.
@@ -161,6 +173,9 @@ Coupon(쿠폰 예약)` 순서다. 완료·노쇼는 Reservation을 먼저 잠그
 - 다른 시작 시각과 클래스의 겹치는 예약도 동시 요청에서 하나만 성공한다.
 - exact-start UNIQUE를 보존하면서 외부 오류 의미는 실제 구간 중복으로 통합된다.
 - guard 보존 비용은 회원·예약 날짜당 한 행이며 cleanup 경쟁보다 작다.
+- V28은 overlap 조회 인덱스를 추가한다. 이미 개발 DB에 적용된 V28 checksum을 보존하기
+  위해 V27 이후 유입될 수 있었던 기존 활성 interval overlap preflight는 V29로
+  분리했다. 한 건이라도 발견하면 데이터를 자동 수정하지 않고 migration을 중단한다.
 
 ## 검증
 

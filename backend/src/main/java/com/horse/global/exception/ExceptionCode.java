@@ -37,6 +37,9 @@ public enum ExceptionCode {
 	RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "예약을 찾을 수 없습니다."),
 	RESERVATION_INVALID_STATUS(HttpStatus.CONFLICT, "현재 예약 상태에서는 요청한 처리를 할 수 없습니다."),
 	RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT(HttpStatus.CONFLICT, "같은 시간대에 이미 활성 예약이 있습니다."),
+	RESERVATION_OVERLAPPING_ACTIVE_RESERVATION(
+		HttpStatus.CONFLICT,
+		"이미 시간이 겹치는 활성 예약이 있습니다."),
 	RESERVATION_BOOKING_DEADLINE_PASSED(HttpStatus.CONFLICT, "회원 예약 신청 마감 시각이 지났습니다."),
 	RESERVATION_LESSON_ALREADY_STARTED(HttpStatus.CONFLICT, "수업 시작 이후에는 요청한 처리를 할 수 없습니다."),
 	RESERVATION_LESSON_NOT_STARTED(HttpStatus.CONFLICT, "수업 시작 전에는 출석을 처리할 수 없습니다."),

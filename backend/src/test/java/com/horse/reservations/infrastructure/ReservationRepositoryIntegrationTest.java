@@ -28,6 +28,7 @@ class ReservationRepositoryIntegrationTest {
 		"pending_admin_approval",
 		"pending_payment",
 		"payment_expired",
+		"approval_expired",
 		"confirmed",
 		"completed",
 		"rejected",
@@ -172,8 +173,27 @@ class ReservationRepositoryIntegrationTest {
 		assertThat(columnCount).isEqualTo(4);
 	}
 
-	private void insertValidReservation(Long memberId, Long couponId, String status) {
-		switch (status) {
+	@Test
+	void Java와_DB의_활성_예약_상태_정의가_일치한다() {
+		RESERVATION_STATUSES.forEach(status -> {
+			final Long memberId = insertMember("active-contract-" + status);
+			final Long couponId = insertCoupon(memberId);
+			final Long reservationId = insertValidReservation(memberId, couponId, status);
+			final Integer activeSlotGuard = jdbcTemplate.queryForObject(
+				"SELECT active_slot_guard FROM reservations WHERE id = ?",
+				Integer.class,
+				reservationId);
+
+			assertThat(activeSlotGuard != null)
+				.as(status)
+				.isEqualTo(com.horse.reservations.domain.ReservationStatus
+					.fromDatabaseValue(status)
+					.occupiesCapacity());
+		});
+	}
+
+	private Long insertValidReservation(Long memberId, Long couponId, String status) {
+		return switch (status) {
 			case "pending_payment", "payment_expired" -> insertReservation(
 				memberId,
 				null,
@@ -189,7 +209,7 @@ class ReservationRepositoryIntegrationTest {
 				memberId, couponId, status, "coupon", null, null, "admin-subject", "승인하지 않음");
 			case "cancelled" -> insertCancelledReservation(memberId, couponId);
 			default -> insertReservation(memberId, couponId, status, "coupon", null, null, null, null);
-		}
+		};
 	}
 
 	private Long insertReservation(
@@ -236,7 +256,7 @@ class ReservationRepositoryIntegrationTest {
 			"SELECT MAX(id) FROM reservations WHERE member_id = ?", Long.class, memberId);
 	}
 
-	private void insertCancelledReservation(Long memberId, Long couponId) {
+	private Long insertCancelledReservation(Long memberId, Long couponId) {
 		jdbcTemplate.update("""
 			INSERT INTO reservations (
 				member_id,
@@ -254,6 +274,8 @@ class ReservationRepositoryIntegrationTest {
 				'2026-07-14 10:00:00', '2026-07-14 10:10:00', 'member'
 			)
 			""", memberId, couponId);
+		return jdbcTemplate.queryForObject(
+			"SELECT MAX(id) FROM reservations WHERE member_id = ?", Long.class, memberId);
 	}
 
 	private Long insertMember(String authSubject) {

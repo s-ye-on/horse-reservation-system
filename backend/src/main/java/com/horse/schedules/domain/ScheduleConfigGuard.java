@@ -107,6 +107,12 @@ public class ScheduleConfigGuard {
 		}
 	}
 
+	public void ensureActive() {
+		if (status != ScheduleConfigStatus.ACTIVE) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_CONFIG_SYNC_IN_PROGRESS);
+		}
+	}
+
 	public boolean completeSynchronization(
 		long expectedPendingVersion,
 		LocalDateTime completedAt

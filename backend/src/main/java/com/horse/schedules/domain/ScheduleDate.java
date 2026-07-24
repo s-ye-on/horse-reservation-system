@@ -84,6 +84,12 @@ public class ScheduleDate {
 		return true;
 	}
 
+	public void ensureAppliedConfigVersion(long expectedConfigVersion) {
+		if (appliedConfigVersion != expectedConfigVersion) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_OCCURRENCE_SYNC_INCOMPLETE);
+		}
+	}
+
 	public Long getId() {
 		return id;
 	}

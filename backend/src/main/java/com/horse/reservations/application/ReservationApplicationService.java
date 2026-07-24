@@ -24,6 +24,12 @@ import com.horse.reservations.domain.PendingPaymentDeadlinePolicy;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationBookingTimePolicy;
 import com.horse.reservations.domain.exception.ReservationException;
+import com.horse.schedules.domain.ScheduleConfigGuard;
+import com.horse.schedules.domain.ScheduleDate;
+import com.horse.schedules.domain.exception.ScheduleException;
+import com.horse.schedules.infrastructure.ReservationMemberDayGuardRepository;
+import com.horse.schedules.infrastructure.ScheduleConfigGuardRepository;
+import com.horse.schedules.infrastructure.ScheduleDateRepository;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
 import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
@@ -36,6 +42,9 @@ public class ReservationApplicationService {
 	private final Clock clock;
 	private final MemberRepository memberRepository;
 	private final TimeSlotCapacityRepository timeSlotRepository;
+	private final ScheduleConfigGuardRepository configGuardRepository;
+	private final ScheduleDateRepository scheduleDateRepository;
+	private final ReservationMemberDayGuardRepository memberDayGuardRepository;
 	private final CouponSelectionService couponSelectionService;
 	private final ReservationCapacityService reservationCapacityService;
 	private final CouponHoldService couponHoldService;
@@ -44,6 +53,9 @@ public class ReservationApplicationService {
 		Clock clock,
 		MemberRepository memberRepository,
 		TimeSlotCapacityRepository timeSlotRepository,
+		ScheduleConfigGuardRepository configGuardRepository,
+		ScheduleDateRepository scheduleDateRepository,
+		ReservationMemberDayGuardRepository memberDayGuardRepository,
 		CouponSelectionService couponSelectionService,
 		ReservationCapacityService reservationCapacityService,
 		CouponHoldService couponHoldService
@@ -51,6 +63,9 @@ public class ReservationApplicationService {
 		this.clock = clock;
 		this.memberRepository = memberRepository;
 		this.timeSlotRepository = timeSlotRepository;
+		this.configGuardRepository = configGuardRepository;
+		this.scheduleDateRepository = scheduleDateRepository;
+		this.memberDayGuardRepository = memberDayGuardRepository;
 		this.couponSelectionService = couponSelectionService;
 		this.reservationCapacityService = reservationCapacityService;
 		this.couponHoldService = couponHoldService;
@@ -65,26 +80,29 @@ public class ReservationApplicationService {
 		final Member member = findMember(authSubject);
 		final RidingClass ridingClass = parseRidingClass(classType);
 		ensureEligible(member, ridingClass);
-		final TimeSlotCapacity timeSlot = lockTimeSlot(timeSlotId);
-		ensureReservableLessonDate(timeSlot.getLessonDate());
+		final TimeSlotCapacity timeSlotSnapshot = findTimeSlot(timeSlotId);
+		ensureReservableLessonDate(timeSlotSnapshot.getLessonDate());
 		final Instant bookingRequestedAt = clock.instant();
 		ReservationBookingTimePolicy.ensureCanBook(
-			timeSlot.getLessonDate(),
-			timeSlot.getStartTime(),
+			timeSlotSnapshot.getLessonDate(),
+			timeSlotSnapshot.getStartTime(),
 			bookingRequestedAt);
+		lockReservationContext(member.getId(), timeSlotSnapshot.getLessonDate());
+		final TimeSlotCapacity timeSlot = reservationCapacityService.lockAndEnsureAvailable(
+			timeSlotId,
+			member.getId(),
+			ridingClass);
 		final Optional<CouponSelectionResult> selection = couponSelectionService
 			.selectForUpdate(member.getId(), ridingClass, timeSlot.getLessonDate());
 		final LocalDateTime requestedAt = LocalDateTime.ofInstant(bookingRequestedAt, clock.getZone());
 		if (selection.isEmpty()) {
 			return applySinglePayment(
-				timeSlotId,
 				timeSlot,
 				member.getId(),
 				ridingClass,
 				requestedAt);
 		}
 		return applyCoupon(
-			timeSlotId,
 			timeSlot,
 			member.getId(),
 			ridingClass,
@@ -93,15 +111,14 @@ public class ReservationApplicationService {
 	}
 
 	private ReservationApplicationResult applyCoupon(
-		Long timeSlotId,
 		TimeSlotCapacity timeSlot,
 		Long memberId,
 		RidingClass ridingClass,
 		CouponSelectionResult selection,
 		LocalDateTime requestedAt
 	) {
-		final Reservation reservation = reservationCapacityService.reserveWithCoupon(
-			timeSlotId,
+		final Reservation reservation = reservationCapacityService.createCouponReservation(
+			timeSlot,
 			memberId,
 			ridingClass,
 			selection.couponId(),
@@ -120,7 +137,6 @@ public class ReservationApplicationService {
 	}
 
 	private ReservationApplicationResult applySinglePayment(
-		Long timeSlotId,
 		TimeSlotCapacity timeSlot,
 		Long memberId,
 		RidingClass ridingClass,
@@ -130,8 +146,8 @@ public class ReservationApplicationService {
 			timeSlot.getLessonDate(),
 			timeSlot.getStartTime(),
 			requestedAt);
-		final Reservation reservation = reservationCapacityService.reserveWithSinglePayment(
-			timeSlotId,
+		final Reservation reservation = reservationCapacityService.createSinglePaymentReservation(
+			timeSlot,
 			memberId,
 			ridingClass,
 			paymentDueAt,
@@ -139,16 +155,25 @@ public class ReservationApplicationService {
 		return ReservationApplicationResult.singlePayment(reservation);
 	}
 
+	private void lockReservationContext(Long memberId, LocalDate lessonDate) {
+		final ScheduleConfigGuard configGuard = configGuardRepository.findSingletonForShare();
+		configGuard.ensureActive();
+		final ScheduleDate scheduleDate = scheduleDateRepository.findByScheduleDateForUpdate(lessonDate)
+			.orElseThrow(() -> new ScheduleException(ExceptionCode.SCHEDULE_OCCURRENCE_SYNC_INCOMPLETE));
+		scheduleDate.ensureAppliedConfigVersion(configGuard.getActiveVersion());
+		memberDayGuardRepository.acquire(memberId, lessonDate);
+	}
+
 	private Member findMember(String authSubject) {
 		return memberRepository.findByAuthSubject(authSubject)
 			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));
 	}
 
-	private TimeSlotCapacity lockTimeSlot(Long timeSlotId) {
+	private TimeSlotCapacity findTimeSlot(Long timeSlotId) {
 		if (timeSlotId == null) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND);
 		}
-		return timeSlotRepository.findByIdForUpdate(timeSlotId)
+		return timeSlotRepository.findById(timeSlotId)
 			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
 	}
 

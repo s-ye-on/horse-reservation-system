@@ -27,12 +27,19 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.horse.TestcontainersConfiguration;
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
 import com.horse.reservations.application.ReservationCapacityService;
 import com.horse.reservations.domain.Reservation;
+import com.horse.schedules.domain.ScheduleConfigGuard;
+import com.horse.schedules.domain.ScheduleDate;
+import com.horse.schedules.infrastructure.ReservationMemberDayGuardRepository;
+import com.horse.schedules.infrastructure.ScheduleConfigGuardRepository;
+import com.horse.schedules.infrastructure.ScheduleDateRepository;
 import com.horse.timeslots.application.AdminTimeSlotService;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
@@ -57,6 +64,18 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
+	@Autowired
+	ScheduleConfigGuardRepository configGuardRepository;
+
+	@Autowired
+	ScheduleDateRepository scheduleDateRepository;
+
+	@Autowired
+	ReservationMemberDayGuardRepository memberDayGuardRepository;
+
+	@Autowired
+	PlatformTransactionManager transactionManager;
+
 	@MockitoBean
 	Clock clock;
 
@@ -64,11 +83,29 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 	void 데이터베이스를_초기화한다() {
 		given(clock.instant()).willReturn(Instant.parse("2026-07-14T01:00:00Z"));
 		given(clock.getZone()).willReturn(ZoneId.of("Asia/Seoul"));
+		resetScheduleConfigGuard();
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
 		jdbcTemplate.update("DELETE FROM reservations");
+		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM coupons");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");
+		jdbcTemplate.update("DELETE FROM schedule_dates");
 		jdbcTemplate.update("DELETE FROM members");
+		createScheduleDate(LESSON_DATE);
+	}
+
+	private void resetScheduleConfigGuard() {
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'ACTIVE',
+				pending_version = NULL,
+				sync_started_at = NULL,
+				sync_started_by = NULL,
+				last_failed_at = NULL,
+				last_failure_code = NULL,
+				last_failure_summary = NULL
+			WHERE id = 1
+			""");
 	}
 
 	@Test
@@ -151,12 +188,10 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 			SET status = 'confirmed', admin_confirmed_at = '2026-07-14 10:10:00'
 			WHERE id = ?
 			""", confirmed.getId());
-		final Reservation pendingPayment = reservationCapacityService.reserveWithSinglePayment(
-			timeSlot.getId(),
-			paymentMember.memberId(),
-			RidingClass.ROUND_BEGINNER,
-			REQUESTED_AT.plusHours(2),
-			REQUESTED_AT);
+		final Reservation pendingPayment = reserveWithSinglePayment(
+			timeSlot,
+			paymentMember,
+			RidingClass.ROUND_BEGINNER);
 		reserveWithCoupon(timeSlot, pendingMember, RidingClass.ROUND_BEGINNER);
 
 		assertCapacityExceeded(() -> reserveWithCoupon(
@@ -270,12 +305,60 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 		TestMember member,
 		RidingClass ridingClass
 	) {
-		return reservationCapacityService.reserveWithCoupon(
-			timeSlot.getId(),
-			member.memberId(),
-			ridingClass,
-			member.couponId(),
-			REQUESTED_AT);
+		return transactionTemplate().execute(status -> {
+			lockReservationContext(member.memberId(), timeSlot.getLessonDate());
+			final TimeSlotCapacity lockedTimeSlot = reservationCapacityService.lockAndEnsureAvailable(
+				timeSlot.getId(),
+				member.memberId(),
+				ridingClass);
+			return reservationCapacityService.createCouponReservation(
+				lockedTimeSlot,
+				member.memberId(),
+				ridingClass,
+				member.couponId(),
+				REQUESTED_AT);
+		});
+	}
+
+	private Reservation reserveWithSinglePayment(
+		TimeSlotCapacity timeSlot,
+		TestMember member,
+		RidingClass ridingClass
+	) {
+		return transactionTemplate().execute(status -> {
+			lockReservationContext(member.memberId(), timeSlot.getLessonDate());
+			final TimeSlotCapacity lockedTimeSlot = reservationCapacityService.lockAndEnsureAvailable(
+				timeSlot.getId(),
+				member.memberId(),
+				ridingClass);
+			return reservationCapacityService.createSinglePaymentReservation(
+				lockedTimeSlot,
+				member.memberId(),
+				ridingClass,
+				REQUESTED_AT.plusHours(2),
+				REQUESTED_AT);
+		});
+	}
+
+	private void lockReservationContext(Long memberId, LocalDate lessonDate) {
+		final ScheduleConfigGuard guard = configGuardRepository.findSingletonForShare();
+		guard.ensureActive();
+		scheduleDateRepository.findByScheduleDateForUpdate(lessonDate)
+			.orElseThrow()
+			.ensureAppliedConfigVersion(guard.getActiveVersion());
+		memberDayGuardRepository.acquire(memberId, lessonDate);
+	}
+
+	private void createScheduleDate(LocalDate lessonDate) {
+		final long activeVersion = jdbcTemplate.queryForObject(
+			"SELECT active_version FROM schedule_config_guard WHERE id = ?",
+			Long.class,
+			ScheduleConfigGuard.SINGLETON_ID);
+		scheduleDateRepository.saveAndFlush(ScheduleDate.create(lessonDate, activeVersion));
+	}
+
+	private TransactionTemplate transactionTemplate() {
+		return new TransactionTemplate(transactionManager);
 	}
 
 	private TimeSlotCapacity createTimeSlot(

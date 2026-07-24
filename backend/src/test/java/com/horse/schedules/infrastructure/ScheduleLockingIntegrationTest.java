@@ -239,6 +239,30 @@ class ScheduleLockingIntegrationTest {
 	}
 
 	@Test
+	void 같은_회원의_서로_다른_날짜_Guard는_직렬화하지_않는다() throws Exception {
+		final Long memberId = createMember("r02-lock-same-member-different-date");
+
+		try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+			final CountDownLatch acquired = new CountDownLatch(1);
+			final CountDownLatch release = new CountDownLatch(1);
+			final Future<Void> holder = holdLock(
+				executor,
+				acquired,
+				release,
+				() -> memberDayGuardRepository.acquire(memberId, FIRST_DATE));
+			assertThat(acquired.await(2, TimeUnit.SECONDS)).isTrue();
+
+			final Future<Void> independent = runInTransaction(
+				executor,
+				() -> memberDayGuardRepository.acquire(memberId, SECOND_DATE));
+
+			assertThat(independent.get(2, TimeUnit.SECONDS)).isNull();
+			release.countDown();
+			assertThat(holder.get(2, TimeUnit.SECONDS)).isNull();
+		}
+	}
+
+	@Test
 	void 잠금_Repository는_기존_트랜잭션을_필수로_요구한다() {
 		final Long memberId = createMember("r02-lock-mandatory");
 

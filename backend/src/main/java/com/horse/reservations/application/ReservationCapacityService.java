@@ -4,13 +4,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
-import com.horse.reservations.domain.ActiveReservationUniquenessPolicy;
 import com.horse.reservations.domain.Reservation;
+import com.horse.reservations.domain.ReservationIntervalOverlapPolicy;
 import com.horse.reservations.domain.ReservationStatus;
+import com.horse.reservations.infrastructure.ReservationConstraintViolationTranslator;
 import com.horse.reservations.infrastructure.ReservationRepository;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
@@ -30,54 +33,25 @@ public class ReservationCapacityService {
 		this.reservationRepository = reservationRepository;
 	}
 
-	@Transactional
-	public Reservation reserveWithCoupon(
+	@Transactional(propagation = Propagation.MANDATORY)
+	public TimeSlotCapacity lockAndEnsureAvailable(
 		Long timeSlotId,
 		Long memberId,
-		RidingClass ridingClass,
-		Long couponId,
-		LocalDateTime approvalRequestedAt
+		RidingClass ridingClass
 	) {
 		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
-		final Reservation reservation = Reservation.createCouponPending(
-			memberId,
-			ridingClass,
-			timeSlot.getLessonDate(),
-			timeSlot.getStartTime(),
-			couponId,
-			approvalRequestedAt);
-		return reserve(timeSlot, reservation);
-	}
-
-	@Transactional
-	public Reservation reserveWithSinglePayment(
-		Long timeSlotId,
-		Long memberId,
-		RidingClass ridingClass,
-		LocalDateTime paymentDueAt,
-		LocalDateTime approvalRequestedAt
-	) {
-		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
-		final Reservation reservation = Reservation.createSinglePaymentPending(
-			memberId,
-			ridingClass,
-			timeSlot.getLessonDate(),
-			timeSlot.getStartTime(),
-			paymentDueAt,
-			approvalRequestedAt);
-		return reserve(timeSlot, reservation);
-	}
-
-	private Reservation reserve(TimeSlotCapacity timeSlot, Reservation reservation) {
+		final List<Reservation> overlappingReservations =
+			reservationRepository.findActiveOverlapsForUpdate(
+				memberId,
+				timeSlot.getLessonDate(),
+				timeSlot.getStartTime(),
+				timeSlot.getEndTime());
+		ReservationIntervalOverlapPolicy.ensureNoOverlap(overlappingReservations);
 		final List<Reservation> occupyingReservations =
 			reservationRepository.findOccupyingByLessonDateAndStartTimeForUpdate(
 				timeSlot.getLessonDate(),
 				timeSlot.getStartTime(),
 				ReservationStatus.occupyingStatuses());
-		ActiveReservationUniquenessPolicy.ensureNoDuplicate(
-			reservation.getMemberId(),
-			occupyingReservations);
-		final RidingClass ridingClass = reservation.getRidingClass();
 		final int roundArenaOccupied = (int)occupyingReservations.stream()
 			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))
 			.count();
@@ -90,7 +64,51 @@ public class ReservationCapacityService {
 			occupyingReservations.size(),
 			roundArenaOccupied,
 			classOccupied);
-		return reservationRepository.saveAndFlush(reservation);
+		return timeSlot;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	public Reservation createCouponReservation(
+		TimeSlotCapacity timeSlot,
+		Long memberId,
+		RidingClass ridingClass,
+		Long couponId,
+		LocalDateTime approvalRequestedAt
+	) {
+		try {
+			return reservationRepository.saveAndFlush(Reservation.createCouponPending(
+				memberId,
+				ridingClass,
+				timeSlot.getLessonDate(),
+				timeSlot.getStartTime(),
+				couponId,
+				approvalRequestedAt));
+		}
+		catch (DataIntegrityViolationException exception) {
+			throw ReservationConstraintViolationTranslator.translate(exception);
+		}
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	public Reservation createSinglePaymentReservation(
+		TimeSlotCapacity timeSlot,
+		Long memberId,
+		RidingClass ridingClass,
+		LocalDateTime paymentDueAt,
+		LocalDateTime approvalRequestedAt
+	) {
+		try {
+			return reservationRepository.saveAndFlush(Reservation.createSinglePaymentPending(
+				memberId,
+				ridingClass,
+				timeSlot.getLessonDate(),
+				timeSlot.getStartTime(),
+				paymentDueAt,
+				approvalRequestedAt));
+		}
+		catch (DataIntegrityViolationException exception) {
+			throw ReservationConstraintViolationTranslator.translate(exception);
+		}
 	}
 
 	private TimeSlotCapacity getTimeSlotForUpdate(Long timeSlotId) {

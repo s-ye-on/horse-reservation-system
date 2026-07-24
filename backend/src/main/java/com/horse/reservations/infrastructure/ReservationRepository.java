@@ -13,6 +13,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.members.domain.RidingClass;
 import com.horse.reservations.domain.Reservation;
@@ -157,6 +159,26 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		@Param("lessonDate") LocalDate lessonDate,
 		@Param("startTime") LocalTime startTime,
 		@Param("statuses") Collection<ReservationStatus> statuses
+	);
+
+	@Query(value = """
+		SELECT reservation.*
+		FROM reservations reservation
+		FORCE INDEX (idx_reservations_member_date_active_interval)
+		WHERE reservation.member_id = :memberId
+		  AND reservation.lesson_date = :lessonDate
+		  AND reservation.active_slot_guard = 1
+		  AND reservation.start_time < :candidateEndTime
+		  AND reservation.end_time > :candidateStartTime
+		ORDER BY reservation.start_time, reservation.id
+		FOR UPDATE
+		""", nativeQuery = true)
+	@Transactional(propagation = Propagation.MANDATORY)
+	List<Reservation> findActiveOverlapsForUpdate(
+		@Param("memberId") Long memberId,
+		@Param("lessonDate") LocalDate lessonDate,
+		@Param("candidateStartTime") LocalTime candidateStartTime,
+		@Param("candidateEndTime") LocalTime candidateEndTime
 	);
 
 	@Query("""

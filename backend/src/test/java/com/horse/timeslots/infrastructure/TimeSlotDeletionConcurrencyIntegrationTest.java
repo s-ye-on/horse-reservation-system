@@ -25,10 +25,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import com.horse.TestcontainersConfiguration;
 import com.horse.members.domain.RidingClass;
 import com.horse.reservations.application.ReservationCapacityService;
+import com.horse.schedules.domain.ScheduleConfigGuard;
+import com.horse.schedules.domain.ScheduleDate;
+import com.horse.schedules.infrastructure.ReservationMemberDayGuardRepository;
+import com.horse.schedules.infrastructure.ScheduleConfigGuardRepository;
+import com.horse.schedules.infrastructure.ScheduleDateRepository;
 import com.horse.timeslots.application.AdminTimeSlotService;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
@@ -53,6 +60,18 @@ class TimeSlotDeletionConcurrencyIntegrationTest {
 	@Autowired
 	JdbcTemplate jdbcTemplate;
 
+	@Autowired
+	ScheduleConfigGuardRepository configGuardRepository;
+
+	@Autowired
+	ScheduleDateRepository scheduleDateRepository;
+
+	@Autowired
+	ReservationMemberDayGuardRepository memberDayGuardRepository;
+
+	@Autowired
+	PlatformTransactionManager transactionManager;
+
 	@MockitoBean
 	Clock clock;
 
@@ -60,11 +79,29 @@ class TimeSlotDeletionConcurrencyIntegrationTest {
 	void 데이터베이스를_초기화한다() {
 		given(clock.instant()).willReturn(Instant.parse("2026-07-14T01:00:00Z"));
 		given(clock.getZone()).willReturn(ZoneId.of("Asia/Seoul"));
+		resetScheduleConfigGuard();
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
 		jdbcTemplate.update("DELETE FROM reservations");
+		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM coupons");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");
+		jdbcTemplate.update("DELETE FROM schedule_dates");
 		jdbcTemplate.update("DELETE FROM members");
+		createScheduleDate();
+	}
+
+	private void resetScheduleConfigGuard() {
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'ACTIVE',
+				pending_version = NULL,
+				sync_started_at = NULL,
+				sync_started_by = NULL,
+				last_failed_at = NULL,
+				last_failure_code = NULL,
+				last_failure_summary = NULL
+			WHERE id = 1
+			""");
 	}
 
 	@Test
@@ -105,12 +142,19 @@ class TimeSlotDeletionConcurrencyIntegrationTest {
 	private OperationResult reserve(CountDownLatch startSignal, TestData data) throws InterruptedException {
 		startSignal.await();
 		try {
-			reservationCapacityService.reserveWithCoupon(
-				data.timeSlotId(),
-				data.memberId(),
-				RidingClass.ROUND_BEGINNER,
-				data.couponId(),
-				REQUESTED_AT);
+			transactionTemplate().executeWithoutResult(status -> {
+				lockReservationContext(data.memberId());
+				final TimeSlotCapacity timeSlot = reservationCapacityService.lockAndEnsureAvailable(
+					data.timeSlotId(),
+					data.memberId(),
+					RidingClass.ROUND_BEGINNER);
+				reservationCapacityService.createCouponReservation(
+					timeSlot,
+					data.memberId(),
+					RidingClass.ROUND_BEGINNER,
+					data.couponId(),
+					REQUESTED_AT);
+			});
 			return OperationResult.SUCCEEDED;
 		}
 		catch (TimeSlotException exception) {
@@ -127,6 +171,27 @@ class TimeSlotDeletionConcurrencyIntegrationTest {
 			Integer.class);
 		assertThat(timeSlotCount).isEqualTo(reservationCount);
 		assertThat(timeSlotCount).isIn(0, 1);
+	}
+
+	private void lockReservationContext(Long memberId) {
+		final ScheduleConfigGuard guard = configGuardRepository.findSingletonForShare();
+		guard.ensureActive();
+		scheduleDateRepository.findByScheduleDateForUpdate(LESSON_DATE)
+			.orElseThrow()
+			.ensureAppliedConfigVersion(guard.getActiveVersion());
+		memberDayGuardRepository.acquire(memberId, LESSON_DATE);
+	}
+
+	private void createScheduleDate() {
+		final long activeVersion = jdbcTemplate.queryForObject(
+			"SELECT active_version FROM schedule_config_guard WHERE id = ?",
+			Long.class,
+			ScheduleConfigGuard.SINGLETON_ID);
+		scheduleDateRepository.saveAndFlush(ScheduleDate.create(LESSON_DATE, activeVersion));
+	}
+
+	private TransactionTemplate transactionTemplate() {
+		return new TransactionTemplate(transactionManager);
 	}
 
 	private TestData createTestData() {
