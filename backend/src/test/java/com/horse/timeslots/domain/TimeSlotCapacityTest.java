@@ -93,6 +93,29 @@ class TimeSlotCapacityTest {
 	}
 
 	@Test
+	void 템플릿_occurrence는_자동_마감_원인만_동기화한다() {
+		final TimeSlotCapacity timeSlot = TimeSlotCapacity.createFromTemplate(
+			LocalDate.of(2026, 8, 1),
+			1L,
+			LocalTime.of(9, 0),
+			LocalTime.of(9, 45),
+			5,
+			2,
+			validClassCapacities(),
+			true);
+		timeSlot.changeAdminClosed(true);
+
+		timeSlot.synchronizeTemplateOccurrence(2L, false, true);
+
+		assertThat(timeSlot.getSource()).isEqualTo(TimeSlotSource.TEMPLATE);
+		assertThat(timeSlot.getTemplateId()).isEqualTo(2L);
+		assertThat(timeSlot.isAdminClosed()).isTrue();
+		assertThat(timeSlot.isRecurringHolidayClosed()).isFalse();
+		assertThat(timeSlot.isTemplateInactiveClosed()).isTrue();
+		assertThat(timeSlot.getTotalCapacity()).isEqualTo(5);
+	}
+
+	@Test
 	void 자정에_닿거나_넘어가는_시간대는_생성할_수_없다() {
 		assertTimeSlotException(
 			() -> TimeSlotCapacity.create(

@@ -173,6 +173,16 @@ class ScheduleDomainTest {
 	}
 
 	@Test
+	void 운영_날짜는_같은_설정_version을_멱등_적용한다() {
+		final ScheduleDate scheduleDate =
+			ScheduleDate.create(LocalDate.of(2026, 8, 1), 1L);
+
+		assertThat(scheduleDate.applyConfigVersion(2L)).isTrue();
+		assertThat(scheduleDate.applyConfigVersion(2L)).isFalse();
+		assertThat(scheduleDate.getAppliedConfigVersion()).isEqualTo(2L);
+	}
+
+	@Test
 	void 운영_날짜의_설정_버전은_양수여야_한다() {
 		assertScheduleException(
 			() -> ScheduleDate.create(LocalDate.of(2026, 8, 1), 0L),

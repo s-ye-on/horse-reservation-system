@@ -752,3 +752,18 @@ mise run db:up
   --tests '*ScheduleLockingIntegrationTest' \
   --tests '*ExceptionCodeTest'
 '''
+
+[tasks."verify:m31-r06"]
+description = "Verify M31-R06 materialized occurrence synchronization"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*ScheduleOccurrenceSynchronizationServiceIntegrationTest' \
+  --tests '*ScheduleOccurrenceSynchronizationSchedulerTest' \
+  --tests '*ScheduleDomainTest' \
+  --tests '*ScheduleRepositoryIntegrationTest' \
+  --tests '*ScheduleLockingIntegrationTest' \
+  --tests '*M31R06TimeSlotLockIndexMigrationIntegrationTest' \
+  --tests '*TimeSlotCapacityTest' \
+  --tests '*ExceptionCodeTest'
+'''

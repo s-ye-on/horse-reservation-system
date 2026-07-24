@@ -73,6 +73,17 @@ public class ScheduleDate {
 		return new ScheduleDate(scheduleDate, appliedConfigVersion);
 	}
 
+	public boolean applyConfigVersion(long configVersion) {
+		if (configVersion < 1) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_CONFIG_VERSION);
+		}
+		if (appliedConfigVersion == configVersion) {
+			return false;
+		}
+		appliedConfigVersion = configVersion;
+		return true;
+	}
+
 	public Long getId() {
 		return id;
 	}

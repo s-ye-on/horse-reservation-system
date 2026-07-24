@@ -16,6 +16,19 @@ public interface RecurringHolidayRuleRepository extends JpaRepository<RecurringH
 		FROM RecurringHolidayRule rule
 		WHERE rule.active = true
 		  AND rule.dayOfWeek = :dayOfWeek
+		  AND rule.effectiveFrom <= :scheduleDate
+		  AND (rule.effectiveTo IS NULL OR rule.effectiveTo >= :scheduleDate)
+		""")
+	boolean existsActiveOnDate(
+		@Param("dayOfWeek") DayOfWeek dayOfWeek,
+		@Param("scheduleDate") LocalDate scheduleDate
+	);
+
+	@Query("""
+		SELECT (COUNT(rule) > 0)
+		FROM RecurringHolidayRule rule
+		WHERE rule.active = true
+		  AND rule.dayOfWeek = :dayOfWeek
 		  AND rule.effectiveFrom <= :candidateEffectiveTo
 		  AND COALESCE(rule.effectiveTo, :maximumDate) >= :candidateEffectiveFrom
 		  AND (:excludedId IS NULL OR rule.id <> :excludedId)

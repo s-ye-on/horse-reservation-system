@@ -279,6 +279,20 @@ class ScheduleRepositoryIntegrationTest {
 			WHERE member_id = %d AND lesson_date = '2026-08-05'
 			FOR UPDATE
 			""".formatted(member.getId()))).contains("\"key\": \"PRIMARY\"");
+		assertThat(explain("""
+			SELECT * FROM time_slot_capacities
+			FORCE INDEX (idx_time_slot_capacities_lesson_date_id)
+			WHERE lesson_date = '2026-08-05'
+			ORDER BY id
+			FOR UPDATE
+			""")).contains("\"key\": \"idx_time_slot_capacities_lesson_date_id\"");
+		assertThat(explain("""
+			SELECT * FROM schedule_dates
+			FORCE INDEX (uk_schedule_dates_date)
+			WHERE schedule_date BETWEEN '2026-08-01' AND '2026-08-31'
+			ORDER BY schedule_date
+			FOR UPDATE
+			""")).contains("\"key\": \"uk_schedule_dates_date\"");
 	}
 
 	@Test

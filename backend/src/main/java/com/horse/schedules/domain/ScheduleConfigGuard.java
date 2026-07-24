@@ -18,6 +18,8 @@ import jakarta.persistence.Version;
 public class ScheduleConfigGuard {
 
 	public static final byte SINGLETON_ID = 1;
+	private static final int MAX_FAILURE_CODE_LENGTH = 100;
+	private static final int MAX_FAILURE_SUMMARY_LENGTH = 500;
 
 	@Id
 	private Byte id;
@@ -89,6 +91,74 @@ public class ScheduleConfigGuard {
 		if (activeVersion == Long.MAX_VALUE) {
 			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_CONFIG_VERSION);
 		}
+	}
+
+	public void ensurePendingVersion(long expectedPendingVersion) {
+		if (status != ScheduleConfigStatus.SYNCING
+			|| pendingVersion == null
+			|| pendingVersion != expectedPendingVersion) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_CONFIG_VERSION_CONFLICT);
+		}
+	}
+
+	public void ensureActiveVersion(long expectedActiveVersion) {
+		if (status != ScheduleConfigStatus.ACTIVE || activeVersion != expectedActiveVersion) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_CONFIG_VERSION_CONFLICT);
+		}
+	}
+
+	public boolean completeSynchronization(
+		long expectedPendingVersion,
+		LocalDateTime completedAt
+	) {
+		if (activeVersion == expectedPendingVersion) {
+			return false;
+		}
+		if (activeVersion > expectedPendingVersion) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_CONFIG_VERSION_CONFLICT);
+		}
+		ensurePendingVersion(expectedPendingVersion);
+		if (completedAt == null) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_SYNC_STARTED_AT);
+		}
+		activeVersion = expectedPendingVersion;
+		status = ScheduleConfigStatus.ACTIVE;
+		pendingVersion = null;
+		syncStartedAt = null;
+		syncStartedBy = null;
+		lastCompletedAt = completedAt;
+		lastFailedAt = null;
+		lastFailureCode = null;
+		lastFailureSummary = null;
+		return true;
+	}
+
+	public void recordSynchronizationFailure(
+		long expectedPendingVersion,
+		LocalDateTime failedAt,
+		String failureCode,
+		String failureSummary
+	) {
+		if (activeVersion == expectedPendingVersion) {
+			return;
+		}
+		if (activeVersion > expectedPendingVersion) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_CONFIG_VERSION_CONFLICT);
+		}
+		ensurePendingVersion(expectedPendingVersion);
+		if (failedAt == null) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_SYNC_STARTED_AT);
+		}
+		lastFailedAt = failedAt;
+		lastFailureCode = requireFailureText(failureCode, MAX_FAILURE_CODE_LENGTH);
+		lastFailureSummary = requireFailureText(failureSummary, MAX_FAILURE_SUMMARY_LENGTH);
+	}
+
+	private String requireFailureText(String value, int maximumLength) {
+		if (value == null || value.isBlank() || value.length() > maximumLength) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_OCCURRENCE_SYNC_FAILED);
+		}
+		return value;
 	}
 
 	public byte getId() {

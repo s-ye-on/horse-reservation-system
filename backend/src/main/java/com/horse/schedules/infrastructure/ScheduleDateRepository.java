@@ -1,6 +1,7 @@
 package com.horse.schedules.infrastructure;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,6 +15,28 @@ import com.horse.schedules.domain.ScheduleDate;
 public interface ScheduleDateRepository extends JpaRepository<ScheduleDate, Long> {
 
 	Optional<ScheduleDate> findByScheduleDate(LocalDate scheduleDate);
+
+	long countByScheduleDateBetween(LocalDate startDate, LocalDate endDate);
+
+	long countByScheduleDateBetweenAndAppliedConfigVersion(
+		LocalDate startDate,
+		LocalDate endDate,
+		long appliedConfigVersion
+	);
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	@Query(value = """
+		SELECT *
+		FROM schedule_dates
+		FORCE INDEX (uk_schedule_dates_date)
+		WHERE schedule_date BETWEEN :startDate AND :endDate
+		ORDER BY schedule_date
+		FOR UPDATE
+		""", nativeQuery = true)
+	List<ScheduleDate> findAllByScheduleDateBetweenForUpdate(
+		@Param("startDate") LocalDate startDate,
+		@Param("endDate") LocalDate endDate
+	);
 
 	@Transactional(propagation = Propagation.MANDATORY)
 	@Query(value = """

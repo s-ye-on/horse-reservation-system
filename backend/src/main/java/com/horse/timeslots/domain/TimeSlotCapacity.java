@@ -125,6 +125,34 @@ public class TimeSlotCapacity {
 			classCapacities);
 	}
 
+	public static TimeSlotCapacity createFromTemplate(
+		LocalDate lessonDate,
+		Long templateId,
+		LocalTime startTime,
+		LocalTime endTime,
+		Integer totalCapacity,
+		Integer roundArenaCapacity,
+		Map<String, Integer> classCapacities,
+		boolean recurringHolidayClosed
+	) {
+		if (templateId == null || templateId < 1) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_TEMPLATE_REFERENCE);
+		}
+		final TimeSlotCapacity timeSlot = new TimeSlotCapacity(
+			lessonDate,
+			startTime,
+			totalCapacity,
+			roundArenaCapacity,
+			classCapacities);
+		if (!timeSlot.endTime.equals(endTime)) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_LESSON_INTERVAL);
+		}
+		timeSlot.source = TimeSlotSource.TEMPLATE;
+		timeSlot.templateId = templateId;
+		timeSlot.recurringHolidayClosed = recurringHolidayClosed;
+		return timeSlot;
+	}
+
 	private void initializeCapacity(
 		Integer totalCapacity,
 		Integer roundArenaCapacity,
@@ -183,6 +211,19 @@ public class TimeSlotCapacity {
 		if (templateInactiveClosed == null) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_CLOSED_STATUS);
 		}
+		this.templateInactiveClosed = templateInactiveClosed;
+	}
+
+	public void synchronizeTemplateOccurrence(
+		Long templateId,
+		boolean recurringHolidayClosed,
+		boolean templateInactiveClosed
+	) {
+		if (source != TimeSlotSource.TEMPLATE || templateId == null || templateId < 1) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_TEMPLATE_REFERENCE);
+		}
+		this.templateId = templateId;
+		this.recurringHolidayClosed = recurringHolidayClosed;
 		this.templateInactiveClosed = templateInactiveClosed;
 	}
 

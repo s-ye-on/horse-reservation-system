@@ -157,6 +157,33 @@ class ScheduleLockingIntegrationTest {
 	}
 
 	@Test
+	void 겹치는_운영_날짜_범위_잠금은_직렬화된다() throws Exception {
+		createScheduleDates();
+
+		try (ExecutorService executor = Executors.newFixedThreadPool(2)) {
+			final CountDownLatch acquired = new CountDownLatch(1);
+			final CountDownLatch release = new CountDownLatch(1);
+			final Future<Void> holder = holdLock(
+				executor,
+				acquired,
+				release,
+				() -> scheduleDateRepository.findAllByScheduleDateBetweenForUpdate(
+					FIRST_DATE,
+					SECOND_DATE));
+			assertThat(acquired.await(2, TimeUnit.SECONDS)).isTrue();
+
+			final Future<Void> contender = runInTransaction(
+				executor,
+				() -> scheduleDateRepository.findByScheduleDateForUpdate(FIRST_DATE).orElseThrow());
+
+			assertBlocked(contender);
+			release.countDown();
+			assertThat(holder.get(2, TimeUnit.SECONDS)).isNull();
+			assertThat(contender.get(2, TimeUnit.SECONDS)).isNull();
+		}
+	}
+
+	@Test
 	void 동일한_회원과_날짜_Guard의_upsert와_배타_잠금은_직렬화된다() throws Exception {
 		final Long memberId = createMember("r02-lock-same");
 
@@ -218,6 +245,10 @@ class ScheduleLockingIntegrationTest {
 		assertThatThrownBy(() -> configGuardRepository.findSingletonForShare())
 			.isInstanceOf(IllegalTransactionStateException.class);
 		assertThatThrownBy(() -> scheduleDateRepository.findByScheduleDateForUpdate(FIRST_DATE))
+			.isInstanceOf(IllegalTransactionStateException.class);
+		assertThatThrownBy(() -> scheduleDateRepository.findAllByScheduleDateBetweenForUpdate(
+			FIRST_DATE,
+			SECOND_DATE))
 			.isInstanceOf(IllegalTransactionStateException.class);
 		assertThatThrownBy(() -> memberDayGuardRepository.acquire(memberId, FIRST_DATE))
 			.isInstanceOf(IllegalTransactionStateException.class);

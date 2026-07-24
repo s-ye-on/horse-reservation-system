@@ -49,6 +49,18 @@ public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapaci
 
 	List<TimeSlotCapacity> findAllByLessonDateOrderByStartTimeAsc(LocalDate lessonDate);
 
+	@Query(value = """
+		SELECT *
+		FROM time_slot_capacities
+		FORCE INDEX (idx_time_slot_capacities_lesson_date_id)
+		WHERE lesson_date = :lessonDate
+		ORDER BY id
+		FOR UPDATE
+		""", nativeQuery = true)
+	List<TimeSlotCapacity> findAllByLessonDateForUpdateOrdered(
+		@Param("lessonDate") LocalDate lessonDate
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
 		select timeSlot
