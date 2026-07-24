@@ -144,20 +144,22 @@ class MemberAvailableTimeSlotsApiTest {
 	}
 
 	@Test
-	void 당일_수업은_현재_시각보다_뒤인_시간대만_노출한다() throws Exception {
+	void 당일_수업은_정확히_3시간_이상_남은_시간대만_노출한다() throws Exception {
 		insertMember("same-day-member", 1);
-		insertTimeSlot(CURRENT_DATE, "09:00:00", 2, 2, false);
-		insertTimeSlot(CURRENT_DATE, "10:00:00", 2, 2, false);
-		insertTimeSlot(CURRENT_DATE, "10:00:01", 2, 2, false);
+		insertTimeSlot(CURRENT_DATE, "12:59:59", 2, 2, false);
+		insertTimeSlot(CURRENT_DATE, "13:00:00", 2, 2, false);
+		insertTimeSlot(CURRENT_DATE, "13:00:01", 2, 2, false);
 
 		mockMvc.perform(get(ENDPOINT)
 				.param("date", CURRENT_DATE.toString())
 				.param("classType", "ROUND_BEGINNER")
 				.with(jwt().jwt(token -> token.subject("same-day-member"))))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.timeSlots.length()").value(1))
-			.andExpect(jsonPath("$.timeSlots[0].startTime").value("10:00:01"))
-			.andExpect(jsonPath("$.timeSlots[0].reservable").value(true));
+			.andExpect(jsonPath("$.timeSlots.length()").value(2))
+			.andExpect(jsonPath("$.timeSlots[0].startTime").value("13:00:00"))
+			.andExpect(jsonPath("$.timeSlots[0].reservable").value(true))
+			.andExpect(jsonPath("$.timeSlots[1].startTime").value("13:00:01"))
+			.andExpect(jsonPath("$.timeSlots[1].reservable").value(true));
 	}
 
 	private Long insertMember(String authSubject, int generalRideCount) {

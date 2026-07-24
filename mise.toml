@@ -767,3 +767,15 @@ mise run db:up
   --tests '*TimeSlotCapacityTest' \
   --tests '*ExceptionCodeTest'
 '''
+
+[tasks."verify:m31-r07"]
+description = "Verify M31-R07 member reservation three-hour booking boundary"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*ReservationBookingTimePolicyTest' \
+  --tests '*MemberAvailableTimeSlotsApiTest' \
+  --tests '*PendingPaymentReservationApiTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*ExceptionCodeTest'
+'''

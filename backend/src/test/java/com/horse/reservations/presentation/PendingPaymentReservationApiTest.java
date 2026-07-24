@@ -174,11 +174,11 @@ class PendingPaymentReservationApiTest {
 	}
 
 	@Test
-	void 당일_수업_시작_직전까지_회원_예약을_허용한다() throws Exception {
+	void 정확히_수업_시작_3시간_전에는_회원_예약을_허용한다() throws Exception {
 		final String authSubject = "same-day-booking-member";
 		insertMember(authSubject);
 		final Long timeSlotId = insertTimeSlot(LESSON_DATE, "09:00:00", 8, 4);
-		when(clock.instant()).thenReturn(Instant.parse("2026-07-31T23:59:59.999999999Z"));
+		when(clock.instant()).thenReturn(Instant.parse("2026-07-31T21:00:00Z"));
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
@@ -186,10 +186,49 @@ class PendingPaymentReservationApiTest {
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.status").value("pending_payment"))
-			.andExpect(jsonPath("$.paymentDueAt").value("2026-08-01T09:00:00"));
+			.andExpect(jsonPath("$.paymentDueAt").value("2026-08-01T08:00:00"));
 
 		assertThat(reservationCount()).isEqualTo(1);
-		assertThat(paymentDueAt()).isEqualTo("2026-08-01 09:00:00");
+		assertThat(paymentDueAt()).isEqualTo("2026-08-01 08:00:00");
+	}
+
+	@Test
+	void 정확히_수업_시작_3시간_전에는_쿠폰_예약도_허용한다() throws Exception {
+		final String authSubject = "coupon-boundary-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, "general", null);
+		final Long timeSlotId = insertTimeSlot(LESSON_DATE, "09:00:00", 8, 4);
+		when(clock.instant()).thenReturn(Instant.parse("2026-07-31T21:00:00Z"));
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isCreated())
+			.andExpect(jsonPath("$.status").value("pending_admin_approval"))
+			.andExpect(jsonPath("$.paymentSource").value("coupon"));
+
+		assertThat(reservationCount()).isEqualTo(1);
+		assertThat(couponHeldCount(couponId)).isEqualTo(1);
+	}
+
+	@Test
+	void 예약_마감을_1마이크로초_지난_직접_신청은_거부하고_점유를_남기지_않는다() throws Exception {
+		final String authSubject = "deadline-passed-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId, "general", null);
+		final Long timeSlotId = insertTimeSlot(LESSON_DATE, "09:00:00", 8, 4);
+		when(clock.instant()).thenReturn(Instant.parse("2026-07-31T21:00:00.000001Z"));
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "FIRST_RIDE")))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("RESERVATION_BOOKING_DEADLINE_PASSED"));
+
+		assertThat(reservationCount()).isZero();
+		assertThat(couponHeldCount(couponId)).isZero();
 	}
 
 	@Test
