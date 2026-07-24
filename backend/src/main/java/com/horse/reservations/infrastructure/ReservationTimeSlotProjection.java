@@ -9,5 +9,7 @@ public interface ReservationTimeSlotProjection {
 
 	LocalTime getStartTime();
 
+	Long getMemberId();
+
 	Long getCouponId();
 }

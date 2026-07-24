@@ -15,21 +15,25 @@ import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationRepository;
+import com.horse.reservations.infrastructure.ReservationTimeSlotProjection;
 
 @Service
 public class ApprovalExpiryService {
 
 	private final Clock clock;
 	private final ReservationRepository reservationRepository;
+	private final ReservationScheduleDateLockService scheduleDateLockService;
 	private final CouponHoldService couponHoldService;
 
 	public ApprovalExpiryService(
 		Clock clock,
 		ReservationRepository reservationRepository,
+		ReservationScheduleDateLockService scheduleDateLockService,
 		CouponHoldService couponHoldService
 	) {
 		this.clock = clock;
 		this.reservationRepository = reservationRepository;
+		this.scheduleDateLockService = scheduleDateLockService;
 		this.couponHoldService = couponHoldService;
 	}
 
@@ -42,8 +46,15 @@ public class ApprovalExpiryService {
 				executedAt.toLocalTime());
 		int expiredCount = 0;
 		for (Long reservationId : candidateIds) {
+			final ReservationTimeSlotProjection snapshot = reservationRepository
+				.findTimeSlotById(reservationId)
+				.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+			scheduleDateLockService.lockForSafeExit(
+				snapshot.getLessonDate(),
+				snapshot.getMemberId());
 			final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 				.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+			reservation.ensureSchedule(snapshot.getLessonDate(), snapshot.getStartTime());
 			if (reservation.expireApproval(executedAt)) {
 				final boolean released = couponHoldService.release(
 					reservation.getId(), executedAt, CouponActorType.SYSTEM);

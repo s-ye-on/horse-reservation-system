@@ -161,6 +161,7 @@ public class ReservationApplicationService {
 		final ScheduleDate scheduleDate = scheduleDateRepository.findByScheduleDateForUpdate(lessonDate)
 			.orElseThrow(() -> new ScheduleException(ExceptionCode.SCHEDULE_OCCURRENCE_SYNC_INCOMPLETE));
 		scheduleDate.ensureAppliedConfigVersion(configGuard.getActiveVersion());
+		scheduleDate.ensureReservationInflowAllowed();
 		memberDayGuardRepository.acquire(memberId, lessonDate);
 	}
 

@@ -22,6 +22,7 @@ import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationChangeLogRepository;
 import com.horse.reservations.infrastructure.ReservationRepository;
+import com.horse.reservations.infrastructure.ReservationTimeSlotProjection;
 
 @Service
 public class AdminReservationCancellationService {
@@ -31,17 +32,20 @@ public class AdminReservationCancellationService {
 	private final Clock clock;
 	private final ReservationRepository reservationRepository;
 	private final ReservationChangeLogRepository changeLogRepository;
+	private final ReservationScheduleDateLockService scheduleDateLockService;
 	private final CouponHoldService couponHoldService;
 
 	public AdminReservationCancellationService(
 		Clock clock,
 		ReservationRepository reservationRepository,
 		ReservationChangeLogRepository changeLogRepository,
+		ReservationScheduleDateLockService scheduleDateLockService,
 		CouponHoldService couponHoldService
 	) {
 		this.clock = clock;
 		this.reservationRepository = reservationRepository;
 		this.changeLogRepository = changeLogRepository;
+		this.scheduleDateLockService = scheduleDateLockService;
 		this.couponHoldService = couponHoldService;
 	}
 
@@ -79,8 +83,14 @@ public class AdminReservationCancellationService {
 		final CancellationResponsibility responsibility =
 			CancellationResponsibility.fromRequestValue(requestedResponsibility);
 		final CouponAction couponAction = CouponAction.fromRequestValue(requestedCouponAction);
+		final ReservationTimeSlotProjection snapshot = reservationRepository.findTimeSlotById(reservationId)
+			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+		scheduleDateLockService.lockForMemberCancellation(
+			snapshot.getLessonDate(),
+			snapshot.getMemberId());
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+		reservation.ensureSchedule(snapshot.getLessonDate(), snapshot.getStartTime());
 		final ReservationStatus fromStatus = reservation.getStatus();
 		final boolean changed = reservation.cancelByAdmin(
 			LocalDateTime.now(clock),

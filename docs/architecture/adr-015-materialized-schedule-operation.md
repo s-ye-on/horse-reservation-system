@@ -2,7 +2,7 @@
 
 ## 상태
 
-확정, R02 기반 스키마 구현 완료 / R03 이후 workflow 구현 대기
+확정, R09 날짜 휴무 workflow 구현 완료 / R10 개별 휴강 구현 대기
 
 ## 맥락
 
@@ -340,6 +340,28 @@ Read Model로 건수·목록·진행 상태를 제공한다. 이 정리 상태 �
 | 예약 반려 | 허용 |
 | 자동 입금 만료 | 허용 |
 | 자동 승인 만료 | 허용 |
+
+R09 구현은 날짜 휴무 Command의 잠금 순서를 다음처럼 고정한다.
+
+| Command | 실제 잠금 순서 |
+|---|---|
+| CLOSING 시작·CLOSED 확정·CLOSING 취소 | `ScheduleDate FOR UPDATE → 활성 Reservation ID 오름차순 조회` |
+| 휴무 정리 전용 취소 | `ScheduleDate FOR UPDATE → member-day guard → Reservation FOR UPDATE → 원래 Coupon FOR UPDATE → 감사 로그 append` |
+| 예약 승인·입금 확인 | `ScheduleDate FOR UPDATE → Reservation FOR UPDATE` |
+| 입금 만료 복구 | `ScheduleConfigGuard FOR SHARE → ScheduleDate FOR UPDATE → member-day guard → TimeSlot FOR UPDATE → overlap/점유 Reservation → 대상 Reservation` |
+| 예약 변경 | `ScheduleConfigGuard FOR SHARE → ScheduleDate 날짜순 → member-day guard 날짜순 → TimeSlot ID순 → overlap/점유 Reservation → 대상 Reservation → Coupon` |
+| 수동 TimeSlot 생성 | `ScheduleConfigGuard FOR SHARE → ScheduleDate FOR UPDATE → TimeSlot UNIQUE 확인·INSERT` |
+| 반려·자동 만료 | `ScheduleDate FOR UPDATE → member-day guard → Reservation FOR UPDATE → Coupon FOR UPDATE(쿠폰 예약)` |
+
+`CLOSING` 시작은 날짜 행을 먼저 잠근 뒤 활성 예약을 읽으므로 신규 예약 Command가 같은
+날짜 잠금을 먼저 얻었다면 해당 예약을 영향 목록에 포함하고, 휴무 Command가 먼저 얻었다면
+이후 신규 유입을 차단한다. CLOSED 확정은 같은 날짜 잠금 안에서 활성 상태
+`PENDING_ADMIN_APPROVAL`, `PENDING_PAYMENT`, `CONFIRMED`를 다시 집계한다.
+
+휴무 정리 전용 취소만 CLOSING에서 허용하고 일반 관리자 취소는 차단한다. 전용 취소는
+예약이 이미 종료 상태면 추가 Coupon 반환과 감사 로그를 만들지 않아 같은 요청의 반복에
+멱등적이다. Coupon 반환 실패는 같은 트랜잭션의 Reservation 상태와 두 감사 로그를 모두
+rollback한다.
 
 당일 휴장은 아직 시작하지 않은 개별 TimeSlot을 즉시 닫고 같은 전용 취소 정책으로
 활성 예약을 정리한다. `is_closed = true`이고 활성 예약이 남아 있으면 진행 중, 0건이면

@@ -21,6 +21,8 @@ import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationBookingTimePolicy;
 import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.infrastructure.ReservationRepository;
+import com.horse.schedules.domain.exception.ScheduleException;
+import com.horse.schedules.infrastructure.ScheduleDateRepository;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
 import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
@@ -32,17 +34,20 @@ public class MemberAvailableTimeSlotsService {
 
 	private final Clock clock;
 	private final MemberAvailableRidingClassesService ridingClassesService;
+	private final ScheduleDateRepository scheduleDateRepository;
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final ReservationRepository reservationRepository;
 
 	public MemberAvailableTimeSlotsService(
 		Clock clock,
 		MemberAvailableRidingClassesService ridingClassesService,
+		ScheduleDateRepository scheduleDateRepository,
 		TimeSlotCapacityRepository timeSlotRepository,
 		ReservationRepository reservationRepository
 	) {
 		this.clock = clock;
 		this.ridingClassesService = ridingClassesService;
+		this.scheduleDateRepository = scheduleDateRepository;
 		this.timeSlotRepository = timeSlotRepository;
 		this.reservationRepository = reservationRepository;
 	}
@@ -58,6 +63,12 @@ public class MemberAvailableTimeSlotsService {
 		final MemberAvailableRidingClassesResult member =
 			ridingClassesService.getAvailableRidingClasses(authSubject);
 		final boolean eligible = member.availableRidingClasses().contains(ridingClass);
+		final boolean dateReservable = scheduleDateRepository.findByScheduleDate(date)
+			.orElseThrow(() -> new ScheduleException(ExceptionCode.SCHEDULE_INVALID_SCHEDULE_DATE))
+			.isReservationInflowAllowed();
+		if (!dateReservable) {
+			return new MemberAvailableTimeSlotsResult(date, ridingClass, List.of());
+		}
 		final Instant requestedAt = clock.instant();
 		final Map<java.time.LocalTime, List<Reservation>> reservationsByStartTime =
 			reservationRepository.findOccupyingByLessonDate(

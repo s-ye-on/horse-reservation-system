@@ -60,6 +60,7 @@ class PendingPaymentExpiryJobIntegrationTest {
 	@BeforeEach
 	void 데이터베이스와_만료_시각을_초기화한다() {
 		clearDatabase();
+		insertScheduleDates();
 		when(clock.instant()).thenReturn(EXECUTED_INSTANT);
 		when(clock.getZone()).thenReturn(SEOUL_ZONE);
 	}
@@ -302,8 +303,19 @@ class PendingPaymentExpiryJobIntegrationTest {
 	private void clearDatabase() {
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
 		jdbcTemplate.update("DELETE FROM reservations");
+		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");
 		jdbcTemplate.update("DELETE FROM coupons");
+		jdbcTemplate.update("DELETE FROM schedule_dates");
 		jdbcTemplate.update("DELETE FROM members");
+	}
+
+	private void insertScheduleDates() {
+		jdbcTemplate.update("""
+			INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
+			VALUES
+				('2026-07-15', 'NORMAL', 1),
+				('2026-08-01', 'NORMAL', 1)
+			""");
 	}
 }

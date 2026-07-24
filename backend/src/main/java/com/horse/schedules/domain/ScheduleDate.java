@@ -20,6 +20,8 @@ import jakarta.persistence.Version;
 @Table(name = "schedule_dates")
 public class ScheduleDate {
 
+	private static final int MAX_REASON_LENGTH = 500;
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -88,6 +90,86 @@ public class ScheduleDate {
 		if (appliedConfigVersion != expectedConfigVersion) {
 			throw new ScheduleException(ExceptionCode.SCHEDULE_OCCURRENCE_SYNC_INCOMPLETE);
 		}
+	}
+
+	public boolean startClosing(LocalDate today, String actorAuthSubject, String closureReason) {
+		if (today == null || !scheduleDate.isAfter(today)) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_DATE_CLOSURE_NOT_ALLOWED);
+		}
+		if (status == ScheduleDateStatus.CLOSING || status == ScheduleDateStatus.CLOSED) {
+			return false;
+		}
+		if (status != ScheduleDateStatus.NORMAL && status != ScheduleDateStatus.OPEN) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_DATE_CLOSURE_NOT_ALLOWED);
+		}
+		resumeStatus = status;
+		status = ScheduleDateStatus.CLOSING;
+		reason = requireReason(closureReason);
+		changedBy = requireActor(actorAuthSubject);
+		return true;
+	}
+
+	public boolean finalizeClosed(String actorAuthSubject) {
+		if (status == ScheduleDateStatus.CLOSED) {
+			return false;
+		}
+		if (status != ScheduleDateStatus.CLOSING) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_DATE_NOT_CLOSING);
+		}
+		status = ScheduleDateStatus.CLOSED;
+		resumeStatus = null;
+		changedBy = requireActor(actorAuthSubject);
+		return true;
+	}
+
+	public boolean cancelClosing(String actorAuthSubject, String cancellationReason) {
+		if (status == ScheduleDateStatus.NORMAL || status == ScheduleDateStatus.OPEN) {
+			return false;
+		}
+		if (status != ScheduleDateStatus.CLOSING || resumeStatus == null) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_DATE_NOT_CLOSING);
+		}
+		status = resumeStatus;
+		resumeStatus = null;
+		reason = requireReason(cancellationReason);
+		changedBy = requireActor(actorAuthSubject);
+		return true;
+	}
+
+	public void ensureReservationInflowAllowed() {
+		if (!isReservationInflowAllowed()) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_DATE_NOT_RESERVABLE);
+		}
+	}
+
+	public void ensureMemberCancellationAllowed() {
+		if (status == ScheduleDateStatus.CLOSING || status == ScheduleDateStatus.CLOSED) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_DATE_NOT_RESERVABLE);
+		}
+	}
+
+	public void ensureClosureCleanupAllowed() {
+		if (status != ScheduleDateStatus.CLOSING) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_DATE_NOT_CLOSING);
+		}
+	}
+
+	public boolean isReservationInflowAllowed() {
+		return status == ScheduleDateStatus.NORMAL || status == ScheduleDateStatus.OPEN;
+	}
+
+	private static String requireActor(String actorAuthSubject) {
+		if (actorAuthSubject == null || actorAuthSubject.isBlank()) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_ACTOR);
+		}
+		return actorAuthSubject.strip();
+	}
+
+	private static String requireReason(String value) {
+		if (value == null || value.isBlank() || value.strip().length() > MAX_REASON_LENGTH) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_REASON);
+		}
+		return value.strip();
 	}
 
 	public Long getId() {

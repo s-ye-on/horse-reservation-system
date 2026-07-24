@@ -52,6 +52,7 @@ class AdminReservationCancelApiTest {
 	@BeforeEach
 	void 데이터베이스와_관리자_취소_시각을_초기화한다() {
 		clearDatabase();
+		insertScheduleDate();
 		when(clock.instant()).thenReturn(AFTER_CUTOFF);
 		when(clock.getZone()).thenReturn(SEOUL_ZONE);
 	}
@@ -311,8 +312,17 @@ class AdminReservationCancelApiTest {
 		jdbcTemplate.update("DELETE FROM reservation_change_logs");
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
 		jdbcTemplate.update("DELETE FROM reservations");
+		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM coupons");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");
+		jdbcTemplate.update("DELETE FROM schedule_dates");
 		jdbcTemplate.update("DELETE FROM members");
+	}
+
+	private void insertScheduleDate() {
+		jdbcTemplate.update("""
+			INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
+			VALUES (?, 'NORMAL', 1)
+			""", LESSON_DATE);
 	}
 }

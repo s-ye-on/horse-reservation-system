@@ -190,6 +190,54 @@ class ScheduleDomainTest {
 	}
 
 	@Test
+	void 미래_운영_날짜를_CLOSING으로_전환하고_직전_상태로_복귀한다() {
+		final ScheduleDate scheduleDate =
+			ScheduleDate.create(LocalDate.of(2026, 8, 1), 1L);
+
+		assertThat(scheduleDate.startClosing(
+			LocalDate.of(2026, 7, 24),
+			"schedule-admin",
+			"우천 휴무")).isTrue();
+		assertThat(scheduleDate.getStatus()).isEqualTo(ScheduleDateStatus.CLOSING);
+		assertThat(scheduleDate.getResumeStatus()).isEqualTo(ScheduleDateStatus.NORMAL);
+		assertThat(scheduleDate.isReservationInflowAllowed()).isFalse();
+
+		assertThat(scheduleDate.cancelClosing(
+			"schedule-admin",
+			"휴무 취소")).isTrue();
+		assertThat(scheduleDate.getStatus()).isEqualTo(ScheduleDateStatus.NORMAL);
+		assertThat(scheduleDate.getResumeStatus()).isNull();
+	}
+
+	@Test
+	void CLOSING_운영_날짜만_CLOSED로_확정한다() {
+		final ScheduleDate scheduleDate =
+			ScheduleDate.create(LocalDate.of(2026, 8, 1), 1L);
+
+		scheduleDate.startClosing(
+			LocalDate.of(2026, 7, 24),
+			"schedule-admin",
+			"시설 점검");
+
+		assertThat(scheduleDate.finalizeClosed("schedule-admin")).isTrue();
+		assertThat(scheduleDate.finalizeClosed("schedule-admin")).isFalse();
+		assertThat(scheduleDate.getStatus()).isEqualTo(ScheduleDateStatus.CLOSED);
+	}
+
+	@Test
+	void 당일과_과거_운영_날짜는_전체_휴무로_전환할_수_없다() {
+		final ScheduleDate scheduleDate =
+			ScheduleDate.create(LocalDate.of(2026, 7, 24), 1L);
+
+		assertScheduleException(
+			() -> scheduleDate.startClosing(
+				LocalDate.of(2026, 7, 24),
+				"schedule-admin",
+				"당일 휴무"),
+			ExceptionCode.SCHEDULE_DATE_CLOSURE_NOT_ALLOWED);
+	}
+
+	@Test
 	void 일정_감사_로그는_입력_상태를_복사하여_보관한다() {
 		final Map<String, Object> fromState = new HashMap<>();
 		fromState.put("active", true);

@@ -22,13 +22,13 @@ import com.horse.members.domain.Member;
 import com.horse.members.domain.RidingClass;
 import com.horse.members.domain.exception.MemberException;
 import com.horse.members.infrastructure.MemberRepository;
-import com.horse.reservations.domain.ActiveReservationUniquenessPolicy;
 import com.horse.reservations.domain.CouponAction;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationActorType;
 import com.horse.reservations.domain.ReservationChangeDeadlinePolicy;
 import com.horse.reservations.domain.ReservationChangeLog;
 import com.horse.reservations.domain.ReservationChangeTiming;
+import com.horse.reservations.domain.ReservationIntervalOverlapPolicy;
 import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationChangeLogRepository;
@@ -51,6 +51,7 @@ public class ReservationChangeService {
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final CouponRepository couponRepository;
 	private final CouponUsageLogRepository couponUsageLogRepository;
+	private final ReservationScheduleDateLockService scheduleDateLockService;
 
 	public ReservationChangeService(
 		Clock clock,
@@ -59,7 +60,8 @@ public class ReservationChangeService {
 		ReservationChangeLogRepository changeLogRepository,
 		TimeSlotCapacityRepository timeSlotRepository,
 		CouponRepository couponRepository,
-		CouponUsageLogRepository couponUsageLogRepository
+		CouponUsageLogRepository couponUsageLogRepository,
+		ReservationScheduleDateLockService scheduleDateLockService
 	) {
 		this.clock = clock;
 		this.memberRepository = memberRepository;
@@ -68,6 +70,7 @@ public class ReservationChangeService {
 		this.timeSlotRepository = timeSlotRepository;
 		this.couponRepository = couponRepository;
 		this.couponUsageLogRepository = couponUsageLogRepository;
+		this.scheduleDateLockService = scheduleDateLockService;
 	}
 
 	@Transactional
@@ -158,6 +161,13 @@ public class ReservationChangeService {
 		final ReservationTimeSlotProjection sourceProjection = reservationRepository
 			.findTimeSlotById(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+		final TimeSlotCapacity targetSnapshot = timeSlotRepository.findById(
+			requireTargetTimeSlotId(targetTimeSlotId))
+			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
+		scheduleDateLockService.lockForChange(
+			List.of(sourceProjection.getLessonDate(), targetSnapshot.getLessonDate()),
+			targetSnapshot.getLessonDate(),
+			sourceProjection.getMemberId());
 		final TimeSlotCapacity sourceTimeSlot = timeSlotRepository
 			.findByLessonDateAndStartTime(sourceProjection.getLessonDate(), sourceProjection.getStartTime())
 			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
@@ -170,7 +180,19 @@ public class ReservationChangeService {
 		final ReservationChangeTiming timing = ReservationChangeDeadlinePolicy.evaluate(
 			sourceProjection.getLessonDate(),
 			changedAt);
-		final Coupon lockedCoupon = lockCouponForChange(sourceProjection.getCouponId());
+		final List<Reservation> targetOverlaps = reservationRepository.findActiveOverlapsForUpdate(
+			sourceProjection.getMemberId(),
+			targetTimeSlot.getLessonDate(),
+			targetTimeSlot.getStartTime(),
+			targetTimeSlot.getEndTime());
+		ReservationIntervalOverlapPolicy.ensureNoOverlap(targetOverlaps.stream()
+			.filter(current -> !current.getId().equals(reservationId))
+			.toList());
+		final List<Reservation> occupyingReservations = reservationRepository
+			.findOccupyingByLessonDateAndStartTimeForUpdate(
+				targetTimeSlot.getLessonDate(),
+				targetTimeSlot.getStartTime(),
+				ReservationStatus.occupyingStatuses());
 
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
@@ -182,6 +204,7 @@ public class ReservationChangeService {
 			return unchangedResult(reservation);
 		}
 
+		final Coupon lockedCoupon = lockCouponForChange(sourceProjection.getCouponId());
 		ensureReservableLessonDate(targetTimeSlot.getLessonDate());
 		if (isWeekendSameDayChange(reservation, targetTimeSlot, timing)) {
 			throw new ReservationException(
@@ -190,7 +213,7 @@ public class ReservationChangeService {
 		if (timing == ReservationChangeTiming.BEFORE_CUTOFF
 			|| isWeekdaySameDayChange(reservation, targetTimeSlot, timing)) {
 			ensureCouponValidForTarget(reservation, lockedCoupon, targetTimeSlot.getLessonDate());
-			ensureTargetCapacity(targetTimeSlot, reservation);
+			ensureTargetCapacity(targetTimeSlot, reservation, occupyingReservations);
 			return changeWithoutCouponAction(
 				reservation,
 				targetTimeSlot,
@@ -203,7 +226,7 @@ public class ReservationChangeService {
 			reservation,
 			lockedCoupon,
 			targetTimeSlot.getLessonDate());
-		ensureTargetCapacity(targetTimeSlot, reservation);
+		ensureTargetCapacity(targetTimeSlot, reservation, occupyingReservations);
 		return changeAfterCutoff(
 			reservation,
 			targetTimeSlot,
@@ -281,15 +304,11 @@ public class ReservationChangeService {
 		return ReservationChangeResult.freeChangeUsed(reservation, true);
 	}
 
-	private void ensureTargetCapacity(TimeSlotCapacity targetTimeSlot, Reservation reservation) {
-		final List<Reservation> occupyingReservations = reservationRepository
-			.findOccupyingByLessonDateAndStartTimeForUpdate(
-				targetTimeSlot.getLessonDate(),
-				targetTimeSlot.getStartTime(),
-				ReservationStatus.occupyingStatuses());
-		ActiveReservationUniquenessPolicy.ensureNoDuplicate(
-			reservation.getMemberId(),
-			occupyingReservations);
+	private void ensureTargetCapacity(
+		TimeSlotCapacity targetTimeSlot,
+		Reservation reservation,
+		List<Reservation> occupyingReservations
+	) {
 		final RidingClass ridingClass = reservation.getRidingClass();
 		final int roundArenaOccupied = (int)occupyingReservations.stream()
 			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))
@@ -311,22 +330,26 @@ public class ReservationChangeService {
 		final List<Reservation> occupyingReservations = reservationRepository
 			.findOccupyingByLessonDate(
 				targetTimeSlot.getLessonDate(),
-				ReservationStatus.occupyingStatuses()).stream()
+				ReservationStatus.occupyingStatuses());
+		ReservationIntervalOverlapPolicy.ensureNoOverlap(occupyingReservations.stream()
+			.filter(current -> current.getMemberId().equals(reservation.getMemberId()))
+			.filter(current -> !current.getId().equals(reservation.getId()))
+			.filter(current -> current.getStartTime().isBefore(targetTimeSlot.getEndTime())
+				&& current.getEndTime().isAfter(targetTimeSlot.getStartTime()))
+			.toList());
+		final List<Reservation> targetOccupyingReservations = occupyingReservations.stream()
 			.filter(current -> current.getStartTime().equals(targetTimeSlot.getStartTime()))
 			.toList();
-		ActiveReservationUniquenessPolicy.ensureNoDuplicate(
-			reservation.getMemberId(),
-			occupyingReservations);
 		final RidingClass ridingClass = reservation.getRidingClass();
-		final int roundArenaOccupied = (int)occupyingReservations.stream()
+		final int roundArenaOccupied = (int)targetOccupyingReservations.stream()
 			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))
 			.count();
-		final int classOccupied = (int)occupyingReservations.stream()
+		final int classOccupied = (int)targetOccupyingReservations.stream()
 			.filter(current -> current.getRidingClass() == ridingClass)
 			.count();
 		targetTimeSlot.ensureCanReserve(
 			ridingClass,
-			occupyingReservations.size(),
+			targetOccupyingReservations.size(),
 			roundArenaOccupied,
 			classOccupied);
 	}

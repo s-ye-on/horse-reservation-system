@@ -39,6 +39,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	@Query("""
 		select reservation.lessonDate as lessonDate,
 			reservation.startTime as startTime,
+			reservation.memberId as memberId,
 			reservation.couponId as couponId
 		from Reservation reservation
 		where reservation.id = :reservationId
@@ -111,7 +112,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 			or reservation.lessonDate < :lessonDate
 			or (reservation.lessonDate = :lessonDate and reservation.startTime <= :startTime)
 		  )
-		order by reservation.id
+		order by reservation.lessonDate, reservation.memberId, reservation.id
 		""")
 	List<Long> findPaymentExpiryCandidateIds(
 		@Param("status") ReservationStatus status,
@@ -128,7 +129,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 			reservation.lessonDate < :lessonDate
 			or (reservation.lessonDate = :lessonDate and reservation.startTime <= :startTime)
 		  )
-		order by reservation.id
+		order by reservation.lessonDate, reservation.memberId, reservation.id
 		""")
 	List<Long> findApprovalExpiryCandidateIds(
 		@Param("status") ReservationStatus status,
@@ -191,5 +192,22 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	List<Reservation> findOccupyingByLessonDate(
 		@Param("lessonDate") LocalDate lessonDate,
 		@Param("statuses") Collection<ReservationStatus> statuses
+	);
+
+	@Query("""
+		select reservation.id
+		from Reservation reservation
+		where reservation.lessonDate = :lessonDate
+		  and reservation.status in :statuses
+		order by reservation.id
+		""")
+	List<Long> findActiveIdsByLessonDateOrderById(
+		@Param("lessonDate") LocalDate lessonDate,
+		@Param("statuses") Collection<ReservationStatus> statuses
+	);
+
+	long countByLessonDateAndStatusIn(
+		LocalDate lessonDate,
+		Collection<ReservationStatus> statuses
 	);
 }

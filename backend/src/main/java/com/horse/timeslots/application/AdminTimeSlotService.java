@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
+import com.horse.schedules.application.ScheduleDateInflowLockService;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.TimeSlotOperationTimePolicy;
 import com.horse.timeslots.domain.exception.TimeSlotException;
@@ -24,15 +25,18 @@ import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
 public class AdminTimeSlotService {
 
 	private final Clock clock;
+	private final ScheduleDateInflowLockService scheduleDateInflowLockService;
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final TimeSlotReservationHistoryQuery reservationHistoryQuery;
 
 	public AdminTimeSlotService(
 		Clock clock,
+		ScheduleDateInflowLockService scheduleDateInflowLockService,
 		TimeSlotCapacityRepository timeSlotRepository,
 		TimeSlotReservationHistoryQuery reservationHistoryQuery
 	) {
 		this.clock = clock;
+		this.scheduleDateInflowLockService = scheduleDateInflowLockService;
 		this.timeSlotRepository = timeSlotRepository;
 		this.reservationHistoryQuery = reservationHistoryQuery;
 	}
@@ -62,17 +66,18 @@ public class AdminTimeSlotService {
 		Map<String, Integer> classCapacities
 	) {
 		ensureNotStartedIfPresent(lessonDate, startTime);
-		if (lessonDate != null
-			&& startTime != null
-			&& timeSlotRepository.existsByLessonDateAndStartTime(lessonDate, startTime)) {
-			throw new TimeSlotException(ExceptionCode.TIMESLOT_ALREADY_EXISTS);
-		}
 		final TimeSlotCapacity timeSlot = TimeSlotCapacity.create(
 			lessonDate,
 			startTime,
 			totalCapacity,
 			roundArenaCapacity,
 			classCapacities);
+		scheduleDateInflowLockService.lock(timeSlot.getLessonDate());
+		if (lessonDate != null
+			&& startTime != null
+			&& timeSlotRepository.existsByLessonDateAndStartTime(lessonDate, startTime)) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_ALREADY_EXISTS);
+		}
 		try {
 			return TimeSlotResult.from(timeSlotRepository.saveAndFlush(timeSlot));
 		}

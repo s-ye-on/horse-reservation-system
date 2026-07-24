@@ -1,6 +1,7 @@
 package com.horse.schedules.infrastructure;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,4 +47,17 @@ public interface ScheduleDateRepository extends JpaRepository<ScheduleDate, Long
 		FOR UPDATE
 		""", nativeQuery = true)
 	Optional<ScheduleDate> findByScheduleDateForUpdate(@Param("scheduleDate") LocalDate scheduleDate);
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	@Query(value = """
+		SELECT *
+		FROM schedule_dates
+		FORCE INDEX (uk_schedule_dates_date)
+		WHERE schedule_date IN (:scheduleDates)
+		ORDER BY schedule_date
+		FOR UPDATE
+		""", nativeQuery = true)
+	List<ScheduleDate> findAllByScheduleDateInForUpdate(
+		@Param("scheduleDates") Collection<LocalDate> scheduleDates
+	);
 }

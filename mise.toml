@@ -798,3 +798,26 @@ mise run db:up
   --tests '*TimeSlotDeletionConcurrencyIntegrationTest' \
   --tests '*ExceptionCodeTest'
 '''
+
+[tasks."verify:m31-r09"]
+description = "Verify M31-R09 schedule date closure workflow"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*ScheduleDomainTest' \
+  --tests '*ScheduleDateClosureServiceIntegrationTest' \
+  --tests '*ApprovalExpiryJobIntegrationTest' \
+  --tests '*PendingPaymentExpiryJobIntegrationTest' \
+  --tests '*AdminPendingPaymentRestoreApiTest' \
+  --tests '*AdminReservationCancelApiTest' \
+  --tests '*AdminReservationConfirmApiTest' \
+  --tests '*AdminReservationRejectApiTest' \
+  --tests '*MemberReservationCancelApiTest' \
+  --tests '*ReservationChangeApiTest' \
+  --tests '*MemberAvailableTimeSlotsApiTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*PendingPaymentReservationApiTest' \
+  --tests '*ScheduleLockingIntegrationTest' \
+  --tests '*ExceptionCodeTest'
+'''

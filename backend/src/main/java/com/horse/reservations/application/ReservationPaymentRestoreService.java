@@ -9,10 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
-import com.horse.reservations.domain.ActiveReservationUniquenessPolicy;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationChangeLog;
 import com.horse.reservations.domain.ReservationChangeType;
+import com.horse.reservations.domain.ReservationIntervalOverlapPolicy;
 import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationChangeLogRepository;
@@ -29,26 +29,40 @@ public class ReservationPaymentRestoreService {
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final ReservationRepository reservationRepository;
 	private final ReservationChangeLogRepository changeLogRepository;
+	private final ReservationScheduleDateLockService scheduleDateLockService;
 
 	public ReservationPaymentRestoreService(
 		Clock clock,
 		TimeSlotCapacityRepository timeSlotRepository,
 		ReservationRepository reservationRepository,
-		ReservationChangeLogRepository changeLogRepository
+		ReservationChangeLogRepository changeLogRepository,
+		ReservationScheduleDateLockService scheduleDateLockService
 	) {
 		this.clock = clock;
 		this.timeSlotRepository = timeSlotRepository;
 		this.reservationRepository = reservationRepository;
 		this.changeLogRepository = changeLogRepository;
+		this.scheduleDateLockService = scheduleDateLockService;
 	}
 
 	@Transactional
 	public ReservationPaymentRestoreResult restore(Long reservationId, String adminSubject, String memo) {
 		final ReservationTimeSlotProjection requestedTimeSlot = reservationRepository.findTimeSlotById(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+		scheduleDateLockService.lockForReentry(
+			requestedTimeSlot.getLessonDate(),
+			requestedTimeSlot.getMemberId());
 		final TimeSlotCapacity timeSlot = timeSlotRepository.findByLessonDateAndStartTimeForUpdate(
 				requestedTimeSlot.getLessonDate(), requestedTimeSlot.getStartTime())
 			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
+		final List<Reservation> overlaps = reservationRepository.findActiveOverlapsForUpdate(
+			requestedTimeSlot.getMemberId(),
+			timeSlot.getLessonDate(),
+			timeSlot.getStartTime(),
+			timeSlot.getEndTime());
+		ReservationIntervalOverlapPolicy.ensureNoOverlap(overlaps.stream()
+			.filter(current -> !current.getId().equals(reservationId))
+			.toList());
 		final List<Reservation> occupyingReservations =
 			reservationRepository.findOccupyingByLessonDateAndStartTimeForUpdate(
 				timeSlot.getLessonDate(),
@@ -91,9 +105,6 @@ public class ReservationPaymentRestoreService {
 		Reservation reservation,
 		List<Reservation> occupyingReservations
 	) {
-		ActiveReservationUniquenessPolicy.ensureNoDuplicate(
-			reservation.getMemberId(),
-			occupyingReservations);
 		final RidingClass ridingClass = reservation.getRidingClass();
 		final int roundArenaOccupied = (int)occupyingReservations.stream()
 			.filter(current -> TimeSlotCapacity.usesRoundArena(current.getRidingClass()))

@@ -73,6 +73,7 @@ class MemberAvailableTimeSlotsApiTest {
 	@Test
 	void 허용된_클래스의_잔여_정원을_조회하고_상태를_변경하지_않는다() throws Exception {
 		final LocalDate date = futureDate();
+		insertScheduleDate(date);
 		insertMember("current-member", 1);
 		final Long occupyingMemberId = insertMember("occupying-member", 1);
 		insertTimeSlot(date, "09:00:00", 2, 2, false);
@@ -98,6 +99,7 @@ class MemberAvailableTimeSlotsApiTest {
 	@Test
 	void 허용되지_않은_클래스와_마감과_만석_원인을_구분한다() throws Exception {
 		final LocalDate date = futureDate();
+		insertScheduleDate(date);
 		insertMember("first-ride-member", 0);
 		final Long occupyingMemberId = insertMember("full-member", 1);
 		insertTimeSlot(date, "09:00:00", 2, 2, true);
@@ -145,6 +147,7 @@ class MemberAvailableTimeSlotsApiTest {
 
 	@Test
 	void 당일_수업은_정확히_3시간_이상_남은_시간대만_노출한다() throws Exception {
+		insertScheduleDate(CURRENT_DATE);
 		insertMember("same-day-member", 1);
 		insertTimeSlot(CURRENT_DATE, "12:59:59", 2, 2, false);
 		insertTimeSlot(CURRENT_DATE, "13:00:00", 2, 2, false);
@@ -162,6 +165,36 @@ class MemberAvailableTimeSlotsApiTest {
 			.andExpect(jsonPath("$.timeSlots[1].reservable").value(true));
 	}
 
+	@Test
+	void CLOSING과_CLOSED_운영_날짜는_예약_가능_목록에서_숨긴다() throws Exception {
+		final LocalDate date = futureDate();
+		insertScheduleDate(date);
+		insertMember("closed-date-member", 1);
+		insertTimeSlot(date, "09:00:00", 2, 2, false);
+
+		jdbcTemplate.update("""
+			UPDATE schedule_dates
+			SET status = 'CLOSING', resume_status = 'NORMAL'
+			WHERE schedule_date = ?
+			""", date);
+		assertDateHidden(date);
+		jdbcTemplate.update("""
+			UPDATE schedule_dates
+			SET status = 'CLOSED', resume_status = NULL
+			WHERE schedule_date = ?
+			""", date);
+		assertDateHidden(date);
+	}
+
+	private void assertDateHidden(LocalDate date) throws Exception {
+		mockMvc.perform(get(ENDPOINT)
+				.param("date", date.toString())
+				.param("classType", "ROUND_BEGINNER")
+				.with(jwt().jwt(token -> token.subject("closed-date-member"))))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.timeSlots").isEmpty());
+	}
+
 	private Long insertMember(String authSubject, int generalRideCount) {
 		jdbcTemplate.update("""
 			INSERT INTO members (auth_subject, name, phone, general_ride_count)
@@ -169,6 +202,13 @@ class MemberAvailableTimeSlotsApiTest {
 			""", authSubject, generalRideCount);
 		return jdbcTemplate.queryForObject(
 			"SELECT id FROM members WHERE auth_subject = ?", Long.class, authSubject);
+	}
+
+	private void insertScheduleDate(LocalDate scheduleDate) {
+		jdbcTemplate.update("""
+			INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
+			VALUES (?, 'NORMAL', 1)
+			""", scheduleDate);
 	}
 
 	private void insertTimeSlot(

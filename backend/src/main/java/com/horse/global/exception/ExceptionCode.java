@@ -98,6 +98,9 @@ public enum ExceptionCode {
 	TIMESLOT_CAPACITY_EXCEEDED(HttpStatus.CONFLICT, "시간대 정원이 마감되었습니다."),
 	TIMESLOT_CAPACITY_BELOW_OCCUPANCY(HttpStatus.CONFLICT, "현재 예약 인원보다 정원을 작게 설정할 수 없습니다."),
 	TIMESLOT_RESERVATION_HISTORY_EXISTS(HttpStatus.CONFLICT, "예약 이력이 있는 시간대는 삭제할 수 없습니다."),
+	TIMESLOT_ACTIVE_RESERVATIONS_EXIST_ON_CLOSURE_DATE(
+		HttpStatus.CONFLICT,
+		"휴무 날짜에 활성 예약이 남아 있습니다."),
 	TIMESLOT_INVALID_TEMPLATE_REFERENCE(
 		HttpStatus.INTERNAL_SERVER_ERROR,
 		"시간대의 정규 시간표 참조가 올바르지 않습니다."),
@@ -133,7 +136,10 @@ public enum ExceptionCode {
 		"시간표 동기화에 실패했습니다. 같은 설정 버전으로 다시 시도해 주세요."),
 	SCHEDULE_OCCURRENCE_SYNC_INCOMPLETE(
 		HttpStatus.CONFLICT,
-		"아직 모든 운영 날짜에 시간표 설정이 적용되지 않았습니다.");
+		"아직 모든 운영 날짜에 시간표 설정이 적용되지 않았습니다."),
+	SCHEDULE_DATE_NOT_RESERVABLE(HttpStatus.CONFLICT, "휴무 처리 중이거나 휴무인 날짜에는 예약할 수 없습니다."),
+	SCHEDULE_DATE_CLOSURE_NOT_ALLOWED(HttpStatus.CONFLICT, "해당 운영 날짜는 휴무 처리할 수 없습니다."),
+	SCHEDULE_DATE_NOT_CLOSING(HttpStatus.CONFLICT, "휴무 처리 중인 운영 날짜가 아닙니다.");
 
 	private final HttpStatus status;
 	private final String message;

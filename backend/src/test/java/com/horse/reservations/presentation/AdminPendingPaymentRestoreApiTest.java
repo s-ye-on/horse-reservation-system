@@ -66,6 +66,8 @@ class AdminPendingPaymentRestoreApiTest {
 	@BeforeEach
 	void 데이터베이스와_복구_시각을_초기화한다() {
 		clearDatabase();
+		insertScheduleDate();
+		resetScheduleConfigGuard();
 		when(clock.instant()).thenReturn(RESTORE_INSTANT);
 		when(clock.getZone()).thenReturn(SEOUL_ZONE);
 	}
@@ -133,7 +135,7 @@ class AdminPendingPaymentRestoreApiTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request("중복 확인 후 복구")))
 			.andExpect(status().isConflict())
-			.andExpect(jsonPath("$.code").value("RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT"));
+			.andExpect(jsonPath("$.code").value("RESERVATION_OVERLAPPING_ACTIVE_RESERVATION"));
 
 		assertThat(reservationStatus(expiredReservationId)).isEqualTo("payment_expired");
 		assertThat(changeLogCount(expiredReservationId)).isZero();
@@ -371,8 +373,29 @@ class AdminPendingPaymentRestoreApiTest {
 		jdbcTemplate.update("DELETE FROM reservation_change_logs");
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
 		jdbcTemplate.update("DELETE FROM reservations");
+		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");
 		jdbcTemplate.update("DELETE FROM coupons");
+		jdbcTemplate.update("DELETE FROM schedule_dates");
 		jdbcTemplate.update("DELETE FROM members");
+	}
+
+	private void insertScheduleDate() {
+		jdbcTemplate.update("""
+			INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
+			VALUES (?, 'NORMAL', 1)
+			""", LESSON_DATE);
+	}
+
+	private void resetScheduleConfigGuard() {
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'ACTIVE',
+				active_version = 1,
+				pending_version = NULL,
+				sync_started_at = NULL,
+				sync_started_by = NULL
+			WHERE id = 1
+			""");
 	}
 }

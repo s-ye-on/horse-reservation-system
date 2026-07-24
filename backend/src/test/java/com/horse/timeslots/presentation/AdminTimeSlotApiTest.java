@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -68,6 +69,24 @@ class AdminTimeSlotApiTest {
 	void setUpClock() {
 		given(clock.instant()).willReturn(Instant.parse("2026-08-01T01:00:00Z"));
 		given(clock.getZone()).willReturn(ZoneId.of("Asia/Seoul"));
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'ACTIVE',
+				active_version = 1,
+				pending_version = NULL,
+				sync_started_at = NULL,
+				sync_started_by = NULL
+			WHERE id = 1
+			""");
+		for (LocalDate date = LocalDate.of(2026, 8, 1);
+			!date.isAfter(LocalDate.of(2026, 8, 12));
+			date = date.plusDays(1)) {
+			jdbcTemplate.update("""
+				INSERT IGNORE INTO schedule_dates (
+					schedule_date, status, applied_config_version
+				) VALUES (?, 'NORMAL', 1)
+				""", date);
+		}
 	}
 
 	@Test
@@ -159,6 +178,23 @@ class AdminTimeSlotApiTest {
 				.content(request))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.code").value("TIMESLOT_ALREADY_EXISTS"));
+	}
+
+	@Test
+	void CLOSING과_CLOSED_날짜에는_수동_시간대를_생성할_수_없다() throws Exception {
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 6);
+		jdbcTemplate.update("""
+			UPDATE schedule_dates
+			SET status = 'CLOSING', resume_status = 'NORMAL'
+			WHERE schedule_date = ?
+			""", lessonDate);
+		assertManualCreationBlocked(lessonDate);
+		jdbcTemplate.update("""
+			UPDATE schedule_dates
+			SET status = 'CLOSED', resume_status = NULL
+			WHERE schedule_date = ?
+			""", lessonDate);
+		assertManualCreationBlocked(lessonDate);
 	}
 
 	@Test
@@ -272,6 +308,20 @@ class AdminTimeSlotApiTest {
 				.content(request))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value(exceptionCode));
+	}
+
+	private void assertManualCreationBlocked(LocalDate lessonDate) throws Exception {
+		mockMvc.perform(post(ENDPOINT)
+				.with(adminJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(createRequest(
+					lessonDate.toString(),
+					"13:30:00",
+					8,
+					4,
+					CLASS_CAPACITIES)))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("SCHEDULE_DATE_NOT_RESERVABLE"));
 	}
 
 	private void assertCapacityBelowOccupancy(Long timeSlotId, String request) throws Exception {

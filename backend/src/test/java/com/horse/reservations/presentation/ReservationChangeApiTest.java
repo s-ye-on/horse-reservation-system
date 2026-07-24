@@ -68,6 +68,7 @@ class ReservationChangeApiTest {
 	@BeforeEach
 	void 데이터베이스를_초기화한다() {
 		clearDatabase();
+		resetScheduleConfigGuard();
 		when(clock.instant()).thenReturn(BEFORE_CUTOFF_INSTANT);
 		when(clock.getZone()).thenReturn(SEOUL_ZONE);
 	}
@@ -251,13 +252,13 @@ class ReservationChangeApiTest {
 				.param("targetTimeSlotId", targetTimeSlotId.toString())
 				.with(memberJwt("duplicate-target-change-member")))
 			.andExpect(status().isConflict())
-			.andExpect(jsonPath("$.code").value("RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT"));
+			.andExpect(jsonPath("$.code").value("RESERVATION_OVERLAPPING_ACTIVE_RESERVATION"));
 		mockMvc.perform(post("/api/me/reservations/{reservationId}/change", sourceReservationId)
 				.with(memberJwt("duplicate-target-change-member"))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(memberRequest(targetTimeSlotId, "중복 시간대 변경")))
 			.andExpect(status().isConflict())
-			.andExpect(jsonPath("$.code").value("RESERVATION_DUPLICATE_ACTIVE_TIME_SLOT"));
+			.andExpect(jsonPath("$.code").value("RESERVATION_OVERLAPPING_ACTIVE_RESERVATION"));
 
 		assertThat(reservationSchedule(sourceReservationId)).containsExactly(
 			lessonDate.toString(),
@@ -585,6 +586,7 @@ class ReservationChangeApiTest {
 	}
 
 	private Long insertTimeSlot(LocalDate lessonDate, String startTime, int totalCapacity) {
+		insertScheduleDate(lessonDate);
 		jdbcTemplate.update("""
 			INSERT INTO time_slot_capacities (
 				lesson_date, start_time, total_capacity, round_arena_capacity,
@@ -725,8 +727,29 @@ class ReservationChangeApiTest {
 		jdbcTemplate.update("DELETE FROM reservation_change_logs");
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
 		jdbcTemplate.update("DELETE FROM reservations");
+		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM coupons");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");
+		jdbcTemplate.update("DELETE FROM schedule_dates");
 		jdbcTemplate.update("DELETE FROM members");
+	}
+
+	private void insertScheduleDate(LocalDate lessonDate) {
+		jdbcTemplate.update("""
+			INSERT IGNORE INTO schedule_dates (schedule_date, status, applied_config_version)
+			VALUES (?, 'NORMAL', 1)
+			""", lessonDate);
+	}
+
+	private void resetScheduleConfigGuard() {
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'ACTIVE',
+				active_version = 1,
+				pending_version = NULL,
+				sync_started_at = NULL,
+				sync_started_by = NULL
+			WHERE id = 1
+			""");
 	}
 }

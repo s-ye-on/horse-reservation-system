@@ -13,6 +13,7 @@
 - `M31-R06`: COMPLETED
 - `M31-R07`: COMPLETED
 - `M31-R08`: COMPLETED
+- `M31-R09`: COMPLETED
 
 최신 일정 운영 정책이 기존 M31-01~M31-05의 시간, TimeSlot과 중복 예약 가정을
 대체하므로 Checkpoint 1을 다시 연다. 기존 완료 Task와 커밋은 당시 정책의 증거로
