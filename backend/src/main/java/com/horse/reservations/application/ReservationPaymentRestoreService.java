@@ -55,6 +55,9 @@ public class ReservationPaymentRestoreService {
 		final TimeSlotCapacity timeSlot = timeSlotRepository.findByLessonDateAndStartTimeForUpdate(
 				requestedTimeSlot.getLessonDate(), requestedTimeSlot.getStartTime())
 			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
+		if (timeSlot.isAdminClosed()) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_CLOSURE_COMMAND_NOT_ALLOWED);
+		}
 		final List<Reservation> overlaps = reservationRepository.findActiveOverlapsForUpdate(
 			requestedTimeSlot.getMemberId(),
 			timeSlot.getLessonDate(),

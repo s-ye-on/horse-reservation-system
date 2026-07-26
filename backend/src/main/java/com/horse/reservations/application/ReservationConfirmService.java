@@ -14,6 +14,7 @@ import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationRepository;
 import com.horse.reservations.infrastructure.ReservationTimeSlotProjection;
+import com.horse.timeslots.application.TimeSlotClosureCommandLockService;
 
 @Service
 public class ReservationConfirmService {
@@ -21,17 +22,20 @@ public class ReservationConfirmService {
 	private final Clock clock;
 	private final ReservationRepository reservationRepository;
 	private final ReservationScheduleDateLockService scheduleDateLockService;
+	private final TimeSlotClosureCommandLockService closureLockService;
 	private final CouponHoldService couponHoldService;
 
 	public ReservationConfirmService(
 		Clock clock,
 		ReservationRepository reservationRepository,
 		ReservationScheduleDateLockService scheduleDateLockService,
+		TimeSlotClosureCommandLockService closureLockService,
 		CouponHoldService couponHoldService
 	) {
 		this.clock = clock;
 		this.reservationRepository = reservationRepository;
 		this.scheduleDateLockService = scheduleDateLockService;
+		this.closureLockService = closureLockService;
 		this.couponHoldService = couponHoldService;
 	}
 
@@ -40,6 +44,7 @@ public class ReservationConfirmService {
 		final ReservationTimeSlotProjection snapshot = reservationRepository.findTimeSlotById(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
 		scheduleDateLockService.lockForActiveTransition(snapshot.getLessonDate());
+		closureLockService.ensureCommandAllowed(snapshot.getLessonDate(), snapshot.getStartTime());
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
 		reservation.ensureSchedule(snapshot.getLessonDate(), snapshot.getStartTime());

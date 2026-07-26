@@ -18,6 +18,8 @@ import com.horse.reservations.domain.PaymentSource;
 import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationRepository;
+import com.horse.reservations.infrastructure.ReservationTimeSlotProjection;
+import com.horse.timeslots.application.TimeSlotClosureCommandLockService;
 
 @Service
 public class ReservationCompletionService {
@@ -26,23 +28,34 @@ public class ReservationCompletionService {
 	private final ReservationRepository reservationRepository;
 	private final MemberRepository memberRepository;
 	private final CouponHoldService couponHoldService;
+	private final ReservationScheduleDateLockService scheduleDateLockService;
+	private final TimeSlotClosureCommandLockService closureLockService;
 
 	public ReservationCompletionService(
 		Clock clock,
 		ReservationRepository reservationRepository,
 		MemberRepository memberRepository,
-		CouponHoldService couponHoldService
+		CouponHoldService couponHoldService,
+		ReservationScheduleDateLockService scheduleDateLockService,
+		TimeSlotClosureCommandLockService closureLockService
 	) {
 		this.clock = clock;
 		this.reservationRepository = reservationRepository;
 		this.memberRepository = memberRepository;
 		this.couponHoldService = couponHoldService;
+		this.scheduleDateLockService = scheduleDateLockService;
+		this.closureLockService = closureLockService;
 	}
 
 	@Transactional
 	public ReservationCompletionResult complete(Long reservationId) {
+		final ReservationTimeSlotProjection snapshot = reservationRepository.findTimeSlotById(reservationId)
+			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+		scheduleDateLockService.lockDateIfPresent(snapshot.getLessonDate());
+		closureLockService.ensureCommandAllowed(snapshot.getLessonDate(), snapshot.getStartTime());
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+		reservation.ensureSchedule(snapshot.getLessonDate(), snapshot.getStartTime());
 		final LocalDateTime completedAt = LocalDateTime.now(clock);
 		final boolean changed = reservation.completeRide(completedAt);
 		final Member member = memberRepository.findByIdForUpdate(reservation.getMemberId())

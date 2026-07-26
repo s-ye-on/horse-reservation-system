@@ -8,10 +8,10 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.global.exception.ExceptionCode;
-import com.horse.reservations.domain.Reservation;
 import com.horse.reservations.domain.ReservationAttendanceAction;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationRepository;
+import com.horse.reservations.infrastructure.ReservationTimeSlotProjection;
 
 @Service
 public class BulkReservationAttendanceItemService {
@@ -38,14 +38,26 @@ public class BulkReservationAttendanceItemService {
 		BulkReservationAttendanceCommand command
 	) {
 		final ReservationAttendanceAction action = ReservationAttendanceAction.fromRequestValue(command.action());
-		final Reservation reservation = reservationRepository.findByIdForUpdate(command.reservationId())
+		final ReservationTimeSlotProjection reservation = reservationRepository
+			.findTimeSlotById(command.reservationId())
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
-		reservation.ensureSchedule(lessonDate, startTime);
+		ensureSchedule(reservation, lessonDate, startTime);
 
 		return switch (action) {
 			case COMPLETE -> complete(command, action);
 			case NO_SHOW -> processNoShow(command, action, adminSubject);
 		};
+	}
+
+	private void ensureSchedule(
+		ReservationTimeSlotProjection reservation,
+		LocalDate lessonDate,
+		LocalTime startTime
+	) {
+		if (!reservation.getLessonDate().equals(lessonDate)
+			|| !reservation.getStartTime().equals(startTime)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
+		}
 	}
 
 	private BulkReservationAttendanceItemResult complete(

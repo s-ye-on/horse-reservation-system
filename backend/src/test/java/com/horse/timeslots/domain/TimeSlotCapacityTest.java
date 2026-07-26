@@ -21,11 +21,11 @@ class TimeSlotCapacityTest {
 		assertThat(timeSlot.getEndTime()).isEqualTo(LocalTime.of(9, 45));
 		assertThat(timeSlot.getSource()).isEqualTo(TimeSlotSource.MANUAL);
 
-		timeSlot.changeClosedStatus(true);
+		timeSlot.changeAdminClosed(true);
 
 		assertThat(timeSlot.isClosed()).isTrue();
 
-		timeSlot.changeClosedStatus(false);
+		timeSlot.changeAdminClosed(false);
 
 		assertThat(timeSlot.isClosed()).isFalse();
 	}
@@ -167,7 +167,7 @@ class TimeSlotCapacityTest {
 		final TimeSlotCapacity timeSlot = createTimeSlot();
 
 		assertTimeSlotException(
-			() -> timeSlot.changeClosedStatus(null),
+			() -> timeSlot.changeAdminClosed(null),
 			ExceptionCode.TIMESLOT_INVALID_CLOSED_STATUS);
 	}
 

@@ -23,6 +23,7 @@ import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationChangeLogRepository;
 import com.horse.reservations.infrastructure.ReservationRepository;
 import com.horse.reservations.infrastructure.ReservationTimeSlotProjection;
+import com.horse.timeslots.application.TimeSlotClosureCommandLockService;
 
 @Service
 public class AdminReservationCancellationService {
@@ -33,6 +34,7 @@ public class AdminReservationCancellationService {
 	private final ReservationRepository reservationRepository;
 	private final ReservationChangeLogRepository changeLogRepository;
 	private final ReservationScheduleDateLockService scheduleDateLockService;
+	private final TimeSlotClosureCommandLockService closureLockService;
 	private final CouponHoldService couponHoldService;
 
 	public AdminReservationCancellationService(
@@ -40,12 +42,14 @@ public class AdminReservationCancellationService {
 		ReservationRepository reservationRepository,
 		ReservationChangeLogRepository changeLogRepository,
 		ReservationScheduleDateLockService scheduleDateLockService,
+		TimeSlotClosureCommandLockService closureLockService,
 		CouponHoldService couponHoldService
 	) {
 		this.clock = clock;
 		this.reservationRepository = reservationRepository;
 		this.changeLogRepository = changeLogRepository;
 		this.scheduleDateLockService = scheduleDateLockService;
+		this.closureLockService = closureLockService;
 		this.couponHoldService = couponHoldService;
 	}
 
@@ -88,6 +92,7 @@ public class AdminReservationCancellationService {
 		scheduleDateLockService.lockForMemberCancellation(
 			snapshot.getLessonDate(),
 			snapshot.getMemberId());
+		closureLockService.ensureCommandAllowed(snapshot.getLessonDate(), snapshot.getStartTime());
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
 		reservation.ensureSchedule(snapshot.getLessonDate(), snapshot.getStartTime());

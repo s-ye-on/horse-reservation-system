@@ -118,7 +118,7 @@ class TimeSlotCapacityConcurrencyIntegrationTest {
 			2,
 			RidingClass.ROUND_BEGINNER,
 			2);
-		timeSlot.changeClosedStatus(true);
+		timeSlot.changeAdminClosed(true);
 		timeSlotRepository.saveAndFlush(timeSlot);
 
 		assertTimeSlotException(

@@ -189,10 +189,6 @@ public class TimeSlotCapacity {
 		this.classCapacities = Map.copyOf(classCapacities);
 	}
 
-	public void changeClosedStatus(Boolean closed) {
-		changeAdminClosed(closed);
-	}
-
 	public void changeAdminClosed(Boolean adminClosed) {
 		if (adminClosed == null) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_CLOSED_STATUS);

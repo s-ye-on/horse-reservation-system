@@ -821,3 +821,25 @@ mise run db:up
   --tests '*ScheduleLockingIntegrationTest' \
   --tests '*ExceptionCodeTest'
 '''
+
+[tasks."verify:m31-r10"]
+description = "Verify M31-R10 explicit time slot closure workflow"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*TimeSlotClosureTest' \
+  --tests '*TimeSlotClosureServiceIntegrationTest' \
+  --tests '*M31R10TimeSlotClosureMigrationIntegrationTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*AdminReservationConfirmApiTest' \
+  --tests '*AdminPendingPaymentRestoreApiTest' \
+  --tests '*AdminReservationCancelApiTest' \
+  --tests '*MemberReservationCancelApiTest' \
+  --tests '*ReservationChangeApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest' \
+  --tests '*ReservationNoShowApiTest' \
+  --tests '*ApprovalExpiryJobIntegrationTest' \
+  --tests '*PendingPaymentExpiryJobIntegrationTest' \
+  --tests '*ExceptionCodeTest'
+'''

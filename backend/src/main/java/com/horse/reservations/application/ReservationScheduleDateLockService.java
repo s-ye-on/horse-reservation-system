@@ -52,6 +52,16 @@ public class ReservationScheduleDateLockService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY)
+	public void lockDate(LocalDate lessonDate) {
+		findDateForUpdate(lessonDate);
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	public void lockDateIfPresent(LocalDate lessonDate) {
+		scheduleDateRepository.findByScheduleDateForUpdate(lessonDate);
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY)
 	public void lockForReentry(LocalDate lessonDate, Long memberId) {
 		final ScheduleConfigGuard configGuard = configGuardRepository.findSingletonForShare();
 		configGuard.ensureActive();

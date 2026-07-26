@@ -28,17 +28,20 @@ public class AdminTimeSlotService {
 	private final ScheduleDateInflowLockService scheduleDateInflowLockService;
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final TimeSlotReservationHistoryQuery reservationHistoryQuery;
+	private final TimeSlotClosureService closureService;
 
 	public AdminTimeSlotService(
 		Clock clock,
 		ScheduleDateInflowLockService scheduleDateInflowLockService,
 		TimeSlotCapacityRepository timeSlotRepository,
-		TimeSlotReservationHistoryQuery reservationHistoryQuery
+		TimeSlotReservationHistoryQuery reservationHistoryQuery,
+		TimeSlotClosureService closureService
 	) {
 		this.clock = clock;
 		this.scheduleDateInflowLockService = scheduleDateInflowLockService;
 		this.timeSlotRepository = timeSlotRepository;
 		this.reservationHistoryQuery = reservationHistoryQuery;
+		this.closureService = closureService;
 	}
 
 	@Transactional(readOnly = true)
@@ -87,11 +90,22 @@ public class AdminTimeSlotService {
 	}
 
 	@Transactional
-	public TimeSlotResult changeClosedStatus(Long timeSlotId, Boolean closed) {
-		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
-		ensureNotStarted(timeSlot);
-		timeSlot.changeClosedStatus(closed);
-		return TimeSlotResult.from(timeSlot);
+	public TimeSlotResult changeClosedStatus(
+		Long timeSlotId,
+		Boolean closed,
+		String actorSubject
+	) {
+		if (closed == null) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_CLOSED_STATUS);
+		}
+		final String reason = "기존 시간대 마감 API 요청";
+		if (closed) {
+			return TimeSlotResult.from(closureService.start(timeSlotId, actorSubject, reason));
+		}
+		return TimeSlotResult.from(closureService.withdrawOrReopen(
+			timeSlotId,
+			actorSubject,
+			reason));
 	}
 
 	@Transactional

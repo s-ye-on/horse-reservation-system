@@ -174,7 +174,12 @@ public class ReservationChangeService {
 		final List<TimeSlotCapacity> lockedTimeSlots = timeSlotRepository.findAllByIdForUpdateOrdered(
 			List.of(sourceTimeSlot.getId(), requireTargetTimeSlotId(targetTimeSlotId)));
 		final TimeSlotCapacity targetTimeSlot = findLockedTimeSlot(lockedTimeSlots, targetTimeSlotId);
-		findLockedTimeSlot(lockedTimeSlots, sourceTimeSlot.getId());
+		final TimeSlotCapacity lockedSourceTimeSlot = findLockedTimeSlot(
+			lockedTimeSlots,
+			sourceTimeSlot.getId());
+		if (lockedSourceTimeSlot.isAdminClosed() || targetTimeSlot.isAdminClosed()) {
+			throw new TimeSlotException(ExceptionCode.TIMESLOT_CLOSURE_COMMAND_NOT_ALLOWED);
+		}
 		final Instant changedAt = Instant.now(clock);
 		final LocalDateTime changedDateTime = LocalDateTime.ofInstant(changedAt, clock.getZone());
 		final ReservationChangeTiming timing = ReservationChangeDeadlinePolicy.evaluate(

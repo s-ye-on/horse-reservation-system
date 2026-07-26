@@ -38,6 +38,7 @@ public class MemberReservationCancellationService {
 	private final ReservationChangeLogRepository changeLogRepository;
 	private final ReservationScheduleDateLockService scheduleDateLockService;
 	private final CouponHoldService couponHoldService;
+	private final TimeSlotClosureCancellationService closureCancellationService;
 
 	public MemberReservationCancellationService(
 		Clock clock,
@@ -45,7 +46,8 @@ public class MemberReservationCancellationService {
 		ReservationRepository reservationRepository,
 		ReservationChangeLogRepository changeLogRepository,
 		ReservationScheduleDateLockService scheduleDateLockService,
-		CouponHoldService couponHoldService
+		CouponHoldService couponHoldService,
+		TimeSlotClosureCancellationService closureCancellationService
 	) {
 		this.clock = clock;
 		this.memberRepository = memberRepository;
@@ -53,6 +55,7 @@ public class MemberReservationCancellationService {
 		this.changeLogRepository = changeLogRepository;
 		this.scheduleDateLockService = scheduleDateLockService;
 		this.couponHoldService = couponHoldService;
+		this.closureCancellationService = closureCancellationService;
 	}
 
 	@Transactional(readOnly = true)
@@ -77,6 +80,15 @@ public class MemberReservationCancellationService {
 		final Member member = findMember(authSubject);
 		final ReservationTimeSlotProjection snapshot = reservationRepository.findTimeSlotById(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));
+		final java.util.Optional<ReservationCancelResult> closureCancellation =
+			closureCancellationService.cancelByMemberIfImpacted(
+				reservationId,
+				member.getId(),
+				authSubject,
+				normalizedReason);
+		if (closureCancellation.isPresent()) {
+			return closureCancellation.get();
+		}
 		scheduleDateLockService.lockForMemberCancellation(
 			snapshot.getLessonDate(),
 			snapshot.getMemberId());

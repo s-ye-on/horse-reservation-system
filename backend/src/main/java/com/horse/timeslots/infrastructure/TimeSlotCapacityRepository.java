@@ -17,6 +17,9 @@ import jakarta.persistence.LockModeType;
 
 public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapacity, Long> {
 
+	@Query("SELECT timeSlot.lessonDate FROM TimeSlotCapacity timeSlot WHERE timeSlot.id = :timeSlotId")
+	Optional<LocalDate> findLessonDateById(@Param("timeSlotId") Long timeSlotId);
+
 	boolean existsByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);
 
 	Optional<TimeSlotCapacity> findByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);

@@ -3,6 +3,7 @@ package com.horse.timeslots.presentation;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -58,9 +59,13 @@ public class AdminTimeSlotController {
 	@PatchMapping("/{timeSlotId}")
 	public TimeSlotResponse changeClosedStatus(
 		@PathVariable Long timeSlotId,
+		@AuthenticationPrincipal(expression = "subject") String adminSubject,
 		@RequestBody TimeSlotStatusUpdateRequest request
 	) {
-		return TimeSlotResponse.from(service.changeClosedStatus(timeSlotId, request.closed()));
+		return TimeSlotResponse.from(service.changeClosedStatus(
+			timeSlotId,
+			request.closed(),
+			adminSubject));
 	}
 
 	@PutMapping("/{timeSlotId}/capacity")

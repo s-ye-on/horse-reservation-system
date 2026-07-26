@@ -98,6 +98,12 @@ updated_at
 수는 Reservation에서 파생한다. `is_closed`는 세 마감 원인의 OR과 일치해야 하며 자동
 occurrence는 물리 삭제하지 않는다.
 
+개별 휴강의 운영 상태와 예약 정리 workflow는 분리한다. `adminClosed`는 신규 유입 차단
+상태이고 `TimeSlotClosure`는 `IN_PROGRESS`, `COMPLETED`, `WITHDRAWN` 이력을 보존한다.
+`TimeSlotClosureImpact`는 시작 당시 활성 Reservation의 고정 membership이며 현재
+Reservation 상태와 원래 TimeSlot 유지 여부로 해결 상태를 파생한다. 연락 상태나 메모는
+이 모델에 포함하지 않는다.
+
 R01에서 `end_time`, `source`를 먼저 이관했고 R02에서 `end_time` NOT NULL,
 `template_id`, 세 마감 원인과 generated `is_closed` 파생 제약을 추가했다. JPA는
 generated 값을 읽기 전용으로 매핑하고 도메인은 세 원인의 OR로 현재 상태를 계산한다.

@@ -14,6 +14,7 @@
 - `M31-R07`: COMPLETED
 - `M31-R08`: COMPLETED
 - `M31-R09`: COMPLETED
+- `M31-R10`: COMPLETED
 
 최신 일정 운영 정책이 기존 M31-01~M31-05의 시간, TimeSlot과 중복 예약 가정을
 대체하므로 Checkpoint 1을 다시 연다. 기존 완료 Task와 커밋은 당시 정책의 증거로
@@ -39,7 +40,7 @@
 | M31-R07 | 회원 신규 예약 3시간 경계 | M31-R03, M31-R06 | 정확히 3시간 전 성공·최소 정밀도 이후 실패·조회 숨김·직접 POST 차단 성공 | 기존 변경 마감 정책 | `mise run verify:m31-r07` |
 | M31-R08 | 회원 활성 예약 overlap 불변식 | M31-R01, M31-R02 | 같은 트랜잭션 guard upsert/재잠금·overlap SQL/인덱스·DB/Java 활성 상태 계약·V15 재검증·통합 409·MySQL 경쟁·rollback 성공 | 가족 쿠폰 | `mise run verify:m31-r08` |
 | M31-R09 | 날짜 CLOSING/CLOSED backend | M31-R06, M31-R08 | 미래 날짜 전이·확정 Command 차단/허용 matrix·영향 목록·stable 취소·0건 확정·취소 복귀·감사 성공 | 알림·일괄 취소 | `mise run verify:m31-r09` |
-| M31-R10 | 개별 TimeSlot 휴강 backend | M31-R08, M31-R09 | 즉시 신규 차단·영향 목록·stable 취소·0건 확정·재개·당일 미래 슬롯 경계 성공 | 날짜 전체 휴무 UI | `mise run verify:m31-r10` |
+| M31-R10 | 개별 TimeSlot 휴강 backend | M31-R08, M31-R09 | 명시적 Closure·고정 Impact·즉시 신규 차단·stable 취소·2중 완료 조건·제한 철회·재개·PATCH 위임·MySQL 경쟁 성공 | 전용 공개 API·연락 상태·웹 | `mise run verify:m31-r10` |
 | M31-R11 | API·OpenAPI·생성 Client | M31-R04~M31-R10 | 일정·휴일·날짜·휴강·동기화 상태/재시도 API, SYNCING 503, `SCHEDULE_*` prefix 확장, offset 시간, ErrorResponse details와 생성 Client 계약 성공 | 웹 화면 | `mise run verify:m31-r11` |
 | M31-R12 | 정규 시간표·정기 휴일 웹 | M31-R11 | 검색 가능한 운영 폼·영향 미리보기·중복 제출 방지·320px·키보드·오류 코드 UX 성공 | 날짜 CLOSING 화면 | `mise run verify:m31-r12` |
 | M31-R13 | 날짜 휴무·CLOSING 웹 | M31-R11 | 영향 예약 목록·건수·진행률·전용 취소·확정/복귀·개별 휴강 UX 성공 | 알림·일괄 취소 | `mise run verify:m31-r13` |
@@ -96,7 +97,9 @@
 | 날짜 휴무 정리 취소(1회 결제) | 없음 | 대상 날짜 | 대상 회원·날짜 | 없음 | 대상 예약 | 없음 | 없음 | stable/NONE |
 | TimeSlot 휴무 정리 취소(쿠폰) | 없음 | 대상 날짜 | 대상 회원·날짜 | 대상 ID | 대상 예약 | 원래 Coupon | 없음 | stable/RETURN |
 | TimeSlot 휴무 정리 취소(1회 결제) | 없음 | 대상 날짜 | 대상 회원·날짜 | 대상 ID | 대상 예약 | 없음 | 없음 | stable/NONE |
-| 개별 TimeSlot 휴강 | 없음 | 대상 날짜 | 없음 | 대상 ID | 슬롯 활성 예약 ID순 | 없음 | 없음 | 먼저 admin_closed 적용 |
+| 개별 TimeSlot 휴강 시작·완료·철회·재개 | 없음 | 대상 날짜 | 없음 | 대상 ID → Closure | 슬롯 활성 예약 ID순 | 없음 | 없음 | admin_closed와 고정 Impact를 같은 트랜잭션에 기록 |
+| TimeSlot 휴무 정리 회원 취소(쿠폰) | 없음 | 대상 날짜 | 대상 회원·날짜 | 대상 ID → Closure | 대상 예약 | 원래 Coupon | 없음 | stable/RETURN |
+| TimeSlot 휴무 정리 회원 취소(1회 결제) | 없음 | 대상 날짜 | 대상 회원·날짜 | 대상 ID → Closure | 대상 예약 | 없음 | 없음 | stable/NONE |
 | occurrence 동기화 | SHARE, pending version | 대상 날짜 | 없음 | 기존 행 ID 또는 UNIQUE | 없음 | 없음 | 없음 | applied version 기록, 영향 조회는 별도 |
 | Template·휴일 변경 | UPDATE, ACTIVE→SYNCING | 없음 | 없음 | 없음 | 없음 | 없음 | 없음 | 겹침 검사와 version 커밋 |
 | 설정 동기화 완료 | UPDATE, pending→ACTIVE | 없음 | 없음 | 없음 | 없음 | 없음 | 없음 | 전체 horizon version 재검사 |

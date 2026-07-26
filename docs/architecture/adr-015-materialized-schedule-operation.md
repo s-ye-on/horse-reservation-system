@@ -2,7 +2,7 @@
 
 ## 상태
 
-확정, R09 날짜 휴무 workflow 구현 완료 / R10 개별 휴강 구현 대기
+확정, R09 날짜 휴무 workflow 및 R10 개별 휴강 workflow 구현
 
 ## 맥락
 
@@ -363,9 +363,51 @@ R09 구현은 날짜 휴무 Command의 잠금 순서를 다음처럼 고정한�
 멱등적이다. Coupon 반환 실패는 같은 트랜잭션의 Reservation 상태와 두 감사 로그를 모두
 rollback한다.
 
-당일 휴장은 아직 시작하지 않은 개별 TimeSlot을 즉시 닫고 같은 전용 취소 정책으로
-활성 예약을 정리한다. `is_closed = true`이고 활성 예약이 남아 있으면 진행 중, 0건이면
-확정 휴강으로 읽는다. 날짜와 TimeSlot 모두 취소된 예약을 자동 복구하지 않는다.
+당일 휴장은 아직 시작하지 않은 개별 TimeSlot에 명시적 `TimeSlotClosure`를 시작한다.
+`admin_closed = true`는 신규 유입을 차단하는 현재 운영 상태이고, Closure는 고객별 정리
+workflow 이력이다. 시작 시점의 활성 Reservation을 `TimeSlotClosureImpact`로 고정하며
+기존 예약은 자동 취소하지 않는다.
+
+```text
+TimeSlotClosure
+  status = IN_PROGRESS | COMPLETED | WITHDRAWN
+  startedBy/startedAt/reason
+  completedBy/completedAt
+  withdrawnBy/withdrawnAt
+  version
+
+TimeSlotClosureImpact
+  closureId
+  reservationId
+  reservationStatusAtStart
+  createdAt
+  UNIQUE(closureId, reservationId)
+```
+
+동일 TimeSlot의 활성 Closure는 generated guard와 UNIQUE로 최대 하나만 허용한다.
+Impact membership은 append-only 고정 분모이며 Reservation이 비활성화되거나 원래
+TimeSlot에서 이동하면 해결된 것으로 계산한다. 완료 직전에는 모든 Impact 해결과 현재
+TimeSlot 활성 예약 0건을 모두 다시 검사한다.
+
+휴강 시작과 각 예약 취소는 별도 짧은 트랜잭션이다. 취소는
+`ScheduleDate → member-day guard → TimeSlot → TimeSlotClosure → Reservation → Coupon
+→ append-only audit` 순서를 따르고 여러 행은 ID 오름차순으로 잠근다. 날짜 휴무와 개별
+휴강이 같은 Reservation을 정리하면 Reservation 잠금 후 최초 상태 변경만 Coupon 반환과
+감사를 기록한다.
+
+휴강 중 승인·입금 확인·복구·일반 변경·일반 관리자 취소·완료·노쇼와 모든 신규 유입을
+차단한다. 휴강 전용 취소, 휴강 책임을 적용하는 회원 취소, 반려와 자동 만료는 허용한다.
+전용 취소는 쿠폰 예약 `stable/RETURN`, 1회 결제 예약 `stable/NONE`을 강제한다.
+
+해결된 Impact가 하나도 없을 때만 `IN_PROGRESS → WITHDRAWN`을 허용한다. COMPLETED 이후
+재개는 수업 시작 전이고 날짜 상태가 허용할 때만 가능하다. 철회와 재개는
+`admin_closed = false`만 적용하며 다른 마감 원인과 날짜 상태를 변경하지 않고 기존
+예약도 복구하지 않는다.
+
+기존 `PATCH /api/admin/timeslots/{id}`는 호환 진입점으로 유지하되 close는 Closure 시작,
+reopen은 상태에 따라 철회 또는 완료 후 재개에 위임한다. 직접 필드 쓰기 경로는 두지
+않는다. 전용 조회·예약별 취소·완료 API가 제공되는 R11 전에는 R10과 R11을 함께
+배포하거나 기존 관리자 진입점을 제한해야 한다.
 
 ## 결과
 
