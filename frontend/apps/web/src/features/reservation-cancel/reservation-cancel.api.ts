@@ -28,7 +28,7 @@ const reservationCancelClient = new MemberReservationCancelControllerApi()
 
 export const reservationCancelApi: ReservationCancelApi = {
   getMyReservations: () => reservationQueryApi.getMyReservations(),
-  previewCancellation: (reservationId) => reservationCancelClient.preview({ reservationId }),
+  previewCancellation: (reservationId) => reservationCancelClient.preview2({ reservationId }),
   cancelReservation: (reservationId, reason) => reservationCancelClient.cancel({
     reservationId,
     memberReservationCancelRequest: { reason },

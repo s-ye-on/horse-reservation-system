@@ -67,7 +67,7 @@ export const adminReservationsApi: AdminReservationsApi = {
     })
   },
   getTimeSlots: () => timeSlotApi.getTimeSlots(),
-  previewCancellation: (reservationId, responsibility) => cancelApi.preview1({ reservationId, responsibility }),
+  previewCancellation: (reservationId, responsibility) => cancelApi.preview3({ reservationId, responsibility }),
   change: async (reservationId, targetTimeSlotId, memo) => {
     await changeApi.change1({ reservationId, adminReservationChangeRequest: { targetTimeSlotId, memo } })
   },

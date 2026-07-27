@@ -55,7 +55,7 @@ export const adminAttendanceApi: AdminAttendanceApi = {
       items,
     },
   }),
-  complete: (reservationId) => completionApi.complete({ reservationId }),
+  complete: (reservationId) => completionApi.complete1({ reservationId }),
   noShow: (reservationId, couponAction, memo) => noShowApi.process({
     reservationId,
     reservationNoShowRequest: { couponAction, memo },

@@ -181,6 +181,40 @@ class AdminTimeSlotApiTest {
 	}
 
 	@Test
+	void 설정_동기화_중에는_수동_시간대_생성을_차단하고_휴강_시작은_허용한다() throws Exception {
+		final Long timeSlotId = insertTimeSlot("2026-08-07", "09:00:00");
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'SYNCING',
+				pending_version = 2,
+				sync_started_at = CURRENT_TIMESTAMP(6),
+				sync_started_by = 'api-gate-test'
+			WHERE id = 1
+			""");
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(adminJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(createRequest("2026-08-07", "10:00:00", 8, 4, CLASS_CAPACITIES)))
+			.andExpect(status().isServiceUnavailable())
+			.andExpect(jsonPath("$.code").value("SCHEDULE_CONFIG_SYNC_IN_PROGRESS"));
+
+		mockMvc.perform(patch(ENDPOINT + "/{timeSlotId}", timeSlotId)
+				.with(adminJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"closed\": true}"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.closed").value(true));
+
+		mockMvc.perform(patch(ENDPOINT + "/{timeSlotId}", timeSlotId)
+				.with(adminJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"closed\": false}"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.closed").value(false));
+	}
+
+	@Test
 	void CLOSING과_CLOSED_날짜에는_수동_시간대를_생성할_수_없다() throws Exception {
 		final LocalDate lessonDate = LocalDate.of(2026, 8, 6);
 		jdbcTemplate.update("""

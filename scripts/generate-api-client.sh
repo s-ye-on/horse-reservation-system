@@ -26,5 +26,8 @@ while IFS= read -r generated_file; do
   tracked_file="frontend/packages/api-client/src/$relative_file"
   if ! git -C "$root_dir" cat-file -e "HEAD:$tracked_file" 2>/dev/null; then
     perl -0777 -pi -e 's/\s*\z/\n/' "$generated_file"
+  elif git -C "$root_dir" cat-file blob "HEAD:$tracked_file" \
+    | perl -0777 -ne 'exit(/\n\n\z/ ? 1 : 0)'; then
+    perl -0777 -pi -e 's/\s*\z/\n/' "$generated_file"
   fi
 done < <(find "$client_dir" -type f -name '*.ts')

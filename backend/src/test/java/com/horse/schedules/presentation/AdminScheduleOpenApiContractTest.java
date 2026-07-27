@@ -61,6 +61,20 @@ class AdminScheduleOpenApiContractTest {
 					+ "['content']['application/json']['schema']['$ref']")
 				.value("#/components/schemas/ErrorResponse"))
 			.andExpect(jsonPath(
+				"$['paths']['/api/admin/timeslots']['post']['responses']['503']"
+					+ "['content']['application/json']['schema']['$ref']")
+				.value("#/components/schemas/ErrorResponse"))
+			.andExpect(jsonPath(
+				"$['paths']['/api/admin/timeslots']['post']['responses']['404']")
+				.doesNotExist())
+			.andExpect(jsonPath(
+				"$['paths']['/api/admin/timeslots/{timeSlotId}']['patch']['responses']['409']"
+					+ "['content']['application/json']['schema']['$ref']")
+				.value("#/components/schemas/ErrorResponse"))
+			.andExpect(jsonPath(
+				"$['paths']['/api/admin/timeslots/{timeSlotId}']['patch']['responses']['503']")
+				.doesNotExist())
+			.andExpect(jsonPath(
 				"$['components']['schemas']['TimeSlotClosureResponse']"
 					+ "['properties']['startedAt']['format']")
 				.value("date-time"));

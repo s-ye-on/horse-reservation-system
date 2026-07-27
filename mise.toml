@@ -80,7 +80,10 @@ run = "pnpm --dir frontend/apps/web lint"
 
 [tasks."web:typecheck"]
 description = "Type-check the React web application"
-run = "pnpm --dir frontend/apps/web typecheck"
+run = '''
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web typecheck
+'''
 
 [tasks."web:test"]
 description = "Run React web tests"
@@ -116,7 +119,10 @@ run = "pnpm --dir frontend/apps/mobile lint"
 
 [tasks."mobile:typecheck"]
 description = "Type-check the Expo mobile application"
-run = "pnpm --dir frontend/apps/mobile typecheck"
+run = '''
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/mobile typecheck
+'''
 
 [tasks."mobile:test"]
 description = "Run Expo mobile tests"
@@ -481,22 +487,22 @@ run = "./gradlew test --tests '*ReservationChangeApiTest'"
 
 [tasks."verify:m2-08"]
 description = "Verify M2-08 member reservation change screen and preview API"
-run = "mise run verify:m2-08:backend && pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typecheck && pnpm --dir frontend/apps/web test -- ReservationChangePage.test.tsx MyReservationsPage.test.tsx"
+run = "mise run verify:m2-08:backend && pnpm --dir frontend/apps/web lint && mise run web:typecheck && pnpm --dir frontend/apps/web test -- ReservationChangePage.test.tsx MyReservationsPage.test.tsx"
 
 [tasks."verify:m2-09"]
 description = "Verify M2-09 member reservation cancellation screen"
-run = "pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typecheck && pnpm --dir frontend/apps/web test -- ReservationCancelPage.test.tsx MyReservationsPage.test.tsx"
+run = "pnpm --dir frontend/apps/web lint && mise run web:typecheck && pnpm --dir frontend/apps/web test -- ReservationCancelPage.test.tsx MyReservationsPage.test.tsx"
 
 [tasks."verify:m2-10"]
 description = "Verify M2-10 admin reservation change and cancellation screen"
-run = "pnpm --dir frontend/apps/web lint && pnpm --dir frontend/apps/web typecheck && pnpm --dir frontend/apps/web test -- AdminReservationsPage.test.tsx"
+run = "pnpm --dir frontend/apps/web lint && mise run web:typecheck && pnpm --dir frontend/apps/web test -- AdminReservationsPage.test.tsx"
 
 [tasks."verify:m2-11"]
 description = "Verify M2-11 reservation change and cancellation policy matrix"
 run = '''
 ./backend/gradlew -p backend test --tests '*ReservationChangeDeadlinePolicyTest' --tests '*ReservationChangeApiTest' --tests '*ReservationCancellationPolicyTest' --tests '*MemberReservationCancelApiTest' --tests '*AdminReservationCancelApiTest'
 pnpm --dir frontend/apps/web lint
-pnpm --dir frontend/apps/web typecheck
+mise run web:typecheck
 pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp2-reservation-policy.spec.ts
 '''
 
@@ -520,10 +526,9 @@ mise run api:check
 [tasks."verify:m3-03"]
 description = "Verify admin operations dashboard"
 run = '''
-pnpm --dir frontend/packages/api-client build:types
 pnpm --dir frontend/apps/web exec vitest run src/features/admin-dashboard/AdminDashboardPage.test.tsx
 pnpm --dir frontend/apps/web lint
-pnpm --dir frontend/apps/web typecheck
+mise run web:typecheck
 '''
 
 [tasks."verify:m3-04"]
@@ -536,10 +541,9 @@ mise run api:check
 [tasks."verify:m3-05"]
 description = "Verify time-slot bulk attendance screen"
 run = '''
-pnpm --dir frontend/packages/api-client build:types
 pnpm --dir frontend/apps/web exec vitest run src/features/admin-attendance/AdminBulkAttendancePanel.test.tsx src/features/admin-attendance/AdminAttendancePage.test.tsx
 pnpm --dir frontend/apps/web lint
-pnpm --dir frontend/apps/web typecheck
+mise run web:typecheck
 '''
 
 [tasks."verify:m3-06"]
@@ -557,10 +561,9 @@ mise run api:check
 [tasks."verify:m3-08"]
 description = "Verify admin reservation audit screen"
 run = '''
-pnpm --dir frontend/packages/api-client build:types
 pnpm --dir frontend/apps/web exec vitest run src/features/admin-audit/AdminAuditPage.test.tsx src/test/admin-audit-api-contract.test.ts src/app.test.tsx
 pnpm --dir frontend/apps/web lint
-pnpm --dir frontend/apps/web typecheck
+mise run web:typecheck
 '''
 
 [tasks."verify:m3-09"]
@@ -605,19 +608,17 @@ mise run api:check
 [tasks."verify:m3-16"]
 description = "Verify member upcoming and past reservation UX"
 run = '''
-pnpm --dir frontend/packages/api-client build:types
 pnpm --dir frontend/apps/web exec vitest run src/features/my-reservations/MyReservationsPage.test.tsx
 pnpm --dir frontend/apps/web lint
-pnpm --dir frontend/apps/web typecheck
+mise run web:typecheck
 '''
 
 [tasks."verify:m3-17"]
 description = "Verify admin attendance eligibility UX"
 run = '''
-pnpm --dir frontend/packages/api-client build:types
 pnpm --dir frontend/apps/web exec vitest run src/features/admin-attendance/AdminBulkAttendancePanel.test.tsx src/features/admin-attendance/AdminAttendancePage.test.tsx
 pnpm --dir frontend/apps/web lint
-pnpm --dir frontend/apps/web typecheck
+mise run web:typecheck
 '''
 
 [tasks."verify:m3-18"]

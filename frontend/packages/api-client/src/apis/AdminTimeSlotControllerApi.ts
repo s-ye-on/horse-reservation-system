@@ -14,6 +14,11 @@
 
 import * as runtime from '../runtime';
 import {
+    type ErrorResponse,
+    ErrorResponseFromJSON,
+    ErrorResponseToJSON,
+} from '../models/ErrorResponse';
+import {
     type TimeSlotCapacityUpdateRequest,
     TimeSlotCapacityUpdateRequestFromJSON,
     TimeSlotCapacityUpdateRequestToJSON,

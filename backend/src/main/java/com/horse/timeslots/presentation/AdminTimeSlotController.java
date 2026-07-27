@@ -21,6 +21,11 @@ import com.horse.timeslots.presentation.dto.TimeSlotCreateRequest;
 import com.horse.timeslots.presentation.dto.TimeSlotResponse;
 import com.horse.timeslots.presentation.dto.TimeSlotStatusUpdateRequest;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 @RestController
 @RequestMapping("/api/admin/timeslots")
 public class AdminTimeSlotController {
@@ -47,6 +52,14 @@ public class AdminTimeSlotController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
+	@ApiResponses({
+		@ApiResponse(responseCode = "201", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TimeSlotResponse.class))),
+		@ApiResponse(responseCode = "400", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
+		@ApiResponse(responseCode = "401", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
+		@ApiResponse(responseCode = "403", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
+		@ApiResponse(responseCode = "409", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
+		@ApiResponse(responseCode = "503", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
+	})
 	public TimeSlotResponse createTimeSlot(@RequestBody TimeSlotCreateRequest request) {
 		return TimeSlotResponse.from(service.createTimeSlot(
 			request.lessonDate(),
@@ -57,6 +70,14 @@ public class AdminTimeSlotController {
 	}
 
 	@PatchMapping("/{timeSlotId}")
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TimeSlotResponse.class))),
+		@ApiResponse(responseCode = "400", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
+		@ApiResponse(responseCode = "401", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
+		@ApiResponse(responseCode = "403", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
+		@ApiResponse(responseCode = "404", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
+		@ApiResponse(responseCode = "409", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
+	})
 	public TimeSlotResponse changeClosedStatus(
 		@PathVariable Long timeSlotId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
