@@ -49,12 +49,24 @@ public class ScheduleDateClosureService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return start(scheduleDateValue, actorAuthSubject, reason, null);
+	}
+
+	@Transactional
+	public ScheduleDateClosureResult start(
+		LocalDate scheduleDateValue,
+		String actorAuthSubject,
+		String reason,
+		Long expectedVersion
+	) {
 		final ScheduleDate scheduleDate = findForUpdate(scheduleDateValue);
+		ensureVersion(scheduleDate, expectedVersion);
 		final Map<String, Object> fromState = stateOf(scheduleDate);
 		final boolean closingStarted = scheduleDate.startClosing(
 			LocalDate.now(clock),
 			actorAuthSubject,
 			reason);
+		final List<Long> activeIds = activeReservationIds(scheduleDateValue);
 		if (closingStarted) {
 			appendAudit(
 				scheduleDate,
@@ -63,10 +75,9 @@ public class ScheduleDateClosureService {
 				stateOf(scheduleDate),
 				actorAuthSubject,
 				reason,
-				Map.of());
+				Map.of("initialReservationCount", activeIds.size()));
 		}
 
-		final List<Long> activeIds = activeReservationIds(scheduleDateValue);
 		if (activeIds.isEmpty() && scheduleDate.getStatus() == ScheduleDateStatus.CLOSING) {
 			final Map<String, Object> closingState = stateOf(scheduleDate);
 			scheduleDate.finalizeClosed(actorAuthSubject);
@@ -98,14 +109,26 @@ public class ScheduleDateClosureService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return finalizeClosure(scheduleDateValue, actorAuthSubject, reason, null);
+	}
+
+	@Transactional
+	public ScheduleDateClosureResult finalizeClosure(
+		LocalDate scheduleDateValue,
+		String actorAuthSubject,
+		String reason,
+		Long expectedVersion
+	) {
 		final ScheduleDate scheduleDate = findForUpdate(scheduleDateValue);
+		ensureVersion(scheduleDate, expectedVersion);
 		scheduleDate.ensureClosureCleanupAllowed();
 		final long activeCount = reservationRepository.countByLessonDateAndStatusIn(
 			scheduleDateValue,
 			ReservationStatus.occupyingStatuses());
 		if (activeCount > 0) {
 			throw new ScheduleException(
-				ExceptionCode.TIMESLOT_ACTIVE_RESERVATIONS_EXIST_ON_CLOSURE_DATE);
+				ExceptionCode.TIMESLOT_ACTIVE_RESERVATIONS_EXIST_ON_CLOSURE_DATE,
+				Map.of("activeReservationCount", activeCount));
 		}
 		final Map<String, Object> fromState = stateOf(scheduleDate);
 		final boolean changed = scheduleDate.finalizeClosed(actorAuthSubject);
@@ -128,7 +151,18 @@ public class ScheduleDateClosureService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return cancelClosing(scheduleDateValue, actorAuthSubject, reason, null);
+	}
+
+	@Transactional
+	public ScheduleDateClosureResult cancelClosing(
+		LocalDate scheduleDateValue,
+		String actorAuthSubject,
+		String reason,
+		Long expectedVersion
+	) {
 		final ScheduleDate scheduleDate = findForUpdate(scheduleDateValue);
+		ensureVersion(scheduleDate, expectedVersion);
 		final Map<String, Object> fromState = stateOf(scheduleDate);
 		final boolean changed = scheduleDate.cancelClosing(actorAuthSubject, reason);
 		if (changed) {
@@ -155,6 +189,14 @@ public class ScheduleDateClosureService {
 	private ScheduleDate findForUpdate(LocalDate scheduleDate) {
 		return scheduleDateRepository.findByScheduleDateForUpdate(scheduleDate)
 			.orElseThrow(() -> new ScheduleException(ExceptionCode.SCHEDULE_INVALID_SCHEDULE_DATE));
+	}
+
+	private void ensureVersion(ScheduleDate scheduleDate, Long expectedVersion) {
+		if (expectedVersion != null && scheduleDate.getVersion() != expectedVersion) {
+			throw new ScheduleException(
+				ExceptionCode.SCHEDULE_DATE_VERSION_CONFLICT,
+				Map.of("currentVersion", scheduleDate.getVersion()));
+		}
 	}
 
 	private ScheduleDate find(LocalDate scheduleDate) {

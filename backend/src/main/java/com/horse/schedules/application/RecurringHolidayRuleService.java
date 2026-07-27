@@ -1,6 +1,7 @@
 package com.horse.schedules.application;
 
 import java.time.Clock;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -60,6 +61,35 @@ public class RecurringHolidayRuleService {
 				.thenComparing(RecurringHolidayRule::getId))
 			.map(RecurringHolidayRuleView::from)
 			.toList();
+	}
+
+	@Transactional(readOnly = true)
+	public RecurringHolidayImpactPreview preview(
+		Long ruleId,
+		DayOfWeek dayOfWeek,
+		LocalDate effectiveFrom,
+		LocalDate effectiveTo
+	) {
+		if (dayOfWeek == null || effectiveFrom == null
+			|| (effectiveTo != null && effectiveTo.isBefore(effectiveFrom))) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_INVALID_EFFECTIVE_DATE);
+		}
+		final HolidayPeriod previous = ruleId == null
+			? null
+			: periodOf(findRule(ruleId));
+		final HolidayPeriod current = new HolidayPeriod(
+			dayOfWeek,
+			effectiveFrom,
+			maximumDate(effectiveTo));
+		if (ruleRepository.existsActiveOverlap(
+			dayOfWeek,
+			effectiveFrom,
+			maximumDate(effectiveTo),
+			MAXIMUM_DATE,
+			ruleId)) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_RECURRING_HOLIDAY_OVERLAP);
+		}
+		return preview(previous, current);
 	}
 
 	@Transactional

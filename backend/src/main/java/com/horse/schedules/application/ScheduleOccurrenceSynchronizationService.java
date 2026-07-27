@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import com.horse.global.exception.BusinessException;
 import com.horse.global.exception.ExceptionCode;
 import com.horse.schedules.domain.ScheduleConfigStatus;
+import com.horse.schedules.domain.exception.ScheduleException;
 
 @Service
 public class ScheduleOccurrenceSynchronizationService {
@@ -81,6 +82,18 @@ public class ScheduleOccurrenceSynchronizationService {
 			return result(status.activeVersion(), 0, 0, 0, 0);
 		}
 		return retryPendingSynchronization(status.pendingVersion());
+	}
+
+	public ScheduleOccurrenceSynchronizationResult retryManualSynchronization(
+		long expectedPendingVersion
+	) {
+		final ScheduleSynchronizationStatus status = stateService.getStatus();
+		if (status.status() != ScheduleConfigStatus.SYNCING
+			|| status.pendingVersion() == null
+			|| status.pendingVersion() != expectedPendingVersion) {
+			throw new ScheduleException(ExceptionCode.SCHEDULE_SYNC_RETRY_NOT_ALLOWED);
+		}
+		return retryPendingSynchronization(expectedPendingVersion);
 	}
 
 	public ScheduleOccurrenceSynchronizationResult synchronizeCurrentHorizon() {

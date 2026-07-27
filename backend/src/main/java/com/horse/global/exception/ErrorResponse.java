@@ -2,18 +2,27 @@ package com.horse.global.exception;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(requiredProperties = {
+	"code", "message", "status", "timestamp", "path", "fieldErrors", "details"
+})
 public record ErrorResponse(
 	String code,
 	String message,
 	int status,
 	OffsetDateTime timestamp,
 	String path,
-	List<FieldError> fieldErrors
+	List<FieldError> fieldErrors,
+	@Schema(additionalProperties = Schema.AdditionalPropertiesValue.TRUE)
+	Map<String, Object> details
 ) {
 
 	public ErrorResponse {
 		fieldErrors = List.copyOf(fieldErrors);
+		details = Map.copyOf(details);
 	}
 
     // 비즈니스 예외용
@@ -24,7 +33,8 @@ public record ErrorResponse(
 			exception.status().value(),
 			OffsetDateTime.now(),
 			path,
-			List.of()
+			List.of(),
+			exception.details()
 		);
 	}
 
@@ -37,7 +47,8 @@ public record ErrorResponse(
 			exceptionCode.status().value(),
 			OffsetDateTime.now(),
 			path,
-			fieldErrors
+			fieldErrors,
+			Map.of()
 		);
 	}
 

@@ -28,6 +28,7 @@ class GlobalExceptionHandlerTest {
 			assertThat(body.timestamp()).isNotNull();
 			assertThat(body.path()).isEqualTo("/api/me");
 			assertThat(body.fieldErrors()).isEmpty();
+			assertThat(body.details()).isEmpty();
 		});
 	}
 
@@ -57,6 +58,7 @@ class GlobalExceptionHandlerTest {
 			assertThat(body.fieldErrors()).containsExactly(
 				new ErrorResponse.FieldError("name", "이름은 필수입니다.")
 			);
+			assertThat(body.details()).isEmpty();
 			assertThat(body.toString()).doesNotContain("노출하면 안 되는 값");
 		});
 	}

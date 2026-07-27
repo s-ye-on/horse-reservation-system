@@ -43,6 +43,7 @@ class GlobalExceptionHandlerApiTest {
 			.andExpect(jsonPath("$.path").value("/validation"))
 			.andExpect(jsonPath("$.fieldErrors[0].field").value("name"))
 			.andExpect(jsonPath("$.fieldErrors[0].message").value("이름은 3자 이하여야 합니다."))
+			.andExpect(jsonPath("$.details").isMap())
 			.andExpect(content().string(not(containsString("노출하면 안 되는 값"))));
 	}
 

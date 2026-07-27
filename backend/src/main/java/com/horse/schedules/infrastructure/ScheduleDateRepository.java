@@ -17,6 +17,11 @@ public interface ScheduleDateRepository extends JpaRepository<ScheduleDate, Long
 
 	Optional<ScheduleDate> findByScheduleDate(LocalDate scheduleDate);
 
+	List<ScheduleDate> findAllByScheduleDateBetweenOrderByScheduleDateAsc(
+		LocalDate startDate,
+		LocalDate endDate
+	);
+
 	long countByScheduleDateBetween(LocalDate startDate, LocalDate endDate);
 
 	long countByScheduleDateBetweenAndAppliedConfigVersion(

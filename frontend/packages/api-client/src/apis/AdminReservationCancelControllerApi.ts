@@ -34,7 +34,7 @@ export interface Cancel1Request {
     adminReservationCancelRequest: AdminReservationCancelRequest;
 }
 
-export interface Preview1Request {
+export interface Preview3Request {
     reservationId: number;
     responsibility: string;
 }
@@ -98,20 +98,20 @@ export class AdminReservationCancelControllerApi extends runtime.BaseAPI {
     }
 
     /**
-     * Creates request options for preview1 without sending the request
+     * Creates request options for preview3 without sending the request
      */
-    async preview1RequestOpts(requestParameters: Preview1Request): Promise<runtime.RequestOpts> {
+    async preview3RequestOpts(requestParameters: Preview3Request): Promise<runtime.RequestOpts> {
         if (requestParameters['reservationId'] == null) {
             throw new runtime.RequiredError(
                 'reservationId',
-                'Required parameter "reservationId" was null or undefined when calling preview1().'
+                'Required parameter "reservationId" was null or undefined when calling preview3().'
             );
         }
 
         if (requestParameters['responsibility'] == null) {
             throw new runtime.RequiredError(
                 'responsibility',
-                'Required parameter "responsibility" was null or undefined when calling preview1().'
+                'Required parameter "responsibility" was null or undefined when calling preview3().'
             );
         }
 
@@ -137,8 +137,8 @@ export class AdminReservationCancelControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async preview1Raw(requestParameters: Preview1Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ReservationCancellationPreviewResponse>> {
-        const requestOptions = await this.preview1RequestOpts(requestParameters);
+    async preview3Raw(requestParameters: Preview3Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ReservationCancellationPreviewResponse>> {
+        const requestOptions = await this.preview3RequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ReservationCancellationPreviewResponseFromJSON(jsonValue));
@@ -146,8 +146,8 @@ export class AdminReservationCancelControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async preview1(requestParameters: Preview1Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationCancellationPreviewResponse> {
-        const response = await this.preview1Raw(requestParameters, initOverrides);
+    async preview3(requestParameters: Preview3Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationCancellationPreviewResponse> {
+        const response = await this.preview3Raw(requestParameters, initOverrides);
         return await response.value();
     }
 

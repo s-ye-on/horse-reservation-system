@@ -21,3 +21,10 @@ pnpm --dir "$root_dir/frontend" exec openapi-generator-cli generate \
 
 rm -rf "$client_dir/.openapi-generator" "$client_dir/.openapi-generator-ignore"
 find "$client_dir" -type f -name '*.ts' -exec perl -pi -e 's/[ \t]+$//' {} +
+while IFS= read -r generated_file; do
+  relative_file="${generated_file#"$client_dir/"}"
+  tracked_file="frontend/packages/api-client/src/$relative_file"
+  if ! git -C "$root_dir" cat-file -e "HEAD:$tracked_file" 2>/dev/null; then
+    perl -0777 -pi -e 's/\s*\z/\n/' "$generated_file"
+  fi
+done < <(find "$client_dir" -type f -name '*.ts')

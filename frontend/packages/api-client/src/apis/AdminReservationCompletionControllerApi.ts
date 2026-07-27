@@ -19,7 +19,7 @@ import {
     ReservationCompletionResponseToJSON,
 } from '../models/ReservationCompletionResponse';
 
-export interface CompleteRequest {
+export interface Complete1Request {
     reservationId: number;
 }
 
@@ -29,13 +29,13 @@ export interface CompleteRequest {
 export class AdminReservationCompletionControllerApi extends runtime.BaseAPI {
 
     /**
-     * Creates request options for complete without sending the request
+     * Creates request options for complete1 without sending the request
      */
-    async completeRequestOpts(requestParameters: CompleteRequest): Promise<runtime.RequestOpts> {
+    async complete1RequestOpts(requestParameters: Complete1Request): Promise<runtime.RequestOpts> {
         if (requestParameters['reservationId'] == null) {
             throw new runtime.RequiredError(
                 'reservationId',
-                'Required parameter "reservationId" was null or undefined when calling complete().'
+                'Required parameter "reservationId" was null or undefined when calling complete1().'
             );
         }
 
@@ -57,8 +57,8 @@ export class AdminReservationCompletionControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async completeRaw(requestParameters: CompleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ReservationCompletionResponse>> {
-        const requestOptions = await this.completeRequestOpts(requestParameters);
+    async complete1Raw(requestParameters: Complete1Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ReservationCompletionResponse>> {
+        const requestOptions = await this.complete1RequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ReservationCompletionResponseFromJSON(jsonValue));
@@ -66,8 +66,8 @@ export class AdminReservationCompletionControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async complete(requestParameters: CompleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationCompletionResponse> {
-        const response = await this.completeRaw(requestParameters, initOverrides);
+    async complete1(requestParameters: Complete1Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationCompletionResponse> {
+        const response = await this.complete1Raw(requestParameters, initOverrides);
         return await response.value();
     }
 

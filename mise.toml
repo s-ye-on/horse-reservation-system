@@ -843,3 +843,23 @@ mise run db:up
   --tests '*PendingPaymentExpiryJobIntegrationTest' \
   --tests '*ExceptionCodeTest'
 '''
+
+[tasks."verify:m31-r11"]
+description = "Verify M31-R11 schedule administration API and generated client contract"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*AdminScheduleConfigurationApiTest' \
+  --tests '*AdminScheduleOperationsApiTest' \
+  --tests '*AdminScheduleOpenApiContractTest' \
+  --tests '*GlobalExceptionHandlerTest' \
+  --tests '*GlobalExceptionHandlerApiTest' \
+  --tests '*RegularScheduleTemplateServiceIntegrationTest' \
+  --tests '*RecurringHolidayRuleServiceIntegrationTest' \
+  --tests '*ScheduleOccurrenceSynchronizationServiceIntegrationTest' \
+  --tests '*ScheduleDateClosureServiceIntegrationTest' \
+  --tests '*TimeSlotClosureServiceIntegrationTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*ExceptionCodeTest'
+mise run api:check
+'''

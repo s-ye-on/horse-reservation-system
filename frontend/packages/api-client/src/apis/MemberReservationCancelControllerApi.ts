@@ -34,7 +34,7 @@ export interface CancelRequest {
     memberReservationCancelRequest: MemberReservationCancelRequest;
 }
 
-export interface PreviewRequest {
+export interface Preview2Request {
     reservationId: number;
 }
 
@@ -97,13 +97,13 @@ export class MemberReservationCancelControllerApi extends runtime.BaseAPI {
     }
 
     /**
-     * Creates request options for preview without sending the request
+     * Creates request options for preview2 without sending the request
      */
-    async previewRequestOpts(requestParameters: PreviewRequest): Promise<runtime.RequestOpts> {
+    async preview2RequestOpts(requestParameters: Preview2Request): Promise<runtime.RequestOpts> {
         if (requestParameters['reservationId'] == null) {
             throw new runtime.RequiredError(
                 'reservationId',
-                'Required parameter "reservationId" was null or undefined when calling preview().'
+                'Required parameter "reservationId" was null or undefined when calling preview2().'
             );
         }
 
@@ -125,8 +125,8 @@ export class MemberReservationCancelControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async previewRaw(requestParameters: PreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ReservationCancellationPreviewResponse>> {
-        const requestOptions = await this.previewRequestOpts(requestParameters);
+    async preview2Raw(requestParameters: Preview2Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ReservationCancellationPreviewResponse>> {
+        const requestOptions = await this.preview2RequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
         return new runtime.JSONApiResponse(response, (jsonValue) => ReservationCancellationPreviewResponseFromJSON(jsonValue));
@@ -134,8 +134,8 @@ export class MemberReservationCancelControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async preview(requestParameters: PreviewRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationCancellationPreviewResponse> {
-        const response = await this.previewRaw(requestParameters, initOverrides);
+    async preview2(requestParameters: Preview2Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ReservationCancellationPreviewResponse> {
+        const response = await this.preview2Raw(requestParameters, initOverrides);
         return await response.value();
     }
 

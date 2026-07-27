@@ -70,9 +70,20 @@ public class TimeSlotClosureCancellationService {
 		String actorSubject,
 		String memo
 	) {
+		return cancelByAdmin(null, reservationId, actorSubject, memo);
+	}
+
+	@Transactional
+	public ReservationCancelResult cancelByAdmin(
+		Long expectedTimeSlotId,
+		Long reservationId,
+		String actorSubject,
+		String memo
+	) {
 		return cancel(
 			reservationId,
 			null,
+			expectedTimeSlotId,
 			actorSubject,
 			ReservationActorType.ADMIN,
 			CouponActorType.ADMIN,
@@ -90,6 +101,7 @@ public class TimeSlotClosureCancellationService {
 		final Optional<ReservationCancelResult> result = cancel(
 			reservationId,
 			memberId,
+			null,
 			actorSubject,
 			ReservationActorType.MEMBER,
 			CouponActorType.MEMBER,
@@ -100,6 +112,7 @@ public class TimeSlotClosureCancellationService {
 	private Optional<ReservationCancelResult> cancel(
 		Long reservationId,
 		Long expectedMemberId,
+		Long expectedTimeSlotId,
 		String actorSubject,
 		ReservationActorType actorType,
 		CouponActorType couponActorType,
@@ -117,6 +130,10 @@ public class TimeSlotClosureCancellationService {
 		if (closure.isEmpty()
 			|| !impactRepository.existsByClosureIdAndReservationId(closure.get().getId(), reservationId)) {
 			return Optional.empty();
+		}
+		if (expectedTimeSlotId != null
+			&& !closure.get().getTimeSlotId().equals(expectedTimeSlotId)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_STATUS);
 		}
 		final Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
 			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_NOT_FOUND));

@@ -101,9 +101,20 @@ public class TimeSlotClosureService {
 
 	@Transactional
 	public TimeSlotCapacity complete(Long timeSlotId, String actorSubject, String reason) {
+		return complete(timeSlotId, actorSubject, reason, null);
+	}
+
+	@Transactional
+	public TimeSlotCapacity complete(
+		Long timeSlotId,
+		String actorSubject,
+		String reason,
+		Long expectedVersion
+	) {
 		lockScheduleDate(findLessonDate(timeSlotId));
 		final TimeSlotCapacity timeSlot = lockTimeSlot(timeSlotId);
 		final TimeSlotClosure closure = findInProgress(timeSlotId);
+		ensureVersion(closure, expectedVersion);
 		final long unresolved = countUnresolved(closure, timeSlot);
 		final int activeCount = reservationRepository.findOccupyingByLessonDateAndStartTimeForUpdate(
 			timeSlot.getLessonDate(),
@@ -119,6 +130,16 @@ public class TimeSlotClosureService {
 
 	@Transactional
 	public TimeSlotCapacity withdraw(Long timeSlotId, String actorSubject, String reason) {
+		return withdraw(timeSlotId, actorSubject, reason, null);
+	}
+
+	@Transactional
+	public TimeSlotCapacity withdraw(
+		Long timeSlotId,
+		String actorSubject,
+		String reason,
+		Long expectedVersion
+	) {
 		final ScheduleDate scheduleDate = lockScheduleDate(findLessonDate(timeSlotId));
 		scheduleDate.ensureReservationInflowAllowed();
 		final TimeSlotCapacity timeSlot = lockTimeSlot(timeSlotId);
@@ -127,6 +148,7 @@ public class TimeSlotClosureService {
 			return timeSlot;
 		}
 		final TimeSlotClosure closure = findInProgress(timeSlotId);
+		ensureVersion(closure, expectedVersion);
 		final long total = impactRepository.countByClosureId(closure.getId());
 		if (countUnresolved(closure, timeSlot) != total) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_CLOSURE_WITHDRAWAL_NOT_ALLOWED);
@@ -139,6 +161,16 @@ public class TimeSlotClosureService {
 
 	@Transactional
 	public TimeSlotCapacity reopen(Long timeSlotId, String actorSubject, String reason) {
+		return reopen(timeSlotId, actorSubject, reason, null);
+	}
+
+	@Transactional
+	public TimeSlotCapacity reopen(
+		Long timeSlotId,
+		String actorSubject,
+		String reason,
+		Long expectedVersion
+	) {
 		final ScheduleDate scheduleDate = lockScheduleDate(findLessonDate(timeSlotId));
 		scheduleDate.ensureReservationInflowAllowed();
 		final TimeSlotCapacity timeSlot = lockTimeSlot(timeSlotId);
@@ -151,6 +183,7 @@ public class TimeSlotClosureService {
 		if (latest == null || latest.getStatus() != TimeSlotClosureStatus.COMPLETED) {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_CLOSURE_NOT_IN_PROGRESS);
 		}
+		ensureVersion(latest, expectedVersion);
 		timeSlot.changeAdminClosed(false);
 		appendAudit(timeSlot, latest, REOPENED, actorSubject, reason, 0);
 		return timeSlot;
@@ -204,6 +237,14 @@ public class TimeSlotClosureService {
 			timeSlot.getLessonDate(),
 			timeSlot.getStartTime(),
 			ReservationStatus.occupyingStatuses());
+	}
+
+	private void ensureVersion(TimeSlotClosure closure, Long expectedVersion) {
+		if (expectedVersion != null && closure.getVersion() != expectedVersion) {
+			throw new TimeSlotException(
+				ExceptionCode.TIMESLOT_CLOSURE_VERSION_CONFLICT,
+				Map.of("currentVersion", closure.getVersion()));
+		}
 	}
 
 	private TimeSlotClosure findInProgress(Long timeSlotId) {

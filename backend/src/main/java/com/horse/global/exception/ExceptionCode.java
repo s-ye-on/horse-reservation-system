@@ -106,6 +106,8 @@ public enum ExceptionCode {
 	TIMESLOT_CLOSURE_IMPACTS_UNRESOLVED(HttpStatus.CONFLICT, "아직 정리되지 않은 휴강 영향 예약이 있습니다."),
 	TIMESLOT_CLOSURE_WITHDRAWAL_NOT_ALLOWED(HttpStatus.CONFLICT, "이미 처리된 예약이 있어 휴강을 철회할 수 없습니다."),
 	TIMESLOT_CLOSURE_COMMAND_NOT_ALLOWED(HttpStatus.CONFLICT, "휴강 중인 수업에서는 요청한 처리를 할 수 없습니다."),
+	TIMESLOT_CLOSURE_NOT_FOUND(HttpStatus.NOT_FOUND, "시간대 휴강 작업을 찾을 수 없습니다."),
+	TIMESLOT_CLOSURE_VERSION_CONFLICT(HttpStatus.CONFLICT, "시간대 휴강 작업 버전이 변경되었습니다."),
 	TIMESLOT_ACTIVE_RESERVATIONS_EXIST_ON_CLOSURE_DATE(
 		HttpStatus.CONFLICT,
 		"휴무 날짜에 활성 예약이 남아 있습니다."),
@@ -135,6 +137,7 @@ public enum ExceptionCode {
 		HttpStatus.SERVICE_UNAVAILABLE,
 		"시간표를 갱신하고 있습니다. 잠시 후 다시 시도해 주세요."),
 	SCHEDULE_CONFIG_VERSION_CONFLICT(HttpStatus.CONFLICT, "일정 설정 버전이 변경되었습니다."),
+	SCHEDULE_DATE_VERSION_CONFLICT(HttpStatus.CONFLICT, "운영 날짜 상태 버전이 변경되었습니다."),
 	SCHEDULE_TEMPLATE_NOT_FOUND(HttpStatus.NOT_FOUND, "정규 시간표 Template을 찾을 수 없습니다."),
 	SCHEDULE_TEMPLATE_ALREADY_EXISTS(HttpStatus.CONFLICT, "같은 요일과 시작 시각의 Template이 이미 존재합니다."),
 	SCHEDULE_RECURRING_HOLIDAY_NOT_FOUND(HttpStatus.NOT_FOUND, "정기 휴일 규칙을 찾을 수 없습니다."),
@@ -145,6 +148,7 @@ public enum ExceptionCode {
 	SCHEDULE_OCCURRENCE_SYNC_INCOMPLETE(
 		HttpStatus.CONFLICT,
 		"아직 모든 운영 날짜에 시간표 설정이 적용되지 않았습니다."),
+	SCHEDULE_SYNC_RETRY_NOT_ALLOWED(HttpStatus.CONFLICT, "현재 일정 동기화는 재시도할 수 없습니다."),
 	SCHEDULE_DATE_NOT_RESERVABLE(HttpStatus.CONFLICT, "휴무 처리 중이거나 휴무인 날짜에는 예약할 수 없습니다."),
 	SCHEDULE_DATE_CLOSURE_NOT_ALLOWED(HttpStatus.CONFLICT, "해당 운영 날짜는 휴무 처리할 수 없습니다."),
 	SCHEDULE_DATE_NOT_CLOSING(HttpStatus.CONFLICT, "휴무 처리 중인 운영 날짜가 아닙니다.");

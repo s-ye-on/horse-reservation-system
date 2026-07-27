@@ -1,6 +1,7 @@
 package com.horse.schedules.infrastructure;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
@@ -40,5 +41,26 @@ public class ScheduleAuditLogRepository {
 			.setParameter("targetType", targetType)
 			.setParameter("targetKey", targetKey)
 			.getResultList();
+	}
+
+	public Optional<ScheduleAuditLog> findLatestByTargetAndAction(
+		ScheduleAuditTargetType targetType,
+		String targetKey,
+		String action
+	) {
+		return entityManager.createQuery("""
+			SELECT auditLog
+			FROM ScheduleAuditLog auditLog
+			WHERE auditLog.targetType = :targetType
+			  AND auditLog.targetKey = :targetKey
+			  AND auditLog.action = :action
+			ORDER BY auditLog.id DESC
+			""", ScheduleAuditLog.class)
+			.setParameter("targetType", targetType)
+			.setParameter("targetKey", targetKey)
+			.setParameter("action", action)
+			.setMaxResults(1)
+			.getResultStream()
+			.findFirst();
 	}
 }
