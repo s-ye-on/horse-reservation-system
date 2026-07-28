@@ -51,6 +51,8 @@ public interface ReservationChangeLogRepository extends Repository<ReservationCh
 				changeLog.toLessonDate as toLessonDate,
 				changeLog.toStartTime as toStartTime,
 				changeLog.couponAction as couponAction,
+				reservation.couponId as couponId,
+				reservation.paymentDueAt as paymentDueAt,
 				changeLog.memo as memo,
 				changeLog.createdAt as occurredAt
 			from ReservationChangeLog changeLog, Reservation reservation, Member member

@@ -25,6 +25,8 @@ public record AdminReservationAuditResult(
 	LocalDate toLessonDate,
 	LocalTime toStartTime,
 	CouponAction couponAction,
+	Long couponId,
+	LocalDateTime paymentDueAt,
 	String memo,
 	LocalDateTime occurredAt
 ) {
@@ -45,6 +47,8 @@ public record AdminReservationAuditResult(
 			projection.getToLessonDate(),
 			projection.getToStartTime(),
 			projection.getCouponAction(),
+			projection.getCouponId(),
+			projection.getPaymentDueAt(),
 			projection.getMemo(),
 			projection.getOccurredAt());
 	}

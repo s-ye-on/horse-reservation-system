@@ -39,6 +39,10 @@ public interface AdminReservationAuditProjection {
 
 	CouponAction getCouponAction();
 
+	Long getCouponId();
+
+	LocalDateTime getPaymentDueAt();
+
 	String getMemo();
 
 	LocalDateTime getOccurredAt();

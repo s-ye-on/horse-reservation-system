@@ -74,6 +74,22 @@ V33은 기존 migration을 변경하지 않고 원장을 추가한다.
 
 기존 예약에는 멱등성 키를 역생성하지 않는다.
 
+## M31-09 관리자 수동 예약 확장
+
+관리자 수동 예약은 같은 `reservation_application_idempotencies` 원장과 원자성 경계를
+재사용하되 operation을 `admin_reservation_create`로 분리한다.
+
+- 범위는 관리자 인증 주체, 관리자 operation과 key의 조합이다.
+- fingerprint는 `memberId`, `timeSlotId`, `classType`, 정규화된 필수 사유를 포함한다.
+- 회원 operation과 관리자 operation은 같은 key를 사용해도 서로 다른 논리 요청이다.
+- 관리자 Coupon 예약은 같은 transaction에서 Reservation 생성, Coupon `held`와
+  `confirmed` 원장 기록, Reservation `confirmed`, 관리자 생성 감사와 멱등성 완료를
+  확정한다. Coupon 횟수는 차감하지 않고 `heldCount`만 1 증가한다.
+- 무Coupon 예약은 같은 transaction에서 `pending_payment`, 실제 `paymentDueAt`, 관리자
+  생성 감사와 멱등성 완료를 확정한다.
+- 관리자 생성 감사는 대상 Reservation FK를 통해 회원, 시간대, Coupon 또는 입금 마감
+  정보를 조회하고 필수 사유와 관리자 인증 주체를 append-only로 보존한다.
+
 ## 제외와 후속
 
 제품 정책의 기본 보관 기간은 24시간이지만 M31-08은 만료 판정과 정리 Job을 구현하지
@@ -81,5 +97,4 @@ V33은 기존 migration을 변경하지 않고 원장을 추가한다.
 24시간 이후 key 재사용 의미, 삭제 batch와 운영 관측성은 별도 Task에서 원자적 삭제와
 재사용 경쟁을 함께 결정한다.
 
-예약 변경·취소 API, 관리자 수동 예약 operation과 가족 Coupon 후보 확장도 현재 범위에
-포함하지 않는다.
+예약 변경·취소 API와 가족 Coupon 후보 확장은 현재 범위에 포함하지 않는다.

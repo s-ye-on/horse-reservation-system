@@ -120,6 +120,31 @@ public class ReservationChangeLog {
 			requireMemo(memo));
 	}
 
+	public static ReservationChangeLog adminReservationCreated(
+		Reservation reservation,
+		String actorAuthSubject,
+		String memo
+	) {
+		if (reservation == null
+			|| (reservation.getStatus() != ReservationStatus.CONFIRMED
+				&& reservation.getStatus() != ReservationStatus.PENDING_PAYMENT)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_CHANGE_LOG_REFERENCE);
+		}
+		return new ReservationChangeLog(
+			reservation.getId(),
+			actorAuthSubject,
+			ReservationActorType.ADMIN,
+			reservation.getStatus(),
+			reservation.getStatus(),
+			reservation.getLessonDate(),
+			reservation.getStartTime(),
+			reservation.getLessonDate(),
+			reservation.getStartTime(),
+			ReservationChangeType.ADMIN_RESERVATION_CREATED,
+			CouponAction.NONE,
+			requireMemo(memo));
+	}
+
 	public static ReservationChangeLog noShowProcessed(
 		Long reservationId,
 		String actorAuthSubject,

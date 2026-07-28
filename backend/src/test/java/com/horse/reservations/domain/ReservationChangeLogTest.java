@@ -4,11 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.horse.global.exception.ExceptionCode;
+import com.horse.members.domain.RidingClass;
 import com.horse.reservations.domain.exception.ReservationException;
 
 class ReservationChangeLogTest {
@@ -35,6 +38,31 @@ class ReservationChangeLogTest {
 		assertThat(changeLog.getFromLessonDate()).isEqualTo(LESSON_DATE);
 		assertThat(changeLog.getToLessonDate()).isEqualTo(LESSON_DATE);
 		assertThat(changeLog.getMemo()).isEqualTo("입금 확인 후 복구");
+	}
+
+	@Test
+	void 관리자_수동_예약_생성은_최종_상태와_사유를_감사한다() {
+		final Reservation reservation = Reservation.createSinglePaymentPending(
+			1L,
+			RidingClass.FIRST_RIDE,
+			LESSON_DATE,
+			START_TIME,
+			LocalDateTime.of(LESSON_DATE, START_TIME).minusHours(1),
+			LocalDateTime.of(LESSON_DATE, START_TIME).minusHours(2));
+		ReflectionTestUtils.setField(reservation, "id", 1L);
+
+		final ReservationChangeLog changeLog = ReservationChangeLog.adminReservationCreated(
+			reservation,
+			"manual-admin",
+			"전화 접수");
+
+		assertThat(changeLog.getActorType()).isEqualTo(ReservationActorType.ADMIN);
+		assertThat(changeLog.getFromStatus()).isEqualTo(ReservationStatus.PENDING_PAYMENT);
+		assertThat(changeLog.getToStatus()).isEqualTo(ReservationStatus.PENDING_PAYMENT);
+		assertThat(changeLog.getChangeType())
+			.isEqualTo(ReservationChangeType.ADMIN_RESERVATION_CREATED);
+		assertThat(changeLog.getCouponAction()).isEqualTo(CouponAction.NONE);
+		assertThat(changeLog.getMemo()).isEqualTo("전화 접수");
 	}
 
 	@Test

@@ -91,6 +91,25 @@ class ReservationBookingTimePolicyTest {
 	}
 
 	@Test
+	void 관리자는_회원_마감_이후에도_수업_시작_전이면_예약할_수_있다() {
+		assertThatCode(() -> ReservationBookingTimePolicy.ensureCanBookByAdmin(
+			LESSON_DATE,
+			START_TIME,
+			LESSON_START.minusNanos(1)))
+			.doesNotThrowAnyException();
+	}
+
+	@Test
+	void 관리자는_정확한_수업_시작_시각부터_예약할_수_없다() {
+		assertReservationException(
+			() -> ReservationBookingTimePolicy.ensureCanBookByAdmin(
+				LESSON_DATE,
+				START_TIME,
+				LESSON_START),
+			ExceptionCode.RESERVATION_LESSON_ALREADY_STARTED);
+	}
+
+	@Test
 	void 필수_입력이_없으면_도메인_예외가_발생한다() {
 		assertReservationException(
 			() -> ReservationBookingTimePolicy.evaluate(null, START_TIME, LESSON_START),

@@ -70,6 +70,7 @@ GET  /api/me/coupon-usage-logs
 
 ```text
 GET  /api/admin/reservations
+POST /api/admin/reservations
 GET  /api/admin/reservations/{reservationId}
 POST /api/admin/reservations/{reservationId}/confirm
 POST /api/admin/reservations/{reservationId}/reject
@@ -80,6 +81,12 @@ POST /api/admin/reservations/{reservationId}/complete
 POST /api/admin/reservations/{reservationId}/no-show
 POST /api/admin/reservations/complete-bulk
 ```
+
+관리자 수동 예약 생성은 필수 `Idempotency-Key` Header와
+`memberId`, `timeSlotId`, `classType`, 필수 `reason`을 받는다. 관리자는 회원의 3시간
+마감을 우회하지만 수업 시작 시각부터는 거부된다. 대상 회원의 유효한 본인 Coupon이
+있으면 기존 자동 선택 순서로 1회 점유하고 `confirmed`, 없으면 `pending_payment`로
+생성한다. 입금 마감은 생성 후 2시간과 수업 시작 시각 중 빠른 시각이다.
 
 반려 API는 관리자 승인 전 예약만 `rejected`로 전이한다. 취소 API는 `cancelled`로 전이하므로 서로 대체하지 않는다.
 
@@ -116,6 +123,8 @@ GET /api/admin/audit-logs
       toLessonDate
       toStartTime
       couponAction
+      couponId
+      paymentDueAt
       memo
       occurredAt
     }

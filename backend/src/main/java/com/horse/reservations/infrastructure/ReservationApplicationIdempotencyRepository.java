@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.reservations.domain.ReservationApplicationIdempotency;
-import com.horse.reservations.domain.ReservationApplicationOperation;
 
 public interface ReservationApplicationIdempotencyRepository
 	extends JpaRepository<ReservationApplicationIdempotency, Long> {
@@ -26,7 +25,7 @@ public interface ReservationApplicationIdempotencyRepository
 		""", nativeQuery = true)
 	Optional<ReservationApplicationIdempotency> findForUpdate(
 		@Param("authSubject") String authSubject,
-		@Param("operation") ReservationApplicationOperation operation,
+		@Param("operation") String operation,
 		@Param("idempotencyKey") String idempotencyKey
 	);
 }

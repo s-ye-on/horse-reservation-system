@@ -4,6 +4,7 @@ export * from './AdminApprovalExpiryJobControllerApi';
 export * from './AdminBulkReservationAttendanceControllerApi';
 export * from './AdminCouponRegistrationControllerApi';
 export * from './AdminCouponUsageExportControllerApi';
+export * from './AdminManualReservationControllerApi';
 export * from './AdminMemberQueryControllerApi';
 export * from './AdminMemberRidingPermissionControllerApi';
 export * from './AdminPendingPaymentExpiryJobControllerApi';

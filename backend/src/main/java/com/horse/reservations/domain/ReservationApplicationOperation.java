@@ -6,7 +6,8 @@ import com.horse.global.exception.ExceptionCode;
 import com.horse.reservations.domain.exception.ReservationException;
 
 public enum ReservationApplicationOperation {
-	MEMBER_RESERVATION_CREATE("member_reservation_create");
+	MEMBER_RESERVATION_CREATE("member_reservation_create"),
+	ADMIN_RESERVATION_CREATE("admin_reservation_create");
 
 	private final String databaseValue;
 

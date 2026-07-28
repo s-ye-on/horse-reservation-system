@@ -9,7 +9,8 @@ public enum ReservationChangeType {
 	PAYMENT_RESTORED("payment_restored"),
 	NO_SHOW_PROCESSED("no_show_processed"),
 	SCHEDULE_CHANGED("schedule_changed"),
-	RESERVATION_CANCELLED("reservation_cancelled");
+	RESERVATION_CANCELLED("reservation_cancelled"),
+	ADMIN_RESERVATION_CREATED("admin_reservation_created");
 
 	private final String databaseValue;
 

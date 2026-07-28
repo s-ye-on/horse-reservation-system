@@ -742,6 +742,31 @@ rg -Fq 'Reservation, 정원 점유, Coupon 점유, CouponUsageLog와 원장 완�
   docs/architecture/m31-command-lock-matrix.md
 '''
 
+[tasks."verify:m31-09"]
+description = "Verify M31-09 admin manual reservation creation and idempotency"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*AdminManualReservationApiTest' \
+  --tests '*AdminManualReservationAuditMigrationIntegrationTest' \
+  --tests '*AdminManualReservationOpenApiContractTest' \
+  --tests '*ReservationBookingTimePolicyTest' \
+  --tests '*ReservationChangeLogTest' \
+  --tests '*ReservationApplicationIdempotencyApiTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*PendingPaymentReservationApiTest' \
+  --tests '*AdminReservationAuditQueryApiTest' \
+  --tests '*AdminAuditExportApiTest' \
+  --tests '*M31CommandLockPlanIntegrationTest' \
+  --tests '*ExceptionCodeTest'
+rg -Fq 'createAdminManualReservation' \
+  frontend/packages/api-client/src/apis/AdminManualReservationControllerApi.ts
+rg -Fq "headerParameters['Idempotency-Key']" \
+  frontend/packages/api-client/src/apis/AdminManualReservationControllerApi.ts
+rg -Fq 'admin_reservation_create' \
+  docs/architecture/m31-command-lock-matrix.md
+'''
+
 [tasks."db:preflight-active-reservations"]
 description = "Report duplicate active reservations before Flyway V15"
 run = "./scripts/check-active-reservation-duplicates.sh"

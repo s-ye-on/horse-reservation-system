@@ -21,6 +21,8 @@ public record AdminReservationAuditResponse(
 	LocalDate toLessonDate,
 	LocalTime toStartTime,
 	String couponAction,
+	Long couponId,
+	LocalDateTime paymentDueAt,
 	String memo,
 	LocalDateTime occurredAt
 ) {
@@ -41,6 +43,8 @@ public record AdminReservationAuditResponse(
 			result.toLessonDate(),
 			result.toStartTime(),
 			result.couponAction().databaseValue(),
+			result.couponId(),
+			result.paymentDueAt(),
 			result.memo(),
 			result.occurredAt());
 	}

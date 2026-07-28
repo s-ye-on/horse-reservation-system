@@ -2,6 +2,7 @@ package com.horse.reservations.application;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.function.Supplier;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,11 +21,14 @@ public class IdempotentReservationApplicationService {
 	private static final int CREATED_HTTP_STATUS = 201;
 	private static final int MAX_AUTH_SUBJECT_LENGTH = 191;
 	private static final int MAX_IDEMPOTENCY_KEY_LENGTH = 255;
-	private static final ReservationApplicationOperation OPERATION =
+	private static final ReservationApplicationOperation MEMBER_OPERATION =
 		ReservationApplicationOperation.MEMBER_RESERVATION_CREATE;
+	private static final ReservationApplicationOperation ADMIN_OPERATION =
+		ReservationApplicationOperation.ADMIN_RESERVATION_CREATE;
 
 	private final Clock clock;
 	private final ReservationApplicationService reservationApplicationService;
+	private final AdminManualReservationService adminManualReservationService;
 	private final ReservationApplicationResponseEncoder responseEncoder;
 	private final ReservationApplicationIdempotencyClaimRepository claimRepository;
 	private final ReservationApplicationIdempotencyRepository idempotencyRepository;
@@ -32,12 +36,14 @@ public class IdempotentReservationApplicationService {
 	public IdempotentReservationApplicationService(
 		Clock clock,
 		ReservationApplicationService reservationApplicationService,
+		AdminManualReservationService adminManualReservationService,
 		ReservationApplicationResponseEncoder responseEncoder,
 		ReservationApplicationIdempotencyClaimRepository claimRepository,
 		ReservationApplicationIdempotencyRepository idempotencyRepository
 	) {
 		this.clock = clock;
 		this.reservationApplicationService = reservationApplicationService;
+		this.adminManualReservationService = adminManualReservationService;
 		this.responseEncoder = responseEncoder;
 		this.claimRepository = claimRepository;
 		this.idempotencyRepository = idempotencyRepository;
@@ -55,15 +61,61 @@ public class IdempotentReservationApplicationService {
 		final String fingerprint = ReservationApplicationFingerprint
 			.create(timeSlotId, classType)
 			.value();
-		final boolean claimed = claimRepository.claim(
+		return execute(
 			validatedSubject,
-			OPERATION,
+			MEMBER_OPERATION,
 			normalizedKey,
+			fingerprint,
+			() -> reservationApplicationService.apply(
+				validatedSubject,
+				timeSlotId,
+				classType));
+	}
+
+	@Transactional
+	public IdempotentReservationApplicationResult applyByAdmin(
+		String adminAuthSubject,
+		String idempotencyKey,
+		Long memberId,
+		Long timeSlotId,
+		String classType,
+		String reason
+	) {
+		final String validatedSubject = validateAuthSubject(adminAuthSubject);
+		final String normalizedKey = normalizeKey(idempotencyKey);
+		final String normalizedReason = normalizeReason(reason);
+		final String fingerprint = ReservationApplicationFingerprint
+			.createAdmin(memberId, timeSlotId, classType, normalizedReason)
+			.value();
+		return execute(
+			validatedSubject,
+			ADMIN_OPERATION,
+			normalizedKey,
+			fingerprint,
+			() -> adminManualReservationService.create(
+				validatedSubject,
+				memberId,
+				timeSlotId,
+				classType,
+				normalizedReason));
+	}
+
+	private IdempotentReservationApplicationResult execute(
+		String authSubject,
+		ReservationApplicationOperation operation,
+		String idempotencyKey,
+		String fingerprint,
+		Supplier<ReservationApplicationResult> application
+	) {
+		final boolean claimed = claimRepository.claim(
+			authSubject,
+			operation,
+			idempotencyKey,
 			fingerprint);
 		final ReservationApplicationIdempotency idempotency = idempotencyRepository.findForUpdate(
-				validatedSubject,
-				OPERATION,
-				normalizedKey)
+				authSubject,
+				operation.databaseValue(),
+				idempotencyKey)
 			.orElseThrow(() -> new ReservationException(
 				ExceptionCode.RESERVATION_IDEMPOTENCY_STATE_CONFLICT));
 		idempotency.ensureSameFingerprint(fingerprint);
@@ -71,10 +123,7 @@ public class IdempotentReservationApplicationService {
 			return replay(idempotency);
 		}
 
-		final ReservationApplicationResult applicationResult = reservationApplicationService.apply(
-			validatedSubject,
-			timeSlotId,
-			classType);
+		final ReservationApplicationResult applicationResult = application.get();
 		final String responseBody = responseEncoder.encode(applicationResult);
 		idempotency.complete(
 			applicationResult.reservationId(),
@@ -120,5 +169,16 @@ public class IdempotentReservationApplicationService {
 				ExceptionCode.RESERVATION_INVALID_IDEMPOTENCY_KEY);
 		}
 		return normalizedKey;
+	}
+
+	private String normalizeReason(String reason) {
+		if (reason == null || reason.isBlank()) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_ADMIN_MEMO);
+		}
+		final String normalizedReason = reason.strip();
+		if (normalizedReason.length() > 500) {
+			throw new ReservationException(ExceptionCode.RESERVATION_INVALID_ADMIN_MEMO);
+		}
+		return normalizedReason;
 	}
 }

@@ -1,5 +1,6 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './AdminManualReservationRequest';
 export * from './AdminMemberResponse';
 export * from './AdminPendingPaymentResponse';
 export * from './AdminReservationAuditPageResponse';

@@ -1667,6 +1667,130 @@
         }
       }
     },
+    "/api/admin/reservations": {
+      "get": {
+        "tags": [
+          "admin-reservation-query-controller"
+        ],
+        "operationId": "getReservations",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lessonDateFrom",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "lessonDateTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "classType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminReservationPageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-manual-reservation-controller"
+        ],
+        "operationId": "createAdminManualReservation",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "관리자의 수동 예약 생성 요청을 식별하는 멱등성 키",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminManualReservationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReservationApplicationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/reservations/{reservationId}/restore-payment": {
       "post": {
         "tags": [
@@ -3389,91 +3513,6 @@
         }
       }
     },
-    "/api/admin/reservations": {
-      "get": {
-        "tags": [
-          "admin-reservation-query-controller"
-        ],
-        "operationId": "getReservations",
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "lessonDateFrom",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            }
-          },
-          {
-            "name": "lessonDateTo",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            }
-          },
-          {
-            "name": "classType",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "keyword",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "minimum": 0
-            }
-          },
-          {
-            "name": "size",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "integer",
-              "format": "int32",
-              "maximum": 100,
-              "minimum": 1
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminReservationPageResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/admin/reservations/{reservationId}": {
       "get": {
         "tags": [
@@ -4870,6 +4909,34 @@
           "status"
         ]
       },
+      "AdminManualReservationRequest": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "timeSlotId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "classType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "classType",
+          "memberId",
+          "reason",
+          "timeSlotId"
+        ]
+      },
       "ReservationPaymentRestoreRequest": {
         "type": "object",
         "properties": {
@@ -6123,6 +6190,14 @@
           },
           "couponAction": {
             "type": "string"
+          },
+          "couponId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paymentDueAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "memo": {
             "type": "string"

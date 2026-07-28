@@ -42,6 +42,19 @@ public final class ReservationBookingTimePolicy {
 			});
 	}
 
+	public static void ensureCanBookByAdmin(
+		LocalDate lessonDate,
+		LocalTime startTime,
+		Instant requestedAt
+	) {
+		validateInputs(lessonDate, startTime, requestedAt);
+		final LocalDateTime lessonStartAt = LocalDateTime.of(lessonDate, startTime);
+		final LocalDateTime requestedAtSeoul = LocalDateTime.ofInstant(requestedAt, SEOUL_ZONE);
+		if (!requestedAtSeoul.isBefore(lessonStartAt)) {
+			throw new ReservationException(ExceptionCode.RESERVATION_LESSON_ALREADY_STARTED);
+		}
+	}
+
 	private static Optional<ExceptionCode> blockedCode(
 		LocalDate lessonDate,
 		LocalTime startTime,

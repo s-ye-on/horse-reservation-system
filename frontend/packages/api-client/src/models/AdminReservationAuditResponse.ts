@@ -105,6 +105,18 @@ export interface AdminReservationAuditResponse {
     couponAction?: string;
     /**
      *
+     * @type {number}
+     * @memberof AdminReservationAuditResponse
+     */
+    couponId?: number;
+    /**
+     *
+     * @type {Date}
+     * @memberof AdminReservationAuditResponse
+     */
+    paymentDueAt?: Date;
+    /**
+     *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
@@ -148,6 +160,8 @@ export function AdminReservationAuditResponseFromJSONTyped(json: any, ignoreDisc
         'toLessonDate': json['toLessonDate'] == null ? undefined : (new Date(json['toLessonDate'])),
         'toStartTime': json['toStartTime'] == null ? undefined : json['toStartTime'],
         'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
+        'couponId': json['couponId'] == null ? undefined : json['couponId'],
+        'paymentDueAt': json['paymentDueAt'] == null ? undefined : (new Date(json['paymentDueAt'])),
         'memo': json['memo'] == null ? undefined : json['memo'],
         'occurredAt': json['occurredAt'] == null ? undefined : (new Date(json['occurredAt'])),
     };
@@ -178,6 +192,8 @@ export function AdminReservationAuditResponseToJSONTyped(value?: AdminReservatio
         'toLessonDate': value['toLessonDate'] == null ? value['toLessonDate'] : value['toLessonDate'].toISOString().substring(0,10),
         'toStartTime': value['toStartTime'],
         'couponAction': value['couponAction'],
+        'couponId': value['couponId'],
+        'paymentDueAt': value['paymentDueAt'] == null ? value['paymentDueAt'] : value['paymentDueAt'].toISOString(),
         'memo': value['memo'],
         'occurredAt': value['occurredAt'] == null ? value['occurredAt'] : value['occurredAt'].toISOString(),
     };

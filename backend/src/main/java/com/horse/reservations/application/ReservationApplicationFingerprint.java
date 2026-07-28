@@ -17,18 +17,30 @@ public record ReservationApplicationFingerprint(String value) {
 	private static final String HASH_ALGORITHM = "SHA-256";
 
 	public static ReservationApplicationFingerprint create(Long timeSlotId, String classType) {
+		return digest(canonicalMemberRequest(timeSlotId, classType));
+	}
+
+	public static ReservationApplicationFingerprint createAdmin(
+		Long memberId,
+		Long timeSlotId,
+		String classType,
+		String reason
+	) {
+		return digest(canonicalAdminRequest(memberId, timeSlotId, classType, reason));
+	}
+
+	private static ReservationApplicationFingerprint digest(byte[] canonicalRequest) {
 		try {
-			final byte[] canonicalRequest = canonicalRequest(timeSlotId, classType);
 			final byte[] digest = MessageDigest.getInstance(HASH_ALGORITHM).digest(canonicalRequest);
 			return new ReservationApplicationFingerprint(HexFormat.of().formatHex(digest));
 		}
-		catch (IOException | NoSuchAlgorithmException exception) {
+		catch (NoSuchAlgorithmException exception) {
 			throw new ReservationException(
 				ExceptionCode.RESERVATION_IDEMPOTENCY_FINGERPRINT_FAILED);
 		}
 	}
 
-	private static byte[] canonicalRequest(Long timeSlotId, String classType) throws IOException {
+	private static byte[] canonicalMemberRequest(Long timeSlotId, String classType) {
 		try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 			DataOutputStream output = new DataOutputStream(bytes)) {
 			output.writeInt(FINGERPRINT_FORMAT_VERSION);
@@ -36,6 +48,32 @@ public record ReservationApplicationFingerprint(String value) {
 			writeString(output, classType);
 			output.flush();
 			return bytes.toByteArray();
+		}
+		catch (IOException exception) {
+			throw new ReservationException(
+				ExceptionCode.RESERVATION_IDEMPOTENCY_FINGERPRINT_FAILED);
+		}
+	}
+
+	private static byte[] canonicalAdminRequest(
+		Long memberId,
+		Long timeSlotId,
+		String classType,
+		String reason
+	) {
+		try (ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+			DataOutputStream output = new DataOutputStream(bytes)) {
+			output.writeInt(FINGERPRINT_FORMAT_VERSION);
+			writeLong(output, memberId);
+			writeLong(output, timeSlotId);
+			writeString(output, classType);
+			writeString(output, reason);
+			output.flush();
+			return bytes.toByteArray();
+		}
+		catch (IOException exception) {
+			throw new ReservationException(
+				ExceptionCode.RESERVATION_IDEMPOTENCY_FINGERPRINT_FAILED);
 		}
 	}
 
