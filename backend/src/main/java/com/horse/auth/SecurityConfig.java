@@ -23,7 +23,9 @@ public class SecurityConfig {
 	@Bean
 	SecurityFilterChain securityFilterChain(
 		HttpSecurity http,
-		JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
+		JwtAuthenticationConverter jwtAuthenticationConverter,
+		JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint,
+		JwtAccessDeniedHandler jwtAccessDeniedHandler) throws Exception {
 		http
 			.csrf(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -33,8 +35,13 @@ public class SecurityConfig {
 				.requestMatchers("/api/admin/**").hasAuthority(UserRole.ADMIN.authority())
 				.requestMatchers("/api/**").authenticated()
 				.anyRequest().denyAll())
+			.exceptionHandling(exceptionHandling -> exceptionHandling
+				.authenticationEntryPoint(jwtAuthenticationEntryPoint)
+				.accessDeniedHandler(jwtAccessDeniedHandler))
 			.oauth2ResourceServer(resourceServer -> resourceServer
-				.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
+				.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+				.authenticationEntryPoint(jwtAuthenticationEntryPoint)
+				.accessDeniedHandler(jwtAccessDeniedHandler))
 			.httpBasic(AbstractHttpConfigurer::disable)
 			.formLogin(AbstractHttpConfigurer::disable)
 			.logout(AbstractHttpConfigurer::disable);

@@ -38,6 +38,18 @@ public record ErrorResponse(
 		);
 	}
 
+	public static ErrorResponse from(ExceptionCode exceptionCode, String path) {
+		return new ErrorResponse(
+			exceptionCode.code(),
+			exceptionCode.message(),
+			exceptionCode.status().value(),
+			OffsetDateTime.now(),
+			path,
+			List.of(),
+			Map.of()
+		);
+	}
+
     // 검증 에러용 @Valid
 	public static ErrorResponse validation(String path, List<FieldError> fieldErrors) {
 		final ExceptionCode exceptionCode = ExceptionCode.COMMON_INVALID_REQUEST;

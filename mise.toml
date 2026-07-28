@@ -767,6 +767,22 @@ rg -Fq 'admin_reservation_create' \
   docs/architecture/m31-command-lock-matrix.md
 '''
 
+[tasks."verify:m31-10"]
+description = "Verify M31-10 MVC and Security ErrorResponse contract"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*ErrorResponseContractApiTest' \
+  --tests '*ErrorResponseWriterTest' \
+  --tests '*GlobalExceptionHandlerTest' \
+  --tests '*GlobalExceptionHandlerApiTest' \
+  --tests '*SecurityBoundaryTest' \
+  --tests '*ExceptionCodeTest' \
+  --tests '*AdminManualReservationApiTest' \
+  --tests '*AdminMemberQueryApiTest' \
+  --tests '*MemberAvailableTimeSlotsApiTest'
+'''
+
 [tasks."db:preflight-active-reservations"]
 description = "Report duplicate active reservations before Flyway V15"
 run = "./scripts/check-active-reservation-duplicates.sh"

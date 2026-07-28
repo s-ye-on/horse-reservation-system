@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 
+import tools.jackson.databind.ObjectMapper;
+
 class GlobalExceptionHandlerApiTest {
 
 	private MockMvc mockMvc;
@@ -26,7 +28,9 @@ class GlobalExceptionHandlerApiTest {
 	@BeforeEach
 	void setUp() {
 		mockMvc = MockMvcBuilders.standaloneSetup(new ValidationController())
-			.setControllerAdvice(new GlobalExceptionHandler())
+			.setControllerAdvice(new GlobalExceptionHandler(
+				new ErrorResponseWriter(new ObjectMapper())
+			))
 			.build();
 	}
 

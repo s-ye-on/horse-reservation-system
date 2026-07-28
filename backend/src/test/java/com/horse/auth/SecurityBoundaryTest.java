@@ -8,6 +8,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
+import com.horse.global.exception.ErrorResponseWriter;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -19,7 +20,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Import({ SecurityConfig.class, SecurityBoundaryTest.TestEndpoints.class })
+@Import({
+	SecurityConfig.class,
+	JwtAuthenticationEntryPoint.class,
+	JwtAccessDeniedHandler.class,
+	ErrorResponseWriter.class,
+	SecurityBoundaryTest.TestEndpoints.class
+})
 @WebMvcTest(controllers = SecurityBoundaryTest.TestEndpoints.class)
 class SecurityBoundaryTest {
 
