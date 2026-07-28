@@ -165,6 +165,7 @@ mise run mobile:lint
 mise run mobile:typecheck
 mise run mobile:test
 mise run mobile:export
+mise run quality:m31-critical
 '''
 
 [tasks."verify:m0-01"]
@@ -964,4 +965,50 @@ rg -q "event[.]key === 'Home'" \
   frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.tsx
 rg -q "event[.]key === 'End'" \
   frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.tsx
+'''
+
+[tasks."verify:m31-r14"]
+description = "Verify M31-R14 Checkpoint 1 migration, concurrency, API, and core web flows"
+run = "mise run quality:m31-critical"
+
+[tasks."quality:m31-critical"]
+description = "Run permanent MVP 3.1 schedule and reservation critical-path regression gates"
+run = '''
+mise run db:up
+mise run db:preflight-m31-r01
+mise run db:preflight-m31-r02
+./backend/gradlew -p backend test \
+  --tests '*M31R01PreflightIntegrationTest' \
+  --tests '*M31R01LessonIntervalMigrationIntegrationTest' \
+  --tests '*M31R02ScheduleFoundationMigrationIntegrationTest' \
+  --tests '*M31R03ScheduleDateHorizonMigrationIntegrationTest' \
+  --tests '*M31R05DefaultMondayHolidayMigrationIntegrationTest' \
+  --tests '*M31R06TimeSlotLockIndexMigrationIntegrationTest' \
+  --tests '*M31R08ReservationOverlapIndexMigrationIntegrationTest' \
+  --tests '*M31R10TimeSlotClosureMigrationIntegrationTest' \
+  --tests '*M31G02TimeSlotClosureRepairMigrationIntegrationTest' \
+  --tests '*RegularScheduleTemplateServiceIntegrationTest' \
+  --tests '*RecurringHolidayRuleServiceIntegrationTest' \
+  --tests '*ScheduleOccurrenceSynchronizationServiceIntegrationTest' \
+  --tests '*ScheduleDateClosureServiceIntegrationTest' \
+  --tests '*TimeSlotClosureServiceIntegrationTest' \
+  --tests '*ScheduleLockingIntegrationTest' \
+  --tests '*TimeSlotCapacityConcurrencyIntegrationTest' \
+  --tests '*TimeSlotDeletionConcurrencyIntegrationTest' \
+  --tests '*ReservationIntervalOverlapRepositoryIntegrationTest' \
+  --tests '*ReservationExactStartConstraintTranslationIntegrationTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*PendingPaymentReservationApiTest' \
+  --tests '*ReservationChangeApiTest' \
+  --tests '*AdminPendingPaymentRestoreApiTest' \
+  --tests '*AdminReservationCancelApiTest' \
+  --tests '*MemberReservationCancelApiTest' \
+  --tests '*BulkReservationAttendanceApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest' \
+  --tests '*AdminNoShowApiTest'
+mise run api:check
+pnpm --dir frontend/apps/web exec playwright test \
+  tests/e2e/m31-r14-checkpoint.spec.ts \
+  tests/e2e/m31-r13-responsive.spec.ts
 '''

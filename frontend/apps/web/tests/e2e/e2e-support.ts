@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import type { Browser } from '@playwright/test'
+import type { Browser, BrowserContextOptions } from '@playwright/test'
 
 const API_BASE_URL = 'http://localhost:8080'
 const WEB_BASE_URL = 'http://127.0.0.1:5173'
@@ -61,6 +61,32 @@ export interface ReservationLifecycleFixture {
   upcomingMemberName: string
 }
 
+export interface M31R14ClosureFixture {
+  dateClosureDate: string
+  emptyClosureDate: string
+  timeSlotClosureDate: string
+  timeSlotClosureId: number
+  timeSlotClosureReservationId: number
+  timeSlotWithdrawId: number
+}
+
+export interface M31R14ScheduleSynchronizationSnapshot {
+  status: string
+  activeVersion: number
+  pendingVersion?: number
+}
+
+export interface M31R14ScheduleConfigurationFixture {
+  activeVersion: number
+  guardVersion: number
+  lastCompletedAt?: string
+  lastFailedAt?: string
+  lastFailureCode?: string
+  lastFailureSummary?: string
+  scheduleDateVersions: Array<{ scheduleDate: string; appliedVersion: number }>
+  appliedVersion?: number
+}
+
 export interface ReservationPolicyFixture extends MemberFixture {
   reservationId: number
   targetLessonDate?: string
@@ -79,8 +105,13 @@ export interface ReservationPolicySnapshot {
   changeLogCount: number
 }
 
-export async function createAuthenticatedPage(browser: Browser, authSubject: string, role: 'MEMBER' | 'ADMIN') {
-  const context = await browser.newContext()
+export async function createAuthenticatedPage(
+  browser: Browser,
+  authSubject: string,
+  role: 'MEMBER' | 'ADMIN',
+  contextOptions?: BrowserContextOptions,
+) {
+  const context = await browser.newContext(contextOptions)
   const page = await context.newPage()
   const token = createJwt(authSubject, role)
 
@@ -569,6 +600,396 @@ export function cleanupReservationLifecycleFixture() {
   `)
 }
 
+export function prepareM31R14ScheduleConfigurationFixture(): M31R14ScheduleConfigurationFixture {
+  cleanupM31R14ScheduleConfigurationArtifacts()
+  const guard = runSql(`
+    SELECT status,
+      active_version,
+      version,
+      COALESCE(DATE_FORMAT(last_completed_at, '%Y-%m-%d %H:%i:%s.%f'), ''),
+      COALESCE(DATE_FORMAT(last_failed_at, '%Y-%m-%d %H:%i:%s.%f'), ''),
+      COALESCE(last_failure_code, ''),
+      COALESCE(last_failure_summary, '')
+    FROM schedule_config_guard
+    WHERE id = 1;
+  `).split('\t')
+  if (guard[0] !== 'ACTIVE') {
+    throw new Error('M31-R14 일정 설정 fixture는 ACTIVE 상태에서만 시작할 수 있습니다.')
+  }
+
+  const dateRows = runSql(`
+    SELECT schedule_date, applied_config_version
+    FROM schedule_dates
+    ORDER BY schedule_date;
+  `)
+  const scheduleDateVersions = dateRows
+    ? dateRows.split('\n').map((row) => {
+      const [scheduleDate, appliedVersion] = row.split('\t')
+      return { scheduleDate, appliedVersion: Number(appliedVersion) }
+    })
+    : []
+
+  return {
+    activeVersion: Number(guard[1]),
+    guardVersion: Number(guard[2]),
+    lastCompletedAt: guard[3] || undefined,
+    lastFailedAt: guard[4] || undefined,
+    lastFailureCode: guard[5] || undefined,
+    lastFailureSummary: guard[6] || undefined,
+    scheduleDateVersions,
+  }
+}
+
+export function markM31R14ScheduleSynchronizationFailed() {
+  const updated = Number(runSql(`
+    UPDATE schedule_config_guard
+    SET last_failed_at = NOW(6),
+        last_failure_code = 'E2E_FORCED_FAILURE',
+        last_failure_summary = 'Checkpoint retry contract'
+    WHERE id = 1
+      AND status = 'SYNCING';
+    SELECT ROW_COUNT();
+  `))
+  if (updated !== 1) {
+    throw new Error('M31-R14 실패 주입 전에 SYNCING 상태가 유지되지 않았습니다.')
+  }
+}
+
+export function readM31R14ScheduleSynchronizationSnapshot(): M31R14ScheduleSynchronizationSnapshot {
+  const values = runSql(`
+    SELECT status, active_version, COALESCE(pending_version, '')
+    FROM schedule_config_guard
+    WHERE id = 1;
+  `).split('\t')
+
+  return {
+    status: values[0],
+    activeVersion: Number(values[1]),
+    pendingVersion: values[2] ? Number(values[2]) : undefined,
+  }
+}
+
+export function cleanupM31R14ScheduleConfigurationFixture(
+  fixture: M31R14ScheduleConfigurationFixture,
+) {
+  cleanupM31R14ScheduleConfigurationArtifacts()
+  const restoreExistingDates = fixture.scheduleDateVersions
+    .map(({ scheduleDate, appliedVersion }) => `
+      UPDATE schedule_dates
+      SET applied_config_version = ${appliedVersion}
+      WHERE schedule_date = '${scheduleDate}';
+    `)
+    .join('\n')
+
+  runSql(`
+    ${fixture.appliedVersion === undefined ? '' : `
+      UPDATE schedule_dates
+      SET applied_config_version = ${fixture.activeVersion}
+      WHERE applied_config_version = ${fixture.appliedVersion};
+    `}
+    ${restoreExistingDates}
+
+    UPDATE schedule_config_guard
+    SET status = 'ACTIVE',
+        active_version = ${fixture.activeVersion},
+        pending_version = NULL,
+        sync_started_at = NULL,
+        sync_started_by = NULL,
+        last_completed_at = ${sqlLiteral(fixture.lastCompletedAt)},
+        last_failed_at = ${sqlLiteral(fixture.lastFailedAt)},
+        last_failure_code = ${sqlLiteral(fixture.lastFailureCode)},
+        last_failure_summary = ${sqlLiteral(fixture.lastFailureSummary)},
+        version = ${fixture.guardVersion}
+    WHERE id = 1;
+  `)
+}
+
+function cleanupM31R14ScheduleConfigurationArtifacts() {
+  runSql(`
+    SET @e2e_pending_version := (
+      SELECT CASE
+        WHEN status = 'SYNCING' AND sync_started_by = 'e2e-m31-r14-config-admin'
+          THEN pending_version
+        ELSE NULL
+      END
+      FROM schedule_config_guard
+      WHERE id = 1
+    );
+    SET @e2e_active_version := (
+      SELECT active_version
+      FROM schedule_config_guard
+      WHERE id = 1
+    );
+
+    DELETE impact
+    FROM time_slot_closure_impacts impact
+    JOIN time_slot_closures closure ON closure.id = impact.closure_id
+    JOIN time_slot_capacities time_slot ON time_slot.id = closure.time_slot_id
+    JOIN regular_schedule_templates template ON template.id = time_slot.template_id
+    WHERE template.created_by = 'e2e-m31-r14-config-admin';
+
+    DELETE closure
+    FROM time_slot_closures closure
+    JOIN time_slot_capacities time_slot ON time_slot.id = closure.time_slot_id
+    JOIN regular_schedule_templates template ON template.id = time_slot.template_id
+    WHERE template.created_by = 'e2e-m31-r14-config-admin';
+
+    DELETE time_slot
+    FROM time_slot_capacities time_slot
+    JOIN regular_schedule_templates template ON template.id = time_slot.template_id
+    WHERE template.created_by = 'e2e-m31-r14-config-admin';
+
+    DELETE FROM regular_schedule_templates
+    WHERE created_by = 'e2e-m31-r14-config-admin';
+
+    DELETE FROM schedule_audit_logs
+    WHERE actor_auth_subject = 'e2e-m31-r14-config-admin';
+
+    UPDATE schedule_config_guard
+    SET status = 'ACTIVE',
+        pending_version = NULL,
+        sync_started_at = NULL,
+        sync_started_by = NULL
+    WHERE id = 1
+      AND @e2e_pending_version IS NOT NULL;
+
+    UPDATE schedule_dates
+    SET applied_config_version = @e2e_active_version
+    WHERE @e2e_pending_version IS NOT NULL
+      AND applied_config_version = @e2e_pending_version;
+  `)
+}
+
+export function prepareM31R14ClosureFixture(): M31R14ClosureFixture {
+  const today = seoulDateKey()
+  const dateClosureDate = addDays(today, 14)
+  const emptyClosureDate = addDays(today, 15)
+  const timeSlotClosureDate = addDays(today, 16)
+  const timeSlotWithdrawDate = addDays(today, 17)
+  const defaultDate = addDays(today, 1)
+
+  cleanupM31R14ClosureFixture()
+  runSql(`
+    SET @active_config_version := (
+      SELECT active_version
+      FROM schedule_config_guard
+      WHERE id = 1
+    );
+
+    INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
+    VALUES
+      ('${defaultDate}', 'NORMAL', @active_config_version),
+      ('${dateClosureDate}', 'NORMAL', @active_config_version),
+      ('${emptyClosureDate}', 'NORMAL', @active_config_version),
+      ('${timeSlotClosureDate}', 'NORMAL', @active_config_version),
+      ('${timeSlotWithdrawDate}', 'NORMAL', @active_config_version)
+    ON DUPLICATE KEY UPDATE schedule_date = VALUES(schedule_date);
+
+    INSERT INTO members (auth_subject, name, phone, general_ride_count)
+    VALUES
+      ('e2e-m31-r14-date-member', 'R14 날짜 회원', '010-9400-0001', 6),
+      ('e2e-m31-r14-slot-member', 'R14 휴강 회원', '010-9400-0002', 6),
+      ('e2e-m31-r14-withdraw-member', 'R14 철회 회원', '010-9400-0003', 6);
+
+    INSERT INTO time_slot_capacities (
+      lesson_date,
+      start_time,
+      end_time,
+      source,
+      total_capacity,
+      round_arena_capacity,
+      class_capacity_json,
+      admin_closed,
+      recurring_holiday_closed,
+      template_inactive_closed
+    ) VALUES
+      ('${dateClosureDate}', '18:00:00', '18:45:00', 'MANUAL', 8, 4, '${classCapacityJson()}', FALSE, FALSE, FALSE),
+      ('${timeSlotClosureDate}', '19:00:00', '19:45:00', 'MANUAL', 8, 4, '${classCapacityJson()}', FALSE, FALSE, FALSE),
+      ('${timeSlotWithdrawDate}', '20:00:00', '20:45:00', 'MANUAL', 8, 4, '${classCapacityJson()}', FALSE, FALSE, FALSE);
+
+    INSERT INTO reservations (
+      member_id,
+      class_type,
+      lesson_date,
+      start_time,
+      end_time,
+      status,
+      payment_source,
+      coupon_id,
+      approval_requested_at,
+      admin_confirmed_at
+    )
+    SELECT id, 'ROUND_TROT', '${dateClosureDate}', '18:00:00', '18:45:00',
+      'confirmed', 'single_payment', NULL, NOW(6), NOW(6)
+    FROM members
+    WHERE auth_subject = 'e2e-m31-r14-date-member'
+    UNION ALL
+    SELECT id, 'ROUND_TROT', '${timeSlotClosureDate}', '19:00:00', '19:45:00',
+      'confirmed', 'single_payment', NULL, NOW(6), NOW(6)
+    FROM members
+    WHERE auth_subject = 'e2e-m31-r14-slot-member'
+    UNION ALL
+    SELECT id, 'ROUND_TROT', '${timeSlotWithdrawDate}', '20:00:00', '20:45:00',
+      'confirmed', 'single_payment', NULL, NOW(6), NOW(6)
+    FROM members
+    WHERE auth_subject = 'e2e-m31-r14-withdraw-member';
+  `)
+
+  const nonNormalDateCount = Number(runSql(`
+    SELECT COUNT(*)
+    FROM schedule_dates
+    WHERE schedule_date IN (
+      '${defaultDate}',
+      '${dateClosureDate}',
+      '${emptyClosureDate}',
+      '${timeSlotClosureDate}',
+      '${timeSlotWithdrawDate}'
+    )
+      AND (
+        status <> 'NORMAL'
+        OR applied_config_version <> (
+          SELECT active_version
+          FROM schedule_config_guard
+          WHERE id = 1
+        )
+      );
+  `))
+  if (nonNormalDateCount > 0) {
+    throw new Error('M31-R14 fixture 대상 날짜가 NORMAL 상태가 아닙니다.')
+  }
+
+  const values = runSql(`
+    SELECT
+      (SELECT id
+       FROM time_slot_capacities
+       WHERE lesson_date = '${timeSlotClosureDate}' AND start_time = '19:00:00'),
+      (SELECT reservation.id
+       FROM reservations reservation
+       JOIN members member ON member.id = reservation.member_id
+       WHERE member.auth_subject = 'e2e-m31-r14-slot-member'),
+      (SELECT id
+       FROM time_slot_capacities
+       WHERE lesson_date = '${timeSlotWithdrawDate}' AND start_time = '20:00:00');
+  `).split('\t').map(Number)
+
+  return {
+    dateClosureDate,
+    emptyClosureDate,
+    timeSlotClosureDate,
+    timeSlotClosureId: values[0],
+    timeSlotClosureReservationId: values[1],
+    timeSlotWithdrawId: values[2],
+  }
+}
+
+export function cleanupM31R14ClosureFixture() {
+  runSql(`
+    DROP TEMPORARY TABLE IF EXISTS e2e_m31_r14_time_slots;
+    CREATE TEMPORARY TABLE e2e_m31_r14_time_slots (
+      time_slot_id BIGINT PRIMARY KEY
+    );
+
+    INSERT IGNORE INTO e2e_m31_r14_time_slots (time_slot_id)
+    SELECT DISTINCT time_slot.id
+    FROM time_slot_capacities time_slot
+    JOIN reservations reservation
+      ON reservation.lesson_date = time_slot.lesson_date
+     AND reservation.start_time = time_slot.start_time
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN (
+      'e2e-m31-r14-date-member',
+      'e2e-m31-r14-slot-member',
+      'e2e-m31-r14-withdraw-member'
+    );
+
+    INSERT IGNORE INTO e2e_m31_r14_time_slots (time_slot_id)
+    SELECT closure.time_slot_id
+    FROM time_slot_closures closure
+    WHERE closure.started_by IN (
+      'e2e-m31-r14-closure-admin',
+      'e2e-m31-r14-admin'
+    );
+
+    DELETE impact
+    FROM time_slot_closure_impacts impact
+    JOIN time_slot_closures closure ON closure.id = impact.closure_id
+    JOIN e2e_m31_r14_time_slots fixture_slot
+      ON fixture_slot.time_slot_id = closure.time_slot_id;
+
+    DELETE closure
+    FROM time_slot_closures closure
+    JOIN e2e_m31_r14_time_slots fixture_slot
+      ON fixture_slot.time_slot_id = closure.time_slot_id;
+
+    DELETE change_log
+    FROM reservation_change_logs change_log
+    JOIN reservations reservation ON reservation.id = change_log.reservation_id
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN (
+      'e2e-m31-r14-date-member',
+      'e2e-m31-r14-slot-member',
+      'e2e-m31-r14-withdraw-member'
+    );
+
+    DELETE usage_log
+    FROM coupon_usage_logs usage_log
+    JOIN members member ON member.id = usage_log.member_id
+    WHERE member.auth_subject IN (
+      'e2e-m31-r14-date-member',
+      'e2e-m31-r14-slot-member',
+      'e2e-m31-r14-withdraw-member'
+    );
+
+    DELETE reservation
+    FROM reservations reservation
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN (
+      'e2e-m31-r14-date-member',
+      'e2e-m31-r14-slot-member',
+      'e2e-m31-r14-withdraw-member'
+    );
+
+    DELETE guard_row
+    FROM reservation_member_day_guards guard_row
+    JOIN members member ON member.id = guard_row.member_id
+    WHERE member.auth_subject IN (
+      'e2e-m31-r14-date-member',
+      'e2e-m31-r14-slot-member',
+      'e2e-m31-r14-withdraw-member'
+    );
+
+    DELETE time_slot
+    FROM time_slot_capacities time_slot
+    JOIN e2e_m31_r14_time_slots fixture_slot
+      ON fixture_slot.time_slot_id = time_slot.id;
+
+    DELETE FROM members
+    WHERE auth_subject IN (
+      'e2e-m31-r14-date-member',
+      'e2e-m31-r14-slot-member',
+      'e2e-m31-r14-withdraw-member'
+    );
+
+    DELETE FROM schedule_audit_logs
+    WHERE actor_auth_subject IN (
+      'e2e-m31-r14-closure-admin',
+      'e2e-m31-r14-admin'
+    );
+
+    UPDATE schedule_dates
+    SET status = 'NORMAL',
+        resume_status = NULL,
+        reason = NULL,
+        changed_by = NULL
+    WHERE changed_by IN (
+      'e2e-m31-r14-closure-admin',
+      'e2e-m31-r14-admin'
+    );
+
+    DROP TEMPORARY TABLE e2e_m31_r14_time_slots;
+  `)
+}
+
 export function readReservationPolicySnapshot(reservationId: number): ReservationPolicySnapshot {
   const values = runSql(`
     SELECT reservation.status, reservation.lesson_date, reservation.start_time,
@@ -638,6 +1059,11 @@ function runSql(sql: string) {
     ],
     { input: sql, encoding: 'utf8' },
   ).trim()
+}
+
+function sqlLiteral(value?: string) {
+  if (value === undefined) return 'NULL'
+  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "''")}'`
 }
 
 function createJwt(subject: string, role: 'MEMBER' | 'ADMIN') {

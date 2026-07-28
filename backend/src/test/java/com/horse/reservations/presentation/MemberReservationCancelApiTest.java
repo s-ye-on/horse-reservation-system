@@ -13,6 +13,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -97,6 +101,23 @@ class MemberReservationCancelApiTest {
 			"pending_admin_approval",
 			"return",
 			"개인 일정으로 취소");
+	}
+
+	@Test
+	void 동일한_회원_취소가_경쟁해도_쿠폰과_감사_이력을_한_번만_반영한다() throws Exception {
+		final String authSubject = "concurrent-cancel-member";
+		final Long memberId = insertMember(authSubject);
+		final Long couponId = insertCoupon(memberId);
+		final Long reservationId = insertCouponReservation(memberId, couponId);
+		insertHeldLog(memberId, couponId, reservationId);
+
+		final List<Integer> statuses = concurrentCancellations(reservationId, authSubject);
+
+		assertThat(statuses).containsExactly(200, 200);
+		assertThat(reservationStatus(reservationId)).isEqualTo("cancelled");
+		assertThat(couponCounts(couponId)).containsExactly(10, 0);
+		assertThat(couponUsageCount(reservationId, "released")).isEqualTo(1);
+		assertThat(cancellationAuditCount(reservationId)).isEqualTo(1);
 	}
 
 	@Test
@@ -310,6 +331,54 @@ class MemberReservationCancelApiTest {
 			"reservation_cancelled",
 			couponAction,
 			memo);
+	}
+
+	private List<Integer> concurrentCancellations(Long reservationId, String authSubject) throws Exception {
+		final ExecutorService executor = Executors.newFixedThreadPool(2);
+		final CountDownLatch ready = new CountDownLatch(2);
+		final CountDownLatch start = new CountDownLatch(1);
+		try {
+			final List<Future<Integer>> futures = java.util.stream.IntStream.range(0, 2)
+				.mapToObj(index -> executor.submit(() -> {
+					ready.countDown();
+					start.await();
+					return cancel(reservationId, authSubject);
+				}))
+				.toList();
+			ready.await();
+			start.countDown();
+			return futures.stream().map(this::getResult).toList();
+		}
+		finally {
+			executor.shutdownNow();
+		}
+	}
+
+	private int cancel(Long reservationId, String authSubject) throws Exception {
+		return mockMvc.perform(post(cancelEndpoint(reservationId))
+				.with(memberJwt(authSubject))
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request("동시 취소")))
+			.andReturn()
+			.getResponse()
+			.getStatus();
+	}
+
+	private int getResult(Future<Integer> future) {
+		try {
+			return future.get();
+		}
+		catch (Exception exception) {
+			throw new AssertionError(exception);
+		}
+	}
+
+	private int cancellationAuditCount(Long reservationId) {
+		return jdbcTemplate.queryForObject("""
+			SELECT COUNT(*)
+			FROM reservation_change_logs
+			WHERE reservation_id = ? AND change_type = 'reservation_cancelled'
+			""", Integer.class, reservationId);
 	}
 
 	private String previewEndpoint(Long reservationId) {
