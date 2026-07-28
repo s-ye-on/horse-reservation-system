@@ -119,6 +119,9 @@ class M31CommandLockPlanIntegrationTest {
 				.contains("\"idx_reservations_occupancy\"")
 				.contains("\"key\": \"PRIMARY\"")
 				.contains("\"using_filesort\": false");
+			assertThat(explainJson(statement, reservationHistorySql()))
+				.contains("\"access_type\": \"ref\"")
+				.contains("\"key\": \"idx_reservations_occupancy\"");
 			assertThat(explainJson(statement, couponSelectionSql()))
 				.contains("\"key\": \"idx_coupons_member_status_expiry\"")
 				.contains("\"using_filesort\": true");
@@ -387,6 +390,18 @@ class M31CommandLockPlanIntegrationTest {
 			  AND reservation.status IN (
 				'pending_admin_approval', 'pending_payment', 'confirmed'
 			  )
+			ORDER BY reservation.id
+			FOR UPDATE
+			""".formatted(LESSON_DATE);
+	}
+
+	private String reservationHistorySql() {
+		return """
+			SELECT reservation.id
+			FROM reservations reservation
+			FORCE INDEX (idx_reservations_occupancy)
+			WHERE reservation.lesson_date = '%s'
+			  AND reservation.start_time = '09:00:00'
 			ORDER BY reservation.id
 			FOR UPDATE
 			""".formatted(LESSON_DATE);

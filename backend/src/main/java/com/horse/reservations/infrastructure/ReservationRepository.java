@@ -163,6 +163,21 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	);
 
 	@Query(value = """
+		SELECT reservation.id
+		FROM reservations reservation
+		FORCE INDEX (idx_reservations_occupancy)
+		WHERE reservation.lesson_date = :lessonDate
+		  AND reservation.start_time = :startTime
+		ORDER BY reservation.id
+		FOR UPDATE
+		""", nativeQuery = true)
+	@Transactional(propagation = Propagation.MANDATORY)
+	List<Long> findHistoryIdsByLessonDateAndStartTimeForUpdate(
+		@Param("lessonDate") LocalDate lessonDate,
+		@Param("startTime") LocalTime startTime
+	);
+
+	@Query(value = """
 		SELECT reservation.*
 		FROM reservations reservation
 		FORCE INDEX (idx_reservations_member_date_active_interval)

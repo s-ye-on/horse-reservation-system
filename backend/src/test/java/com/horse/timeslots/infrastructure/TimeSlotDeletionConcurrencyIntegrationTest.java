@@ -169,7 +169,15 @@ class TimeSlotDeletionConcurrencyIntegrationTest {
 		final int reservationCount = jdbcTemplate.queryForObject(
 			"SELECT COUNT(*) FROM reservations",
 			Integer.class);
+		final int linkedReservationCount = jdbcTemplate.queryForObject("""
+			SELECT COUNT(*)
+			FROM reservations reservation
+			JOIN time_slot_capacities time_slot
+			  ON time_slot.lesson_date = reservation.lesson_date
+			 AND time_slot.start_time = reservation.start_time
+			""", Integer.class);
 		assertThat(timeSlotCount).isEqualTo(reservationCount);
+		assertThat(linkedReservationCount).isEqualTo(reservationCount);
 		assertThat(timeSlotCount).isIn(0, 1);
 	}
 

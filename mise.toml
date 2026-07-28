@@ -692,6 +692,31 @@ rg -Fq 'TimeSlot 정원 변경' docs/architecture/m31-command-lock-matrix.md
 rg -Fq 'M31-07 완료 Gate' docs/architecture/m31-command-lock-matrix.md
 '''
 
+[tasks."verify:m31-07"]
+description = "Verify M31-07 canonical lock order deadlock retry and exactly-once effects"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*DeadlockRetryIntegrationTest' \
+  --tests '*M31CommandLockPlanIntegrationTest' \
+  --tests '*ReservationCompletionLockOrderTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest' \
+  --tests '*AdminNoShowApiTest' \
+  --tests '*AdminTimeSlotScheduleDateLockIntegrationTest' \
+  --tests '*TimeSlotCapacityConcurrencyIntegrationTest' \
+  --tests '*TimeSlotDeletionConcurrencyIntegrationTest'
+rg -Fq 'MySQL error code 1213과 SQLState 40001' \
+  docs/architecture/adr-021-deadlock-retry-boundary.md
+rg -Fq '1205 lock wait timeout' \
+  docs/architecture/adr-021-deadlock-retry-boundary.md
+rg -Fq 'Reservation -> Coupon -> Member' \
+  docs/architecture/m31-command-lock-matrix.md
+rg -Fq 'Config S -> Date -> TimeSlot -> 점유 Reservation' \
+  docs/architecture/m31-command-lock-matrix.md
+rg -Fq 'DeadlockRetryIntegrationTest' \
+  docs/architecture/m31-command-lock-matrix.md
+'''
+
 [tasks."db:preflight-active-reservations"]
 description = "Report duplicate active reservations before Flyway V15"
 run = "./scripts/check-active-reservation-duplicates.sh"

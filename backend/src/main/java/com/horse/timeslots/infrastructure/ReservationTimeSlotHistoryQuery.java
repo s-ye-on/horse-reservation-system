@@ -23,7 +23,9 @@ public class ReservationTimeSlotHistoryQuery implements TimeSlotReservationHisto
 
 	@Override
 	public boolean existsByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime) {
-		return reservationRepository.existsByLessonDateAndStartTime(lessonDate, startTime);
+		return !reservationRepository.findHistoryIdsByLessonDateAndStartTimeForUpdate(
+			lessonDate,
+			startTime).isEmpty();
 	}
 
 	@Override

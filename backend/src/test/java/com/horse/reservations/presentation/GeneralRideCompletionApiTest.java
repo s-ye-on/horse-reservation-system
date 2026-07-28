@@ -33,6 +33,9 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import com.horse.TestcontainersConfiguration;
 import com.horse.auth.UserRole;
+import com.horse.reservations.application.ReservationCompletionService;
+import com.horse.reservations.application.ReservationNoShowService;
+import com.horse.reservations.domain.exception.ReservationException;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -59,6 +62,12 @@ class GeneralRideCompletionApiTest {
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	ReservationCompletionService reservationCompletionService;
+
+	@Autowired
+	ReservationNoShowService reservationNoShowService;
 
 	@MockitoBean
 	Clock clock;
@@ -167,6 +176,52 @@ class GeneralRideCompletionApiTest {
 	}
 
 	@Test
+	void 완료와_노쇼가_경쟁해도_쿠폰과_점유와_감사와_기승_횟수를_한_번만_반영한다() {
+		final LocalDate lessonDate = LocalDate.of(2026, 8, 8);
+		insertTimeSlot(lessonDate, "09:00:00");
+		final Long memberId = insertMember("completion-no-show-race", 0);
+		final Long couponId = insertCoupon(memberId, 10, 1, null, null, "active");
+		final Long reservationId = insertConfirmedReservation(
+			memberId,
+			couponId,
+			"FIRST_RIDE",
+			"coupon",
+			lessonDate);
+		insertHeldAndConfirmedLogs(memberId, couponId, reservationId);
+
+		final List<CompetingCommandResult> results = concurrentCompletionAndNoShow(reservationId);
+
+		assertThat(results).contains(CompetingCommandResult.REJECTED);
+		assertThat(results.stream()
+			.filter(result -> result != CompetingCommandResult.REJECTED)
+			.count()).isOne();
+		assertThat(couponCounts(couponId)).containsExactly(9, 0);
+		assertThat(jdbcTemplate.queryForObject("""
+			SELECT COUNT(*)
+			FROM coupon_usage_logs
+			WHERE reservation_id = ?
+			  AND action IN ('used', 'deducted')
+			""", Integer.class, reservationId)).isOne();
+		assertThat(jdbcTemplate.queryForObject("""
+			SELECT COUNT(*)
+			FROM reservations
+			WHERE id = ?
+			  AND active_slot_guard = 1
+			""", Integer.class, reservationId)).isZero();
+
+		final String status = reservationStatus(reservationId);
+		if ("completed".equals(status)) {
+			assertThat(memberGeneralRideCount(memberId)).isOne();
+			assertThat(noShowAuditCount(reservationId)).isZero();
+		}
+		else {
+			assertThat(status).isEqualTo("no_show");
+			assertThat(memberGeneralRideCount(memberId)).isZero();
+			assertThat(noShowAuditCount(reservationId)).isOne();
+		}
+	}
+
+	@Test
 	void 확정되지_않은_예약과_없는_예약은_완료할_수_없다() throws Exception {
 		final Long memberId = insertMember("invalid-completion-member", 0);
 		final Long pendingId = insertPendingPaymentReservation(memberId, LocalDate.of(2026, 8, 4));
@@ -251,6 +306,56 @@ class GeneralRideCompletionApiTest {
 		}
 	}
 
+	private List<CompetingCommandResult> concurrentCompletionAndNoShow(Long reservationId) {
+		final ExecutorService executor = Executors.newFixedThreadPool(2);
+		final CountDownLatch ready = new CountDownLatch(2);
+		final CountDownLatch start = new CountDownLatch(1);
+		try {
+			final Future<CompetingCommandResult> completion = executor.submit(() -> {
+				ready.countDown();
+				start.await();
+				try {
+					reservationCompletionService.complete(reservationId);
+					return CompetingCommandResult.COMPLETED;
+				}
+				catch (ReservationException exception) {
+					return CompetingCommandResult.REJECTED;
+				}
+			});
+			final Future<CompetingCommandResult> noShow = executor.submit(() -> {
+				ready.countDown();
+				start.await();
+				try {
+					reservationNoShowService.process(
+						reservationId,
+						"m31-07-admin",
+						"deduct",
+						"완료와 노쇼 경쟁");
+					return CompetingCommandResult.NO_SHOW;
+				}
+				catch (ReservationException exception) {
+					return CompetingCommandResult.REJECTED;
+				}
+			});
+			awaitReady(ready);
+			start.countDown();
+			return List.of(getCommandResult(completion), getCommandResult(noShow));
+		}
+		finally {
+			executor.shutdownNow();
+		}
+	}
+
+	private void awaitReady(CountDownLatch ready) {
+		try {
+			ready.await();
+		}
+		catch (InterruptedException exception) {
+			Thread.currentThread().interrupt();
+			throw new AssertionError(exception);
+		}
+	}
+
 	private int complete(Long reservationId) throws Exception {
 		return mockMvc.perform(post(completionEndpoint(reservationId)).with(adminJwt()))
 			.andReturn()
@@ -259,6 +364,15 @@ class GeneralRideCompletionApiTest {
 	}
 
 	private int getResult(Future<Integer> future) {
+		try {
+			return future.get();
+		}
+		catch (Exception exception) {
+			throw new AssertionError(exception);
+		}
+	}
+
+	private <T> T getCommandResult(Future<T> future) {
 		try {
 			return future.get();
 		}
@@ -417,6 +531,15 @@ class GeneralRideCompletionApiTest {
 			action);
 	}
 
+	private int noShowAuditCount(Long reservationId) {
+		return jdbcTemplate.queryForObject("""
+			SELECT COUNT(*)
+			FROM reservation_change_logs
+			WHERE reservation_id = ?
+			  AND change_type = 'no_show_processed'
+			""", Integer.class, reservationId);
+	}
+
 	private List<String> usedLog(Long reservationId) {
 		return jdbcTemplate.queryForObject(
 			"SELECT count_delta, actor_type FROM coupon_usage_logs WHERE reservation_id = ? AND action = 'used'",
@@ -461,5 +584,11 @@ class GeneralRideCompletionApiTest {
 				last_failure_summary = NULL
 			WHERE id = 1
 			""");
+	}
+
+	private enum CompetingCommandResult {
+		COMPLETED,
+		NO_SHOW,
+		REJECTED
 	}
 }

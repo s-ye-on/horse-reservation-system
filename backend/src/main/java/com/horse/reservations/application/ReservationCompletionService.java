@@ -58,10 +58,12 @@ public class ReservationCompletionService {
 		reservation.ensureSchedule(snapshot.getLessonDate(), snapshot.getStartTime());
 		final LocalDateTime completedAt = LocalDateTime.now(clock);
 		final boolean changed = reservation.completeRide(completedAt);
+		if (changed) {
+			completeCouponUsage(reservation, completedAt);
+		}
 		final Member member = memberRepository.findByIdForUpdate(reservation.getMemberId())
 			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));
 		if (changed) {
-			completeCouponUsage(reservation, completedAt);
 			increaseRideCount(member, reservation);
 		}
 		return ReservationCompletionResult.from(reservation, member);

@@ -3,9 +3,8 @@
 ## 목적과 기준
 
 이 문서는 M31-R14 완료 시점의 프로덕션 Command가 실제로 획득하는 MySQL 잠금을
-Repository 메서드와 SQL까지 추적한 기준선이다. M31-06은 현재 구현을 관찰하고 M31-07의
-수정 범위를 고정하는 작업이므로, 아래의 canonical 순서와 다른 현재 구현도 숨기지 않고
-기록한다.
+Repository 메서드와 SQL까지 추적한 기준선이다. M31-06에서 발견한 순서 차이는
+M31-07에서 보정했으며 아래 matrix는 M31-07 적용 후 실제 순서를 기록한다.
 
 목표 순서는 다음과 같다.
 
@@ -33,6 +32,7 @@ Repository 메서드와 SQL까지 추적한 기준선이다. M31-06은 현재 �
 | 날짜의 TimeSlot | `findAllByLessonDateForUpdateOrdered` | `FORCE INDEX (idx_time_slot_capacities_lesson_date_id)`, ID순 | `ref`, `(lesson_date, id)`, filesort 없음 | 해당 날짜 index range의 next-key lock |
 | 회원 수업 겹침 | `ReservationRepository.findActiveOverlapsForUpdate` | member/date/active equality, `start_time < ?`, `end_time > ?`, 시작·ID순 | `range`, V28 index의 member/date/active/start 사용, `end_time`은 index condition의 잔여 구간 판정 | V28 equality prefix 아래 `start_time` 범위의 record·next-key·gap lock |
 | 시간대 점유 | `findOccupyingByLessonDateAndStartTimeForUpdate` | date/start equality, status IN, ID순 | V32 격리 fixture는 `idx_reservations_occupancy`를 후보로 두지만 ID순을 위해 `PRIMARY` index scan, filesort 없음. 운영 개발 DB에서는 occupancy `range`와 filesort도 관측됨 | 선택된 실행 계획이 검사한 index records/gaps |
+| 시간대 예약 이력 | `findHistoryIdsByLessonDateAndStartTimeForUpdate` | occupancy index 강제, date/start equality, ID순 | `ref`, `idx_reservations_occupancy`, ID순 filesort | 해당 date/start의 전체 Reservation index records |
 | Reservation 단건 | `ReservationRepository.findByIdForUpdate` | `id = ? FOR UPDATE` | `PRIMARY`, `const` | Reservation record lock |
 | Closure 진행 중 | `TimeSlotClosureRepository.findInProgressByTimeSlotIdForUpdate` | timeSlot/status equality, ID순 | `uk_time_slot_closures_active`의 `time_slot_id` prefix | 해당 TimeSlot의 closure record·gap |
 | Closure 전체 | `findAllByTimeSlotIdForUpdate` | timeSlot equality, ID순 | `uk_time_slot_closures_active` 또는 history index | 해당 TimeSlot의 closure records와 gap |
@@ -91,7 +91,7 @@ occupancy `range`와 filesort가 관측됐다. Coupon 선택은
 `idx_coupons_member_status_expiry`와 filesort를 사용한다. 특정 인덱스를 강제하지 않는
 점유 SQL의 잠금 범위는 통계와 카디널리티에 따라 달라진다.
 
-## 현재 Command matrix
+## M31-07 적용 후 Command matrix
 
 `현재 순서`는 조회용 snapshot을 제외하고 실제 비관적 잠금만 적는다. `Closure?`는 해당
 TimeSlot에 진행 중 휴강이 있을 때 함께 잠긴다는 뜻이다.
@@ -109,11 +109,11 @@ TimeSlot에 진행 중 휴강이 있을 때 함께 잠긴다는 뜻이다.
 | 회원·일반 관리자 취소 | Date -> member-day -> TimeSlot -> Closure? -> Reservation -> Coupon? -> audit | 휴강 중 일반 관리자 취소는 gate에서 차단 |
 | 날짜 휴무 전용 취소 | Date -> member-day -> Reservation -> Coupon? -> audit | 날짜 CLOSING과 Date에서 직렬화 |
 | TimeSlot 휴무 전용 취소 | Date -> member-day -> TimeSlot -> Closure -> Reservation -> Coupon? -> audit | 날짜 휴무 전용 취소와 Date/member-day/Reservation 순서 일치 |
-| 수업 완료 | Date -> TimeSlot -> Closure? -> Reservation -> **Member -> Coupon?** | **현재 역전**. 목표 `Coupon -> Member`로 M31-07에서 보정 |
+| 수업 완료 | Date -> TimeSlot -> Closure? -> Reservation -> Coupon? -> Member | Coupon 예약은 CouponUsageLog까지 Coupon 잠금 안에서 반영한 뒤 Member를 잠금 |
 | 노쇼 | Date -> TimeSlot -> Closure? -> Reservation -> Coupon? -> audit | 목표 순서와 일치 |
 | 수동 TimeSlot 생성 | Config S -> Date -> unique insert | 동기화와 Config/Date에서 직렬화 |
-| TimeSlot 정원 변경 | **TimeSlot -> 점유 Reservation** | Date 잠금이 없어 occurrence 동기화·날짜 휴무 기준과 불일치. M31-07 대상 |
-| TimeSlot 삭제 | **TimeSlot -> 예약 이력 조회 -> delete** | Date 잠금이 없고 이력 조회는 비잠금. M31-07 대상 |
+| TimeSlot 정원 변경 | Config S -> Date -> TimeSlot -> 점유 Reservation | CLOSING/CLOSED·설정 동기화와 Date에서 직렬화하고 최신 상태 재검증 |
+| TimeSlot 삭제 | Config S -> Date -> TimeSlot -> 예약 이력 FOR UPDATE -> delete | Date 전환 뒤 최신 이력을 current read로 재검증하며 이력 존재 시 기존 409 정책 유지 |
 | 날짜 CLOSING·CLOSED·복귀 | Date -> 활성 Reservation ID/건수 재검사 -> audit | 모든 유입 Command가 Date를 먼저 잠그는 계약에 의존 |
 | 개별 TimeSlot 휴강 시작 | Date -> TimeSlot -> Closure 전체 -> 점유 Reservation ID순 -> Impact/audit | 목표 순서와 일치 |
 | 개별 휴강 완료·철회·재개 | Date -> TimeSlot -> Closure -> 점유 Reservation? -> audit | 목표 순서와 일치 |
@@ -131,8 +131,8 @@ TimeSlot에 진행 중 휴강이 있을 때 함께 잠긴다는 뜻이다.
 | 생성·변경 vs 날짜 CLOSING | Date | 먼저 Date를 얻은 트랜잭션 후 상태 재검사 | CLOSING 이후 활성 예약 유입 0건 |
 | 생성·변경 vs TimeSlot 휴강 | Date -> TimeSlot | 휴강이 `adminClosed`를 바꾼 뒤 유입이 상태 재검사 | 휴강 snapshot 이후 신규 활성 예약 0건 |
 | 반려·만료·취소 상호 경쟁 | Date -> member-day -> Reservation -> Coupon? | 같은 Reservation은 record lock으로 직렬화 | 첫 상태 변경만 Coupon·audit 반영 |
-| 완료 vs Coupon 종료 Command | Reservation 다음 자원 순서 | 완료만 Member를 Coupon보다 먼저 잠금 | 완료를 `Reservation -> Coupon -> Member`로 보정 |
-| TimeSlot 정원 변경·삭제 vs 동기화·날짜 휴무 | TimeSlot에서 시작하거나 Date에서 시작 | 정원 변경·삭제가 Date 계약에 참여하지 않음 | 두 Command도 `Date -> TimeSlot -> Reservation` 사용 |
+| 완료 vs Coupon 종료 Command | Reservation -> Coupon -> Member | 공통 Coupon 종료 흐름과 같은 방향 | 완료·노쇼 경쟁에서 첫 상태 변경만 Coupon·audit·기승 횟수 반영 |
+| TimeSlot 정원 변경·삭제 vs 동기화·날짜 휴무 | Config S -> Date -> TimeSlot | 같은 방향 | CLOSING 전환 잠금 뒤 대기하고 최신 날짜 상태로 두 Command 모두 거부 |
 | Coupon 자동 선택 vs Coupon 만료 | Coupon 후보와 Coupon ID | 후보 range/filesort와 ID순 만료가 넓게 교차할 수 있음 | 실제 1213만 전체 트랜잭션 밖 최대 3회 재시도 |
 
 ## InnoDB 해석 기준
@@ -161,3 +161,19 @@ TimeSlot에 진행 중 휴강이 있을 때 함께 잠긴다는 뜻이다.
    기승 횟수와 append-only audit가 논리적으로 정확히 한 번만 반영된다.
 5. 변경된 SQL의 `EXPLAIN FORMAT=JSON`, `EXPLAIN ANALYZE`, 사용 인덱스와 잠금 범위를
    이 문서와 실행 테스트에 다시 반영한다.
+
+M31-07은 기존 인덱스와 migration을 변경하지 않았다. TimeSlot ID/date snapshot은
+잠금 근거가 아니며, 삭제 예약 이력 조회만 `idx_reservations_occupancy`를 강제한
+`FOR UPDATE` 현재 읽기로 보강했다. 실행 계획과 잠금 범위는
+`M31CommandLockPlanIntegrationTest`에서 검증한다.
+
+실제 MySQL 검증은 다음을 고정한다.
+
+- `DeadlockRetryIntegrationTest`: 역순 Member 잠금으로 1213/40001을 재현하고 피해
+  트랜잭션 rollback 뒤 새 transaction·Persistence Context에서 전체 Command를 재시도한다.
+  최종 Reservation 점유 해제, Coupon 수량, CouponUsageLog와 기승 횟수는 각각 한 번만
+  반영된다.
+- `GeneralRideCompletionApiTest`: 완료와 노쇼가 같은 Reservation·Coupon에서 경쟁해도
+  한 Command만 종료 효과를 반영한다.
+- `AdminTimeSlotScheduleDateLockIntegrationTest`: CLOSING 전환이 Date 잠금을 보유한
+  동안 정원 변경·삭제가 대기하고, 커밋 뒤 최신 상태로 거부된다.

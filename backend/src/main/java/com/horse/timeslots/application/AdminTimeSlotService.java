@@ -115,7 +115,7 @@ public class AdminTimeSlotService {
 		Integer roundArenaCapacity,
 		Map<String, Integer> classCapacities
 	) {
-		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
+		final TimeSlotCapacity timeSlot = lockTimeSlotAfterScheduleDate(timeSlotId);
 		ensureNotStarted(timeSlot);
 		final List<RidingClass> activeRidingClasses = reservationHistoryQuery.findActiveRidingClassesForUpdate(
 			timeSlot.getLessonDate(),
@@ -137,7 +137,7 @@ public class AdminTimeSlotService {
 
 	@Transactional
 	public void deleteTimeSlot(Long timeSlotId) {
-		final TimeSlotCapacity timeSlot = getTimeSlotForUpdate(timeSlotId);
+		final TimeSlotCapacity timeSlot = lockTimeSlotAfterScheduleDate(timeSlotId);
 		ensureNotStarted(timeSlot);
 		if (reservationHistoryQuery.existsByLessonDateAndStartTime(
 			timeSlot.getLessonDate(), timeSlot.getStartTime())) {
@@ -158,6 +158,13 @@ public class AdminTimeSlotService {
 			timeSlot.getLessonDate(),
 			timeSlot.getStartTime(),
 			LocalDateTime.now(clock));
+	}
+
+	private TimeSlotCapacity lockTimeSlotAfterScheduleDate(Long timeSlotId) {
+		final LocalDate lessonDate = timeSlotRepository.findLessonDateById(timeSlotId)
+			.orElseThrow(() -> new TimeSlotException(ExceptionCode.TIMESLOT_NOT_FOUND));
+		scheduleDateInflowLockService.lock(lessonDate);
+		return getTimeSlotForUpdate(timeSlotId);
 	}
 
 	private TimeSlotCapacity getTimeSlotForUpdate(Long timeSlotId) {
