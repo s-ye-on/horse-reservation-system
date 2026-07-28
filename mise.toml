@@ -929,3 +929,20 @@ rg -q 'M31-G02.*V30 휴강 이관 데이터 보정.*M31-G01' \
 rg -q 'M31-G03.*날짜 휴무·휴강 탭 접근성 보정.*M31-G02' \
   docs/tasks/mvp-3.1-checkpoint-1-remediation.md
 '''
+
+[tasks."verify:m31-g02"]
+description = "Verify M31-G02 V30 time-slot closure migration repair"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*M31G02TimeSlotClosureRepairMigrationIntegrationTest' \
+  --tests '*M31R10TimeSlotClosureMigrationIntegrationTest'
+test "$(git status --short --untracked-files=all -- \
+    backend/src/main/resources/db/migration \
+    backend/src/main/java/db/migration \
+  | grep -Ev 'V32__repair_time_slot_closure_migration[.]sql$' \
+  | wc -l | tr -d ' ')" = "0"
+test -f backend/src/main/resources/db/migration/V32__repair_time_slot_closure_migration.sql
+rg -q 'reservation[.]active_slot_guard = 1' \
+  backend/src/main/resources/db/migration/V32__repair_time_slot_closure_migration.sql
+'''

@@ -19,7 +19,7 @@
 - `M31-R12`: COMPLETED
 - `M31-R13`: COMPLETED
 - `M31-G01`: COMPLETED
-- `M31-G02`: READY
+- `M31-G02`: COMPLETED
 - `M31-G03`: READY
 
 최신 일정 운영 정책이 기존 M31-01~M31-05의 시간, TimeSlot과 중복 예약 가정을
