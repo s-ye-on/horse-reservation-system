@@ -864,3 +864,16 @@ mise run db:up
   --tests '*ExceptionCodeTest'
 mise run api:check
 '''
+
+[tasks."verify:m31-r12"]
+description = "Verify M31-R12 regular schedule and recurring holiday web"
+run = '''
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-schedule-configuration/AdminScheduleConfigurationPage.test.tsx \
+  src/app.test.tsx
+pnpm --dir frontend/apps/web lint
+mise run web:typecheck
+pnpm --dir frontend/apps/web build
+rg -q '@media \(max-width: 520px\)' \
+  frontend/apps/web/src/features/admin-schedule-configuration/admin-schedule-configuration-page.css
+'''
