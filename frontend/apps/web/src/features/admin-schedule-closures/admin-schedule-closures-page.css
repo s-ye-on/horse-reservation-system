@@ -1,0 +1,350 @@
+.schedule-closures-page {
+  min-height: 100vh;
+  background: #f4f7f3;
+  color: #17231c;
+}
+
+.schedule-closures-shell {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0 72px;
+}
+
+.schedule-closures-header,
+.schedule-closures-section-heading,
+.schedule-closures-impact-heading,
+.schedule-closures-actions,
+.schedule-closures-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.schedule-closures-header h1,
+.schedule-closures-section-heading h2,
+.schedule-closures-section-heading h3,
+.schedule-closures-impact-heading h4 {
+  margin: 0;
+}
+
+.schedule-closures-header h1 {
+  font-size: 30px;
+}
+
+.schedule-closures-eyebrow {
+  margin: 0 0 6px;
+  color: #43604c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.schedule-closures-policy {
+  display: flex;
+  gap: 12px;
+  margin: 24px 0 16px;
+  padding: 14px 16px;
+  border-left: 4px solid #315b3e;
+  background: #e8f0e9;
+}
+
+.schedule-closures-alert,
+.schedule-closures-state,
+.schedule-closures-item-result {
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid #9db5a4;
+  border-radius: 6px;
+  background: #edf5ef;
+}
+
+.schedule-closures-alert.error,
+.schedule-closures-state.error,
+.schedule-closures-item-result.error {
+  border-color: #c67878;
+  background: #fff0f0;
+  color: #7d2020;
+}
+
+.schedule-closures-alert.success {
+  border-color: #6d9f78;
+  background: #edf8ef;
+}
+
+.schedule-closures-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 22px 0 14px;
+  border-bottom: 1px solid #b8c5bb;
+}
+
+.schedule-closures-tabs button {
+  border: 0;
+  border-bottom: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #4e5e53;
+}
+
+.schedule-closures-tabs button[aria-selected="true"] {
+  border-color: #315b3e;
+  color: #17231c;
+  font-weight: 800;
+}
+
+.schedule-closures-panel {
+  padding: 22px;
+  border: 1px solid #c8d2ca;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.schedule-closures-section-heading p,
+.schedule-closures-impact-heading p,
+.schedule-closures-impact-heading h4,
+.schedule-closures-hint {
+  margin: 4px 0 0;
+}
+
+.schedule-closures-controls {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.7fr) minmax(240px, 1.3fr);
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.schedule-closures-controls label,
+.schedule-closures-item-action label {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.schedule-closures-controls input,
+.schedule-closures-controls select,
+.schedule-closures-item-action textarea {
+  min-width: 0;
+  border: 1px solid #9aa99e;
+  border-radius: 6px;
+  background: #fff;
+  color: inherit;
+  font: inherit;
+}
+
+.schedule-closures-controls input,
+.schedule-closures-controls select {
+  height: 42px;
+  padding: 0 10px;
+}
+
+.schedule-closures-summary,
+.schedule-closures-impact-details {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.schedule-closures-summary div,
+.schedule-closures-impact-details div {
+  padding: 12px;
+  border: 1px solid #d9e0da;
+  border-radius: 6px;
+  background: #f8faf8;
+}
+
+.schedule-closures-summary dt,
+.schedule-closures-impact-details dt {
+  color: #66736a;
+  font-size: 12px;
+}
+
+.schedule-closures-summary dd,
+.schedule-closures-impact-details dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 800;
+}
+
+.schedule-closures-progress {
+  display: grid;
+  gap: 7px;
+  margin: 14px 0;
+}
+
+.schedule-closures-progress progress {
+  width: 100%;
+  accent-color: #315b3e;
+}
+
+.schedule-closures-status {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid #8ca194;
+  border-radius: 999px;
+  background: #eef3ef;
+  color: #2f4938;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.schedule-closures-status[data-status="CLOSING"],
+.schedule-closures-status[data-status="IN_PROGRESS"] {
+  border-color: #b48b46;
+  background: #fff6df;
+  color: #6d4c13;
+}
+
+.schedule-closures-status[data-status="CLOSED"],
+.schedule-closures-status[data-status="COMPLETED"],
+.schedule-closures-status[data-status="해결됨"] {
+  border-color: #708695;
+  background: #edf2f5;
+  color: #344c5c;
+}
+
+.schedule-closures-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin: 18px 0;
+}
+
+.schedule-closures-page button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid #315b3e;
+  border-radius: 6px;
+  background: #315b3e;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.schedule-closures-page button.secondary {
+  background: #fff;
+  color: #315b3e;
+}
+
+.schedule-closures-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.schedule-closures-impact {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #d8dfd9;
+}
+
+.schedule-closures-impact-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.schedule-closures-impact-card {
+  padding: 16px;
+  border: 1px solid #c7d2c9;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.schedule-closures-impact-card.resolved {
+  background: #f3f5f3;
+}
+
+.schedule-closures-impact-details {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.schedule-closures-item-action {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.schedule-closures-item-action textarea {
+  min-height: 72px;
+  padding: 9px 10px;
+  resize: vertical;
+}
+
+.schedule-closures-strong-warning,
+.schedule-closures-dialog-warning {
+  padding: 12px 14px;
+  border-left: 4px solid #a64d35;
+  background: #fff0e9;
+  color: #6f2e1e;
+  font-weight: 800;
+}
+
+.schedule-closures-dialog-backdrop {
+  position: fixed;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(15 27 19 / 62%);
+}
+
+.schedule-closures-dialog {
+  width: min(520px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 22px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 24%);
+}
+
+.schedule-closures-dialog h2 {
+  margin: 0 0 12px;
+}
+
+@media (max-width: 720px) {
+  .schedule-closures-header,
+  .schedule-closures-section-heading,
+  .schedule-closures-impact-heading,
+  .schedule-closures-policy {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .schedule-closures-controls,
+  .schedule-closures-summary,
+  .schedule-closures-impact-details,
+  .schedule-closures-item-action {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .schedule-closures-shell {
+    width: min(100% - 20px, 1180px);
+    padding-top: 20px;
+  }
+
+  .schedule-closures-header h1 {
+    font-size: 25px;
+  }
+
+  .schedule-closures-panel {
+    padding: 14px;
+  }
+
+  .schedule-closures-tabs,
+  .schedule-closures-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-closures-tabs button,
+  .schedule-closures-actions button,
+  .schedule-closures-alert button,
+  .schedule-closures-item-action button {
+    width: 100%;
+  }
+}

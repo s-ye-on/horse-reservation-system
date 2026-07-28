@@ -877,3 +877,23 @@ pnpm --dir frontend/apps/web build
 rg -q '@media \(max-width: 520px\)' \
   frontend/apps/web/src/features/admin-schedule-configuration/admin-schedule-configuration-page.css
 '''
+
+[tasks."verify:m31-r13"]
+description = "Verify M31-R13 date and time-slot closure web"
+run = '''
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-schedule-closures/AdminScheduleClosuresPage.test.tsx \
+  src/app.test.tsx
+pnpm --dir frontend/apps/web lint
+mise run web:typecheck
+pnpm --dir frontend/apps/web build
+pnpm --dir frontend/apps/web exec playwright test tests/e2e/m31-r13-responsive.spec.ts
+rg -q '@media \(max-width: 520px\)' \
+  frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.css
+! rg -n 'fetch[(]' \
+  frontend/apps/web/src/features/admin-schedule-closures
+rg -q 'AdminScheduleDateControllerApi' \
+  frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures.api.ts
+rg -q 'AdminTimeSlotClosureControllerApi' \
+  frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures.api.ts
+'''

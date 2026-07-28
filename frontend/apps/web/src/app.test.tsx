@@ -6,6 +6,9 @@ import App from './app'
 vi.mock('./features/admin-schedule-configuration/admin-schedule-configuration-page', () => ({
   AdminScheduleConfigurationPage: () => <main><h1>정규 시간표 및 정기 휴일</h1></main>,
 }))
+vi.mock('./features/admin-schedule-closures/admin-schedule-closures-page', () => ({
+  AdminScheduleClosuresPage: () => <main><h1>날짜 휴무 및 개별 휴강</h1></main>,
+}))
 
 describe('App', () => {
   it('renders the reservation entry points', () => {
@@ -36,6 +39,10 @@ describe('App', () => {
       'href',
       '/admin/schedule-configuration',
     )
+    expect(screen.getByRole('link', { name: '날짜 휴무 및 개별 휴강' })).toHaveAttribute(
+      'href',
+      '/admin/schedule-closures',
+    )
   })
 
   it('정규_시간표_관리_route를_렌더링한다', () => {
@@ -46,5 +53,15 @@ describe('App', () => {
     )
 
     expect(screen.getByRole('heading', { name: '정규 시간표 및 정기 휴일' })).toBeInTheDocument()
+  })
+
+  it('날짜_휴무와_개별_휴강_route를_렌더링한다', () => {
+    render(
+      <MemoryRouter initialEntries={['/admin/schedule-closures']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '날짜 휴무 및 개별 휴강' })).toBeInTheDocument()
   })
 })
