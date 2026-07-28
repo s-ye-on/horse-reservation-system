@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router'
+import { MemoryRouter, useNavigate } from 'react-router'
 import { ResponseError } from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import type { ReservationApplicationApi } from './reservation-application.api'
 import { ReservationApplicationPage } from './reservation-application-page'
 
@@ -40,6 +40,38 @@ function renderPage(api: ReservationApplicationApi, route = ROUTE) {
   return render(<ReservationApplicationPage api={api} />, { wrapper: Wrapper })
 }
 
+function MutableRoutePage({
+  api,
+  route,
+}: {
+  api: ReservationApplicationApi
+  route: string
+}) {
+  const navigate = useNavigate()
+  useEffect(() => {
+    void navigate(route)
+  }, [navigate, route])
+  return <ReservationApplicationPage api={api} />
+}
+
+function renderMutableRoutePage(api: ReservationApplicationApi, route: string) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+  const tree = (currentRoute: string) => (
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[route]}>
+        <MutableRoutePage api={api} route={currentRoute} />
+      </MemoryRouter>
+    </QueryClientProvider>
+  )
+  const result = render(tree(route))
+  return {
+    ...result,
+    navigateTo: (nextRoute: string) => result.rerender(tree(nextRoute)),
+  }
+}
+
 describe('ReservationApplicationPage', () => {
   it('달력에서_전달한_수업을_서버에서_확인해_표시한다', async () => {
     const getSelectedTimeSlot = vi.fn().mockResolvedValue({ timeSlotId: 12, startTime: '09:00:00', reservable: true, remainingCapacity: 2 })
@@ -60,7 +92,11 @@ describe('ReservationApplicationPage', () => {
     })
     renderPage(createApi({ apply }))
     fireEvent.click(await screen.findByRole('button', { name: '예약 신청' }))
-    await waitFor(() => expect(apply).toHaveBeenCalledWith(12, 'ROUND_BEGINNER'))
+    await waitFor(() => expect(apply).toHaveBeenCalledWith(
+      12,
+      'ROUND_BEGINNER',
+      expect.any(String),
+    ))
     expect(await screen.findByText('관리자 승인을 기다리고 있습니다')).toBeInTheDocument()
     expect(screen.getByText('예약 #81 · 상태 pending_admin_approval')).toBeInTheDocument()
     expect(screen.getByText('현재 잔여').nextElementSibling).toHaveTextContent('6회')
@@ -96,6 +132,59 @@ describe('ReservationApplicationPage', () => {
     fireEvent.click(button)
     fireEvent.click(button)
     await waitFor(() => expect(apply).toHaveBeenCalledTimes(1))
+  })
+
+  it('응답을_받지_못한_같은_논리_신청은_같은_멱등성_key로_재시도한다', async () => {
+    const apply = vi.fn()
+      .mockRejectedValueOnce(new TypeError('network failed'))
+      .mockResolvedValueOnce({
+        reservationId: 81,
+        status: 'pending_admin_approval',
+        paymentSource: 'coupon',
+      })
+    renderPage(createApi({ apply }))
+    const button = await screen.findByRole('button', { name: '예약 신청' })
+
+    fireEvent.click(button)
+    await screen.findByRole('alert')
+    fireEvent.click(button)
+
+    await waitFor(() => expect(apply).toHaveBeenCalledTimes(2))
+    expect(apply.mock.calls[0]?.[2]).toBe(apply.mock.calls[1]?.[2])
+    expect(await screen.findByText('관리자 승인을 기다리고 있습니다')).toBeInTheDocument()
+  })
+
+  it('선택한_예약_본문이_바뀌면_새로운_멱등성_key를_사용한다', async () => {
+    const apply = vi.fn()
+      .mockRejectedValueOnce(new TypeError('network failed'))
+      .mockResolvedValueOnce({
+        reservationId: 82,
+        status: 'pending_admin_approval',
+        paymentSource: 'coupon',
+      })
+    const getSelectedTimeSlot = vi.fn().mockResolvedValue({
+      timeSlotId: 12,
+      startTime: '09:00:00',
+      reservable: true,
+      remainingCapacity: 2,
+    })
+    const api = createApi({ apply, getSelectedTimeSlot })
+    const page = renderMutableRoutePage(api, ROUTE)
+    fireEvent.click(await screen.findByRole('button', { name: '예약 신청' }))
+    await screen.findByRole('alert')
+
+    page.navigateTo(
+      '/reservations/new?timeSlotId=13&classType=FIRST_RIDE&date=2026-08-11',
+    )
+    await waitFor(() => expect(getSelectedTimeSlot).toHaveBeenLastCalledWith(
+      '2026-08-11',
+      'FIRST_RIDE',
+      13,
+    ))
+    fireEvent.click(await screen.findByRole('button', { name: '예약 신청' }))
+
+    await waitFor(() => expect(apply).toHaveBeenCalledTimes(2))
+    expect(apply.mock.calls[0]?.[2]).not.toBe(apply.mock.calls[1]?.[2])
   })
 
   it.each([[409, '방금 마감'], [401, '다시 로그인']])('%i_신청_오류를_구분한다', async (status, message) => {

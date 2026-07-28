@@ -63,6 +63,18 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_AUDIT_DATE_RANGE(HttpStatus.BAD_REQUEST, "감사 이력 조회 날짜 범위가 올바르지 않습니다."),
 	RESERVATION_INVALID_AUDIT_PAGE(HttpStatus.BAD_REQUEST, "감사 이력 조회 페이지가 올바르지 않습니다."),
 	RESERVATION_INVALID_ATTENDANCE_ACTION(HttpStatus.BAD_REQUEST, "예약 출석 처리 유형이 올바르지 않습니다."),
+	RESERVATION_IDEMPOTENCY_KEY_REQUIRED(HttpStatus.BAD_REQUEST, "Idempotency-Key 요청 헤더는 필수입니다."),
+	RESERVATION_INVALID_IDEMPOTENCY_KEY(HttpStatus.BAD_REQUEST, "Idempotency-Key 요청 헤더가 올바르지 않습니다."),
+	RESERVATION_IDEMPOTENCY_KEY_CONFLICT(HttpStatus.CONFLICT, "같은 Idempotency-Key를 다른 예약 요청에 사용할 수 없습니다."),
+	RESERVATION_IDEMPOTENCY_STATE_CONFLICT(
+		HttpStatus.INTERNAL_SERVER_ERROR,
+		"예약 멱등성 처리 상태가 올바르지 않습니다."),
+	RESERVATION_IDEMPOTENCY_FINGERPRINT_FAILED(
+		HttpStatus.INTERNAL_SERVER_ERROR,
+		"예약 요청 식별 정보를 생성하지 못했습니다."),
+	RESERVATION_RESPONSE_SERIALIZATION_FAILED(
+		HttpStatus.INTERNAL_SERVER_ERROR,
+		"예약 응답을 생성하지 못했습니다."),
 	RESERVATION_INVALID_PERSISTED_VALUE(HttpStatus.INTERNAL_SERVER_ERROR, "저장된 예약 값이 올바르지 않습니다."),
 
 	COUPON_INVALID_MEMBER_ID(HttpStatus.BAD_REQUEST, "쿠폰 회원 식별자는 필수입니다."),

@@ -25,6 +25,7 @@ import {
 } from '../models/ReservationApplicationResponse';
 
 export interface ApplyRequest {
+    idempotencyKey: string;
     reservationApplicationRequest: ReservationApplicationRequest;
 }
 
@@ -37,6 +38,13 @@ export class ReservationApplicationControllerApi extends runtime.BaseAPI {
      * Creates request options for apply without sending the request
      */
     async applyRequestOpts(requestParameters: ApplyRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['idempotencyKey'] == null) {
+            throw new runtime.RequiredError(
+                'idempotencyKey',
+                'Required parameter "idempotencyKey" was null or undefined when calling apply().'
+            );
+        }
+
         if (requestParameters['reservationApplicationRequest'] == null) {
             throw new runtime.RequiredError(
                 'reservationApplicationRequest',
@@ -49,6 +57,10 @@ export class ReservationApplicationControllerApi extends runtime.BaseAPI {
         const headerParameters: runtime.HTTPHeaders = {};
 
         headerParameters['Content-Type'] = 'application/json';
+
+        if (requestParameters['idempotencyKey'] != null) {
+            headerParameters['Idempotency-Key'] = String(requestParameters['idempotencyKey']);
+        }
 
 
         let urlPath = `/api/reservations`;

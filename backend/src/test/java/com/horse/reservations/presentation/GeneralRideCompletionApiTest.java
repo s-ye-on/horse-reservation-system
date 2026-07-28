@@ -252,6 +252,7 @@ class GeneralRideCompletionApiTest {
 
 		mockMvc.perform(post("/api/reservations")
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", "completion-application-success")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(reservationRequest(timeSlotId)))
 			.andExpect(status().isCreated())
@@ -271,12 +272,14 @@ class GeneralRideCompletionApiTest {
 
 		mockMvc.perform(post("/api/reservations")
 				.with(memberJwt(couponSubject))
+				.header("Idempotency-Key", "completion-application-coupon-invalid")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(reservationRequest(couponTimeSlotId)))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("RESERVATION_INVALID_LESSON_DATE"));
 		mockMvc.perform(post("/api/reservations")
 				.with(memberJwt(paymentSubject))
+				.header("Idempotency-Key", "completion-application-payment-invalid")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(reservationRequest(paymentTimeSlotId)))
 			.andExpect(status().isBadRequest())
@@ -564,6 +567,7 @@ class GeneralRideCompletionApiTest {
 		resetScheduleConfigGuard();
 		jdbcTemplate.update("DELETE FROM reservation_change_logs");
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
+		jdbcTemplate.update("DELETE FROM reservation_application_idempotencies");
 		jdbcTemplate.update("DELETE FROM reservations");
 		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");

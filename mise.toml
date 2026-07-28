@@ -717,6 +717,31 @@ rg -Fq 'DeadlockRetryIntegrationTest' \
   docs/architecture/m31-command-lock-matrix.md
 '''
 
+[tasks."verify:m31-08"]
+description = "Verify M31-08 reservation application idempotency ledger and API contract"
+run = '''
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*ReservationApplicationIdempotencyApiTest' \
+  --tests '*ReservationApplicationIdempotencyClaimConcurrencyIntegrationTest' \
+  --tests '*ReservationApplicationIdempotencyDeadlockIntegrationTest' \
+  --tests '*ReservationApplicationIdempotencyMigrationIntegrationTest' \
+  --tests '*ReservationApplicationOpenApiContractTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*PendingPaymentReservationApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*M31CommandLockPlanIntegrationTest' \
+  --tests '*ExceptionCodeTest'
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/reservation-application/ReservationApplicationPage.test.tsx
+rg -Fq 'idempotencyKey: string;' \
+  frontend/packages/api-client/src/apis/ReservationApplicationControllerApi.ts
+rg -Fq "headerParameters['Idempotency-Key']" \
+  frontend/packages/api-client/src/apis/ReservationApplicationControllerApi.ts
+rg -Fq 'Reservation, 정원 점유, Coupon 점유, CouponUsageLog와 원장 완료는 한 commit이다.' \
+  docs/architecture/m31-command-lock-matrix.md
+'''
+
 [tasks."db:preflight-active-reservations"]
 description = "Report duplicate active reservations before Flyway V15"
 run = "./scripts/check-active-reservation-duplicates.sh"

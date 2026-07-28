@@ -261,6 +261,17 @@
           "reservation-application-controller"
         ],
         "operationId": "apply",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "인증 주체의 회원 예약 생성 요청을 식별하는 멱등성 키",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -275,7 +286,7 @@
           "201": {
             "description": "Created",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ReservationApplicationResponse"
                 }

@@ -4,7 +4,7 @@
 
 이 문서는 M31-R14 완료 시점의 프로덕션 Command가 실제로 획득하는 MySQL 잠금을
 Repository 메서드와 SQL까지 추적한 기준선이다. M31-06에서 발견한 순서 차이는
-M31-07에서 보정했으며 아래 matrix는 M31-07 적용 후 실제 순서를 기록한다.
+M31-07에서 보정했고 M31-08은 회원 예약 생성의 Idempotency 잠금을 첫 단계에 추가했다.
 
 목표 순서는 다음과 같다.
 
@@ -12,16 +12,19 @@ M31-07에서 보정했으며 아래 matrix는 M31-07 적용 후 실제 순서를
 -> TimeSlotClosure -> Reservation -> Coupon -> Member -> append-only audit`
 
 여러 날짜, 회원 날짜 guard, TimeSlot, Closure 또는 Reservation을 잠글 때는 날짜·복합 키
-또는 ID 오름차순을 사용한다. Idempotency는 M31-08, 관리자 수동 예약은 M31-09에서
-추가하므로 현재 순서에는 아직 나타나지 않는다.
+또는 ID 오름차순을 사용한다. 관리자 수동 예약 operation은 M31-09 범위다.
 
-검증 환경은 MySQL 8.4, `REPEATABLE-READ`, Flyway V32다. 실행 가능한 근거는
-`M31CommandLockPlanIntegrationTest`가 제공한다.
+검증 환경은 MySQL 8.4, `REPEATABLE-READ`, Flyway V33다. 실행 가능한 근거는
+`M31CommandLockPlanIntegrationTest`,
+`ReservationApplicationIdempotencyApiTest`와
+`ReservationApplicationIdempotencyDeadlockIntegrationTest`가 제공한다.
 
 ## 잠금 SQL과 실행 계획
 
 | 단계 | Repository 메서드 | SQL 조건과 순서 | 인덱스와 MySQL 8.4 계획 | 잠금 범위 |
 |---|---|---|---|---|
+| Idempotency 선점 | `ReservationApplicationIdempotencyClaimRepository.claim` | scope의 `INSERT IGNORE`, `processing` | `uk_reservation_application_idempotency_scope` 중복 검사 | 신규 unique record/insert intention 또는 기존 unique record 대기 |
+| Idempotency 완료·replay | `ReservationApplicationIdempotencyRepository.findForUpdate` | 인증 주체/operation/key equality `FOR UPDATE` | unique key, `const` | 단일 scope record X lock |
 | Config 공유 | `ScheduleConfigGuardRepository.findSingletonForShare` | `id = 1 FOR SHARE` | `PRIMARY`, `const` | singleton record S lock |
 | Config 변경 | `ScheduleConfigGuardRepository.findSingletonForUpdate` | `id = 1 FOR UPDATE` | `PRIMARY`, `const` | singleton record X lock |
 | 날짜 단건 | `ScheduleDateRepository.findByScheduleDateForUpdate` | `schedule_date = ? FOR UPDATE` | `uk_schedule_dates_date`, `const` | 존재 행 record lock, 부재 시 unique gap |
@@ -41,6 +44,20 @@ M31-07에서 보정했으며 아래 matrix는 M31-07 적용 후 실제 순서를
 | Member 단건 | `MemberRepository.findByIdForUpdate` | `id = ? FOR UPDATE` | `PRIMARY`, `const` | Member record lock |
 
 핵심 범위 SQL은 다음과 같다.
+
+```sql
+INSERT IGNORE INTO reservation_application_idempotencies (
+    auth_subject, operation, idempotency_key, request_fingerprint, status
+) VALUES (?, 'member_reservation_create', ?, ?, 'processing');
+
+SELECT *
+FROM reservation_application_idempotencies
+FORCE INDEX (uk_reservation_application_idempotency_scope)
+WHERE auth_subject = ?
+  AND operation = 'member_reservation_create'
+  AND idempotency_key = ?
+FOR UPDATE;
+```
 
 ```sql
 SELECT reservation.*
@@ -91,15 +108,15 @@ occupancy `range`와 filesort가 관측됐다. Coupon 선택은
 `idx_coupons_member_status_expiry`와 filesort를 사용한다. 특정 인덱스를 강제하지 않는
 점유 SQL의 잠금 범위는 통계와 카디널리티에 따라 달라진다.
 
-## M31-07 적용 후 Command matrix
+## M31-08 적용 후 Command matrix
 
 `현재 순서`는 조회용 snapshot을 제외하고 실제 비관적 잠금만 적는다. `Closure?`는 해당
 TimeSlot에 진행 중 휴강이 있을 때 함께 잠긴다는 뜻이다.
 
 | Command | 현재 순서 | 판정과 교차 대기 |
 |---|---|---|
-| 회원 예약 생성, 쿠폰 | Config S -> Date -> member-day -> TimeSlot -> overlap -> 점유 -> Coupon -> audit | 목표 순서와 일치 |
-| 회원 예약 생성, 1회 결제 | Config S -> Date -> member-day -> TimeSlot -> overlap -> 점유 -> audit | 목표 순서와 일치 |
+| 회원 예약 생성, 쿠폰 | Idempotency -> Config S -> Date -> member-day -> TimeSlot -> overlap -> 점유 -> Coupon -> audit -> Idempotency 완료 | 같은 key replay는 Idempotency 뒤 업무 흐름을 실행하지 않음 |
+| 회원 예약 생성, 1회 결제 | Idempotency -> Config S -> Date -> member-day -> TimeSlot -> overlap -> 점유 -> Idempotency 완료 | 같은 key 동시 요청은 unique scope에서 직렬화 |
 | 예약 변경 | Config S -> Date 오름차순 -> member-day 날짜순 -> TimeSlot ID순 -> 대상 overlap -> 대상 점유 -> Reservation -> Coupon? -> audit | 목표 순서와 일치 |
 | 입금 만료 복구 | Config S -> Date -> member-day -> TimeSlot -> overlap -> 점유 -> Reservation -> audit | 활성 집합 재진입을 guard로 직렬화 |
 | 예약 승인·입금 확인 | Date -> TimeSlot -> Closure? -> Reservation -> Coupon? | 활성 상태 유지. 휴강 시작과 TimeSlot에서 교차 대기 |
@@ -134,6 +151,8 @@ TimeSlot에 진행 중 휴강이 있을 때 함께 잠긴다는 뜻이다.
 | 완료 vs Coupon 종료 Command | Reservation -> Coupon -> Member | 공통 Coupon 종료 흐름과 같은 방향 | 완료·노쇼 경쟁에서 첫 상태 변경만 Coupon·audit·기승 횟수 반영 |
 | TimeSlot 정원 변경·삭제 vs 동기화·날짜 휴무 | Config S -> Date -> TimeSlot | 같은 방향 | CLOSING 전환 잠금 뒤 대기하고 최신 날짜 상태로 두 Command 모두 거부 |
 | Coupon 자동 선택 vs Coupon 만료 | Coupon 후보와 Coupon ID | 후보 range/filesort와 ID순 만료가 넓게 교차할 수 있음 | 실제 1213만 전체 트랜잭션 밖 최대 3회 재시도 |
+| 동일 key 생성 vs 생성 | Idempotency unique scope | 첫 transaction commit/rollback까지 두 번째 claim 대기 | commit이면 status/body replay, rollback이면 새 선점 |
+| 서로 다른 key 생성의 1213 | 전체 canonical order | 실패 시도의 원장·업무 효과가 함께 rollback | 바깥 Application transaction 전체 최대 3회 재시도 |
 
 ## InnoDB 해석 기준
 
@@ -166,6 +185,15 @@ M31-07은 기존 인덱스와 migration을 변경하지 않았다. TimeSlot ID/d
 잠금 근거가 아니며, 삭제 예약 이력 조회만 `idx_reservations_occupancy`를 강제한
 `FOR UPDATE` 현재 읽기로 보강했다. 실행 계획과 잠금 범위는
 `M31CommandLockPlanIntegrationTest`에서 검증한다.
+
+## M31-08 완료 Gate
+
+1. 인증 주체, `member_reservation_create`, key의 V33 unique scope를 먼저 선점한다.
+2. 같은 fingerprint 완료 행은 저장된 HTTP status와 response body를 그대로 반환한다.
+3. Reservation, 정원 점유, Coupon 점유, CouponUsageLog와 원장 완료는 한 commit이다.
+4. rollback 뒤 `processing` 행이 남지 않고 같은 key가 새로 선점된다.
+5. 실제 MySQL 동시 같은 key와 완료 직전 1213 재시도 뒤 논리 효과가 정확히 한 번이다.
+6. V32 upgrade, fresh V33, 필수 OpenAPI Header와 생성 Client 계약을 검증한다.
 
 실제 MySQL 검증은 다음을 고정한다.
 

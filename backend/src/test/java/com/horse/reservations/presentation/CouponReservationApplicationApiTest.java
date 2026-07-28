@@ -14,6 +14,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,7 @@ import com.horse.auth.UserRole;
 class CouponReservationApplicationApiTest {
 
 	private static final String ENDPOINT = "/api/reservations";
+	private static final AtomicLong IDEMPOTENCY_SEQUENCE = new AtomicLong();
 	private static final String CLASS_CAPACITIES = """
 		{
 		  "FIRST_RIDE": 8,
@@ -75,6 +77,7 @@ class CouponReservationApplicationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
@@ -100,6 +103,7 @@ class CouponReservationApplicationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "DRESSAGE")))
 			.andExpect(status().isBadRequest())
@@ -154,12 +158,14 @@ class CouponReservationApplicationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated());
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isConflict())
@@ -182,12 +188,14 @@ class CouponReservationApplicationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(overlapTimeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isConflict())
 			.andExpect(jsonPath("$.code").value("RESERVATION_OVERLAPPING_ACTIVE_RESERVATION"));
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(lateOverlapTimeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isConflict())
@@ -228,6 +236,7 @@ class CouponReservationApplicationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isConflict())
@@ -269,6 +278,7 @@ class CouponReservationApplicationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isServiceUnavailable())
@@ -307,6 +317,7 @@ class CouponReservationApplicationApiTest {
 		final Long timeSlotId = insertTimeSlot(futureDate(), "14:00:00", 8, 4);
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated());
@@ -352,6 +363,7 @@ class CouponReservationApplicationApiTest {
 	private int apply(String authSubject, Long timeSlotId) throws Exception {
 		return mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andReturn()
@@ -362,6 +374,7 @@ class CouponReservationApplicationApiTest {
 	private void applyAndExpectCreated(String authSubject, Long timeSlotId) throws Exception {
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated());
@@ -427,6 +440,10 @@ class CouponReservationApplicationApiTest {
 			""".formatted(timeSlotId, classType);
 	}
 
+	private String nextIdempotencyKey() {
+		return "coupon-application-" + IDEMPOTENCY_SEQUENCE.incrementAndGet();
+	}
+
 	private RequestPostProcessor memberJwt(String authSubject) {
 		return jwt()
 			.jwt(token -> token.subject(authSubject))
@@ -484,6 +501,7 @@ class CouponReservationApplicationApiTest {
 	private void clearDatabase() {
 		resetScheduleConfigGuard();
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
+		jdbcTemplate.update("DELETE FROM reservation_application_idempotencies");
 		jdbcTemplate.update("DELETE FROM reservations");
 		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");

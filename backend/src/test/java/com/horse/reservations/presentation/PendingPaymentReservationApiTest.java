@@ -16,6 +16,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,7 @@ import com.horse.auth.UserRole;
 class PendingPaymentReservationApiTest {
 
 	private static final String ENDPOINT = "/api/reservations";
+	private static final AtomicLong IDEMPOTENCY_SEQUENCE = new AtomicLong();
 	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 	private static final Instant REQUEST_INSTANT = Instant.parse("2026-07-14T01:00:00Z");
 	private static final LocalDate LESSON_DATE = LocalDate.of(2026, 8, 1);
@@ -84,6 +86,7 @@ class PendingPaymentReservationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
@@ -105,6 +108,7 @@ class PendingPaymentReservationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
@@ -127,6 +131,7 @@ class PendingPaymentReservationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
@@ -165,6 +170,7 @@ class PendingPaymentReservationApiTest {
 			.andExpect(status().isUnauthorized());
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "UNKNOWN")))
 			.andExpect(status().isBadRequest())
@@ -182,6 +188,7 @@ class PendingPaymentReservationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
@@ -202,6 +209,7 @@ class PendingPaymentReservationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
@@ -222,6 +230,7 @@ class PendingPaymentReservationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isConflict())
@@ -240,6 +249,7 @@ class PendingPaymentReservationApiTest {
 
 		mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isConflict())
@@ -273,6 +283,7 @@ class PendingPaymentReservationApiTest {
 	private int apply(String authSubject, Long timeSlotId) throws Exception {
 		return mockMvc.perform(post(ENDPOINT)
 				.with(memberJwt(authSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andReturn()
@@ -354,6 +365,10 @@ class PendingPaymentReservationApiTest {
 			""".formatted(timeSlotId, classType);
 	}
 
+	private String nextIdempotencyKey() {
+		return "pending-payment-" + IDEMPOTENCY_SEQUENCE.incrementAndGet();
+	}
+
 	private RequestPostProcessor memberJwt(String authSubject) {
 		return jwt()
 			.jwt(token -> token.subject(authSubject))
@@ -388,6 +403,7 @@ class PendingPaymentReservationApiTest {
 	private void clearDatabase() {
 		resetScheduleConfigGuard();
 		jdbcTemplate.update("DELETE FROM coupon_usage_logs");
+		jdbcTemplate.update("DELETE FROM reservation_application_idempotencies");
 		jdbcTemplate.update("DELETE FROM reservations");
 		jdbcTemplate.update("DELETE FROM reservation_member_day_guards");
 		jdbcTemplate.update("DELETE FROM time_slot_capacities");

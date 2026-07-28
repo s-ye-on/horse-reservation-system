@@ -8,7 +8,7 @@ import {
 
 export interface ReservationApplicationApi {
   getSelectedTimeSlot(date: string, classType: string, timeSlotId: number): Promise<MemberAvailableTimeSlotResponse | undefined>
-  apply(timeSlotId: number, classType: string): Promise<ReservationApplicationResponse>
+  apply(timeSlotId: number, classType: string, idempotencyKey: string): Promise<ReservationApplicationResponse>
 }
 
 export type ReservationApplicationErrorKind = 'unauthorized' | 'validation' | 'conflict' | 'unknown'
@@ -29,7 +29,8 @@ export const reservationApplicationApi: ReservationApplicationApi = {
     const response = await timeSlotsApi.getAvailableTimeSlots({ date, classType })
     return response.timeSlots?.find((timeSlot) => timeSlot.timeSlotId === timeSlotId)
   },
-  apply: (timeSlotId, classType) => applicationApi.apply({
+  apply: (timeSlotId, classType, idempotencyKey) => applicationApi.apply({
+    idempotencyKey,
     reservationApplicationRequest: { timeSlotId, classType },
   }),
 }

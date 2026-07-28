@@ -1,38 +1,53 @@
 package com.horse.reservations.presentation;
 
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.horse.reservations.application.ReservationApplicationResult;
-import com.horse.reservations.application.ReservationApplicationService;
+import com.horse.reservations.application.IdempotentReservationApplicationResult;
+import com.horse.reservations.application.IdempotentReservationApplicationService;
 import com.horse.reservations.presentation.dto.ReservationApplicationRequest;
 import com.horse.reservations.presentation.dto.ReservationApplicationResponse;
+
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 @RestController
 @RequestMapping("/api/reservations")
 public class ReservationApplicationController {
 
-	private final ReservationApplicationService service;
+	private final IdempotentReservationApplicationService service;
 
-	public ReservationApplicationController(ReservationApplicationService service) {
+	public ReservationApplicationController(IdempotentReservationApplicationService service) {
 		this.service = service;
 	}
 
 	@PostMapping
-	@ResponseStatus(HttpStatus.CREATED)
-	public ReservationApplicationResponse apply(
+	@ApiResponse(responseCode = "201", content = @Content(
+		mediaType = MediaType.APPLICATION_JSON_VALUE,
+		schema = @Schema(implementation = ReservationApplicationResponse.class)))
+	public ResponseEntity<String> apply(
 		@AuthenticationPrincipal(expression = "subject") String authSubject,
+		@Parameter(
+			required = true,
+			description = "인증 주체의 회원 예약 생성 요청을 식별하는 멱등성 키")
+		@RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
 		@RequestBody ReservationApplicationRequest request
 	) {
-		final ReservationApplicationResult result = service.apply(
+		final IdempotentReservationApplicationResult result = service.apply(
 			authSubject,
+			idempotencyKey,
 			request.timeSlotId(),
 			request.classType());
-		return ReservationApplicationResponse.from(result);
+		return ResponseEntity.status(result.httpStatus())
+			.contentType(MediaType.APPLICATION_JSON)
+			.body(result.responseBody());
 	}
 }

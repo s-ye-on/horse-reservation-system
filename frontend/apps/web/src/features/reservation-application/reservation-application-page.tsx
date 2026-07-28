@@ -26,6 +26,11 @@ function errorMessage(error: unknown) {
 export function ReservationApplicationPage({ api = reservationApplicationApi }: { api?: ReservationApplicationApi }) {
   const [searchParams] = useSearchParams()
   const submissionLocked = useRef(false)
+  const idempotencyRequest = useRef<{
+    timeSlotId: number
+    classType: string
+    key: string
+  } | null>(null)
   const timeSlotId = Number(searchParams.get('timeSlotId'))
   const classType = searchParams.get('classType') ?? ''
   const date = searchParams.get('date') ?? ''
@@ -36,12 +41,24 @@ export function ReservationApplicationPage({ api = reservationApplicationApi }: 
     queryFn: () => api.getSelectedTimeSlot(date, classType, timeSlotId),
     enabled: validSelection,
   })
-  const application = useMutation({ mutationFn: () => api.apply(timeSlotId, classType) })
+  const application = useMutation({
+    mutationFn: (key: string) => api.apply(timeSlotId, classType, key),
+  })
 
   const submit = () => {
     if (submissionLocked.current || !timeSlotQuery.data?.reservable) return
     submissionLocked.current = true
-    application.mutate(undefined, { onSettled: () => { submissionLocked.current = false } })
+    const previousRequest = idempotencyRequest.current
+    const requestKey = previousRequest?.timeSlotId === timeSlotId
+      && previousRequest.classType === classType
+      ? previousRequest.key
+      : crypto.randomUUID()
+    idempotencyRequest.current = { timeSlotId, classType, key: requestKey }
+    application.mutate(requestKey, {
+      onSettled: () => {
+        submissionLocked.current = false
+      },
+    })
   }
 
   if (!validSelection) return <ApplicationState error message="예약 선택 정보가 올바르지 않습니다." />
