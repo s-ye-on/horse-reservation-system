@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from 'react'
 import { useMutation, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query'
 import type {
@@ -24,6 +25,9 @@ import {
 import './admin-schedule-closures-page.css'
 
 const CLOSURES_KEY = ['admin', 'schedule-closures'] as const
+const CLOSURE_TABS = ['date', 'slot'] as const
+
+type ClosureTab = typeof CLOSURE_TABS[number]
 
 type Operation =
   | { kind: 'date-start'; scheduleDate: Date; reason: string; expectedVersion: number }
@@ -51,7 +55,7 @@ interface ItemResult {
 
 export function AdminScheduleClosuresPage({ api = adminScheduleClosuresApi }: { api?: AdminScheduleClosuresApi }) {
   const queryClient = useQueryClient()
-  const [tab, setTab] = useState<'date' | 'slot'>('date')
+  const [tab, setTab] = useState<ClosureTab>('date')
   const [scheduleDate, setScheduleDate] = useState(defaultFutureDate)
   const [selectedTimeSlotId, setSelectedTimeSlotId] = useState('')
   const [dateReason, setDateReason] = useState('')
@@ -66,6 +70,8 @@ export function AdminScheduleClosuresPage({ api = adminScheduleClosuresApi }: { 
   const dialogRef = useRef<HTMLElement>(null)
   const dialogHeadingRef = useRef<HTMLHeadingElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
+  const dateTabRef = useRef<HTMLButtonElement>(null)
+  const slotTabRef = useRef<HTMLButtonElement>(null)
   const apiDate = useMemo(() => toApiDate(scheduleDate), [scheduleDate])
   const timeSlotId = selectedTimeSlotId ? Number(selectedTimeSlotId) : undefined
 
@@ -202,6 +208,39 @@ export function AdminScheduleClosuresPage({ api = adminScheduleClosuresApi }: { 
     await refresh()
   }
 
+  const selectTab = (nextTab: ClosureTab, moveFocus = false) => {
+    setTab(nextTab)
+    if (moveFocus) {
+      const nextTabRef = nextTab === 'date' ? dateTabRef : slotTabRef
+      nextTabRef.current?.focus()
+    }
+  }
+
+  const handleTabKeyDown = (
+    event: ReactKeyboardEvent<HTMLButtonElement>,
+    currentTab: ClosureTab,
+  ) => {
+    const currentIndex = CLOSURE_TABS.indexOf(currentTab)
+    let nextTab: ClosureTab | undefined
+
+    if (event.key === 'ArrowRight') {
+      nextTab = CLOSURE_TABS[(currentIndex + 1) % CLOSURE_TABS.length]
+    } else if (event.key === 'ArrowLeft') {
+      nextTab = CLOSURE_TABS[
+        (currentIndex - 1 + CLOSURE_TABS.length) % CLOSURE_TABS.length
+      ]
+    } else if (event.key === 'Home') {
+      nextTab = CLOSURE_TABS[0]
+    } else if (event.key === 'End') {
+      nextTab = CLOSURE_TABS[CLOSURE_TABS.length - 1]
+    }
+
+    if (nextTab) {
+      event.preventDefault()
+      selectTab(nextTab, true)
+    }
+  }
+
   return (
     <main className="schedule-closures-page">
       <div className="schedule-closures-shell">
@@ -227,42 +266,78 @@ export function AdminScheduleClosuresPage({ api = adminScheduleClosuresApi }: { 
         {success ? <p className="schedule-closures-alert success" role="status">{success}</p> : null}
 
         <div className="schedule-closures-tabs" role="tablist" aria-label="휴무 운영 유형">
-          <button type="button" role="tab" aria-selected={tab === 'date'} onClick={() => setTab('date')}>날짜 전체 휴무</button>
-          <button type="button" role="tab" aria-selected={tab === 'slot'} onClick={() => setTab('slot')}>개별 TimeSlot 휴강</button>
+          <button
+            ref={dateTabRef}
+            id="date-closure-tab"
+            type="button"
+            role="tab"
+            aria-controls="date-closure-panel"
+            aria-selected={tab === 'date'}
+            tabIndex={tab === 'date' ? 0 : -1}
+            onClick={() => selectTab('date')}
+            onKeyDown={(event) => handleTabKeyDown(event, 'date')}
+          >
+            날짜 전체 휴무
+          </button>
+          <button
+            ref={slotTabRef}
+            id="time-slot-closure-tab"
+            type="button"
+            role="tab"
+            aria-controls="time-slot-closure-panel"
+            aria-selected={tab === 'slot'}
+            tabIndex={tab === 'slot' ? 0 : -1}
+            onClick={() => selectTab('slot')}
+            onKeyDown={(event) => handleTabKeyDown(event, 'slot')}
+          >
+            개별 TimeSlot 휴강
+          </button>
         </div>
 
         {tab === 'date' ? (
-          <DateClosurePanel
-            scheduleDate={scheduleDate}
-            onScheduleDateChange={setScheduleDate}
-            reason={dateReason}
-            onReasonChange={setDateReason}
-            scheduleDateQuery={scheduleDateQuery}
-            impactQuery={dateImpactQuery}
-            memos={dateMemos}
-            onMemoChange={(reservationId, memo) => setDateMemos((current) => ({ ...current, [reservationId]: memo }))}
-            itemResults={itemResults}
-            busy={mutation.isPending}
-            onConfirm={openConfirmation}
-          />
+          <div
+            id="date-closure-panel"
+            role="tabpanel"
+            aria-labelledby="date-closure-tab"
+          >
+            <DateClosurePanel
+              scheduleDate={scheduleDate}
+              onScheduleDateChange={setScheduleDate}
+              reason={dateReason}
+              onReasonChange={setDateReason}
+              scheduleDateQuery={scheduleDateQuery}
+              impactQuery={dateImpactQuery}
+              memos={dateMemos}
+              onMemoChange={(reservationId, memo) => setDateMemos((current) => ({ ...current, [reservationId]: memo }))}
+              itemResults={itemResults}
+              busy={mutation.isPending}
+              onConfirm={openConfirmation}
+            />
+          </div>
         ) : (
-          <TimeSlotClosurePanel
-            timeSlots={sortedTimeSlots}
-            selectedId={selectedTimeSlotId}
-            onSelectedIdChange={setSelectedTimeSlotId}
-            selectedTimeSlot={selectedTimeSlot}
-            closure={timeSlotClosureQuery.data}
-            closurePending={timeSlotClosureQuery.isPending && timeSlotId !== undefined}
-            closureError={timeSlotClosureQuery.isError}
-            reason={slotReason}
-            onReasonChange={setSlotReason}
-            memos={slotMemos}
-            onMemoChange={(reservationId, memo) => setSlotMemos((current) => ({ ...current, [reservationId]: memo }))}
-            itemResults={itemResults}
-            busy={mutation.isPending || timeSlotsQuery.isPending}
-            timeSlotsError={timeSlotsQuery.isError}
-            onConfirm={openConfirmation}
-          />
+          <div
+            id="time-slot-closure-panel"
+            role="tabpanel"
+            aria-labelledby="time-slot-closure-tab"
+          >
+            <TimeSlotClosurePanel
+              timeSlots={sortedTimeSlots}
+              selectedId={selectedTimeSlotId}
+              onSelectedIdChange={setSelectedTimeSlotId}
+              selectedTimeSlot={selectedTimeSlot}
+              closure={timeSlotClosureQuery.data}
+              closurePending={timeSlotClosureQuery.isPending && timeSlotId !== undefined}
+              closureError={timeSlotClosureQuery.isError}
+              reason={slotReason}
+              onReasonChange={setSlotReason}
+              memos={slotMemos}
+              onMemoChange={(reservationId, memo) => setSlotMemos((current) => ({ ...current, [reservationId]: memo }))}
+              itemResults={itemResults}
+              busy={mutation.isPending || timeSlotsQuery.isPending}
+              timeSlotsError={timeSlotsQuery.isError}
+              onConfirm={openConfirmation}
+            />
+          </div>
         )}
       </div>
 

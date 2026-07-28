@@ -946,3 +946,22 @@ test -f backend/src/main/resources/db/migration/V32__repair_time_slot_closure_mi
 rg -q 'reservation[.]active_slot_guard = 1' \
   backend/src/main/resources/db/migration/V32__repair_time_slot_closure_migration.sql
 '''
+
+[tasks."verify:m31-g03"]
+description = "Verify M31-G03 schedule closure tab accessibility"
+run = '''
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-schedule-closures/AdminScheduleClosuresPage.test.tsx
+pnpm --dir frontend/apps/web lint
+mise run web:typecheck
+pnpm --dir frontend/apps/web build
+pnpm --dir frontend/apps/web exec playwright test tests/e2e/m31-r13-responsive.spec.ts
+rg -q 'role="tabpanel"' \
+  frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.tsx
+rg -q 'aria-controls="date-closure-panel"' \
+  frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.tsx
+rg -q "event[.]key === 'Home'" \
+  frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.tsx
+rg -q "event[.]key === 'End'" \
+  frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.tsx
+'''
