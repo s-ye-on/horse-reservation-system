@@ -679,6 +679,19 @@ mise run db:preflight-active-reservations
   --tests '*TimeSlotCapacityConcurrencyIntegrationTest'
 '''
 
+[tasks."verify:m31-06"]
+description = "Verify M31-06 command lock SQL indexes MySQL plans and lock semantics"
+run = '''
+./backend/gradlew -p backend test --tests '*M31CommandLockPlanIntegrationTest'
+rg -Fq 'ReservationRepository.findActiveOverlapsForUpdate' \
+  docs/architecture/m31-command-lock-matrix.md
+rg -Fq 'EXPLAIN FORMAT=JSON' docs/architecture/m31-command-lock-matrix.md
+rg -Fq 'REPEATABLE READ' docs/architecture/m31-command-lock-matrix.md
+rg -Fq 'Member -> Coupon' docs/architecture/m31-command-lock-matrix.md
+rg -Fq 'TimeSlot 정원 변경' docs/architecture/m31-command-lock-matrix.md
+rg -Fq 'M31-07 완료 Gate' docs/architecture/m31-command-lock-matrix.md
+'''
+
 [tasks."db:preflight-active-reservations"]
 description = "Report duplicate active reservations before Flyway V15"
 run = "./scripts/check-active-reservation-duplicates.sh"
