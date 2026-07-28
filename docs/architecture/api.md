@@ -172,7 +172,10 @@ DELETE /api/admin/timeslots/{timeslotId}
 PUT    /api/admin/timeslots/{timeslotId}/capacity
 ```
 
-`PATCH`는 `is_closed`만 변경해 신규 예약을 마감하거나 재개한다. 기존 예약은 변경하지 않는다.
+`PATCH`는 호환 진입점으로 TimeSlotClosure 휴강 시작·철회·완료 후 재개 workflow에
+위임하며 `is_closed` 또는 `admin_closed`를 직접 변경하지 않는다. close 요청은 신규
+예약 유입을 차단하고 영향 예약을 자동 취소하지 않으며, reopen 요청은 현재 closure
+상태에 따라 철회 또는 재개한다.
 `DELETE`는 예약 이력이 없는 오생성 시간대만 물리 삭제하며, 예약 이력이 있으면 `409 Conflict`를 반환한다.
 
 ### Checkpoint 1 일정 운영 계약
@@ -231,9 +234,10 @@ M31-R11이 임의로 상태 전이를 추가하지 않는다. 해당 운영 진�
 별도 snapshot 테이블로 고정하지 않고 현재 활성 예약 목록을 ID 순서로 반환한다.
 
 기존 `PATCH /api/admin/timeslots/{id}`는 호환 기간 동안 유지하되 같은 휴강 Application
-Service를 호출한다. `is_closed = true`는 활성 예약이 있으면 휴강 정리를 시작하고,
-없으면 즉시 확정한다. `is_closed = false`는 날짜 상태가 허용할 때 휴강을 취소하거나
-재개한다. 웹은 진행률이 필요한 신규 closure API를 우선 사용한다.
+Service를 호출한다. 호환 요청 DTO의 `closed = true`는 활성 예약이 있으면 휴강
+정리를 시작하고 없으면 즉시 확정한다. `closed = false`는 날짜 상태가 허용할 때
+휴강을 취소하거나 재개한다. 두 값은 영속 필드 직접 쓰기가 아닌 workflow 선택
+플래그이며, 웹은 진행률이 필요한 신규 closure API를 우선 사용한다.
 
 신규 closure 완료·철회·재개 API는 필수 `expectedVersion`으로 낙관적 충돌을 검증한다.
 호환 PATCH에는 기존 요청 계약상 version 필드가 없으므로 최신 상태를 잠근 뒤 멱등

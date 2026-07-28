@@ -897,3 +897,35 @@ rg -q 'AdminScheduleDateControllerApi' \
 rg -q 'AdminTimeSlotClosureControllerApi' \
   frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures.api.ts
 '''
+
+[tasks."verify:m31-g01"]
+description = "Verify M31-G01 TimeSlot PATCH API documentation contract"
+run = '''
+mise run docs:check
+rg -q 'TimeSlotClosure 휴강 시작·철회·완료 후 재개 workflow' \
+  docs/architecture/api.md
+rg -q '호환 요청 DTO의 `closed = true`' \
+  docs/architecture/api.md
+rg -q '영속 필드 직접 쓰기가 아닌 workflow 선택' \
+  docs/architecture/api.md
+! rg -n '호환 요청 DTO의 `is_closed' \
+  docs/architecture/api.md
+rg -q 'Boolean closed' \
+  backend/src/main/java/com/horse/timeslots/presentation/dto/TimeSlotStatusUpdateRequest.java
+rg -q 'request[.]closed[(][)]' \
+  backend/src/main/java/com/horse/timeslots/presentation/AdminTimeSlotController.java
+rg -q 'closureService[.]start' \
+  backend/src/main/java/com/horse/timeslots/application/AdminTimeSlotService.java
+rg -q 'closureService[.]withdrawOrReopen' \
+  backend/src/main/java/com/horse/timeslots/application/AdminTimeSlotService.java
+jq -e '.components.schemas.TimeSlotStatusUpdateRequest.properties.closed.type == "boolean"' \
+  backend/openapi/horse-api.json >/dev/null
+! rg -n 'PATCH.*is_closed.*만 변경' \
+  docs/architecture/api.md
+rg -q 'M31-G01.*TimeSlot PATCH API 문서 계약 보정' \
+  docs/tasks/mvp-3.1-checkpoint-1-remediation.md
+rg -q 'M31-G02.*V30 휴강 이관 데이터 보정.*M31-G01' \
+  docs/tasks/mvp-3.1-checkpoint-1-remediation.md
+rg -q 'M31-G03.*날짜 휴무·휴강 탭 접근성 보정.*M31-G02' \
+  docs/tasks/mvp-3.1-checkpoint-1-remediation.md
+'''

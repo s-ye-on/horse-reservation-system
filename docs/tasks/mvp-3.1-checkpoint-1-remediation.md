@@ -15,6 +15,12 @@
 - `M31-R08`: COMPLETED
 - `M31-R09`: COMPLETED
 - `M31-R10`: COMPLETED
+- `M31-R11`: COMPLETED
+- `M31-R12`: COMPLETED
+- `M31-R13`: COMPLETED
+- `M31-G01`: COMPLETED
+- `M31-G02`: READY
+- `M31-G03`: READY
 
 최신 일정 운영 정책이 기존 M31-01~M31-05의 시간, TimeSlot과 중복 예약 가정을
 대체하므로 Checkpoint 1을 다시 연다. 기존 완료 Task와 커밋은 당시 정책의 증거로
@@ -44,7 +50,10 @@
 | M31-R11 | API·OpenAPI·생성 Client | M31-R04~M31-R10 | 일정·휴일·날짜·휴강·동기화 상태/재시도 API, SYNCING 503, `SCHEDULE_*` prefix 확장, offset 시간, ErrorResponse details와 생성 Client 계약 성공 | 웹 화면 | `mise run verify:m31-r11` |
 | M31-R12 | 정규 시간표·정기 휴일 웹 | M31-R11 | 검색 가능한 운영 폼·영향 미리보기·중복 제출 방지·320px·키보드·오류 코드 UX 성공 | 날짜 CLOSING 화면 | `mise run verify:m31-r12` |
 | M31-R13 | 날짜 휴무·CLOSING 웹 | M31-R11 | 영향 예약 목록·건수·진행률·전용 취소·확정/복귀·개별 휴강 UX 성공 | 알림·일괄 취소 | `mise run verify:m31-r13` |
-| M31-R14 | Checkpoint 1 재검증 | M31-R12, M31-R13 | migration preflight, MySQL 교차 동시성, OpenAPI, 웹 E2E와 전체 Gate 연속 2회 성공 | M31-06 이후 구현 | `mise run verify:m31-r14` |
+| M31-G01 | TimeSlot PATCH API 문서 계약 보정 | M31-R13 | 직접 `is_closed` 변경이라는 과거 설명을 제거하고 closure workflow 위임 계약으로 단일화 | API·DB·웹 동작 변경 | `mise run verify:m31-g01` |
+| M31-G02 | V30 휴강 이관 데이터 보정 | M31-G01 | 대소문자 상태 불일치로 잘못 완료된 이관 closure와 누락 impact를 additive migration으로 복구 | 기존 V1~V31 수정·신규 운영 기능 | `mise run verify:m31-g02` |
+| M31-G03 | 날짜 휴무·휴강 탭 접근성 보정 | M31-G02 | tab/tabpanel 연결, roving tabindex, 방향키·Home·End 탐색을 웹과 E2E에서 검증 | 화면 구조·제품 동작 변경 | `mise run verify:m31-g03` |
+| M31-R14 | Checkpoint 1 재검증 | M31-G03 | migration preflight, MySQL 교차 동시성, OpenAPI, 웹 E2E와 전체 Gate 연속 2회 성공 | M31-06 이후 구현 | `mise run verify:m31-r14` |
 
 ## Migration 순서
 
