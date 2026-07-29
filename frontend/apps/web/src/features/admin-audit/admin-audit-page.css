@@ -21,7 +21,7 @@
 .admin-audit-filters { display: grid; grid-template-columns: 1.5fr .7fr repeat(2, .85fr) repeat(2, 1fr); gap: 10px; padding: 16px; border: 1px solid var(--audit-line); border-radius: 8px; background: #fff; }
 .admin-audit-filters label { display: grid; gap: 6px; min-width: 0; color: var(--audit-muted); font-size: .72rem; font-weight: 700; }
 .admin-audit-filters input, .admin-audit-filters select { width: 100%; min-height: 40px; padding: 8px 9px; border: 1px solid #bfb5b8; border-radius: 5px; color: var(--audit-ink); background: #fff; font: inherit; }
-.admin-audit-filters input:focus-visible, .admin-audit-filters select:focus-visible, .admin-audit-filter-actions button:focus-visible, .admin-audit-pagination button:focus-visible { outline: 3px solid #e7b8c4; outline-offset: 2px; }
+.admin-audit-filters input:focus-visible, .admin-audit-filters select:focus-visible, .admin-audit-filter-actions button:focus-visible, .admin-audit-pagination button:focus-visible, .admin-audit-results-actions button:focus-visible, .admin-audit-download-error button:focus-visible { outline: 3px solid #e7b8c4; outline-offset: 2px; }
 .admin-audit-filter-actions { display: flex; grid-column: 1 / -1; justify-content: flex-end; gap: 8px; }
 .admin-audit-filter-actions button, .admin-audit-pagination button { min-height: 40px; padding: 0 14px; border: 1px solid var(--audit-accent); border-radius: 5px; color: #fff; background: var(--audit-accent); font: inherit; font-size: .78rem; font-weight: 720; cursor: pointer; }
 .admin-audit-filter-actions .secondary, .admin-audit-pagination button { color: var(--audit-accent-dark); background: #fff; }
@@ -34,6 +34,11 @@
 .admin-audit-results-heading h2 { font-size: 1.12rem; }
 .admin-audit-results-heading p { margin-top: 4px; color: var(--audit-muted); font-size: .76rem; }
 .admin-audit-results-heading strong { color: var(--audit-accent); font-size: .82rem; }
+.admin-audit-results-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+.admin-audit-results-actions button, .admin-audit-download-error button { min-height: 40px; padding: 0 14px; border: 1px solid var(--audit-accent); border-radius: 5px; color: #fff; background: var(--audit-accent); font: inherit; font-size: .78rem; font-weight: 720; cursor: pointer; }
+.admin-audit-results-actions button:disabled, .admin-audit-download-error button:disabled { cursor: not-allowed; opacity: .55; }
+.admin-audit-download-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; padding: 10px 12px; border-left: 3px solid var(--audit-accent); color: var(--audit-accent-dark); background: var(--audit-soft); font-size: .82rem; }
+.admin-audit-download-error button { flex: none; color: var(--audit-accent-dark); background: #fff; }
 .admin-audit-list { display: grid; gap: 8px; }
 .admin-audit-row { padding: 15px; border: 1px solid var(--audit-line); border-radius: 8px; background: #fff; }
 .admin-audit-row-primary { display: grid; grid-template-columns: minmax(150px, .8fr) minmax(120px, .6fr) minmax(170px, 1fr); gap: 14px; align-items: center; }
@@ -77,6 +82,10 @@
   .admin-audit-filter-actions { flex-direction: column; }
   .admin-audit-filter-actions button { width: 100%; }
   .admin-audit-results-heading { align-items: flex-start; flex-direction: column; }
+  .admin-audit-results-actions { align-items: stretch; flex-direction: column; width: 100%; }
+  .admin-audit-results-actions button { width: 100%; }
+  .admin-audit-download-error { align-items: stretch; flex-direction: column; }
+  .admin-audit-download-error button { width: 100%; }
   .admin-audit-row { padding: 12px; }
   .admin-audit-row-primary { grid-template-columns: minmax(0, 1fr); }
   .admin-audit-type { justify-self: start; }

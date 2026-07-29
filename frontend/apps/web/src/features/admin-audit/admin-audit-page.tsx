@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
@@ -7,6 +7,7 @@ import {
   adminAuditApi,
   getAdminAuditErrorKind,
   type AdminAuditApi,
+  type AdminAuditCriteria,
   type AdminAuditFilters,
 } from './admin-audit.api'
 import './admin-audit-page.css'
@@ -64,9 +65,18 @@ const EMPTY_FILTERS: AuditFilterForm = {
 
 function errorMessage(error: unknown) {
   const kind = getAdminAuditErrorKind(error)
+  if (kind === 'unauthorized') return '로그인이 필요합니다.'
   if (kind === 'forbidden') return '관리자 권한이 없어 감사 이력을 조회할 수 없습니다.'
   if (kind === 'validation') return '감사 이력 조회 조건을 다시 확인해 주세요.'
   return '감사 이력을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'
+}
+
+function downloadErrorMessage(error: unknown) {
+  const kind = getAdminAuditErrorKind(error)
+  if (kind === 'unauthorized') return '로그인이 필요합니다.'
+  if (kind === 'forbidden') return '관리자 권한이 없어 CSV를 다운로드할 수 없습니다.'
+  if (kind === 'validation') return 'CSV 다운로드 조건을 다시 확인해 주세요.'
+  return 'CSV를 다운로드하지 못했습니다. 잠시 후 다시 시도해 주세요.'
 }
 
 export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi }) {
@@ -74,6 +84,9 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
   const [appliedFilters, setAppliedFilters] = useState<AuditFilterForm>(EMPTY_FILTERS)
   const [page, setPage] = useState(0)
   const [localError, setLocalError] = useState<string>()
+  const [downloadError, setDownloadError] = useState<string>()
+  const [isDownloading, setIsDownloading] = useState(false)
+  const downloadInFlight = useRef(false)
   const query = useQuery({
     queryKey: ['admin', 'audit-logs', appliedFilters, page],
     queryFn: () => api.getAuditLogs(toApiFilters(appliedFilters, page)),
@@ -95,6 +108,7 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
       return
     }
     setLocalError(undefined)
+    setDownloadError(undefined)
     setAppliedFilters(normalizeFilters(draftFilters))
     setPage(0)
   }
@@ -103,7 +117,44 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
     setDraftFilters(EMPTY_FILTERS)
     setAppliedFilters(EMPTY_FILTERS)
     setLocalError(undefined)
+    setDownloadError(undefined)
     setPage(0)
+  }
+
+  const downloadCsv = async () => {
+    if (downloadInFlight.current) return
+    downloadInFlight.current = true
+    setIsDownloading(true)
+    setDownloadError(undefined)
+
+    let objectUrl: string | undefined
+    let downloadLink: HTMLAnchorElement | undefined
+    let downloadTriggered = false
+    try {
+      const download = await api.downloadAuditLogs(toApiCriteria(appliedFilters))
+      objectUrl = URL.createObjectURL(download.blob)
+      downloadLink = document.createElement('a')
+      downloadLink.href = objectUrl
+      downloadLink.download = download.fileName
+      downloadLink.hidden = true
+      document.body.append(downloadLink)
+      downloadLink.click()
+      downloadTriggered = true
+    } catch (error) {
+      setDownloadError(downloadErrorMessage(error))
+    } finally {
+      downloadLink?.remove()
+      if (objectUrl) {
+        const urlToRevoke = objectUrl
+        if (downloadTriggered) {
+          window.setTimeout(() => URL.revokeObjectURL(urlToRevoke), 0)
+        } else {
+          URL.revokeObjectURL(urlToRevoke)
+        }
+      }
+      downloadInFlight.current = false
+      setIsDownloading(false)
+    }
   }
 
   const totalElements = query.data?.totalElements ?? 0
@@ -192,8 +243,26 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
               <h2 id="admin-audit-results-title">처리 이력</h2>
               <p>최신 처리부터 표시합니다.</p>
             </div>
-            <strong>전체 {totalElements}건</strong>
+            <div className="admin-audit-results-actions">
+              <strong>전체 {totalElements}건</strong>
+              <button
+                type="button"
+                disabled={isDownloading}
+                onClick={() => { void downloadCsv() }}
+              >
+                {isDownloading ? 'CSV 준비 중...' : '현재 조건 CSV 다운로드'}
+              </button>
+            </div>
           </div>
+
+          {downloadError ? (
+            <div className="admin-audit-download-error" role="alert">
+              <span>{downloadError}</span>
+              <button type="button" disabled={isDownloading} onClick={() => { void downloadCsv() }}>
+                다시 시도
+              </button>
+            </div>
+          ) : null}
 
           {query.isPending ? <AuditState message="감사 이력을 불러오는 중입니다." /> : null}
           {query.isError ? (
@@ -266,14 +335,20 @@ function AuditLogRow({ auditLog }: { auditLog: AdminReservationAuditResponse }) 
 
 function toApiFilters(filters: AuditFilterForm, page: number): AdminAuditFilters {
   return {
+    ...toApiCriteria(filters),
+    page,
+    size: PAGE_SIZE,
+  }
+}
+
+function toApiCriteria(filters: AuditFilterForm): AdminAuditCriteria {
+  return {
     keyword: filters.keyword || undefined,
     reservationId: filters.reservationId ? Number(filters.reservationId) : undefined,
     occurredDateFrom: filters.occurredDateFrom || undefined,
     occurredDateTo: filters.occurredDateTo || undefined,
     actorType: filters.actorType || undefined,
     changeType: filters.changeType || undefined,
-    page,
-    size: PAGE_SIZE,
   }
 }
 

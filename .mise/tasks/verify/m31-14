@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-14 admin audit CSV download UI"
+# Task name: verify:m31-14
+
+set -euo pipefail
+
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-audit/admin-audit.api.test.ts \
+  src/features/admin-audit/AdminAuditPage.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+pnpm --dir frontend/apps/web build

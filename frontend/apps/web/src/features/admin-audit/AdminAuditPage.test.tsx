@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { ResponseError, type AdminReservationAuditPageResponse } from '@horse/api-client'
-import type { AdminAuditApi } from './admin-audit.api'
+import type { AdminAuditApi, AdminAuditDownload } from './admin-audit.api'
 import { AdminAuditPage } from './admin-audit-page'
 
 const AUDIT_PAGE: AdminReservationAuditPageResponse = {
@@ -35,11 +35,18 @@ const AUDIT_PAGE: AdminReservationAuditPageResponse = {
   hasNext: true,
 }
 
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  vi.restoreAllMocks()
+})
 
 function createApi(overrides: Partial<AdminAuditApi> = {}): AdminAuditApi {
   return {
     getAuditLogs: vi.fn().mockResolvedValue(AUDIT_PAGE),
+    downloadAuditLogs: vi.fn().mockResolvedValue({
+      blob: new Blob(['audit,csv'], { type: 'text/csv' }),
+      fileName: 'reservation-audit.csv',
+    }),
     ...overrides,
   }
 }
@@ -130,6 +137,146 @@ describe('AdminAuditPage', () => {
     expect(screen.getByRole('button', { name: '다음' })).toBeDisabled()
   })
 
+  it('현재_적용된_필터로_CSV를_다운로드하고_목록과_페이지를_유지한다', async () => {
+    const blob = new Blob(['audit,csv'], { type: 'text/csv' })
+    const downloadAuditLogs = vi.fn().mockResolvedValue({ blob, fileName: '예약 감사.csv' })
+    const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:audit-csv')
+    const revokeObjectUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    let downloadedFileName = ''
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloadedFileName = this.download
+    })
+    const api = createApi({ downloadAuditLogs })
+    renderPage(api)
+    await screen.findByText('김하늘')
+
+    fireEvent.change(screen.getByLabelText('회원 검색'), { target: { value: '  7788  ' } })
+    fireEvent.change(screen.getByLabelText('시작일'), { target: { value: '2026-07-01' } })
+    fireEvent.change(screen.getByLabelText('종료일'), { target: { value: '2026-07-31' } })
+    fireEvent.change(screen.getByLabelText('처리 주체'), { target: { value: 'admin' } })
+    fireEvent.change(screen.getByLabelText('변경 유형'), { target: { value: 'schedule_changed' } })
+    fireEvent.click(screen.getByRole('button', { name: '조건 적용' }))
+    await waitFor(() => expect(api.getAuditLogs).toHaveBeenLastCalledWith(expect.objectContaining({
+      keyword: '7788',
+      occurredDateFrom: '2026-07-01',
+      occurredDateTo: '2026-07-31',
+      actorType: 'admin',
+      changeType: 'schedule_changed',
+      page: 0,
+    })))
+
+    fireEvent.click(screen.getByRole('button', { name: '현재 조건 CSV 다운로드' }))
+
+    await waitFor(() => expect(downloadAuditLogs).toHaveBeenCalledWith({
+      keyword: '7788',
+      reservationId: undefined,
+      occurredDateFrom: '2026-07-01',
+      occurredDateTo: '2026-07-31',
+      actorType: 'admin',
+      changeType: 'schedule_changed',
+    }))
+    expect(createObjectUrl).toHaveBeenCalledWith(blob)
+    await waitFor(() => expect(revokeObjectUrl).toHaveBeenCalledWith('blob:audit-csv'))
+    expect(downloadedFileName).toBe('예약 감사.csv')
+    expect(document.querySelector('a[download]')).not.toBeInTheDocument()
+    expect(screen.getByText('김하늘')).toBeInTheDocument()
+    expect(screen.getByText('1 / 2 페이지')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '현재 조건 CSV 다운로드' })).toBeEnabled()
+  })
+
+  it('다운로드_중에는_중복_요청을_막고_진행_상태를_표시한다', async () => {
+    let resolveDownload: ((download: AdminAuditDownload) => void) | undefined
+    const downloadAuditLogs = vi.fn(() => new Promise<AdminAuditDownload>((resolve) => {
+      resolveDownload = resolve
+    }))
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:audit-csv')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    renderPage(createApi({ downloadAuditLogs }))
+    await screen.findByText('김하늘')
+
+    const downloadButton = screen.getByRole('button', { name: '현재 조건 CSV 다운로드' })
+    fireEvent.click(downloadButton)
+    fireEvent.click(downloadButton)
+
+    expect(await screen.findByRole('button', { name: 'CSV 준비 중...' })).toBeDisabled()
+    expect(downloadAuditLogs).toHaveBeenCalledTimes(1)
+
+    resolveDownload?.({
+      blob: new Blob(['audit,csv'], { type: 'text/csv' }),
+      fileName: 'reservation-audit.csv',
+    })
+    expect(await screen.findByRole('button', { name: '현재 조건 CSV 다운로드' })).toBeEnabled()
+  })
+
+  it.each([
+    [401, '로그인이 필요합니다.'],
+    [403, '관리자 권한이 없어 CSV를 다운로드할 수 없습니다.'],
+    [500, 'CSV를 다운로드하지 못했습니다.'],
+  ])('%s_다운로드_실패를_파일로_저장하지_않고_목록에_안내한다', async (status, message) => {
+    const failure = new ResponseError(new Response(null, { status }), 'download failed')
+    const createObjectUrl = vi.spyOn(URL, 'createObjectURL')
+    renderPage(createApi({ downloadAuditLogs: vi.fn().mockRejectedValue(failure) }))
+    await screen.findByText('김하늘')
+
+    fireEvent.click(screen.getByRole('button', { name: '현재 조건 CSV 다운로드' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    expect(createObjectUrl).not.toHaveBeenCalled()
+    expect(screen.getByText('김하늘')).toBeInTheDocument()
+    expect(screen.getByText('1 / 2 페이지')).toBeInTheDocument()
+  })
+
+  it('네트워크_실패_후_같은_조건으로_재시도할_수_있다', async () => {
+    const downloadAuditLogs = vi.fn()
+      .mockRejectedValueOnce(new TypeError('network failed'))
+      .mockResolvedValue({
+        blob: new Blob(['audit,csv'], { type: 'text/csv' }),
+        fileName: 'reservation-audit.csv',
+      })
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:audit-csv')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    renderPage(createApi({ downloadAuditLogs }))
+    await screen.findByText('김하늘')
+    fireEvent.click(screen.getByRole('button', { name: '현재 조건 CSV 다운로드' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('CSV를 다운로드하지 못했습니다.')
+
+    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }))
+
+    await waitFor(() => expect(downloadAuditLogs).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('링크_실행이_실패해도_임시_링크와_객체_URL을_정리한다', async () => {
+    const revokeObjectUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:audit-csv')
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {
+      throw new Error('download blocked')
+    })
+    renderPage(createApi())
+    await screen.findByText('김하늘')
+
+    fireEvent.click(screen.getByRole('button', { name: '현재 조건 CSV 다운로드' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('CSV를 다운로드하지 못했습니다.')
+    expect(revokeObjectUrl).toHaveBeenCalledWith('blob:audit-csv')
+    expect(document.querySelector('a[download]')).not.toBeInTheDocument()
+  })
+
+  it('필터를_다시_적용하면_이전_다운로드_오류를_정리한다', async () => {
+    renderPage(createApi({ downloadAuditLogs: vi.fn().mockRejectedValue(new Error('failed')) }))
+    await screen.findByText('김하늘')
+    fireEvent.click(screen.getByRole('button', { name: '현재 조건 CSV 다운로드' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('CSV를 다운로드하지 못했습니다.')
+
+    fireEvent.change(screen.getByLabelText('회원 검색'), { target: { value: '김하늘' } })
+    fireEvent.click(screen.getByRole('button', { name: '조건 적용' }))
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
   it('시작일이_종료일보다_늦으면_API를_호출하지_않고_안내한다', async () => {
     const api = createApi()
     renderPage(api)
@@ -208,6 +355,9 @@ describe('AdminAuditPage', () => {
     expect(screen.getByLabelText('회원 검색')).toBeInTheDocument()
     expect(screen.getByLabelText('예약 ID')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '조건 적용' })).toBeInTheDocument()
+    const downloadButton = screen.getByRole('button', { name: '현재 조건 CSV 다운로드' })
+    downloadButton.focus()
+    expect(downloadButton).toHaveFocus()
     expect(screen.getByRole('button', { name: '다음' })).toBeInTheDocument()
   })
 })
