@@ -14,6 +14,11 @@
 
 import * as runtime from '../runtime';
 import {
+    type ErrorResponse,
+    ErrorResponseFromJSON,
+    ErrorResponseToJSON,
+} from '../models/ErrorResponse';
+import {
     type MemberReservationPageResponse,
     MemberReservationPageResponseFromJSON,
     MemberReservationPageResponseToJSON,
@@ -29,6 +34,8 @@ export interface GetMyReservationRequest {
 }
 
 export interface GetMyReservationsRequest {
+    displayGroup?: GetMyReservationsDisplayGroupEnum;
+    status?: GetMyReservationsStatusEnum;
     page?: number;
     size?: number;
 }
@@ -87,6 +94,14 @@ export class MemberReservationQueryControllerApi extends runtime.BaseAPI {
     async getMyReservationsRequestOpts(requestParameters: GetMyReservationsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
 
+        if (requestParameters['displayGroup'] != null) {
+            queryParameters['displayGroup'] = requestParameters['displayGroup'];
+        }
+
+        if (requestParameters['status'] != null) {
+            queryParameters['status'] = requestParameters['status'];
+        }
+
         if (requestParameters['page'] != null) {
             queryParameters['page'] = requestParameters['page'];
         }
@@ -125,3 +140,27 @@ export class MemberReservationQueryControllerApi extends runtime.BaseAPI {
     }
 
 }
+
+/**
+ * @export
+ */
+export const GetMyReservationsDisplayGroupEnum = {
+    Upcoming: 'UPCOMING',
+    Past: 'PAST'
+} as const;
+export type GetMyReservationsDisplayGroupEnum = typeof GetMyReservationsDisplayGroupEnum[keyof typeof GetMyReservationsDisplayGroupEnum];
+/**
+ * @export
+ */
+export const GetMyReservationsStatusEnum = {
+    PendingAdminApproval: 'pending_admin_approval',
+    PendingPayment: 'pending_payment',
+    PaymentExpired: 'payment_expired',
+    ApprovalExpired: 'approval_expired',
+    Confirmed: 'confirmed',
+    Completed: 'completed',
+    Rejected: 'rejected',
+    Cancelled: 'cancelled',
+    NoShow: 'no_show'
+} as const;
+export type GetMyReservationsStatusEnum = typeof GetMyReservationsStatusEnum[keyof typeof GetMyReservationsStatusEnum];

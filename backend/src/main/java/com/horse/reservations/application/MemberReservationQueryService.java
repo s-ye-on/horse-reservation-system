@@ -20,14 +20,12 @@ import com.horse.members.domain.Member;
 import com.horse.members.domain.exception.MemberException;
 import com.horse.members.infrastructure.MemberRepository;
 import com.horse.reservations.domain.Reservation;
+import com.horse.reservations.domain.ReservationDisplayGroup;
 import com.horse.reservations.domain.exception.ReservationException;
 import com.horse.reservations.infrastructure.ReservationRepository;
 
 @Service
 public class MemberReservationQueryService {
-
-	private static final int DEFAULT_PAGE = 0;
-	private static final int DEFAULT_SIZE = 20;
 
 	private final Clock clock;
 	private final MemberRepository memberRepository;
@@ -49,18 +47,19 @@ public class MemberReservationQueryService {
 	@Transactional(readOnly = true)
 	public MemberReservationPageResult getMyReservations(
 		String authSubject,
+		String displayGroup,
+		String status,
 		Integer page,
 		Integer size
 	) {
 		final Member member = findMember(authSubject);
 		final LocalDateTime now = LocalDateTime.now(clock);
-		final Page<Reservation> reservations = reservationRepository.findMemberReservationsForDisplay(
-			member.getId(),
-			now.toLocalDate(),
-			now.toLocalTime(),
-			PageRequest.of(
-				page == null ? DEFAULT_PAGE : page,
-				size == null ? DEFAULT_SIZE : size));
+		final MemberReservationQueryCriteria criteria = MemberReservationQueryCriteria.create(
+			displayGroup,
+			status,
+			page,
+			size);
+		final Page<Reservation> reservations = findReservations(member.getId(), now, criteria);
 		final Map<Long, Coupon> coupons = getCoupons(reservations.getContent());
 		return new MemberReservationPageResult(
 			reservations.getContent().stream()
@@ -71,6 +70,15 @@ public class MemberReservationQueryService {
 			reservations.getTotalElements(),
 			reservations.getTotalPages(),
 			reservations.hasNext());
+	}
+
+	@Transactional(readOnly = true)
+	public MemberReservationPageResult getMyReservations(
+		String authSubject,
+		Integer page,
+		Integer size
+	) {
+		return getMyReservations(authSubject, null, null, page, size);
 	}
 
 	@Transactional(readOnly = true)
@@ -86,6 +94,43 @@ public class MemberReservationQueryService {
 	private Member findMember(String authSubject) {
 		return memberRepository.findByAuthSubject(authSubject)
 			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));
+	}
+
+	private Page<Reservation> findReservations(
+		Long memberId,
+		LocalDateTime now,
+		MemberReservationQueryCriteria criteria
+	) {
+		final PageRequest pageRequest = PageRequest.of(criteria.page(), criteria.size());
+		if (criteria.displayGroup() == ReservationDisplayGroup.UPCOMING) {
+			return reservationRepository.findUpcomingMemberReservations(
+				memberId,
+				criteria.status(),
+				now.toLocalDate(),
+				now.toLocalTime(),
+				pageRequest);
+		}
+		if (criteria.displayGroup() == ReservationDisplayGroup.PAST) {
+			return reservationRepository.findPastMemberReservations(
+				memberId,
+				criteria.status(),
+				now.toLocalDate(),
+				now.toLocalTime(),
+				pageRequest);
+		}
+		if (criteria.status() != null) {
+			return reservationRepository.findMemberReservationsByStatusForDisplay(
+				memberId,
+				criteria.status(),
+				now.toLocalDate(),
+				now.toLocalTime(),
+				pageRequest);
+		}
+		return reservationRepository.findMemberReservationsForDisplay(
+			memberId,
+			now.toLocalDate(),
+			now.toLocalTime(),
+			pageRequest);
 	}
 
 	private Map<Long, Coupon> getCoupons(List<Reservation> reservations) {

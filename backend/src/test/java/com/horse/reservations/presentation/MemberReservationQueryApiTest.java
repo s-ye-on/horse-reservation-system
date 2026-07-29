@@ -165,6 +165,128 @@ class MemberReservationQueryApiTest {
 	}
 
 	@Test
+	void 회원은_표시_그룹을_수업_시작_경계로_필터링하고_필터된_Page를_조회한다() throws Exception {
+		final Long memberId = insertMember(MEMBER_SUBJECT);
+		final Long exactStartId = insertConfirmedReservation(
+			memberId, "2026-07-15", "10:00:00", "completed");
+		final Long recentPastId = insertNoShowReservation(memberId, "2026-07-15", "09:59:59");
+		final Long firstUpcomingId = insertConfirmedReservation(
+			memberId, "2026-07-15", "10:00:01", "confirmed");
+		final Long secondUpcomingId = insertConfirmedReservation(
+			memberId, "2026-07-16", "09:00:00", "confirmed");
+		final Long thirdUpcomingId = insertSinglePaymentReservation(
+			memberId, "2026-07-17", "09:00:00", "pending_payment");
+
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("displayGroup", "UPCOMING")
+				.param("page", "0")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].reservationId").value(firstUpcomingId))
+			.andExpect(jsonPath("$.content[0].displayGroup").value("UPCOMING"))
+			.andExpect(jsonPath("$.page").value(0))
+			.andExpect(jsonPath("$.size").value(1))
+			.andExpect(jsonPath("$.totalElements").value(3))
+			.andExpect(jsonPath("$.totalPages").value(3))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("displayGroup", "UPCOMING")
+				.param("page", "1")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].reservationId").value(secondUpcomingId))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("displayGroup", "UPCOMING")
+				.param("page", "2")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].reservationId").value(thirdUpcomingId))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("displayGroup", "UPCOMING")
+				.param("page", "3")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content").isEmpty())
+			.andExpect(jsonPath("$.totalElements").value(3))
+			.andExpect(jsonPath("$.totalPages").value(3))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("displayGroup", "PAST"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(2))
+			.andExpect(jsonPath("$.content[0].reservationId").value(exactStartId))
+			.andExpect(jsonPath("$.content[0].displayGroup").value("PAST"))
+			.andExpect(jsonPath("$.content[1].reservationId").value(recentPastId))
+			.andExpect(jsonPath("$.totalElements").value(2));
+	}
+
+	@Test
+	void 회원은_표시_그룹과_상태를_함께_필터링하고_상태만으로도_혼합_정렬을_유지한다() throws Exception {
+		final Long memberId = insertMember(MEMBER_SUBJECT);
+		final Long upcomingConfirmedId = insertConfirmedReservation(
+			memberId, "2026-07-16", "09:00:00", "confirmed");
+		insertConfirmedReservation(memberId, "2026-07-17", "09:00:00", "completed");
+		final Long pastConfirmedId = insertConfirmedReservation(
+			memberId, "2026-07-14", "09:00:00", "confirmed");
+
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("displayGroup", "UPCOMING")
+				.param("status", "confirmed"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.content[0].reservationId").value(upcomingConfirmedId))
+			.andExpect(jsonPath("$.totalElements").value(1))
+			.andExpect(jsonPath("$.totalPages").value(1));
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("displayGroup", "PAST")
+				.param("status", "confirmed"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.content[0].reservationId").value(pastConfirmedId))
+			.andExpect(jsonPath("$.content[0].displayGroup").value("PAST"))
+			.andExpect(jsonPath("$.totalElements").value(1));
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("status", "confirmed"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(2))
+			.andExpect(jsonPath("$.content[0].reservationId").value(upcomingConfirmedId))
+			.andExpect(jsonPath("$.content[1].reservationId").value(pastConfirmedId))
+			.andExpect(jsonPath("$.totalElements").value(2));
+	}
+
+	@Test
+	void 잘못된_표시_그룹과_상태는_공통_ErrorResponse로_거부한다() throws Exception {
+		insertMember(MEMBER_SUBJECT);
+
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("displayGroup", "FUTURE"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("RESERVATION_INVALID_QUERY_DISPLAY_GROUP"))
+			.andExpect(jsonPath("$.status").value(400))
+			.andExpect(jsonPath("$.fieldErrors").isArray())
+			.andExpect(jsonPath("$.details").isMap());
+		mockMvc.perform(get(ENDPOINT)
+				.with(memberJwt(MEMBER_SUBJECT))
+				.param("status", "waiting"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("RESERVATION_INVALID_QUERY_STATUS"))
+			.andExpect(jsonPath("$.status").value(400))
+			.andExpect(jsonPath("$.fieldErrors").isArray())
+			.andExpect(jsonPath("$.details").isMap());
+	}
+
+	@Test
 	void 회원과_회원으로_등록된_관리자는_본인_예약_상세만_조회한다() throws Exception {
 		final Long memberId = insertMember(MEMBER_SUBJECT);
 		final Long otherMemberId = insertMember("detail-other-member");

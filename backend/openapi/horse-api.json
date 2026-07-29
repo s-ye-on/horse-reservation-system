@@ -2910,6 +2910,37 @@
         "operationId": "getMyReservations",
         "parameters": [
           {
+            "name": "displayGroup",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "UPCOMING",
+                "PAST"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending_admin_approval",
+                "pending_payment",
+                "payment_expired",
+                "approval_expired",
+                "confirmed",
+                "completed",
+                "rejected",
+                "cancelled",
+                "no_show"
+              ]
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -2938,6 +2969,16 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/MemberReservationPageResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }

@@ -58,6 +58,12 @@ GET  /api/me/coupons
 GET  /api/me/coupon-usage-logs
 ```
 
+`GET /api/me/reservations`는 `page`, `size`와 선택적 `displayGroup`
+(`UPCOMING`, `PAST`), `status`(`ReservationStatus`의 외부 값) query parameter를
+받는다. 필터를 생략하면 예정 예약 오름차순 뒤에 지난 예약 내림차순을 제공하는 기존
+혼합 정렬을 유지한다. 필터를 지정하면 DB의 필터 결과를 기준으로 6필드 Page
+메타데이터를 계산한다. 정확히 수업 시작 시각부터 `PAST`다.
+
 예약 신청 응답은 `status`, `payment_source`, 선택된 쿠폰과 임시 점유 정보, `payment_due_at`을 포함한다.
 회원 신규 예약은 `lessonStartAt - 3시간`까지 허용하며, 겹치는 활성 예약은
 `RESERVATION_OVERLAPPING_ACTIVE_RESERVATION` 409로 반환한다.

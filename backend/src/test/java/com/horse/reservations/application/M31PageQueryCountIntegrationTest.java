@@ -57,6 +57,7 @@ class M31PageQueryCountIntegrationTest {
 
 		assertThat(statistics.getPrepareStatementCount())
 			.isEqualTo(EXPECTED_BATCHED_QUERY_COUNT);
+
 	}
 
 	@Test
@@ -70,6 +71,28 @@ class M31PageQueryCountIntegrationTest {
 
 		statistics.clear();
 		memberReservationQueryService.getMyReservations(authSubject, 0, 3);
+
+		assertThat(statistics.getPrepareStatementCount())
+			.isEqualTo(EXPECTED_BATCHED_QUERY_COUNT);
+
+		statistics.clear();
+		memberReservationQueryService.getMyReservations(
+			authSubject,
+			"UPCOMING",
+			"pending_admin_approval",
+			0,
+			3);
+
+		assertThat(statistics.getPrepareStatementCount())
+			.isEqualTo(EXPECTED_BATCHED_QUERY_COUNT);
+
+		statistics.clear();
+		memberReservationQueryService.getMyReservations(
+			authSubject,
+			null,
+			"pending_admin_approval",
+			0,
+			3);
 
 		assertThat(statistics.getPrepareStatementCount())
 			.isEqualTo(EXPECTED_BATCHED_QUERY_COUNT);

@@ -75,6 +75,116 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		Pageable pageable
 	);
 
+	@Query(
+		value = """
+			select reservation
+			from Reservation reservation
+			where reservation.memberId = :memberId
+			  and reservation.status = :status
+			order by
+				case when (
+					reservation.lessonDate > :today
+					or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+				) then 0 else 1 end,
+				case when (
+					reservation.lessonDate > :today
+					or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+				) then reservation.lessonDate end asc,
+				case when (
+					reservation.lessonDate > :today
+					or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+				) then reservation.startTime end asc,
+				case when (
+					reservation.lessonDate > :today
+					or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+				) then reservation.id end asc,
+				case when (
+					reservation.lessonDate < :today
+					or (reservation.lessonDate = :today and reservation.startTime <= :currentTime)
+				) then reservation.lessonDate end desc,
+				case when (
+					reservation.lessonDate < :today
+					or (reservation.lessonDate = :today and reservation.startTime <= :currentTime)
+				) then reservation.startTime end desc,
+				case when (
+					reservation.lessonDate < :today
+					or (reservation.lessonDate = :today and reservation.startTime <= :currentTime)
+				) then reservation.id end desc
+			""",
+		countQuery = """
+			select count(reservation)
+			from Reservation reservation
+			where reservation.memberId = :memberId
+			  and reservation.status = :status
+			""")
+	Page<Reservation> findMemberReservationsByStatusForDisplay(
+		@Param("memberId") Long memberId,
+		@Param("status") ReservationStatus status,
+		@Param("today") LocalDate today,
+		@Param("currentTime") LocalTime currentTime,
+		Pageable pageable
+	);
+
+	@Query(
+		value = """
+			select reservation
+			from Reservation reservation
+			where reservation.memberId = :memberId
+			  and (:status is null or reservation.status = :status)
+			  and (
+				reservation.lessonDate > :today
+				or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+			  )
+			order by reservation.lessonDate asc, reservation.startTime asc, reservation.id asc
+			""",
+		countQuery = """
+			select count(reservation)
+			from Reservation reservation
+			where reservation.memberId = :memberId
+			  and (:status is null or reservation.status = :status)
+			  and (
+				reservation.lessonDate > :today
+				or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+			  )
+			""")
+	Page<Reservation> findUpcomingMemberReservations(
+		@Param("memberId") Long memberId,
+		@Param("status") ReservationStatus status,
+		@Param("today") LocalDate today,
+		@Param("currentTime") LocalTime currentTime,
+		Pageable pageable
+	);
+
+	@Query(
+		value = """
+			select reservation
+			from Reservation reservation
+			where reservation.memberId = :memberId
+			  and (:status is null or reservation.status = :status)
+			  and (
+				reservation.lessonDate < :today
+				or (reservation.lessonDate = :today and reservation.startTime <= :currentTime)
+			  )
+			order by reservation.lessonDate desc, reservation.startTime desc, reservation.id desc
+			""",
+		countQuery = """
+			select count(reservation)
+			from Reservation reservation
+			where reservation.memberId = :memberId
+			  and (:status is null or reservation.status = :status)
+			  and (
+				reservation.lessonDate < :today
+				or (reservation.lessonDate = :today and reservation.startTime <= :currentTime)
+			  )
+			""")
+	Page<Reservation> findPastMemberReservations(
+		@Param("memberId") Long memberId,
+		@Param("status") ReservationStatus status,
+		@Param("today") LocalDate today,
+		@Param("currentTime") LocalTime currentTime,
+		Pageable pageable
+	);
+
 	@Query("""
 		select reservation.lessonDate as lessonDate,
 			reservation.startTime as startTime,

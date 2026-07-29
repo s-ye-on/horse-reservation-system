@@ -9,6 +9,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springdoc.core.annotations.ParameterObject;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import com.horse.reservations.application.MemberReservationPageResult;
 import com.horse.reservations.application.MemberReservationQueryService;
 import com.horse.reservations.application.MemberReservationResult;
@@ -29,12 +34,23 @@ public class MemberReservationQueryController {
 	}
 
 	@GetMapping
+	@ApiResponses({
+		@ApiResponse(responseCode = "200", description = "OK"),
+		@ApiResponse(
+			responseCode = "400",
+			description = "Invalid query parameter",
+			content = @Content(
+				mediaType = "application/json",
+				schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
+	})
 	public MemberReservationPageResponse getMyReservations(
 		@AuthenticationPrincipal(expression = "subject") String authSubject,
 		@Valid @ParameterObject @ModelAttribute MemberReservationQueryRequest request
 	) {
 		final MemberReservationPageResult result = service.getMyReservations(
 			authSubject,
+			request.displayGroup(),
+			request.status(),
 			request.page(),
 			request.size());
 		return MemberReservationPageResponse.from(result);

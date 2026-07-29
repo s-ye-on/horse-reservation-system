@@ -33,7 +33,8 @@ M31-R00~M31-R14를 완료해야 M31-06을 시작할 수 있다.
 
 | ID | 단일 작업 | 의존성 | 완료 신호 | 제외 범위 | 검증 명령 |
 |---|---|---|---|---|---|
-| M31-13 | 웹 Page 조회 UX | M31-11, M31-12 | 관리자·회원 목록 전체 페이지 탐색과 상태 UX 성공 | CSV 다운로드 | `mise run verify:m31-13` |
+| M31-13A | 회원 예약 Page 서버 필터 계약 | M31-11, M31-12 | 표시 그룹·상태 필터가 DB Page와 OpenAPI에 반영되고 기존 혼합 조회가 유지됨 | 웹 Page 탐색 UI·별도 count API | `mise run verify:m31-13a` |
+| M31-13 | 웹 Page 조회 UX | M31-13A | 관리자·회원 목록 전체 페이지 탐색과 상태 UX 성공 | CSV 다운로드 | `mise run verify:m31-13` |
 | M31-14 | 관리자 감사 CSV 다운로드 UI | M31-12 | 현재 필터·인증·파일명·중복 제출 E2E 성공 | Sheets 동기화 | `mise run verify:m31-14` |
 | M31-15 | 운영 JWT secret 강제 | M31-10 | secret 없는 운영 시작 실패와 demo 격리 성공 | 실제 로그인·키 회전 | `mise run verify:m31-15` |
 | M31-16 | OpenAPI·E2E·병렬 빌드 하네스 격리 | M31-12, M31-15 | 전용 포트·build 격리·중요 E2E의 `verify:all` 포함 성공 | CI 병렬 분산 | `mise run verify:m31-16` |

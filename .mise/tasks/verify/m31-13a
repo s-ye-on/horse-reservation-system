@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-13A member reservation server-side Page filters"
+# Task name: verify:m31-13a
+
+set -euo pipefail
+
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*MemberReservationQueryCriteriaTest' \
+  --tests '*MemberReservationQueryApiTest' \
+  --tests '*MemberReservationFilterRepositoryIntegrationTest' \
+  --tests '*M31PageQueryCountIntegrationTest' \
+  --tests '*M31PageOpenApiContractTest' \
+  --tests '*M31ApiTimeOpenApiContractTest' \
+  --tests '*ExceptionCodeTest'
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web typecheck
+pnpm --dir frontend/apps/mobile typecheck
