@@ -14,6 +14,11 @@
 
 import * as runtime from '../runtime';
 import {
+    type AdminMemberPageResponse,
+    AdminMemberPageResponseFromJSON,
+    AdminMemberPageResponseToJSON,
+} from '../models/AdminMemberPageResponse';
+import {
     type AdminMemberResponse,
     AdminMemberResponseFromJSON,
     AdminMemberResponseToJSON,
@@ -21,6 +26,11 @@ import {
 
 export interface GetMemberRequest {
     memberId: number;
+}
+
+export interface GetMembersRequest {
+    page?: number;
+    size?: number;
 }
 
 /**
@@ -74,8 +84,16 @@ export class AdminMemberQueryControllerApi extends runtime.BaseAPI {
     /**
      * Creates request options for getMembers without sending the request
      */
-    async getMembersRequestOpts(): Promise<runtime.RequestOpts> {
+    async getMembersRequestOpts(requestParameters: GetMembersRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['size'] != null) {
+            queryParameters['size'] = requestParameters['size'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -92,17 +110,17 @@ export class AdminMemberQueryControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async getMembersRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<AdminMemberResponse>>> {
-        const requestOptions = await this.getMembersRequestOpts();
+    async getMembersRaw(requestParameters: GetMembersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdminMemberPageResponse>> {
+        const requestOptions = await this.getMembersRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(AdminMemberResponseFromJSON));
+        return new runtime.JSONApiResponse(response, (jsonValue) => AdminMemberPageResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async getMembers(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<AdminMemberResponse>> {
-        const response = await this.getMembersRaw(initOverrides);
+    async getMembers(requestParameters: GetMembersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdminMemberPageResponse> {
+        const response = await this.getMembersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

@@ -15,5 +15,5 @@ export function isMyReservationsUnauthorized(error: unknown) {
 const queryApi = new MemberReservationQueryControllerApi()
 
 export const myReservationsApi: MyReservationsApi = {
-  getMyReservations: () => queryApi.getMyReservations(),
+  getMyReservations: async () => (await queryApi.getMyReservations()).content ?? [],
 }

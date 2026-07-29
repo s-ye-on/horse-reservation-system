@@ -39,6 +39,7 @@ export interface GetReservationsRequest {
     lessonDateTo?: Date;
     classType?: string;
     keyword?: string;
+    sort?: string;
     page?: number;
     size?: number;
 }
@@ -120,6 +121,10 @@ export class AdminReservationQueryControllerApi extends runtime.BaseAPI {
 
         if (requestParameters['keyword'] != null) {
             queryParameters['keyword'] = requestParameters['keyword'];
+        }
+
+        if (requestParameters['sort'] != null) {
+            queryParameters['sort'] = requestParameters['sort'];
         }
 
         if (requestParameters['page'] != null) {

@@ -14,6 +14,7 @@ public record AdminReservationQueryCriteria(
 	LocalDate lessonDateTo,
 	RidingClass ridingClass,
 	String keyword,
+	AdminReservationSort sort,
 	int page,
 	int size
 ) {
@@ -28,6 +29,7 @@ public record AdminReservationQueryCriteria(
 		LocalDate lessonDateTo,
 		String classType,
 		String keyword,
+		String sort,
 		Integer page,
 		Integer size,
 		LocalDate today
@@ -52,6 +54,7 @@ public record AdminReservationQueryCriteria(
 			lessonDateTo,
 			parseRidingClass(classType),
 			normalizeKeyword(keyword),
+			AdminReservationSort.from(sort),
 			effectivePage,
 			effectiveSize);
 	}

@@ -7,6 +7,7 @@ public record AdminReservationAuditPageResult(
 	int page,
 	int size,
 	long totalElements,
-	int totalPages
+	int totalPages,
+	boolean hasNext
 ) {
 }

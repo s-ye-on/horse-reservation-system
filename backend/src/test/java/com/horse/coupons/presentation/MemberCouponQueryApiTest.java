@@ -40,15 +40,20 @@ class MemberCouponQueryApiTest {
 
 		mockMvc.perform(get("/api/me/coupons").with(jwt().jwt(token -> token.subject("coupon-query-member"))))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(1))
-			.andExpect(jsonPath("$[0].couponId").value(couponId))
-			.andExpect(jsonPath("$[0].type").value("general"))
-			.andExpect(jsonPath("$[0].totalCount").value(10))
-			.andExpect(jsonPath("$[0].remainingCount").value(8))
-			.andExpect(jsonPath("$[0].heldCount").value(2))
-			.andExpect(jsonPath("$[0].availableCount").value(6))
-			.andExpect(jsonPath("$[0].freeChangeUsed").value(false))
-			.andExpect(jsonPath("$[0].status").value("active"));
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.page").value(0))
+			.andExpect(jsonPath("$.size").value(20))
+			.andExpect(jsonPath("$.totalElements").value(1))
+			.andExpect(jsonPath("$.totalPages").value(1))
+			.andExpect(jsonPath("$.hasNext").value(false))
+			.andExpect(jsonPath("$.content[0].couponId").value(couponId))
+			.andExpect(jsonPath("$.content[0].type").value("general"))
+			.andExpect(jsonPath("$.content[0].totalCount").value(10))
+			.andExpect(jsonPath("$.content[0].remainingCount").value(8))
+			.andExpect(jsonPath("$.content[0].heldCount").value(2))
+			.andExpect(jsonPath("$.content[0].availableCount").value(6))
+			.andExpect(jsonPath("$.content[0].freeChangeUsed").value(false))
+			.andExpect(jsonPath("$.content[0].status").value("active"));
 	}
 
 	@Test
@@ -64,14 +69,112 @@ class MemberCouponQueryApiTest {
 		mockMvc.perform(get("/api/me/coupon-usage-logs")
 				.with(jwt().jwt(token -> token.subject("usage-query-member"))))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(1))
-			.andExpect(jsonPath("$[0].couponId").value(couponId))
-			.andExpect(jsonPath("$[0].reservationId").value(reservationId))
-			.andExpect(jsonPath("$[0].action").value("held"))
-			.andExpect(jsonPath("$[0].countDelta").value(1))
-			.andExpect(jsonPath("$[0].occurredAt").value("2026-07-14T10:00:00"))
-			.andExpect(jsonPath("$[0].actorType").value("member"))
-			.andExpect(jsonPath("$[0].memo").doesNotExist());
+			.andExpect(jsonPath("$.content.length()").value(1))
+			.andExpect(jsonPath("$.page").value(0))
+			.andExpect(jsonPath("$.size").value(20))
+			.andExpect(jsonPath("$.totalElements").value(1))
+			.andExpect(jsonPath("$.totalPages").value(1))
+			.andExpect(jsonPath("$.hasNext").value(false))
+			.andExpect(jsonPath("$.content[0].couponId").value(couponId))
+			.andExpect(jsonPath("$.content[0].reservationId").value(reservationId))
+			.andExpect(jsonPath("$.content[0].action").value("held"))
+			.andExpect(jsonPath("$.content[0].countDelta").value(1))
+			.andExpect(jsonPath("$.content[0].occurredAt").value("2026-07-14T10:00:00"))
+			.andExpect(jsonPath("$.content[0].actorType").value("member"))
+			.andExpect(jsonPath("$.content[0].memo").doesNotExist());
+	}
+
+	@Test
+	void 쿠폰과_사용_내역은_첫_중간_마지막과_빈_페이지를_안정적으로_조회한다() throws Exception {
+		final String subject = "coupon-page-member";
+		final Long memberId = insertMember(subject);
+		final Long firstCouponId = insertCoupon(memberId, "general", 10, 0);
+		final Long secondCouponId = insertCoupon(memberId, "dressage", 10, 0);
+		final Long thirdCouponId = insertCoupon(memberId, "jumping", 10, 0);
+		final Long reservationId = insertReservation(memberId, firstCouponId);
+		final Long firstUsageId = insertUsageLog(
+			firstCouponId, reservationId, memberId, "held", 1, "member", null);
+		final Long secondUsageId = insertUsageLog(
+			firstCouponId, reservationId, memberId, "released", -1, "member", null);
+		final Long thirdUsageId = insertUsageLog(
+			firstCouponId, reservationId, memberId, "held", 1, "member", null);
+
+		mockMvc.perform(get("/api/me/coupons")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "0")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].couponId").value(thirdCouponId))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get("/api/me/coupons")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "1")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].couponId").value(secondCouponId))
+			.andExpect(jsonPath("$.totalElements").value(3))
+			.andExpect(jsonPath("$.totalPages").value(3))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get("/api/me/coupons")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "2")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].couponId").value(firstCouponId))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get("/api/me/coupons")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "3")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content").isEmpty());
+
+		mockMvc.perform(get("/api/me/coupon-usage-logs")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "0")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].usageLogId").value(thirdUsageId))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get("/api/me/coupon-usage-logs")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "1")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].usageLogId").value(secondUsageId))
+			.andExpect(jsonPath("$.totalElements").value(3))
+			.andExpect(jsonPath("$.totalPages").value(3))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get("/api/me/coupon-usage-logs")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "2")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].usageLogId").value(firstUsageId))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get("/api/me/coupon-usage-logs")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "3")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content").isEmpty());
+	}
+
+	@Test
+	void 잘못된_쿠폰_페이지는_공통_오류로_거부한다() throws Exception {
+		final String subject = "coupon-invalid-page-member";
+		insertMember(subject);
+
+		mockMvc.perform(get("/api/me/coupons")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("page", "-1"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("COMMON_INVALID_REQUEST"));
+		mockMvc.perform(get("/api/me/coupon-usage-logs")
+				.with(jwt().jwt(token -> token.subject(subject)))
+				.param("size", "101"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("COMMON_INVALID_REQUEST"));
 	}
 
 	@Test
@@ -129,7 +232,7 @@ class MemberCouponQueryApiTest {
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
-	private void insertUsageLog(
+	private Long insertUsageLog(
 		Long couponId,
 		Long reservationId,
 		Long memberId,
@@ -143,6 +246,7 @@ class MemberCouponQueryApiTest {
 				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
 			) VALUES (?, ?, ?, ?, ?, '2026-07-14 10:00:00', ?, ?)
 			""", couponId, reservationId, memberId, action, countDelta, actorType, memo);
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
 	private List<String> snapshots(Long memberId) {

@@ -71,6 +71,8 @@ class AdminReservationQueryApiTest {
 			.andExpect(jsonPath("$.page").value(0))
 			.andExpect(jsonPath("$.size").value(20))
 			.andExpect(jsonPath("$.totalElements").value(2))
+			.andExpect(jsonPath("$.totalPages").value(1))
+			.andExpect(jsonPath("$.hasNext").value(false))
 			.andExpect(jsonPath("$.content[0].reservationId").value(firstId))
 			.andExpect(jsonPath("$.content[1].reservationId").value(secondId));
 	}
@@ -118,13 +120,22 @@ class AdminReservationQueryApiTest {
 	}
 
 	@Test
-	void 페이지_크기와_고정_정렬을_적용한다() throws Exception {
+	void 첫_중간_마지막과_빈_페이지에_고정_정렬을_적용한다() throws Exception {
 		final Long memberId = insertMember("page-query-member", "페이지 회원", "010-1234-5678");
-		insertSinglePaymentReservation(memberId, "2026-07-16", "09:00:00", "pending_payment");
+		final Long firstId = insertSinglePaymentReservation(
+			memberId, "2026-07-16", "09:00:00", "pending_payment");
 		final Long secondId = insertSinglePaymentReservation(
 			memberId, "2026-07-16", "10:00:00", "pending_payment");
-		insertSinglePaymentReservation(memberId, "2026-07-17", "09:00:00", "pending_payment");
+		final Long thirdId = insertSinglePaymentReservation(
+			memberId, "2026-07-17", "09:00:00", "pending_payment");
 
+		mockMvc.perform(get(ENDPOINT)
+				.with(adminJwt())
+				.param("page", "0")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].reservationId").value(firstId))
+			.andExpect(jsonPath("$.hasNext").value(true));
 		mockMvc.perform(get(ENDPOINT)
 				.with(adminJwt())
 				.param("page", "1")
@@ -134,7 +145,42 @@ class AdminReservationQueryApiTest {
 			.andExpect(jsonPath("$.size").value(1))
 			.andExpect(jsonPath("$.totalElements").value(3))
 			.andExpect(jsonPath("$.totalPages").value(3))
+			.andExpect(jsonPath("$.hasNext").value(true))
 			.andExpect(jsonPath("$.content[0].reservationId").value(secondId));
+		mockMvc.perform(get(ENDPOINT)
+				.with(adminJwt())
+				.param("page", "2")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].reservationId").value(thirdId))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get(ENDPOINT)
+				.with(adminJwt())
+				.param("page", "3")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content").isEmpty())
+			.andExpect(jsonPath("$.hasNext").value(false));
+	}
+
+	@Test
+	void 생성순_정렬은_생성시각과_예약_ID_역순으로_결정적이다() throws Exception {
+		final Long memberId = insertMember("sort-query-member", "정렬 회원", "010-3434-5656");
+		final Long olderId = insertSinglePaymentReservation(
+			memberId, "2026-07-20", "09:00:00", "pending_payment");
+		final Long sameTimeFirstId = insertSinglePaymentReservation(
+			memberId, "2026-07-18", "09:00:00", "pending_payment");
+		final Long sameTimeSecondId = insertSinglePaymentReservation(
+			memberId, "2026-07-17", "09:00:00", "pending_payment");
+		updateCreatedAt(olderId, "2026-07-15 09:00:00");
+		updateCreatedAt(sameTimeFirstId, "2026-07-16 09:00:00");
+		updateCreatedAt(sameTimeSecondId, "2026-07-16 09:00:00");
+
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("sort", "createdAt,desc"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].reservationId").value(sameTimeSecondId))
+			.andExpect(jsonPath("$.content[1].reservationId").value(sameTimeFirstId))
+			.andExpect(jsonPath("$.content[2].reservationId").value(olderId));
 	}
 
 	@Test
@@ -243,7 +289,11 @@ class AdminReservationQueryApiTest {
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("RESERVATION_INVALID_QUERY_DATE_RANGE"));
 		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("size", "101"))
-			.andExpect(status().isBadRequest());
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("COMMON_INVALID_REQUEST"));
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("sort", "memberName,asc"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("RESERVATION_INVALID_QUERY_SORT"));
 		mockMvc.perform(get(ENDPOINT + "/999999").with(adminJwt()))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("RESERVATION_NOT_FOUND"));
@@ -330,6 +380,14 @@ class AdminReservationQueryApiTest {
 				'2026-07-15 09:00:00', '2026-07-15 08:00:00', '2026-07-15 09:00:00')
 			""", memberId, lessonDate, startTime);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
+	private void updateCreatedAt(Long reservationId, String createdAt) {
+		jdbcTemplate.update(
+			"UPDATE reservations SET created_at = ?, updated_at = ? WHERE id = ?",
+			createdAt,
+			createdAt,
+			reservationId);
 	}
 
 	private RequestPostProcessor adminJwt() {

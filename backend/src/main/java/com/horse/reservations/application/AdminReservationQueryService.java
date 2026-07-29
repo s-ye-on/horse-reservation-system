@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +57,7 @@ public class AdminReservationQueryService {
 		LocalDate lessonDateTo,
 		String classType,
 		String keyword,
+		String sort,
 		Integer page,
 		Integer size
 	) {
@@ -65,6 +67,7 @@ public class AdminReservationQueryService {
 			lessonDateTo,
 			classType,
 			keyword,
+			sort,
 			page,
 			size,
 			LocalDate.now(clock));
@@ -74,7 +77,7 @@ public class AdminReservationQueryService {
 			criteria.lessonDateTo(),
 			criteria.ridingClass(),
 			criteria.keyword(),
-			PageRequest.of(criteria.page(), criteria.size()));
+			PageRequest.of(criteria.page(), criteria.size(), toSort(criteria.sort())));
 		final Map<Long, Member> members = getMembers(reservations);
 		final Map<Long, Coupon> coupons = getCoupons(reservations);
 		final LocalDateTime now = LocalDateTime.now(clock);
@@ -85,7 +88,18 @@ public class AdminReservationQueryService {
 			reservations.getNumber(),
 			reservations.getSize(),
 			reservations.getTotalElements(),
-			reservations.getTotalPages());
+			reservations.getTotalPages(),
+			reservations.hasNext());
+	}
+
+	private Sort toSort(AdminReservationSort sort) {
+		if (sort == AdminReservationSort.CREATED_AT_DESC) {
+			return Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
+		}
+		return Sort.by(
+			Sort.Order.asc("lessonDate"),
+			Sort.Order.asc("startTime"),
+			Sort.Order.asc("id"));
 	}
 
 	@Transactional(readOnly = true)

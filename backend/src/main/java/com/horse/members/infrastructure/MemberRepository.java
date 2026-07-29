@@ -1,6 +1,5 @@
 package com.horse.members.infrastructure;
 
-import java.util.List;
 import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
@@ -13,8 +12,6 @@ import org.springframework.data.repository.query.Param;
 import com.horse.members.domain.Member;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
-
-	List<Member> findAllByOrderByIdAsc();
 
 	Optional<Member> findByAuthSubject(String authSubject);
 

@@ -2,8 +2,8 @@ package com.horse.reservations.application;
 
 import java.util.List;
 
-public record AdminReservationPageResult(
-	List<AdminReservationResult> content,
+public record MemberReservationPageResult(
+	List<MemberReservationResult> content,
 	int page,
 	int size,
 	long totalElements,

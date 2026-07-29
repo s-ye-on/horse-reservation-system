@@ -26,14 +26,53 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
 	boolean existsByLessonDateAndStartTime(LocalDate lessonDate, LocalTime startTime);
 
-	List<Reservation> findAllByMemberIdAndLessonDateGreaterThanEqualOrderByLessonDateAscStartTimeAscIdAsc(
-		Long memberId,
-		LocalDate lessonDate
-	);
+	Optional<Reservation> findByIdAndMemberId(Long id, Long memberId);
 
-	List<Reservation> findAllByMemberIdAndLessonDateLessThanOrderByLessonDateDescStartTimeDescIdDesc(
-		Long memberId,
-		LocalDate lessonDate
+	@Query(
+		value = """
+			select reservation
+			from Reservation reservation
+			where reservation.memberId = :memberId
+			order by
+				case when (
+					reservation.lessonDate > :today
+					or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+				) then 0 else 1 end,
+				case when (
+					reservation.lessonDate > :today
+					or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+				) then reservation.lessonDate end asc,
+				case when (
+					reservation.lessonDate > :today
+					or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+				) then reservation.startTime end asc,
+				case when (
+					reservation.lessonDate > :today
+					or (reservation.lessonDate = :today and reservation.startTime > :currentTime)
+				) then reservation.id end asc,
+				case when (
+					reservation.lessonDate < :today
+					or (reservation.lessonDate = :today and reservation.startTime <= :currentTime)
+				) then reservation.lessonDate end desc,
+				case when (
+					reservation.lessonDate < :today
+					or (reservation.lessonDate = :today and reservation.startTime <= :currentTime)
+				) then reservation.startTime end desc,
+				case when (
+					reservation.lessonDate < :today
+					or (reservation.lessonDate = :today and reservation.startTime <= :currentTime)
+				) then reservation.id end desc
+			""",
+		countQuery = """
+			select count(reservation)
+			from Reservation reservation
+			where reservation.memberId = :memberId
+			""")
+	Page<Reservation> findMemberReservationsForDisplay(
+		@Param("memberId") Long memberId,
+		@Param("today") LocalDate today,
+		@Param("currentTime") LocalTime currentTime,
+		Pageable pageable
 	);
 
 	@Query("""
@@ -60,7 +99,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 				or member.name like concat('%', :keyword, '%')
 				or member.phone like concat('%', :keyword, '%')
 			  )
-			order by reservation.lessonDate, reservation.startTime, reservation.id
 			""",
 		countQuery = """
 			select count(reservation)

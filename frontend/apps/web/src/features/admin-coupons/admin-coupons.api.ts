@@ -27,7 +27,7 @@ const memberApi = new AdminMemberQueryControllerApi()
 const couponApi = new AdminCouponRegistrationControllerApi()
 
 export const adminCouponsApi: AdminCouponsApi = {
-  getMembers: () => memberApi.getMembers(),
+  getMembers: async () => (await memberApi.getMembers()).content ?? [],
   registerCoupon: (memberId, type) => couponApi.register({
     memberId,
     couponRegistrationRequest: { type, totalCount: 10 },

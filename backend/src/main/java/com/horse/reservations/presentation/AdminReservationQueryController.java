@@ -56,6 +56,7 @@ public class AdminReservationQueryController {
 			request.lessonDateTo(),
 			request.classType(),
 			request.keyword(),
+			request.sort(),
 			request.page(),
 			request.size());
 		return AdminReservationPageResponse.from(result);

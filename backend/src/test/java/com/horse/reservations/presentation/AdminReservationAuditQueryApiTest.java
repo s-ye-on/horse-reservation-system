@@ -98,6 +98,8 @@ class AdminReservationAuditQueryApiTest {
 			.andExpect(jsonPath("$.page").value(0))
 			.andExpect(jsonPath("$.size").value(20))
 			.andExpect(jsonPath("$.totalElements").value(3))
+			.andExpect(jsonPath("$.totalPages").value(1))
+			.andExpect(jsonPath("$.hasNext").value(false))
 			.andExpect(jsonPath("$.content[0].auditLogId").value(newerSecondId))
 			.andExpect(jsonPath("$.content[1].auditLogId").value(newerFirstId))
 			.andExpect(jsonPath("$.content[2].auditLogId").value(olderId));
@@ -166,13 +168,20 @@ class AdminReservationAuditQueryApiTest {
 	}
 
 	@Test
-	void 페이지_크기와_전체_건수를_반환한다() throws Exception {
+	void 첫_중간_마지막과_빈_페이지의_전체_건수를_반환한다() throws Exception {
 		final Long memberId = insertMember("audit-page-member", "페이지 회원", "010-4444-5555");
 		final Long reservationId = insertReservation(memberId);
-		insertScheduleChangeAudit(reservationId, "2026-07-15 09:00:00");
-		final Long expectedId = insertScheduleChangeAudit(reservationId, "2026-07-16 09:00:00");
-		insertScheduleChangeAudit(reservationId, "2026-07-17 09:00:00");
+		final Long oldestId = insertScheduleChangeAudit(reservationId, "2026-07-15 09:00:00");
+		final Long middleId = insertScheduleChangeAudit(reservationId, "2026-07-16 09:00:00");
+		final Long newestId = insertScheduleChangeAudit(reservationId, "2026-07-17 09:00:00");
 
+		mockMvc.perform(get(ENDPOINT)
+				.with(adminJwt())
+				.param("page", "0")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].auditLogId").value(newestId))
+			.andExpect(jsonPath("$.hasNext").value(true));
 		mockMvc.perform(get(ENDPOINT)
 				.with(adminJwt())
 				.param("page", "1")
@@ -182,7 +191,22 @@ class AdminReservationAuditQueryApiTest {
 			.andExpect(jsonPath("$.size").value(1))
 			.andExpect(jsonPath("$.totalElements").value(3))
 			.andExpect(jsonPath("$.totalPages").value(3))
-			.andExpect(jsonPath("$.content[0].auditLogId").value(expectedId));
+			.andExpect(jsonPath("$.hasNext").value(true))
+			.andExpect(jsonPath("$.content[0].auditLogId").value(middleId));
+		mockMvc.perform(get(ENDPOINT)
+				.with(adminJwt())
+				.param("page", "2")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].auditLogId").value(oldestId))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get(ENDPOINT)
+				.with(adminJwt())
+				.param("page", "3")
+				.param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content").isEmpty())
+			.andExpect(jsonPath("$.hasNext").value(false));
 	}
 
 	@Test

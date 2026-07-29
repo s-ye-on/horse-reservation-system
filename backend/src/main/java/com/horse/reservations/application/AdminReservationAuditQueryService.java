@@ -52,6 +52,7 @@ public class AdminReservationAuditQueryService {
 			auditLogs.getNumber(),
 			auditLogs.getSize(),
 			auditLogs.getTotalElements(),
-			auditLogs.getTotalPages());
+			auditLogs.getTotalPages(),
+			auditLogs.hasNext());
 	}
 }

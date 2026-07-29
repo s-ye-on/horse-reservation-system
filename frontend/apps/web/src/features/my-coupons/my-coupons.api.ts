@@ -22,7 +22,10 @@ const queryApi = new MemberCouponQueryControllerApi()
 
 export const myCouponsApi: MyCouponsApi = {
   getOverview: async () => {
-    const [coupons, usageLogs] = await Promise.all([queryApi.getCoupons(), queryApi.getUsageLogs()])
-    return { coupons, usageLogs }
+    const [couponPage, usageLogPage] = await Promise.all([queryApi.getCoupons(), queryApi.getUsageLogs()])
+    return {
+      coupons: couponPage.content ?? [],
+      usageLogs: usageLogPage.content ?? [],
+    }
   },
 }

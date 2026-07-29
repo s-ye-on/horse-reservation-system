@@ -31,7 +31,7 @@ const timeSlotsApi = new MemberAvailableTimeSlotsControllerApi()
 const reservationChangeClient = new MemberReservationChangeControllerApi()
 
 export const reservationChangeApi: ReservationChangeApi = {
-  getMyReservations: () => reservationQueryApi.getMyReservations(),
+  getMyReservations: async () => (await reservationQueryApi.getMyReservations()).content ?? [],
   getAvailableTimeSlots: (date, classType) => timeSlotsApi.getAvailableTimeSlots({ date, classType }),
   previewChange: (reservationId, targetTimeSlotId) => reservationChangeClient.previewReservationChange({ reservationId, targetTimeSlotId }),
   changeReservation: (reservationId, targetTimeSlotId, reason) => reservationChangeClient.change({

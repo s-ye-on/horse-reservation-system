@@ -14,10 +14,24 @@
 
 import * as runtime from '../runtime';
 import {
+    type MemberReservationPageResponse,
+    MemberReservationPageResponseFromJSON,
+    MemberReservationPageResponseToJSON,
+} from '../models/MemberReservationPageResponse';
+import {
     type MemberReservationResponse,
     MemberReservationResponseFromJSON,
     MemberReservationResponseToJSON,
 } from '../models/MemberReservationResponse';
+
+export interface GetMyReservationRequest {
+    reservationId: number;
+}
+
+export interface GetMyReservationsRequest {
+    page?: number;
+    size?: number;
+}
 
 /**
  *
@@ -25,10 +39,61 @@ import {
 export class MemberReservationQueryControllerApi extends runtime.BaseAPI {
 
     /**
+     * Creates request options for getMyReservation without sending the request
+     */
+    async getMyReservationRequestOpts(requestParameters: GetMyReservationRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['reservationId'] == null) {
+            throw new runtime.RequiredError(
+                'reservationId',
+                'Required parameter "reservationId" was null or undefined when calling getMyReservation().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+
+        let urlPath = `/api/me/reservations/{reservationId}`;
+        urlPath = urlPath.replace('{reservationId}', encodeURIComponent(String(requestParameters['reservationId'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async getMyReservationRaw(requestParameters: GetMyReservationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MemberReservationResponse>> {
+        const requestOptions = await this.getMyReservationRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => MemberReservationResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getMyReservation(requestParameters: GetMyReservationRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MemberReservationResponse> {
+        const response = await this.getMyReservationRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
      * Creates request options for getMyReservations without sending the request
      */
-    async getMyReservationsRequestOpts(): Promise<runtime.RequestOpts> {
+    async getMyReservationsRequestOpts(requestParameters: GetMyReservationsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['size'] != null) {
+            queryParameters['size'] = requestParameters['size'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -45,17 +110,17 @@ export class MemberReservationQueryControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async getMyReservationsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<MemberReservationResponse>>> {
-        const requestOptions = await this.getMyReservationsRequestOpts();
+    async getMyReservationsRaw(requestParameters: GetMyReservationsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MemberReservationPageResponse>> {
+        const requestOptions = await this.getMyReservationsRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(MemberReservationResponseFromJSON));
+        return new runtime.JSONApiResponse(response, (jsonValue) => MemberReservationPageResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async getMyReservations(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<MemberReservationResponse>> {
-        const response = await this.getMyReservationsRaw(initOverrides);
+    async getMyReservations(requestParameters: GetMyReservationsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MemberReservationPageResponse> {
+        const response = await this.getMyReservationsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

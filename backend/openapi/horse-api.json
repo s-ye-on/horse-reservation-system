@@ -1717,6 +1717,14 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "required": false,
@@ -2900,16 +2908,67 @@
           "member-reservation-query-controller"
         ],
         "operationId": "getMyReservations",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MemberReservationResponse"
-                  }
+                  "$ref": "#/components/schemas/MemberReservationPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/reservations/{reservationId}": {
+      "get": {
+        "tags": [
+          "member-reservation-query-controller"
+        ],
+        "operationId": "getMyReservation",
+        "parameters": [
+          {
+            "name": "reservationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberReservationResponse"
                 }
               }
             }
@@ -3014,16 +3073,36 @@
           "member-coupon-query-controller"
         ],
         "operationId": "getCoupons",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MemberCouponResponse"
-                  }
+                  "$ref": "#/components/schemas/MemberCouponPageResponse"
                 }
               }
             }
@@ -3037,16 +3116,36 @@
           "member-coupon-query-controller"
         ],
         "operationId": "getUsageLogs",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MemberCouponUsageResponse"
-                  }
+                  "$ref": "#/components/schemas/MemberCouponUsagePageResponse"
                 }
               }
             }
@@ -3652,16 +3751,36 @@
           "admin-member-query-controller"
         ],
         "operationId": "getMembers",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AdminMemberResponse"
-                  }
+                  "$ref": "#/components/schemas/AdminMemberPageResponse"
                 }
               }
             }
@@ -5573,6 +5692,36 @@
           }
         }
       },
+      "MemberReservationPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberReservationResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
       "MemberReservationResponse": {
         "type": "object",
         "properties": {
@@ -5750,6 +5899,36 @@
           }
         }
       },
+      "MemberCouponPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberCouponResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
       "MemberCouponResponse": {
         "type": "object",
         "properties": {
@@ -5789,6 +5968,36 @@
           },
           "status": {
             "type": "string"
+          }
+        }
+      },
+      "MemberCouponUsagePageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberCouponUsageResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
           }
         }
       },
@@ -5918,6 +6127,9 @@
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
           }
         }
       },
@@ -6114,6 +6326,36 @@
           }
         }
       },
+      "AdminMemberPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminMemberResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        }
+      },
       "AdminReservationAuditPageResponse": {
         "type": "object",
         "properties": {
@@ -6138,6 +6380,9 @@
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
           }
         }
       },

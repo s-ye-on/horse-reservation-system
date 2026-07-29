@@ -132,6 +132,7 @@ GET /api/admin/audit-logs
     size
     totalElements
     totalPages
+    hasNext
 ```
 
 기간을 생략하면 전체 예약 변경 이력을 조회하고 `occurredAt DESC`, `auditLogId DESC`로 정렬한다. `keyword`는 회원 이름과 전화번호를 통합 검색한다. 조회는 `ReservationChangeLog`를 수정하거나 현재 예약 상태에서 과거 이력을 합성하지 않으며 `ROLE_ADMIN`만 접근한다. 쿠폰 사용 원장은 M3-09에서 별도 다운로드 계약으로 제공한다.

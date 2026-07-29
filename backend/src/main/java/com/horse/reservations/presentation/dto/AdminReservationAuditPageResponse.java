@@ -9,7 +9,8 @@ public record AdminReservationAuditPageResponse(
 	int page,
 	int size,
 	long totalElements,
-	int totalPages
+	int totalPages,
+	boolean hasNext
 ) {
 
 	public static AdminReservationAuditPageResponse from(AdminReservationAuditPageResult result) {
@@ -18,6 +19,7 @@ public record AdminReservationAuditPageResponse(
 			result.page(),
 			result.size(),
 			result.totalElements(),
-			result.totalPages());
+			result.totalPages(),
+			result.hasNext());
 	}
 }

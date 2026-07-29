@@ -14,15 +14,25 @@
 
 import * as runtime from '../runtime';
 import {
-    type MemberCouponResponse,
-    MemberCouponResponseFromJSON,
-    MemberCouponResponseToJSON,
-} from '../models/MemberCouponResponse';
+    type MemberCouponPageResponse,
+    MemberCouponPageResponseFromJSON,
+    MemberCouponPageResponseToJSON,
+} from '../models/MemberCouponPageResponse';
 import {
-    type MemberCouponUsageResponse,
-    MemberCouponUsageResponseFromJSON,
-    MemberCouponUsageResponseToJSON,
-} from '../models/MemberCouponUsageResponse';
+    type MemberCouponUsagePageResponse,
+    MemberCouponUsagePageResponseFromJSON,
+    MemberCouponUsagePageResponseToJSON,
+} from '../models/MemberCouponUsagePageResponse';
+
+export interface GetCouponsRequest {
+    page?: number;
+    size?: number;
+}
+
+export interface GetUsageLogsRequest {
+    page?: number;
+    size?: number;
+}
 
 /**
  *
@@ -32,8 +42,16 @@ export class MemberCouponQueryControllerApi extends runtime.BaseAPI {
     /**
      * Creates request options for getCoupons without sending the request
      */
-    async getCouponsRequestOpts(): Promise<runtime.RequestOpts> {
+    async getCouponsRequestOpts(requestParameters: GetCouponsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['size'] != null) {
+            queryParameters['size'] = requestParameters['size'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -50,25 +68,33 @@ export class MemberCouponQueryControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async getCouponsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<MemberCouponResponse>>> {
-        const requestOptions = await this.getCouponsRequestOpts();
+    async getCouponsRaw(requestParameters: GetCouponsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MemberCouponPageResponse>> {
+        const requestOptions = await this.getCouponsRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(MemberCouponResponseFromJSON));
+        return new runtime.JSONApiResponse(response, (jsonValue) => MemberCouponPageResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async getCoupons(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<MemberCouponResponse>> {
-        const response = await this.getCouponsRaw(initOverrides);
+    async getCoupons(requestParameters: GetCouponsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MemberCouponPageResponse> {
+        const response = await this.getCouponsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
     /**
      * Creates request options for getUsageLogs without sending the request
      */
-    async getUsageLogsRequestOpts(): Promise<runtime.RequestOpts> {
+    async getUsageLogsRequestOpts(requestParameters: GetUsageLogsRequest): Promise<runtime.RequestOpts> {
         const queryParameters: any = {};
+
+        if (requestParameters['page'] != null) {
+            queryParameters['page'] = requestParameters['page'];
+        }
+
+        if (requestParameters['size'] != null) {
+            queryParameters['size'] = requestParameters['size'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 
@@ -85,17 +111,17 @@ export class MemberCouponQueryControllerApi extends runtime.BaseAPI {
 
     /**
      */
-    async getUsageLogsRaw(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<Array<MemberCouponUsageResponse>>> {
-        const requestOptions = await this.getUsageLogsRequestOpts();
+    async getUsageLogsRaw(requestParameters: GetUsageLogsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<MemberCouponUsagePageResponse>> {
+        const requestOptions = await this.getUsageLogsRequestOpts(requestParameters);
         const response = await this.request(requestOptions, initOverrides);
 
-        return new runtime.JSONApiResponse(response, (jsonValue) => jsonValue.map(MemberCouponUsageResponseFromJSON));
+        return new runtime.JSONApiResponse(response, (jsonValue) => MemberCouponUsagePageResponseFromJSON(jsonValue));
     }
 
     /**
      */
-    async getUsageLogs(initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<Array<MemberCouponUsageResponse>> {
-        const response = await this.getUsageLogsRaw(initOverrides);
+    async getUsageLogs(requestParameters: GetUsageLogsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<MemberCouponUsagePageResponse> {
+        const response = await this.getUsageLogsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

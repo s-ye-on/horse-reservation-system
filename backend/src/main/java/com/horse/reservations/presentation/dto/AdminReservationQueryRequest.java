@@ -15,6 +15,7 @@ public record AdminReservationQueryRequest(
 	LocalDate lessonDateTo,
 	String classType,
 	String keyword,
+	String sort,
 	@Min(0)
 	Integer page,
 	@Min(1)

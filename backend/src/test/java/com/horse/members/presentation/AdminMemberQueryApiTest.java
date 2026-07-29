@@ -39,22 +39,64 @@ class AdminMemberQueryApiTest {
 	}
 
 	@Test
-	void 관리자는_회원_목록을_아이디_순으로_조회한다() throws Exception {
-		insertMember("first-member", "첫 회원", 20, 2, 3, false, false);
-		insertMember("second-member", "둘째 회원", 1, 4, 5, true, false);
+	void 관리자는_회원_목록을_최신_등록순과_아이디_역순으로_조회한다() throws Exception {
+		final Long firstId = insertMember("first-member", "첫 회원", 20, 2, 3, false, false);
+		final Long secondId = insertMember("second-member", "둘째 회원", 1, 4, 5, true, false);
 
 		mockMvc.perform(get(ENDPOINT).with(adminJwt()))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.length()").value(2))
-			.andExpect(jsonPath("$[0].name").value("첫 회원"))
-			.andExpect(jsonPath("$[0].generalRideCount").value(20))
-			.andExpect(jsonPath("$[0].dressageRideCount").value(2))
-			.andExpect(jsonPath("$[0].jumpingRideCount").value(3))
-			.andExpect(jsonPath("$[0].dressageApproved").value(false))
-			.andExpect(jsonPath("$[0].canUseLargeArena").value(false))
-			.andExpect(jsonPath("$[1].name").value("둘째 회원"))
-			.andExpect(jsonPath("$[1].dressageApproved").value(true))
-			.andExpect(jsonPath("$[1].canUseLargeArena").value(true));
+			.andExpect(jsonPath("$.content.length()").value(2))
+			.andExpect(jsonPath("$.content[0].id").value(secondId))
+			.andExpect(jsonPath("$.content[0].name").value("둘째 회원"))
+			.andExpect(jsonPath("$.content[0].dressageApproved").value(true))
+			.andExpect(jsonPath("$.content[0].canUseLargeArena").value(true))
+			.andExpect(jsonPath("$.content[1].id").value(firstId))
+			.andExpect(jsonPath("$.content[1].generalRideCount").value(20))
+			.andExpect(jsonPath("$.content[1].dressageRideCount").value(2))
+			.andExpect(jsonPath("$.content[1].jumpingRideCount").value(3))
+			.andExpect(jsonPath("$.content[1].dressageApproved").value(false))
+			.andExpect(jsonPath("$.content[1].canUseLargeArena").value(false))
+			.andExpect(jsonPath("$.page").value(0))
+			.andExpect(jsonPath("$.size").value(20))
+			.andExpect(jsonPath("$.totalElements").value(2))
+			.andExpect(jsonPath("$.totalPages").value(1))
+			.andExpect(jsonPath("$.hasNext").value(false));
+	}
+
+	@Test
+	void 관리자는_첫_중간_마지막과_빈_페이지를_조회한다() throws Exception {
+		final Long firstId = insertMember("page-first", "첫 회원", 0, 0, 0, false, false);
+		final Long secondId = insertMember("page-second", "둘째 회원", 0, 0, 0, false, false);
+		final Long thirdId = insertMember("page-third", "셋째 회원", 0, 0, 0, false, false);
+
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("page", "0").param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].id").value(thirdId))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("page", "1").param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].id").value(secondId))
+			.andExpect(jsonPath("$.totalElements").value(3))
+			.andExpect(jsonPath("$.totalPages").value(3))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("page", "2").param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].id").value(firstId))
+			.andExpect(jsonPath("$.hasNext").value(false));
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("page", "3").param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content").isEmpty())
+			.andExpect(jsonPath("$.hasNext").value(false));
+	}
+
+	@Test
+	void 잘못된_페이지_조건은_공통_오류로_거부한다() throws Exception {
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("page", "-1"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("COMMON_INVALID_REQUEST"));
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("size", "101"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("COMMON_INVALID_REQUEST"));
 	}
 
 	@Test

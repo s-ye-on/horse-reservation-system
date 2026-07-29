@@ -1,9 +1,11 @@
 package com.horse.coupons.infrastructure;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.time.LocalDateTime;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
 import org.springframework.data.repository.query.Param;
@@ -15,7 +17,7 @@ public interface CouponUsageLogRepository extends Repository<CouponUsageLog, Lon
 
 	CouponUsageLog save(CouponUsageLog usageLog);
 
-	List<CouponUsageLog> findAllByMemberIdOrderByOccurredAtDescIdDesc(Long memberId);
+	Page<CouponUsageLog> findAllByMemberId(Long memberId, Pageable pageable);
 
 	Optional<CouponUsageLog> findFirstByReservationIdAndActionOrderByIdAsc(
 		Long reservationId,

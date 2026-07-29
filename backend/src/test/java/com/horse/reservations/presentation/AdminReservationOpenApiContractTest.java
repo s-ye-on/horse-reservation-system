@@ -29,7 +29,7 @@ class AdminReservationOpenApiContractTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath(
 				"$['paths']['/api/admin/reservations']['get']['parameters']",
-				hasSize(7)))
+				hasSize(8)))
 			.andExpect(jsonPath(
 				"$['paths']['/api/admin/reservations']['get']['parameters'][*]['name']",
 				containsInAnyOrder(
@@ -38,6 +38,7 @@ class AdminReservationOpenApiContractTest {
 					"lessonDateTo",
 					"classType",
 					"keyword",
+					"sort",
 					"page",
 					"size")));
 	}

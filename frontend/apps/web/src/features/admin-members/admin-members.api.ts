@@ -37,7 +37,7 @@ const queryApi = new AdminMemberQueryControllerApi()
 const permissionApi = new AdminMemberRidingPermissionControllerApi()
 
 export const adminMembersApi: AdminMembersApi = {
-  getMembers: () => queryApi.getMembers(),
+  getMembers: async () => (await queryApi.getMembers()).content ?? [],
   getMember: (memberId) => queryApi.getMember({ memberId }),
   changeRidingPermissions: (memberId, permissions) =>
     permissionApi.changeRidingPermissions({

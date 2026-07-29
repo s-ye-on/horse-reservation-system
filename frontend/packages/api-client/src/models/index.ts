@@ -1,6 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
 export * from './AdminManualReservationRequest';
+export * from './AdminMemberPageResponse';
 export * from './AdminMemberResponse';
 export * from './AdminPendingPaymentResponse';
 export * from './AdminReservationAuditPageResponse';
@@ -24,11 +25,14 @@ export * from './FieldError';
 export * from './MemberAvailableRidingClassesResponse';
 export * from './MemberAvailableTimeSlotResponse';
 export * from './MemberAvailableTimeSlotsResponse';
+export * from './MemberCouponPageResponse';
 export * from './MemberCouponResponse';
+export * from './MemberCouponUsagePageResponse';
 export * from './MemberCouponUsageResponse';
 export * from './MemberReservationCancelRequest';
 export * from './MemberReservationChangeRequest';
 export * from './MemberReservationCouponResponse';
+export * from './MemberReservationPageResponse';
 export * from './MemberReservationResponse';
 export * from './MemberRidingPermissionUpdateRequest';
 export * from './PendingPaymentExpiryResponse';

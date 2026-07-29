@@ -1,7 +1,8 @@
 package com.horse.members.application;
 
-import java.util.List;
-
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +14,9 @@ import com.horse.members.infrastructure.MemberRepository;
 @Service
 public class AdminMemberQueryService {
 
+	private static final int DEFAULT_PAGE = 0;
+	private static final int DEFAULT_SIZE = 20;
+
 	private final MemberRepository memberRepository;
 
 	public AdminMemberQueryService(MemberRepository memberRepository) {
@@ -20,10 +24,18 @@ public class AdminMemberQueryService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<AdminMemberQueryResult> getMembers() {
-		return memberRepository.findAllByOrderByIdAsc().stream()
-			.map(AdminMemberQueryResult::from)
-			.toList();
+	public AdminMemberPageResult getMembers(Integer page, Integer size) {
+		final Page<Member> members = memberRepository.findAll(PageRequest.of(
+			page == null ? DEFAULT_PAGE : page,
+			size == null ? DEFAULT_SIZE : size,
+			Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"))));
+		return new AdminMemberPageResult(
+			members.getContent().stream().map(AdminMemberQueryResult::from).toList(),
+			members.getNumber(),
+			members.getSize(),
+			members.getTotalElements(),
+			members.getTotalPages(),
+			members.hasNext());
 	}
 
 	@Transactional(readOnly = true)

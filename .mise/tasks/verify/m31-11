@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-11 Page queries, owned detail API, and OpenAPI types"
+# Task name: verify:m31-11
+
+set -euo pipefail
+
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*AdminReservationQueryApiTest' \
+  --tests '*AdminReservationAuditQueryApiTest' \
+  --tests '*AdminMemberQueryApiTest' \
+  --tests '*MemberReservationQueryApiTest' \
+  --tests '*MemberCouponQueryApiTest' \
+  --tests '*AdminReservationOpenApiContractTest' \
+  --tests '*AdminReservationAuditOpenApiContractTest' \
+  --tests '*M31PageOpenApiContractTest' \
+  --tests '*M31PageQueryCountIntegrationTest' \
+  --tests '*ExceptionCodeTest'
+pnpm --dir frontend/packages/api-client build:types

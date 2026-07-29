@@ -1,16 +1,15 @@
 package com.horse.reservations.application;
 
 import java.time.Clock;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +25,9 @@ import com.horse.reservations.infrastructure.ReservationRepository;
 
 @Service
 public class MemberReservationQueryService {
+
+	private static final int DEFAULT_PAGE = 0;
+	private static final int DEFAULT_SIZE = 20;
 
 	private final Clock clock;
 	private final MemberRepository memberRepository;
@@ -45,25 +47,45 @@ public class MemberReservationQueryService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<MemberReservationResult> getMyReservations(String authSubject) {
-		final Member member = memberRepository.findByAuthSubject(authSubject)
-			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));
+	public MemberReservationPageResult getMyReservations(
+		String authSubject,
+		Integer page,
+		Integer size
+	) {
+		final Member member = findMember(authSubject);
 		final LocalDateTime now = LocalDateTime.now(clock);
-		final LocalDate today = now.toLocalDate();
-		final List<Reservation> reservations = new ArrayList<>();
-		reservations.addAll(
-			reservationRepository
-				.findAllByMemberIdAndLessonDateGreaterThanEqualOrderByLessonDateAscStartTimeAscIdAsc(
-					member.getId(), today));
-		reservations.addAll(
-			reservationRepository
-				.findAllByMemberIdAndLessonDateLessThanOrderByLessonDateDescStartTimeDescIdDesc(
-					member.getId(), today));
-		final Map<Long, Coupon> coupons = getCoupons(reservations);
-		final List<MemberReservationResult> results = reservations.stream()
-			.map(reservation -> toResult(reservation, coupons, now))
-			.toList();
-		return orderByDisplayGroup(results);
+		final Page<Reservation> reservations = reservationRepository.findMemberReservationsForDisplay(
+			member.getId(),
+			now.toLocalDate(),
+			now.toLocalTime(),
+			PageRequest.of(
+				page == null ? DEFAULT_PAGE : page,
+				size == null ? DEFAULT_SIZE : size));
+		final Map<Long, Coupon> coupons = getCoupons(reservations.getContent());
+		return new MemberReservationPageResult(
+			reservations.getContent().stream()
+				.map(reservation -> toResult(reservation, coupons, now))
+				.toList(),
+			reservations.getNumber(),
+			reservations.getSize(),
+			reservations.getTotalElements(),
+			reservations.getTotalPages(),
+			reservations.hasNext());
+	}
+
+	@Transactional(readOnly = true)
+	public MemberReservationResult getMyReservation(String authSubject, Long reservationId) {
+		final Member member = findMember(authSubject);
+		final Reservation reservation = reservationRepository
+			.findByIdAndMemberId(reservationId, member.getId())
+			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_MEMBER_MISMATCH));
+		final Map<Long, Coupon> coupons = getCoupons(List.of(reservation));
+		return toResult(reservation, coupons, LocalDateTime.now(clock));
+	}
+
+	private Member findMember(String authSubject) {
+		return memberRepository.findByAuthSubject(authSubject)
+			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));
 	}
 
 	private Map<Long, Coupon> getCoupons(List<Reservation> reservations) {
@@ -93,18 +115,4 @@ public class MemberReservationQueryService {
 		return MemberReservationResult.from(reservation, coupon, now);
 	}
 
-	private List<MemberReservationResult> orderByDisplayGroup(List<MemberReservationResult> results) {
-		final java.util.Comparator<MemberReservationResult> ascending = java.util.Comparator
-			.comparing(MemberReservationResult::lessonDate)
-			.thenComparing(MemberReservationResult::startTime)
-			.thenComparing(MemberReservationResult::reservationId);
-		return Stream.concat(
-			results.stream()
-				.filter(result -> "UPCOMING".equals(result.displayGroup()))
-				.sorted(ascending),
-			results.stream()
-				.filter(result -> "PAST".equals(result.displayGroup()))
-				.sorted(ascending.reversed()))
-			.toList();
-	}
 }

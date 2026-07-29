@@ -57,6 +57,12 @@ export interface AdminReservationAuditPageResponse {
      * @memberof AdminReservationAuditPageResponse
      */
     totalPages?: number;
+    /**
+     *
+     * @type {boolean}
+     * @memberof AdminReservationAuditPageResponse
+     */
+    hasNext?: boolean;
 }
 
 /**
@@ -81,6 +87,7 @@ export function AdminReservationAuditPageResponseFromJSONTyped(json: any, ignore
         'size': json['size'] == null ? undefined : json['size'],
         'totalElements': json['totalElements'] == null ? undefined : json['totalElements'],
         'totalPages': json['totalPages'] == null ? undefined : json['totalPages'],
+        'hasNext': json['hasNext'] == null ? undefined : json['hasNext'],
     };
 }
 
@@ -100,6 +107,7 @@ export function AdminReservationAuditPageResponseToJSONTyped(value?: AdminReserv
         'size': value['size'],
         'totalElements': value['totalElements'],
         'totalPages': value['totalPages'],
+        'hasNext': value['hasNext'],
     };
 }
 
