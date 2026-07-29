@@ -24,31 +24,31 @@ export interface MemberAvailableRidingClassesResponse {
      * @type {MemberAvailableRidingClassesResponseCurrentGeneralGradeEnum}
      * @memberof MemberAvailableRidingClassesResponse
      */
-    currentGeneralGrade?: MemberAvailableRidingClassesResponseCurrentGeneralGradeEnum;
+    currentGeneralGrade: MemberAvailableRidingClassesResponseCurrentGeneralGradeEnum;
     /**
      *
      * @type {boolean}
      * @memberof MemberAvailableRidingClassesResponse
      */
-    dressageApproved?: boolean;
+    dressageApproved: boolean;
     /**
      *
      * @type {boolean}
      * @memberof MemberAvailableRidingClassesResponse
      */
-    jumpingApproved?: boolean;
+    jumpingApproved: boolean;
     /**
      *
      * @type {boolean}
      * @memberof MemberAvailableRidingClassesResponse
      */
-    canUseLargeArena?: boolean;
+    canUseLargeArena: boolean;
     /**
      *
      * @type {Array<MemberAvailableRidingClassesResponseAvailableRidingClassesEnum>}
      * @memberof MemberAvailableRidingClassesResponse
      */
-    availableRidingClasses?: Array<MemberAvailableRidingClassesResponseAvailableRidingClassesEnum>;
+    availableRidingClasses: Array<MemberAvailableRidingClassesResponseAvailableRidingClassesEnum>;
 }
 
 
@@ -83,6 +83,11 @@ export type MemberAvailableRidingClassesResponseAvailableRidingClassesEnum = typ
  * Check if a given object implements the MemberAvailableRidingClassesResponse interface.
  */
 export function instanceOfMemberAvailableRidingClassesResponse(value: object): value is MemberAvailableRidingClassesResponse {
+    if (!('currentGeneralGrade' in value) || value['currentGeneralGrade'] === undefined) return false;
+    if (!('dressageApproved' in value) || value['dressageApproved'] === undefined) return false;
+    if (!('jumpingApproved' in value) || value['jumpingApproved'] === undefined) return false;
+    if (!('canUseLargeArena' in value) || value['canUseLargeArena'] === undefined) return false;
+    if (!('availableRidingClasses' in value) || value['availableRidingClasses'] === undefined) return false;
     return true;
 }
 
@@ -96,11 +101,11 @@ export function MemberAvailableRidingClassesResponseFromJSONTyped(json: any, ign
     }
     return {
 
-        'currentGeneralGrade': json['currentGeneralGrade'] == null ? undefined : json['currentGeneralGrade'],
-        'dressageApproved': json['dressageApproved'] == null ? undefined : json['dressageApproved'],
-        'jumpingApproved': json['jumpingApproved'] == null ? undefined : json['jumpingApproved'],
-        'canUseLargeArena': json['canUseLargeArena'] == null ? undefined : json['canUseLargeArena'],
-        'availableRidingClasses': json['availableRidingClasses'] == null ? undefined : json['availableRidingClasses'],
+        'currentGeneralGrade': json['currentGeneralGrade'],
+        'dressageApproved': json['dressageApproved'],
+        'jumpingApproved': json['jumpingApproved'],
+        'canUseLargeArena': json['canUseLargeArena'],
+        'availableRidingClasses': json['availableRidingClasses'],
     };
 }
 

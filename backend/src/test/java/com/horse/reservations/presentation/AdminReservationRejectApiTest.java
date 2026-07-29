@@ -77,7 +77,7 @@ class AdminReservationRejectApiTest {
 			.andExpect(jsonPath("$.status").value("rejected"))
 			.andExpect(jsonPath("$.paymentSource").value("coupon"))
 			.andExpect(jsonPath("$.couponId").value(couponId))
-			.andExpect(jsonPath("$.rejectedAt").value("2026-07-14T10:00:00"))
+			.andExpect(jsonPath("$.rejectedAt").value("2026-07-14T10:00:00+09:00"))
 			.andExpect(jsonPath("$.rejectedBy").value("reject-admin"))
 			.andExpect(jsonPath("$.rejectionReason").value(REASON));
 

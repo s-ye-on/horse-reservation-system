@@ -15,8 +15,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ScheduleTemplateResponse(
 	long templateId,
 	DayOfWeek dayOfWeek,
-	LocalTime startTime,
-	LocalTime endTime,
+	@Schema(type = "string", format = "time") LocalTime startTime,
+	@Schema(type = "string", format = "time") LocalTime endTime,
 	int totalCapacity,
 	int roundArenaCapacity,
 	Map<String, Integer> classCapacities,

@@ -1,10 +1,9 @@
 package com.horse.timeslots.presentation.dto;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.List;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.timeslots.application.TimeSlotClosureView;
 import com.horse.timeslots.domain.TimeSlotClosureStatus;
 
@@ -21,8 +20,8 @@ public record TimeSlotClosureResponse(
 	TimeSlotClosureStatus status,
 	String reason,
 	OffsetDateTime startedAt,
-	OffsetDateTime completedAt,
-	OffsetDateTime withdrawnAt,
+	@Schema(nullable = true) OffsetDateTime completedAt,
+	@Schema(nullable = true) OffsetDateTime withdrawnAt,
 	long version,
 	int totalCount,
 	int resolvedCount,
@@ -30,8 +29,6 @@ public record TimeSlotClosureResponse(
 	int progressPercent,
 	List<TimeSlotClosureImpactResponse> impacts
 ) {
-
-	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 
 	public TimeSlotClosureResponse {
 		impacts = List.copyOf(impacts);
@@ -47,9 +44,9 @@ public record TimeSlotClosureResponse(
 			view.closed(),
 			view.status(),
 			view.reason(),
-			toOffset(view.startedAt()),
-			toOffset(view.completedAt()),
-			toOffset(view.withdrawnAt()),
+			ApiDateTime.toSeoulOffset(view.startedAt()),
+			ApiDateTime.toSeoulOffset(view.completedAt()),
+			ApiDateTime.toSeoulOffset(view.withdrawnAt()),
 			view.version(),
 			view.totalCount(),
 			view.resolvedCount(),
@@ -60,7 +57,4 @@ public record TimeSlotClosureResponse(
 				.toList());
 	}
 
-	private static OffsetDateTime toOffset(LocalDateTime value) {
-		return value == null ? null : value.atZone(SEOUL_ZONE).toOffsetDateTime();
-	}
 }

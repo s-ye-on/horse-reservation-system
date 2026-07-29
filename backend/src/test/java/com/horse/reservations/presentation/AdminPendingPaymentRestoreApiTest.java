@@ -91,7 +91,7 @@ class AdminPendingPaymentRestoreApiTest {
 			.andExpect(jsonPath("$.reservationId").value(reservationId))
 			.andExpect(jsonPath("$.status").value("confirmed"))
 			.andExpect(jsonPath("$.paymentSource").value("single_payment"))
-			.andExpect(jsonPath("$.adminConfirmedAt").value("2026-07-15T10:00:00"));
+			.andExpect(jsonPath("$.adminConfirmedAt").value("2026-07-15T10:00:00+09:00"));
 
 		assertThat(reservationStatus(reservationId)).isEqualTo("confirmed");
 		assertThat(changeLogCount(reservationId)).isEqualTo(1);

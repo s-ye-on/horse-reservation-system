@@ -24,73 +24,84 @@ export interface AdminPendingPaymentResponse {
      * @type {number}
      * @memberof AdminPendingPaymentResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {number}
      * @memberof AdminPendingPaymentResponse
      */
-    memberId?: number;
+    memberId: number;
     /**
      *
      * @type {string}
      * @memberof AdminPendingPaymentResponse
      */
-    memberName?: string;
+    memberName: string;
     /**
      *
      * @type {string}
      * @memberof AdminPendingPaymentResponse
      */
-    memberPhone?: string;
+    memberPhone: string;
     /**
      *
      * @type {string}
      * @memberof AdminPendingPaymentResponse
      */
-    classType?: string;
+    classType: string;
     /**
      *
      * @type {Date}
      * @memberof AdminPendingPaymentResponse
      */
-    lessonDate?: Date;
+    lessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof AdminPendingPaymentResponse
      */
-    startTime?: string;
+    startTime: string;
     /**
      *
      * @type {string}
      * @memberof AdminPendingPaymentResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {Date}
      * @memberof AdminPendingPaymentResponse
      */
-    approvalRequestedAt?: Date;
+    approvalRequestedAt: Date;
     /**
      *
      * @type {Date}
      * @memberof AdminPendingPaymentResponse
      */
-    paymentDueAt?: Date;
+    paymentDueAt: Date;
     /**
      *
      * @type {boolean}
      * @memberof AdminPendingPaymentResponse
      */
-    deadlineExceeded?: boolean;
+    deadlineExceeded: boolean;
 }
 
 /**
  * Check if a given object implements the AdminPendingPaymentResponse interface.
  */
 export function instanceOfAdminPendingPaymentResponse(value: object): value is AdminPendingPaymentResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('memberId' in value) || value['memberId'] === undefined) return false;
+    if (!('memberName' in value) || value['memberName'] === undefined) return false;
+    if (!('memberPhone' in value) || value['memberPhone'] === undefined) return false;
+    if (!('classType' in value) || value['classType'] === undefined) return false;
+    if (!('lessonDate' in value) || value['lessonDate'] === undefined) return false;
+    if (!('startTime' in value) || value['startTime'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('approvalRequestedAt' in value) || value['approvalRequestedAt'] === undefined) return false;
+    if (!('paymentDueAt' in value) || value['paymentDueAt'] === undefined) return false;
+    if (!('deadlineExceeded' in value) || value['deadlineExceeded'] === undefined) return false;
     return true;
 }
 
@@ -104,17 +115,17 @@ export function AdminPendingPaymentResponseFromJSONTyped(json: any, ignoreDiscri
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'memberId': json['memberId'] == null ? undefined : json['memberId'],
-        'memberName': json['memberName'] == null ? undefined : json['memberName'],
-        'memberPhone': json['memberPhone'] == null ? undefined : json['memberPhone'],
-        'classType': json['classType'] == null ? undefined : json['classType'],
-        'lessonDate': json['lessonDate'] == null ? undefined : (new Date(json['lessonDate'])),
-        'startTime': json['startTime'] == null ? undefined : json['startTime'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'approvalRequestedAt': json['approvalRequestedAt'] == null ? undefined : (new Date(json['approvalRequestedAt'])),
-        'paymentDueAt': json['paymentDueAt'] == null ? undefined : (new Date(json['paymentDueAt'])),
-        'deadlineExceeded': json['deadlineExceeded'] == null ? undefined : json['deadlineExceeded'],
+        'reservationId': json['reservationId'],
+        'memberId': json['memberId'],
+        'memberName': json['memberName'],
+        'memberPhone': json['memberPhone'],
+        'classType': json['classType'],
+        'lessonDate': (new Date(json['lessonDate'])),
+        'startTime': json['startTime'],
+        'status': json['status'],
+        'approvalRequestedAt': (new Date(json['approvalRequestedAt'])),
+        'paymentDueAt': (new Date(json['paymentDueAt'])),
+        'deadlineExceeded': json['deadlineExceeded'],
     };
 }
 
@@ -134,11 +145,11 @@ export function AdminPendingPaymentResponseToJSONTyped(value?: AdminPendingPayme
         'memberName': value['memberName'],
         'memberPhone': value['memberPhone'],
         'classType': value['classType'],
-        'lessonDate': value['lessonDate'] == null ? value['lessonDate'] : value['lessonDate'].toISOString().substring(0,10),
+        'lessonDate': value['lessonDate'].toISOString().substring(0,10),
         'startTime': value['startTime'],
         'status': value['status'],
-        'approvalRequestedAt': value['approvalRequestedAt'] == null ? value['approvalRequestedAt'] : value['approvalRequestedAt'].toISOString(),
-        'paymentDueAt': value['paymentDueAt'] == null ? value['paymentDueAt'] : value['paymentDueAt'].toISOString(),
+        'approvalRequestedAt': value['approvalRequestedAt'].toISOString(),
+        'paymentDueAt': value['paymentDueAt'].toISOString(),
         'deadlineExceeded': value['deadlineExceeded'],
     };
 }

@@ -24,49 +24,56 @@ export interface MemberReservationCouponResponse {
      * @type {number}
      * @memberof MemberReservationCouponResponse
      */
-    couponId?: number;
+    couponId: number;
     /**
      *
      * @type {string}
      * @memberof MemberReservationCouponResponse
      */
-    couponType?: string;
+    couponType: string;
     /**
      *
      * @type {string}
      * @memberof MemberReservationCouponResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {number}
      * @memberof MemberReservationCouponResponse
      */
-    remainingCount?: number;
+    remainingCount: number;
     /**
      *
      * @type {number}
      * @memberof MemberReservationCouponResponse
      */
-    heldCount?: number;
+    heldCount: number;
     /**
      *
      * @type {number}
      * @memberof MemberReservationCouponResponse
      */
-    availableCount?: number;
+    availableCount: number;
     /**
      *
      * @type {Date}
      * @memberof MemberReservationCouponResponse
      */
-    expiresAt?: Date;
+    expiresAt: Date | null;
 }
 
 /**
  * Check if a given object implements the MemberReservationCouponResponse interface.
  */
 export function instanceOfMemberReservationCouponResponse(value: object): value is MemberReservationCouponResponse {
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('couponType' in value) || value['couponType'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('remainingCount' in value) || value['remainingCount'] === undefined) return false;
+    if (!('heldCount' in value) || value['heldCount'] === undefined) return false;
+    if (!('availableCount' in value) || value['availableCount'] === undefined) return false;
+    if (!('expiresAt' in value) || value['expiresAt'] === undefined) return false;
     return true;
 }
 
@@ -80,13 +87,13 @@ export function MemberReservationCouponResponseFromJSONTyped(json: any, ignoreDi
     }
     return {
 
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'couponType': json['couponType'] == null ? undefined : json['couponType'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'remainingCount': json['remainingCount'] == null ? undefined : json['remainingCount'],
-        'heldCount': json['heldCount'] == null ? undefined : json['heldCount'],
-        'availableCount': json['availableCount'] == null ? undefined : json['availableCount'],
-        'expiresAt': json['expiresAt'] == null ? undefined : (new Date(json['expiresAt'])),
+        'couponId': json['couponId'],
+        'couponType': json['couponType'],
+        'status': json['status'],
+        'remainingCount': json['remainingCount'],
+        'heldCount': json['heldCount'],
+        'availableCount': json['availableCount'],
+        'expiresAt': (json['expiresAt'] == null ? null : new Date(json['expiresAt'])),
     };
 }
 

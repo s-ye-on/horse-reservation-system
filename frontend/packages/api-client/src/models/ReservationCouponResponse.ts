@@ -24,37 +24,42 @@ export interface ReservationCouponResponse {
      * @type {number}
      * @memberof ReservationCouponResponse
      */
-    couponId?: number;
+    couponId: number;
     /**
      *
      * @type {Date}
      * @memberof ReservationCouponResponse
      */
-    expiresAt?: Date;
+    expiresAt: Date | null;
     /**
      *
      * @type {number}
      * @memberof ReservationCouponResponse
      */
-    remainingCount?: number;
+    remainingCount: number;
     /**
      *
      * @type {number}
      * @memberof ReservationCouponResponse
      */
-    heldCount?: number;
+    heldCount: number;
     /**
      *
      * @type {number}
      * @memberof ReservationCouponResponse
      */
-    availableCount?: number;
+    availableCount: number;
 }
 
 /**
  * Check if a given object implements the ReservationCouponResponse interface.
  */
 export function instanceOfReservationCouponResponse(value: object): value is ReservationCouponResponse {
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('expiresAt' in value) || value['expiresAt'] === undefined) return false;
+    if (!('remainingCount' in value) || value['remainingCount'] === undefined) return false;
+    if (!('heldCount' in value) || value['heldCount'] === undefined) return false;
+    if (!('availableCount' in value) || value['availableCount'] === undefined) return false;
     return true;
 }
 
@@ -68,11 +73,11 @@ export function ReservationCouponResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'expiresAt': json['expiresAt'] == null ? undefined : (new Date(json['expiresAt'])),
-        'remainingCount': json['remainingCount'] == null ? undefined : json['remainingCount'],
-        'heldCount': json['heldCount'] == null ? undefined : json['heldCount'],
-        'availableCount': json['availableCount'] == null ? undefined : json['availableCount'],
+        'couponId': json['couponId'],
+        'expiresAt': (json['expiresAt'] == null ? null : new Date(json['expiresAt'])),
+        'remainingCount': json['remainingCount'],
+        'heldCount': json['heldCount'],
+        'availableCount': json['availableCount'],
     };
 }
 

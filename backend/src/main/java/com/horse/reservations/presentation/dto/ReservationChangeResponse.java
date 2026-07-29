@@ -5,10 +5,12 @@ import java.time.LocalTime;
 
 import com.horse.reservations.application.ReservationChangeResult;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record ReservationChangeResponse(
 	Long reservationId,
 	LocalDate lessonDate,
-	LocalTime startTime,
+	@Schema(type = "string", format = "time") LocalTime startTime,
 	String status,
 	String couponAction,
 	boolean freeChangeUsed,

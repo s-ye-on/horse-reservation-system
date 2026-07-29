@@ -24,31 +24,35 @@ export interface ReservationPaymentRestoreResponse {
      * @type {number}
      * @memberof ReservationPaymentRestoreResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof ReservationPaymentRestoreResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof ReservationPaymentRestoreResponse
      */
-    paymentSource?: string;
+    paymentSource: string;
     /**
      *
      * @type {Date}
      * @memberof ReservationPaymentRestoreResponse
      */
-    adminConfirmedAt?: Date;
+    adminConfirmedAt: Date;
 }
 
 /**
  * Check if a given object implements the ReservationPaymentRestoreResponse interface.
  */
 export function instanceOfReservationPaymentRestoreResponse(value: object): value is ReservationPaymentRestoreResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('adminConfirmedAt' in value) || value['adminConfirmedAt'] === undefined) return false;
     return true;
 }
 
@@ -62,10 +66,10 @@ export function ReservationPaymentRestoreResponseFromJSONTyped(json: any, ignore
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'paymentSource': json['paymentSource'] == null ? undefined : json['paymentSource'],
-        'adminConfirmedAt': json['adminConfirmedAt'] == null ? undefined : (new Date(json['adminConfirmedAt'])),
+        'reservationId': json['reservationId'],
+        'status': json['status'],
+        'paymentSource': json['paymentSource'],
+        'adminConfirmedAt': (new Date(json['adminConfirmedAt'])),
     };
 }
 
@@ -83,7 +87,7 @@ export function ReservationPaymentRestoreResponseToJSONTyped(value?: Reservation
         'reservationId': value['reservationId'],
         'status': value['status'],
         'paymentSource': value['paymentSource'],
-        'adminConfirmedAt': value['adminConfirmedAt'] == null ? value['adminConfirmedAt'] : value['adminConfirmedAt'].toISOString(),
+        'adminConfirmedAt': value['adminConfirmedAt'].toISOString(),
     };
 }
 

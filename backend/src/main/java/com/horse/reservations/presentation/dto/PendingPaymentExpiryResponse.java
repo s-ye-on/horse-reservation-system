@@ -1,15 +1,18 @@
 package com.horse.reservations.presentation.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.PendingPaymentExpiryResult;
 
 public record PendingPaymentExpiryResponse(
 	int expiredCount,
-	LocalDateTime executedAt
+	OffsetDateTime executedAt
 ) {
 
 	public static PendingPaymentExpiryResponse from(PendingPaymentExpiryResult result) {
-		return new PendingPaymentExpiryResponse(result.expiredCount(), result.executedAt());
+		return new PendingPaymentExpiryResponse(
+			result.expiredCount(),
+			ApiDateTime.toSeoulOffset(result.executedAt()));
 	}
 }

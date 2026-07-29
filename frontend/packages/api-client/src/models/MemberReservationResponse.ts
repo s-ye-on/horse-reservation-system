@@ -39,103 +39,119 @@ export interface MemberReservationResponse {
      * @type {number}
      * @memberof MemberReservationResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof MemberReservationResponse
      */
-    classType?: string;
+    classType: string;
     /**
      *
      * @type {Date}
      * @memberof MemberReservationResponse
      */
-    lessonDate?: Date;
+    lessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof MemberReservationResponse
      */
-    startTime?: string;
+    startTime: string;
     /**
      *
      * @type {string}
      * @memberof MemberReservationResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof MemberReservationResponse
      */
-    paymentSource?: string;
+    paymentSource: string;
     /**
      *
      * @type {MemberReservationCouponResponse}
      * @memberof MemberReservationResponse
      */
-    coupon?: MemberReservationCouponResponse;
+    coupon: MemberReservationCouponResponse | null;
     /**
      *
      * @type {Date}
      * @memberof MemberReservationResponse
      */
-    paymentDueAt?: Date;
+    paymentDueAt: Date | null;
     /**
      *
      * @type {string}
      * @memberof MemberReservationResponse
      */
-    rejectionReason?: string;
+    rejectionReason: string | null;
     /**
      *
      * @type {string}
      * @memberof MemberReservationResponse
      */
-    couponAction?: string;
+    couponAction: string | null;
     /**
      *
      * @type {Date}
      * @memberof MemberReservationResponse
      */
-    approvalRequestedAt?: Date;
+    approvalRequestedAt: Date;
     /**
      *
      * @type {Date}
      * @memberof MemberReservationResponse
      */
-    adminConfirmedAt?: Date;
+    adminConfirmedAt: Date | null;
     /**
      *
      * @type {Date}
      * @memberof MemberReservationResponse
      */
-    rejectedAt?: Date;
+    rejectedAt: Date | null;
     /**
      *
      * @type {Date}
      * @memberof MemberReservationResponse
      */
-    cancelledAt?: Date;
+    cancelledAt: Date | null;
     /**
      *
      * @type {string}
      * @memberof MemberReservationResponse
      */
-    displayGroup?: string;
+    displayGroup: string;
     /**
      *
      * @type {ReservationActionsResponse}
      * @memberof MemberReservationResponse
      */
-    actions?: ReservationActionsResponse;
+    actions: ReservationActionsResponse;
 }
 
 /**
  * Check if a given object implements the MemberReservationResponse interface.
  */
 export function instanceOfMemberReservationResponse(value: object): value is MemberReservationResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('classType' in value) || value['classType'] === undefined) return false;
+    if (!('lessonDate' in value) || value['lessonDate'] === undefined) return false;
+    if (!('startTime' in value) || value['startTime'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('coupon' in value) || value['coupon'] === undefined) return false;
+    if (!('paymentDueAt' in value) || value['paymentDueAt'] === undefined) return false;
+    if (!('rejectionReason' in value) || value['rejectionReason'] === undefined) return false;
+    if (!('couponAction' in value) || value['couponAction'] === undefined) return false;
+    if (!('approvalRequestedAt' in value) || value['approvalRequestedAt'] === undefined) return false;
+    if (!('adminConfirmedAt' in value) || value['adminConfirmedAt'] === undefined) return false;
+    if (!('rejectedAt' in value) || value['rejectedAt'] === undefined) return false;
+    if (!('cancelledAt' in value) || value['cancelledAt'] === undefined) return false;
+    if (!('displayGroup' in value) || value['displayGroup'] === undefined) return false;
+    if (!('actions' in value) || value['actions'] === undefined) return false;
     return true;
 }
 
@@ -149,22 +165,22 @@ export function MemberReservationResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'classType': json['classType'] == null ? undefined : json['classType'],
-        'lessonDate': json['lessonDate'] == null ? undefined : (new Date(json['lessonDate'])),
-        'startTime': json['startTime'] == null ? undefined : json['startTime'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'paymentSource': json['paymentSource'] == null ? undefined : json['paymentSource'],
-        'coupon': json['coupon'] == null ? undefined : MemberReservationCouponResponseFromJSON(json['coupon']),
-        'paymentDueAt': json['paymentDueAt'] == null ? undefined : (new Date(json['paymentDueAt'])),
-        'rejectionReason': json['rejectionReason'] == null ? undefined : json['rejectionReason'],
-        'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
-        'approvalRequestedAt': json['approvalRequestedAt'] == null ? undefined : (new Date(json['approvalRequestedAt'])),
-        'adminConfirmedAt': json['adminConfirmedAt'] == null ? undefined : (new Date(json['adminConfirmedAt'])),
-        'rejectedAt': json['rejectedAt'] == null ? undefined : (new Date(json['rejectedAt'])),
-        'cancelledAt': json['cancelledAt'] == null ? undefined : (new Date(json['cancelledAt'])),
-        'displayGroup': json['displayGroup'] == null ? undefined : json['displayGroup'],
-        'actions': json['actions'] == null ? undefined : ReservationActionsResponseFromJSON(json['actions']),
+        'reservationId': json['reservationId'],
+        'classType': json['classType'],
+        'lessonDate': (new Date(json['lessonDate'])),
+        'startTime': json['startTime'],
+        'status': json['status'],
+        'paymentSource': json['paymentSource'],
+        'coupon': MemberReservationCouponResponseFromJSON(json['coupon']),
+        'paymentDueAt': (json['paymentDueAt'] == null ? null : new Date(json['paymentDueAt'])),
+        'rejectionReason': json['rejectionReason'],
+        'couponAction': json['couponAction'],
+        'approvalRequestedAt': (new Date(json['approvalRequestedAt'])),
+        'adminConfirmedAt': (json['adminConfirmedAt'] == null ? null : new Date(json['adminConfirmedAt'])),
+        'rejectedAt': (json['rejectedAt'] == null ? null : new Date(json['rejectedAt'])),
+        'cancelledAt': (json['cancelledAt'] == null ? null : new Date(json['cancelledAt'])),
+        'displayGroup': json['displayGroup'],
+        'actions': ReservationActionsResponseFromJSON(json['actions']),
     };
 }
 
@@ -181,7 +197,7 @@ export function MemberReservationResponseToJSONTyped(value?: MemberReservationRe
 
         'reservationId': value['reservationId'],
         'classType': value['classType'],
-        'lessonDate': value['lessonDate'] == null ? value['lessonDate'] : value['lessonDate'].toISOString().substring(0,10),
+        'lessonDate': value['lessonDate'].toISOString().substring(0,10),
         'startTime': value['startTime'],
         'status': value['status'],
         'paymentSource': value['paymentSource'],
@@ -189,7 +205,7 @@ export function MemberReservationResponseToJSONTyped(value?: MemberReservationRe
         'paymentDueAt': value['paymentDueAt'] == null ? value['paymentDueAt'] : value['paymentDueAt'].toISOString(),
         'rejectionReason': value['rejectionReason'],
         'couponAction': value['couponAction'],
-        'approvalRequestedAt': value['approvalRequestedAt'] == null ? value['approvalRequestedAt'] : value['approvalRequestedAt'].toISOString(),
+        'approvalRequestedAt': value['approvalRequestedAt'].toISOString(),
         'adminConfirmedAt': value['adminConfirmedAt'] == null ? value['adminConfirmedAt'] : value['adminConfirmedAt'].toISOString(),
         'rejectedAt': value['rejectedAt'] == null ? value['rejectedAt'] : value['rejectedAt'].toISOString(),
         'cancelledAt': value['cancelledAt'] == null ? value['cancelledAt'] : value['cancelledAt'].toISOString(),

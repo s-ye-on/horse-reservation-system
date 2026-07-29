@@ -1,8 +1,11 @@
 package com.horse.reservations.presentation.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.MemberReservationCouponResult;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record MemberReservationCouponResponse(
 	Long couponId,
@@ -11,7 +14,7 @@ public record MemberReservationCouponResponse(
 	int remainingCount,
 	int heldCount,
 	int availableCount,
-	LocalDateTime expiresAt
+	@Schema(nullable = true) OffsetDateTime expiresAt
 ) {
 
 	public static MemberReservationCouponResponse from(MemberReservationCouponResult result) {
@@ -22,6 +25,6 @@ public record MemberReservationCouponResponse(
 			result.remainingCount(),
 			result.heldCount(),
 			result.availableCount(),
-			result.expiresAt());
+			ApiDateTime.toSeoulOffset(result.expiresAt()));
 	}
 }

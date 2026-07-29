@@ -6,11 +6,13 @@ import java.util.Locale;
 
 import com.horse.reservations.application.ReservationChangePreviewResult;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record ReservationChangePreviewResponse(
 	Long reservationId,
 	Long targetTimeSlotId,
 	LocalDate targetLessonDate,
-	LocalTime targetStartTime,
+	@Schema(type = "string", format = "time") LocalTime targetStartTime,
 	String timing,
 	String couponAction,
 	boolean freeChangeUsed

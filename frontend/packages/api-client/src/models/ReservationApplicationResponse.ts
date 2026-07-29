@@ -32,55 +32,63 @@ export interface ReservationApplicationResponse {
      * @type {number}
      * @memberof ReservationApplicationResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof ReservationApplicationResponse
      */
-    classType?: string;
+    classType: string;
     /**
      *
      * @type {Date}
      * @memberof ReservationApplicationResponse
      */
-    lessonDate?: Date;
+    lessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof ReservationApplicationResponse
      */
-    startTime?: string;
+    startTime: string;
     /**
      *
      * @type {string}
      * @memberof ReservationApplicationResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof ReservationApplicationResponse
      */
-    paymentSource?: string;
+    paymentSource: string;
     /**
      *
      * @type {ReservationCouponResponse}
      * @memberof ReservationApplicationResponse
      */
-    coupon?: ReservationCouponResponse;
+    coupon: ReservationCouponResponse | null;
     /**
      *
      * @type {Date}
      * @memberof ReservationApplicationResponse
      */
-    paymentDueAt?: Date;
+    paymentDueAt: Date | null;
 }
 
 /**
  * Check if a given object implements the ReservationApplicationResponse interface.
  */
 export function instanceOfReservationApplicationResponse(value: object): value is ReservationApplicationResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('classType' in value) || value['classType'] === undefined) return false;
+    if (!('lessonDate' in value) || value['lessonDate'] === undefined) return false;
+    if (!('startTime' in value) || value['startTime'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('coupon' in value) || value['coupon'] === undefined) return false;
+    if (!('paymentDueAt' in value) || value['paymentDueAt'] === undefined) return false;
     return true;
 }
 
@@ -94,14 +102,14 @@ export function ReservationApplicationResponseFromJSONTyped(json: any, ignoreDis
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'classType': json['classType'] == null ? undefined : json['classType'],
-        'lessonDate': json['lessonDate'] == null ? undefined : (new Date(json['lessonDate'])),
-        'startTime': json['startTime'] == null ? undefined : json['startTime'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'paymentSource': json['paymentSource'] == null ? undefined : json['paymentSource'],
-        'coupon': json['coupon'] == null ? undefined : ReservationCouponResponseFromJSON(json['coupon']),
-        'paymentDueAt': json['paymentDueAt'] == null ? undefined : (new Date(json['paymentDueAt'])),
+        'reservationId': json['reservationId'],
+        'classType': json['classType'],
+        'lessonDate': (new Date(json['lessonDate'])),
+        'startTime': json['startTime'],
+        'status': json['status'],
+        'paymentSource': json['paymentSource'],
+        'coupon': ReservationCouponResponseFromJSON(json['coupon']),
+        'paymentDueAt': (json['paymentDueAt'] == null ? null : new Date(json['paymentDueAt'])),
     };
 }
 
@@ -118,7 +126,7 @@ export function ReservationApplicationResponseToJSONTyped(value?: ReservationApp
 
         'reservationId': value['reservationId'],
         'classType': value['classType'],
-        'lessonDate': value['lessonDate'] == null ? value['lessonDate'] : value['lessonDate'].toISOString().substring(0,10),
+        'lessonDate': value['lessonDate'].toISOString().substring(0,10),
         'startTime': value['startTime'],
         'status': value['status'],
         'paymentSource': value['paymentSource'],

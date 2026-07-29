@@ -79,7 +79,7 @@ class MemberCouponQueryApiTest {
 			.andExpect(jsonPath("$.content[0].reservationId").value(reservationId))
 			.andExpect(jsonPath("$.content[0].action").value("held"))
 			.andExpect(jsonPath("$.content[0].countDelta").value(1))
-			.andExpect(jsonPath("$.content[0].occurredAt").value("2026-07-14T10:00:00"))
+			.andExpect(jsonPath("$.content[0].occurredAt").value("2026-07-14T10:00:00+09:00"))
 			.andExpect(jsonPath("$.content[0].actorType").value("member"))
 			.andExpect(jsonPath("$.content[0].memo").doesNotExist());
 	}

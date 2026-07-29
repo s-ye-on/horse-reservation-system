@@ -177,7 +177,7 @@ class AdminManualReservationApiTest {
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.status").value("pending_payment"))
 			.andExpect(jsonPath("$.paymentSource").value("single_payment"))
-			.andExpect(jsonPath("$.paymentDueAt").value("2026-07-29T11:00:00"))
+			.andExpect(jsonPath("$.paymentDueAt").value("2026-07-29T11:00:00+09:00"))
 			.andExpect(jsonPath("$.coupon").doesNotExist());
 
 		assertThat(reservationCount("pending_payment")).isOne();
@@ -189,7 +189,7 @@ class AdminManualReservationApiTest {
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.content[0].couponId").doesNotExist())
 			.andExpect(jsonPath("$.content[0].paymentDueAt")
-				.value("2026-07-29T11:00:00"));
+				.value("2026-07-29T11:00:00+09:00"));
 	}
 
 	@Test

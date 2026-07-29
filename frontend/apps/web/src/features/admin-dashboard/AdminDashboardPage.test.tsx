@@ -22,6 +22,7 @@ const SUMMARY: AdminReservationSummaryResponse = {
 
 const APPROVAL_RESERVATION: AdminReservationResponse = {
   reservationId: 11,
+  memberId: 11,
   memberName: '김승인',
   memberPhone: '010-1111-2222',
   classType: 'ROUND_BEGINNER',
@@ -29,7 +30,31 @@ const APPROVAL_RESERVATION: AdminReservationResponse = {
   startTime: '09:00:00',
   status: 'pending_admin_approval',
   paymentSource: 'coupon',
+  coupon: {
+    couponId: 11, couponType: 'GENERAL', status: 'active', remainingCount: 5,
+    heldCount: 1, expiresAt: null,
+  },
+  paymentDueAt: null,
+  approvalRequestedAt: new Date('2026-07-17T01:00:00Z'),
+  adminConfirmedAt: null,
+  rejectedAt: null,
+  rejectedBy: null,
+  rejectionReason: null,
+  cancelledAt: null,
+  cancellationResponsibility: null,
+  couponAction: null,
+  adminMemo: null,
   approvalWarning: 'critical',
+  createdAt: new Date('2026-07-17T01:00:00Z'),
+  updatedAt: new Date('2026-07-17T01:00:00Z'),
+  displayGroup: 'UPCOMING',
+  actions: {
+    change: { allowed: true, blockedReason: null },
+    cancel: { allowed: true, blockedReason: null },
+    complete: { allowed: false, blockedReason: null },
+    noShow: { allowed: false, blockedReason: null },
+    approve: { allowed: true, blockedReason: null },
+  },
 }
 
 afterEach(() => cleanup())
@@ -70,7 +95,7 @@ describe('AdminDashboardPage', () => {
 
   it('상태를_선택하면_같은_날짜_범위로_예약을_조회한다', async () => {
     const getReservations = vi.fn(async (status: DashboardReservationStatus) => status === 'pending_payment'
-      ? [{ ...APPROVAL_RESERVATION, reservationId: 12, memberName: '이입금', status: 'pending_payment', approvalWarning: undefined }]
+      ? [{ ...APPROVAL_RESERVATION, reservationId: 12, memberName: '이입금', status: 'pending_payment', approvalWarning: null }]
       : [APPROVAL_RESERVATION])
     const api = createApi({ getReservations })
     renderPage(api)

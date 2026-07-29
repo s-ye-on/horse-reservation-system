@@ -4,6 +4,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
+import com.horse.global.time.ApiDateTime;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(requiredProperties = {
@@ -31,7 +33,7 @@ public record ErrorResponse(
 			exception.code(),
 			exception.getMessage(),
 			exception.status().value(),
-			OffsetDateTime.now(),
+			ApiDateTime.nowInSeoul(),
 			path,
 			List.of(),
 			exception.details()
@@ -43,7 +45,7 @@ public record ErrorResponse(
 			exceptionCode.code(),
 			exceptionCode.message(),
 			exceptionCode.status().value(),
-			OffsetDateTime.now(),
+			ApiDateTime.nowInSeoul(),
 			path,
 			List.of(),
 			Map.of()
@@ -57,7 +59,7 @@ public record ErrorResponse(
 			exceptionCode.code(),
 			exceptionCode.message(),
 			exceptionCode.status().value(),
-			OffsetDateTime.now(),
+			ApiDateTime.nowInSeoul(),
 			path,
 			fieldErrors,
 			Map.of()

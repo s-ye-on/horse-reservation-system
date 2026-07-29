@@ -39,37 +39,42 @@ export interface AdminReservationSummaryResponse {
      * @type {Date}
      * @memberof AdminReservationSummaryResponse
      */
-    lessonDateFrom?: Date;
+    lessonDateFrom: Date;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationSummaryResponse
      */
-    lessonDateTo?: Date;
+    lessonDateTo: Date;
     /**
      *
      * @type {number}
      * @memberof AdminReservationSummaryResponse
      */
-    totalCount?: number;
+    totalCount: number;
     /**
      *
      * @type {Array<ReservationStatusCountResponse>}
      * @memberof AdminReservationSummaryResponse
      */
-    statusCounts?: Array<ReservationStatusCountResponse>;
+    statusCounts: Array<ReservationStatusCountResponse>;
     /**
      *
      * @type {Array<AdminReservationDailySummaryResponse>}
      * @memberof AdminReservationSummaryResponse
      */
-    dailyCounts?: Array<AdminReservationDailySummaryResponse>;
+    dailyCounts: Array<AdminReservationDailySummaryResponse>;
 }
 
 /**
  * Check if a given object implements the AdminReservationSummaryResponse interface.
  */
 export function instanceOfAdminReservationSummaryResponse(value: object): value is AdminReservationSummaryResponse {
+    if (!('lessonDateFrom' in value) || value['lessonDateFrom'] === undefined) return false;
+    if (!('lessonDateTo' in value) || value['lessonDateTo'] === undefined) return false;
+    if (!('totalCount' in value) || value['totalCount'] === undefined) return false;
+    if (!('statusCounts' in value) || value['statusCounts'] === undefined) return false;
+    if (!('dailyCounts' in value) || value['dailyCounts'] === undefined) return false;
     return true;
 }
 
@@ -83,11 +88,11 @@ export function AdminReservationSummaryResponseFromJSONTyped(json: any, ignoreDi
     }
     return {
 
-        'lessonDateFrom': json['lessonDateFrom'] == null ? undefined : (new Date(json['lessonDateFrom'])),
-        'lessonDateTo': json['lessonDateTo'] == null ? undefined : (new Date(json['lessonDateTo'])),
-        'totalCount': json['totalCount'] == null ? undefined : json['totalCount'],
-        'statusCounts': json['statusCounts'] == null ? undefined : ((json['statusCounts'] as Array<any>).map(ReservationStatusCountResponseFromJSON)),
-        'dailyCounts': json['dailyCounts'] == null ? undefined : ((json['dailyCounts'] as Array<any>).map(AdminReservationDailySummaryResponseFromJSON)),
+        'lessonDateFrom': (new Date(json['lessonDateFrom'])),
+        'lessonDateTo': (new Date(json['lessonDateTo'])),
+        'totalCount': json['totalCount'],
+        'statusCounts': ((json['statusCounts'] as Array<any>).map(ReservationStatusCountResponseFromJSON)),
+        'dailyCounts': ((json['dailyCounts'] as Array<any>).map(AdminReservationDailySummaryResponseFromJSON)),
     };
 }
 
@@ -102,11 +107,11 @@ export function AdminReservationSummaryResponseToJSONTyped(value?: AdminReservat
 
     return {
 
-        'lessonDateFrom': value['lessonDateFrom'] == null ? value['lessonDateFrom'] : value['lessonDateFrom'].toISOString().substring(0,10),
-        'lessonDateTo': value['lessonDateTo'] == null ? value['lessonDateTo'] : value['lessonDateTo'].toISOString().substring(0,10),
+        'lessonDateFrom': value['lessonDateFrom'].toISOString().substring(0,10),
+        'lessonDateTo': value['lessonDateTo'].toISOString().substring(0,10),
         'totalCount': value['totalCount'],
-        'statusCounts': value['statusCounts'] == null ? undefined : ((value['statusCounts'] as Array<any>).map(ReservationStatusCountResponseToJSON)),
-        'dailyCounts': value['dailyCounts'] == null ? undefined : ((value['dailyCounts'] as Array<any>).map(AdminReservationDailySummaryResponseToJSON)),
+        'statusCounts': ((value['statusCounts'] as Array<any>).map(ReservationStatusCountResponseToJSON)),
+        'dailyCounts': ((value['dailyCounts'] as Array<any>).map(AdminReservationDailySummaryResponseToJSON)),
     };
 }
 

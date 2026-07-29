@@ -24,61 +24,70 @@ export interface TimeSlotResponse {
      * @type {number}
      * @memberof TimeSlotResponse
      */
-    id?: number;
+    id: number;
     /**
      *
      * @type {Date}
      * @memberof TimeSlotResponse
      */
-    lessonDate?: Date;
+    lessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof TimeSlotResponse
      */
-    startTime?: string;
+    startTime: string;
     /**
      *
      * @type {number}
      * @memberof TimeSlotResponse
      */
-    totalCapacity?: number;
+    totalCapacity: number;
     /**
      *
      * @type {number}
      * @memberof TimeSlotResponse
      */
-    roundArenaCapacity?: number;
+    roundArenaCapacity: number;
     /**
      *
      * @type {{ [key: string]: number; }}
      * @memberof TimeSlotResponse
      */
-    classCapacities?: { [key: string]: number; };
+    classCapacities: { [key: string]: number; };
     /**
      *
      * @type {boolean}
      * @memberof TimeSlotResponse
      */
-    closed?: boolean;
+    closed: boolean;
     /**
      *
      * @type {Date}
      * @memberof TimeSlotResponse
      */
-    createdAt?: Date;
+    createdAt: Date;
     /**
      *
      * @type {Date}
      * @memberof TimeSlotResponse
      */
-    updatedAt?: Date;
+    updatedAt: Date;
 }
 
 /**
  * Check if a given object implements the TimeSlotResponse interface.
  */
 export function instanceOfTimeSlotResponse(value: object): value is TimeSlotResponse {
+    if (!('id' in value) || value['id'] === undefined) return false;
+    if (!('lessonDate' in value) || value['lessonDate'] === undefined) return false;
+    if (!('startTime' in value) || value['startTime'] === undefined) return false;
+    if (!('totalCapacity' in value) || value['totalCapacity'] === undefined) return false;
+    if (!('roundArenaCapacity' in value) || value['roundArenaCapacity'] === undefined) return false;
+    if (!('classCapacities' in value) || value['classCapacities'] === undefined) return false;
+    if (!('closed' in value) || value['closed'] === undefined) return false;
+    if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
+    if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
     return true;
 }
 
@@ -92,15 +101,15 @@ export function TimeSlotResponseFromJSONTyped(json: any, ignoreDiscriminator: bo
     }
     return {
 
-        'id': json['id'] == null ? undefined : json['id'],
-        'lessonDate': json['lessonDate'] == null ? undefined : (new Date(json['lessonDate'])),
-        'startTime': json['startTime'] == null ? undefined : json['startTime'],
-        'totalCapacity': json['totalCapacity'] == null ? undefined : json['totalCapacity'],
-        'roundArenaCapacity': json['roundArenaCapacity'] == null ? undefined : json['roundArenaCapacity'],
-        'classCapacities': json['classCapacities'] == null ? undefined : json['classCapacities'],
-        'closed': json['closed'] == null ? undefined : json['closed'],
-        'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
-        'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
+        'id': json['id'],
+        'lessonDate': (new Date(json['lessonDate'])),
+        'startTime': json['startTime'],
+        'totalCapacity': json['totalCapacity'],
+        'roundArenaCapacity': json['roundArenaCapacity'],
+        'classCapacities': json['classCapacities'],
+        'closed': json['closed'],
+        'createdAt': (new Date(json['createdAt'])),
+        'updatedAt': (new Date(json['updatedAt'])),
     };
 }
 
@@ -116,14 +125,14 @@ export function TimeSlotResponseToJSONTyped(value?: TimeSlotResponse | null, ign
     return {
 
         'id': value['id'],
-        'lessonDate': value['lessonDate'] == null ? value['lessonDate'] : value['lessonDate'].toISOString().substring(0,10),
+        'lessonDate': value['lessonDate'].toISOString().substring(0,10),
         'startTime': value['startTime'],
         'totalCapacity': value['totalCapacity'],
         'roundArenaCapacity': value['roundArenaCapacity'],
         'classCapacities': value['classCapacities'],
         'closed': value['closed'],
-        'createdAt': value['createdAt'] == null ? value['createdAt'] : value['createdAt'].toISOString(),
-        'updatedAt': value['updatedAt'] == null ? value['updatedAt'] : value['updatedAt'].toISOString(),
+        'createdAt': value['createdAt'].toISOString(),
+        'updatedAt': value['updatedAt'].toISOString(),
     };
 }
 

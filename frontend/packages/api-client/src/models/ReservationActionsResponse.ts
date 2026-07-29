@@ -32,37 +32,42 @@ export interface ReservationActionsResponse {
      * @type {ReservationActionAvailabilityResponse}
      * @memberof ReservationActionsResponse
      */
-    change?: ReservationActionAvailabilityResponse;
+    change: ReservationActionAvailabilityResponse;
     /**
      *
      * @type {ReservationActionAvailabilityResponse}
      * @memberof ReservationActionsResponse
      */
-    cancel?: ReservationActionAvailabilityResponse;
+    cancel: ReservationActionAvailabilityResponse;
     /**
      *
      * @type {ReservationActionAvailabilityResponse}
      * @memberof ReservationActionsResponse
      */
-    complete?: ReservationActionAvailabilityResponse;
+    complete: ReservationActionAvailabilityResponse;
     /**
      *
      * @type {ReservationActionAvailabilityResponse}
      * @memberof ReservationActionsResponse
      */
-    noShow?: ReservationActionAvailabilityResponse;
+    noShow: ReservationActionAvailabilityResponse;
     /**
      *
      * @type {ReservationActionAvailabilityResponse}
      * @memberof ReservationActionsResponse
      */
-    approve?: ReservationActionAvailabilityResponse;
+    approve: ReservationActionAvailabilityResponse;
 }
 
 /**
  * Check if a given object implements the ReservationActionsResponse interface.
  */
 export function instanceOfReservationActionsResponse(value: object): value is ReservationActionsResponse {
+    if (!('change' in value) || value['change'] === undefined) return false;
+    if (!('cancel' in value) || value['cancel'] === undefined) return false;
+    if (!('complete' in value) || value['complete'] === undefined) return false;
+    if (!('noShow' in value) || value['noShow'] === undefined) return false;
+    if (!('approve' in value) || value['approve'] === undefined) return false;
     return true;
 }
 
@@ -76,11 +81,11 @@ export function ReservationActionsResponseFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
 
-        'change': json['change'] == null ? undefined : ReservationActionAvailabilityResponseFromJSON(json['change']),
-        'cancel': json['cancel'] == null ? undefined : ReservationActionAvailabilityResponseFromJSON(json['cancel']),
-        'complete': json['complete'] == null ? undefined : ReservationActionAvailabilityResponseFromJSON(json['complete']),
-        'noShow': json['noShow'] == null ? undefined : ReservationActionAvailabilityResponseFromJSON(json['noShow']),
-        'approve': json['approve'] == null ? undefined : ReservationActionAvailabilityResponseFromJSON(json['approve']),
+        'change': ReservationActionAvailabilityResponseFromJSON(json['change']),
+        'cancel': ReservationActionAvailabilityResponseFromJSON(json['cancel']),
+        'complete': ReservationActionAvailabilityResponseFromJSON(json['complete']),
+        'noShow': ReservationActionAvailabilityResponseFromJSON(json['noShow']),
+        'approve': ReservationActionAvailabilityResponseFromJSON(json['approve']),
     };
 }
 

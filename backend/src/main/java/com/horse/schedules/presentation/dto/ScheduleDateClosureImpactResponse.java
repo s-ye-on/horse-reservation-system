@@ -10,6 +10,8 @@ import com.horse.schedules.domain.ScheduleDateStatus;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 @Schema(requiredProperties = {
 	"scheduleDate", "status", "version", "initialReservationCount",
 	"activeReservationCount", "resolvedReservationCount", "remainingReservationCount",
@@ -18,7 +20,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ScheduleDateClosureImpactResponse(
 	LocalDate scheduleDate,
 	ScheduleDateStatus status,
-	ScheduleDateStatus resumeStatus,
+	@Schema(nullable = true) ScheduleDateStatus resumeStatus,
 	long version,
 	int initialReservationCount,
 	int activeReservationCount,

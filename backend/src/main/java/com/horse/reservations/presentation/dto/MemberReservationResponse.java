@@ -1,26 +1,29 @@
 package com.horse.reservations.presentation.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.MemberReservationResult;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record MemberReservationResponse(
 	Long reservationId,
 	String classType,
 	LocalDate lessonDate,
-	LocalTime startTime,
+	@Schema(type = "string", format = "time") LocalTime startTime,
 	String status,
 	String paymentSource,
-	MemberReservationCouponResponse coupon,
-	LocalDateTime paymentDueAt,
-	String rejectionReason,
-	String couponAction,
-	LocalDateTime approvalRequestedAt,
-	LocalDateTime adminConfirmedAt,
-	LocalDateTime rejectedAt,
-	LocalDateTime cancelledAt,
+	@Schema(nullable = true) MemberReservationCouponResponse coupon,
+	@Schema(nullable = true) OffsetDateTime paymentDueAt,
+	@Schema(nullable = true) String rejectionReason,
+	@Schema(nullable = true) String couponAction,
+	OffsetDateTime approvalRequestedAt,
+	@Schema(nullable = true) OffsetDateTime adminConfirmedAt,
+	@Schema(nullable = true) OffsetDateTime rejectedAt,
+	@Schema(nullable = true) OffsetDateTime cancelledAt,
 	String displayGroup,
 	ReservationActionsResponse actions
 ) {
@@ -34,13 +37,13 @@ public record MemberReservationResponse(
 			result.status(),
 			result.paymentSource(),
 			result.coupon() == null ? null : MemberReservationCouponResponse.from(result.coupon()),
-			result.paymentDueAt(),
+			ApiDateTime.toSeoulOffset(result.paymentDueAt()),
 			result.rejectionReason(),
 			result.couponAction(),
-			result.approvalRequestedAt(),
-			result.adminConfirmedAt(),
-			result.rejectedAt(),
-			result.cancelledAt(),
+			ApiDateTime.toSeoulOffset(result.approvalRequestedAt()),
+			ApiDateTime.toSeoulOffset(result.adminConfirmedAt()),
+			ApiDateTime.toSeoulOffset(result.rejectedAt()),
+			ApiDateTime.toSeoulOffset(result.cancelledAt()),
 			result.displayGroup(),
 			ReservationActionsResponse.from(result.actions()));
 	}

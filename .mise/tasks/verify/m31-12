@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-12 RFC3339, OpenAPI required/nullable, and generated clients"
+# Task name: verify:m31-12
+
+set -euo pipefail
+
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*ApiDateTimeTest' \
+  --tests '*ApiDateTimeSerializationTest' \
+  --tests '*M31ApiTimeOpenApiContractTest' \
+  --tests '*M31PageOpenApiContractTest' \
+  --tests '*ErrorResponseContractApiTest' \
+  --tests '*ReservationApplicationOpenApiContractTest' \
+  --tests '*AdminReservationOpenApiContractTest' \
+  --tests '*AdminReservationAuditOpenApiContractTest' \
+  --tests '*AdminScheduleOpenApiContractTest'
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web typecheck
+pnpm --dir frontend/apps/web test
+pnpm --dir frontend/apps/mobile typecheck

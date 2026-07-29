@@ -42,7 +42,7 @@ export interface RecurringHolidayResponse {
      * @type {Date}
      * @memberof RecurringHolidayResponse
      */
-    effectiveTo?: Date;
+    effectiveTo: Date | null;
     /**
      *
      * @type {string}
@@ -86,6 +86,7 @@ export function instanceOfRecurringHolidayResponse(value: object): value is Recu
     if (!('holidayId' in value) || value['holidayId'] === undefined) return false;
     if (!('dayOfWeek' in value) || value['dayOfWeek'] === undefined) return false;
     if (!('effectiveFrom' in value) || value['effectiveFrom'] === undefined) return false;
+    if (!('effectiveTo' in value) || value['effectiveTo'] === undefined) return false;
     if (!('reason' in value) || value['reason'] === undefined) return false;
     if (!('active' in value) || value['active'] === undefined) return false;
     if (!('version' in value) || value['version'] === undefined) return false;
@@ -105,7 +106,7 @@ export function RecurringHolidayResponseFromJSONTyped(json: any, ignoreDiscrimin
         'holidayId': json['holidayId'],
         'dayOfWeek': json['dayOfWeek'],
         'effectiveFrom': (new Date(json['effectiveFrom'])),
-        'effectiveTo': json['effectiveTo'] == null ? undefined : (new Date(json['effectiveTo'])),
+        'effectiveTo': (json['effectiveTo'] == null ? null : new Date(json['effectiveTo'])),
         'reason': json['reason'],
         'active': json['active'],
         'version': json['version'],

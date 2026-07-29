@@ -30,6 +30,7 @@ const HOLIDAY: RecurringHolidayResponse = {
   holidayId: 2,
   dayOfWeek: 'MONDAY',
   effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+  effectiveTo: null,
   reason: '정기 휴무',
   active: true,
   version: 0,
@@ -37,12 +38,18 @@ const HOLIDAY: RecurringHolidayResponse = {
 const ACTIVE_SYNC: ScheduleSynchronizationResponse = {
   status: 'ACTIVE',
   activeVersion: 7,
+  pendingVersion: null,
   horizonStart: new Date('2026-07-28T00:00:00.000Z'),
   horizonEnd: new Date('2026-10-28T00:00:00.000Z'),
   totalDateCount: 93,
   appliedDateCount: 93,
   remainingDateCount: 0,
   progressPercent: 100,
+  syncStartedAt: null,
+  lastCompletedAt: null,
+  lastFailedAt: null,
+  lastFailureCode: null,
+  lastFailureSummary: null,
   longRunning: false,
 }
 const CONFIGURATION_QUERY_KEY = ['admin', 'schedule-configuration'] as const

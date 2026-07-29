@@ -24,43 +24,49 @@ export interface ReservationNoShowResponse {
      * @type {number}
      * @memberof ReservationNoShowResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof ReservationNoShowResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof ReservationNoShowResponse
      */
-    paymentSource?: string;
+    paymentSource: string;
     /**
      *
      * @type {number}
      * @memberof ReservationNoShowResponse
      */
-    couponId?: number;
+    couponId: number | null;
     /**
      *
      * @type {string}
      * @memberof ReservationNoShowResponse
      */
-    couponAction?: string;
+    couponAction: string;
     /**
      *
      * @type {string}
      * @memberof ReservationNoShowResponse
      */
-    adminMemo?: string;
+    adminMemo: string | null;
 }
 
 /**
  * Check if a given object implements the ReservationNoShowResponse interface.
  */
 export function instanceOfReservationNoShowResponse(value: object): value is ReservationNoShowResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('couponAction' in value) || value['couponAction'] === undefined) return false;
+    if (!('adminMemo' in value) || value['adminMemo'] === undefined) return false;
     return true;
 }
 
@@ -74,12 +80,12 @@ export function ReservationNoShowResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'paymentSource': json['paymentSource'] == null ? undefined : json['paymentSource'],
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
-        'adminMemo': json['adminMemo'] == null ? undefined : json['adminMemo'],
+        'reservationId': json['reservationId'],
+        'status': json['status'],
+        'paymentSource': json['paymentSource'],
+        'couponId': json['couponId'],
+        'couponAction': json['couponAction'],
+        'adminMemo': json['adminMemo'],
     };
 }
 

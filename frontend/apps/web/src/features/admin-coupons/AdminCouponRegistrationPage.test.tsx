@@ -6,8 +6,16 @@ import type { ReactNode } from 'react'
 import type { AdminCouponsApi } from './admin-coupons.api'
 import { AdminCouponRegistrationPage } from './admin-coupon-registration-page'
 
-const MEMBER: AdminMemberResponse = { id: 3, name: '이기승', phone: '010-2222-3333', generalRideCount: 8 }
-const COUPON: CouponResponse = { id: 9, memberId: 3, type: 'dressage', totalCount: 10, status: 'active' }
+const MEMBER: AdminMemberResponse = {
+  id: 3, name: '이기승', phone: '010-2222-3333', generalRideCount: 8,
+  dressageRideCount: 0, jumpingRideCount: 0, dressageApproved: true, jumpingApproved: false,
+  canUseLargeArena: true,
+}
+const COUPON: CouponResponse = {
+  id: 9, memberId: 3, type: 'dressage', totalCount: 10, remainingCount: 10, heldCount: 0,
+  firstUsedAt: null, expiresAt: null, freeChangeUsed: false, status: 'active',
+  createdBy: 'admin', createdAt: new Date('2026-07-29T01:00:00Z'),
+}
 
 afterEach(cleanup)
 

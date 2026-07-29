@@ -24,43 +24,49 @@ export interface BulkReservationAttendanceItemResponse {
      * @type {number}
      * @memberof BulkReservationAttendanceItemResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof BulkReservationAttendanceItemResponse
      */
-    action?: string;
+    action: string;
     /**
      *
      * @type {boolean}
      * @memberof BulkReservationAttendanceItemResponse
      */
-    success?: boolean;
+    success: boolean;
     /**
      *
      * @type {string}
      * @memberof BulkReservationAttendanceItemResponse
      */
-    status?: string;
+    status: string | null;
     /**
      *
      * @type {string}
      * @memberof BulkReservationAttendanceItemResponse
      */
-    errorCode?: string;
+    errorCode: string | null;
     /**
      *
      * @type {string}
      * @memberof BulkReservationAttendanceItemResponse
      */
-    errorMessage?: string;
+    errorMessage: string | null;
 }
 
 /**
  * Check if a given object implements the BulkReservationAttendanceItemResponse interface.
  */
 export function instanceOfBulkReservationAttendanceItemResponse(value: object): value is BulkReservationAttendanceItemResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('action' in value) || value['action'] === undefined) return false;
+    if (!('success' in value) || value['success'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('errorCode' in value) || value['errorCode'] === undefined) return false;
+    if (!('errorMessage' in value) || value['errorMessage'] === undefined) return false;
     return true;
 }
 
@@ -74,12 +80,12 @@ export function BulkReservationAttendanceItemResponseFromJSONTyped(json: any, ig
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'action': json['action'] == null ? undefined : json['action'],
-        'success': json['success'] == null ? undefined : json['success'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'errorCode': json['errorCode'] == null ? undefined : json['errorCode'],
-        'errorMessage': json['errorMessage'] == null ? undefined : json['errorMessage'],
+        'reservationId': json['reservationId'],
+        'action': json['action'],
+        'success': json['success'],
+        'status': json['status'],
+        'errorCode': json['errorCode'],
+        'errorMessage': json['errorMessage'],
     };
 }
 

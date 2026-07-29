@@ -32,43 +32,49 @@ export interface AdminMemberPageResponse {
      * @type {Array<AdminMemberResponse>}
      * @memberof AdminMemberPageResponse
      */
-    content?: Array<AdminMemberResponse>;
+    content: Array<AdminMemberResponse>;
     /**
      *
      * @type {number}
      * @memberof AdminMemberPageResponse
      */
-    page?: number;
+    page: number;
     /**
      *
      * @type {number}
      * @memberof AdminMemberPageResponse
      */
-    size?: number;
+    size: number;
     /**
      *
      * @type {number}
      * @memberof AdminMemberPageResponse
      */
-    totalElements?: number;
+    totalElements: number;
     /**
      *
      * @type {number}
      * @memberof AdminMemberPageResponse
      */
-    totalPages?: number;
+    totalPages: number;
     /**
      *
      * @type {boolean}
      * @memberof AdminMemberPageResponse
      */
-    hasNext?: boolean;
+    hasNext: boolean;
 }
 
 /**
  * Check if a given object implements the AdminMemberPageResponse interface.
  */
 export function instanceOfAdminMemberPageResponse(value: object): value is AdminMemberPageResponse {
+    if (!('content' in value) || value['content'] === undefined) return false;
+    if (!('page' in value) || value['page'] === undefined) return false;
+    if (!('size' in value) || value['size'] === undefined) return false;
+    if (!('totalElements' in value) || value['totalElements'] === undefined) return false;
+    if (!('totalPages' in value) || value['totalPages'] === undefined) return false;
+    if (!('hasNext' in value) || value['hasNext'] === undefined) return false;
     return true;
 }
 
@@ -82,12 +88,12 @@ export function AdminMemberPageResponseFromJSONTyped(json: any, ignoreDiscrimina
     }
     return {
 
-        'content': json['content'] == null ? undefined : ((json['content'] as Array<any>).map(AdminMemberResponseFromJSON)),
-        'page': json['page'] == null ? undefined : json['page'],
-        'size': json['size'] == null ? undefined : json['size'],
-        'totalElements': json['totalElements'] == null ? undefined : json['totalElements'],
-        'totalPages': json['totalPages'] == null ? undefined : json['totalPages'],
-        'hasNext': json['hasNext'] == null ? undefined : json['hasNext'],
+        'content': ((json['content'] as Array<any>).map(AdminMemberResponseFromJSON)),
+        'page': json['page'],
+        'size': json['size'],
+        'totalElements': json['totalElements'],
+        'totalPages': json['totalPages'],
+        'hasNext': json['hasNext'],
     };
 }
 
@@ -102,7 +108,7 @@ export function AdminMemberPageResponseToJSONTyped(value?: AdminMemberPageRespon
 
     return {
 
-        'content': value['content'] == null ? undefined : ((value['content'] as Array<any>).map(AdminMemberResponseToJSON)),
+        'content': ((value['content'] as Array<any>).map(AdminMemberResponseToJSON)),
         'page': value['page'],
         'size': value['size'],
         'totalElements': value['totalElements'],

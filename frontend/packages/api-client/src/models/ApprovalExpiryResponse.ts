@@ -24,19 +24,21 @@ export interface ApprovalExpiryResponse {
      * @type {number}
      * @memberof ApprovalExpiryResponse
      */
-    expiredCount?: number;
+    expiredCount: number;
     /**
      *
      * @type {Date}
      * @memberof ApprovalExpiryResponse
      */
-    executedAt?: Date;
+    executedAt: Date;
 }
 
 /**
  * Check if a given object implements the ApprovalExpiryResponse interface.
  */
 export function instanceOfApprovalExpiryResponse(value: object): value is ApprovalExpiryResponse {
+    if (!('expiredCount' in value) || value['expiredCount'] === undefined) return false;
+    if (!('executedAt' in value) || value['executedAt'] === undefined) return false;
     return true;
 }
 
@@ -50,8 +52,8 @@ export function ApprovalExpiryResponseFromJSONTyped(json: any, ignoreDiscriminat
     }
     return {
 
-        'expiredCount': json['expiredCount'] == null ? undefined : json['expiredCount'],
-        'executedAt': json['executedAt'] == null ? undefined : (new Date(json['executedAt'])),
+        'expiredCount': json['expiredCount'],
+        'executedAt': (new Date(json['executedAt'])),
     };
 }
 
@@ -67,7 +69,7 @@ export function ApprovalExpiryResponseToJSONTyped(value?: ApprovalExpiryResponse
     return {
 
         'expiredCount': value['expiredCount'],
-        'executedAt': value['executedAt'] == null ? value['executedAt'] : value['executedAt'].toISOString(),
+        'executedAt': value['executedAt'].toISOString(),
     };
 }
 

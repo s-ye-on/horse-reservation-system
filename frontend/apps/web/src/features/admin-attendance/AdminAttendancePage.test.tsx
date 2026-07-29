@@ -13,6 +13,7 @@ import { AdminAttendancePage } from './admin-attendance-page'
 
 const GENERAL: AdminReservationResponse = {
   reservationId: 31,
+  memberId: 31,
   memberName: '김일반',
   memberPhone: '010-3131-3131',
   classType: 'ROUND_TROT',
@@ -20,11 +21,25 @@ const GENERAL: AdminReservationResponse = {
   startTime: '09:00:00',
   status: 'confirmed',
   paymentSource: 'coupon',
-  coupon: { couponId: 71, couponType: 'GENERAL', remainingCount: 5, heldCount: 1 },
+  coupon: { couponId: 71, couponType: 'GENERAL', status: 'active', remainingCount: 5, heldCount: 1, expiresAt: null },
+  paymentDueAt: null,
+  approvalRequestedAt: new Date('2026-07-01T01:00:00Z'),
+  adminConfirmedAt: new Date('2026-07-01T02:00:00Z'),
+  rejectedAt: null,
+  rejectedBy: null,
+  rejectionReason: null,
+  cancelledAt: null,
+  cancellationResponsibility: null,
+  couponAction: null,
+  adminMemo: null,
+  approvalWarning: null,
+  createdAt: new Date('2026-07-01T01:00:00Z'),
+  updatedAt: new Date('2026-07-01T02:00:00Z'),
   displayGroup: 'PAST',
   actions: {
-    complete: { allowed: true }, noShow: { allowed: true },
-    change: { allowed: false }, cancel: { allowed: false }, approve: { allowed: false },
+    complete: { allowed: true, blockedReason: null }, noShow: { allowed: true, blockedReason: null },
+    change: { allowed: false, blockedReason: null }, cancel: { allowed: false, blockedReason: null },
+    approve: { allowed: false, blockedReason: null },
   },
 }
 
@@ -33,7 +48,7 @@ const DRESSAGE: AdminReservationResponse = {
   reservationId: 32,
   memberName: '이마술',
   classType: 'DRESSAGE',
-  coupon: { couponId: 72, couponType: 'DRESSAGE', remainingCount: 7, heldCount: 1 },
+  coupon: { couponId: 72, couponType: 'DRESSAGE', status: 'active', remainingCount: 7, heldCount: 1, expiresAt: null },
 }
 
 const JUMPING: AdminReservationResponse = {
@@ -42,7 +57,7 @@ const JUMPING: AdminReservationResponse = {
   memberName: '박장애물',
   classType: 'JUMPING',
   paymentSource: 'single_payment',
-  coupon: undefined,
+  coupon: null,
 }
 
 const OVERDUE: AdminReservationResponse = {
@@ -61,7 +76,8 @@ const UPCOMING: AdminReservationResponse = {
   actions: {
     complete: { allowed: false, blockedReason: 'RESERVATION_LESSON_NOT_STARTED' },
     noShow: { allowed: false, blockedReason: 'RESERVATION_LESSON_NOT_STARTED' },
-    change: { allowed: true }, cancel: { allowed: true }, approve: { allowed: false },
+    change: { allowed: true, blockedReason: null }, cancel: { allowed: true, blockedReason: null },
+    approve: { allowed: false, blockedReason: null },
   },
 }
 
@@ -74,7 +90,7 @@ function createApi(overrides: Partial<AdminAttendanceApi> = {}): AdminAttendance
   return {
     getConfirmedReservations: vi.fn().mockResolvedValue([GENERAL, DRESSAGE, JUMPING]),
     processBulk: vi.fn().mockResolvedValue({ requestedCount: 3, succeededCount: 3, failedCount: 0, items: [] }),
-    complete: vi.fn().mockResolvedValue({ reservationId: 31, status: 'completed', generalRideCount: 12, dressageRideCount: 3, jumpingRideCount: 2 }),
+    complete: vi.fn().mockResolvedValue({ reservationId: 31, status: 'completed', paymentSource: 'coupon', couponId: 71, generalRideCount: 12, dressageRideCount: 3, jumpingRideCount: 2 }),
     noShow: vi.fn().mockResolvedValue({ reservationId: 31, status: 'no_show', paymentSource: 'coupon', couponId: 71, couponAction: 'deduct', adminMemo: '노쇼' }),
     ...overrides,
   }
@@ -94,7 +110,9 @@ describe('AdminAttendancePage', () => {
   it('출석_목록은_과거_확정_예약을_포함하도록_날짜_하한을_명시한다', async () => {
     const getReservations = vi
       .spyOn(AdminReservationQueryControllerApi.prototype, 'getReservations')
-      .mockResolvedValue({ content: [GENERAL], page: 0, size: 100, totalElements: 1, totalPages: 1 })
+      .mockResolvedValue({
+        content: [GENERAL], page: 0, size: 100, totalElements: 1, totalPages: 1, hasNext: false,
+      })
 
     await adminAttendanceApi.getConfirmedReservations()
 
@@ -133,9 +151,9 @@ describe('AdminAttendancePage', () => {
   })
 
   it.each([
-    [GENERAL, { reservationId: 31, status: 'completed', generalRideCount: 12, dressageRideCount: 3, jumpingRideCount: 2, couponId: 71 }, '일반 12회'],
-    [DRESSAGE, { reservationId: 32, status: 'completed', generalRideCount: 11, dressageRideCount: 4, jumpingRideCount: 2, couponId: 72 }, '마장마술 4회'],
-    [JUMPING, { reservationId: 33, status: 'completed', generalRideCount: 11, dressageRideCount: 3, jumpingRideCount: 3 }, '장애물 3회'],
+    [GENERAL, { reservationId: 31, status: 'completed', paymentSource: 'coupon', generalRideCount: 12, dressageRideCount: 3, jumpingRideCount: 2, couponId: 71 }, '일반 12회'],
+    [DRESSAGE, { reservationId: 32, status: 'completed', paymentSource: 'coupon', generalRideCount: 11, dressageRideCount: 4, jumpingRideCount: 2, couponId: 72 }, '마장마술 4회'],
+    [JUMPING, { reservationId: 33, status: 'completed', paymentSource: 'single_payment', generalRideCount: 11, dressageRideCount: 3, jumpingRideCount: 3, couponId: null }, '장애물 3회'],
   ] as Array<[AdminReservationResponse, ReservationCompletionResponse, string]>)('%s_수업_완료_응답의_탑승_이력을_표시한다', async (reservation, response, expected) => {
     const complete = vi.fn().mockResolvedValue(response)
     renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([reservation]), complete }))

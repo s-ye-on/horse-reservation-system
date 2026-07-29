@@ -1,15 +1,18 @@
 package com.horse.reservations.presentation.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.ReservationRejectResult;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ReservationRejectResponse(
 	Long reservationId,
 	String status,
 	String paymentSource,
-	Long couponId,
-	LocalDateTime rejectedAt,
+	@Schema(nullable = true) Long couponId,
+	OffsetDateTime rejectedAt,
 	String rejectedBy,
 	String rejectionReason
 ) {
@@ -20,7 +23,7 @@ public record ReservationRejectResponse(
 			result.status(),
 			result.paymentSource(),
 			result.couponId(),
-			result.rejectedAt(),
+			ApiDateTime.toSeoulOffset(result.rejectedAt()),
 			result.rejectedBy(),
 			result.rejectionReason());
 	}

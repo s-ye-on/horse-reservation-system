@@ -1,10 +1,13 @@
 package com.horse.reservations.presentation.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.AdminReservationResult;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record AdminReservationResponse(
 	Long reservationId,
@@ -13,23 +16,23 @@ public record AdminReservationResponse(
 	String memberPhone,
 	String classType,
 	LocalDate lessonDate,
-	LocalTime startTime,
+	@Schema(type = "string", format = "time") LocalTime startTime,
 	String status,
 	String paymentSource,
-	AdminReservationCouponResponse coupon,
-	LocalDateTime paymentDueAt,
-	LocalDateTime approvalRequestedAt,
-	LocalDateTime adminConfirmedAt,
-	LocalDateTime rejectedAt,
-	String rejectedBy,
-	String rejectionReason,
-	LocalDateTime cancelledAt,
-	String cancellationResponsibility,
-	String couponAction,
-	String adminMemo,
-	String approvalWarning,
-	LocalDateTime createdAt,
-	LocalDateTime updatedAt,
+	@Schema(nullable = true) AdminReservationCouponResponse coupon,
+	@Schema(nullable = true) OffsetDateTime paymentDueAt,
+	OffsetDateTime approvalRequestedAt,
+	@Schema(nullable = true) OffsetDateTime adminConfirmedAt,
+	@Schema(nullable = true) OffsetDateTime rejectedAt,
+	@Schema(nullable = true) String rejectedBy,
+	@Schema(nullable = true) String rejectionReason,
+	@Schema(nullable = true) OffsetDateTime cancelledAt,
+	@Schema(nullable = true) String cancellationResponsibility,
+	@Schema(nullable = true) String couponAction,
+	@Schema(nullable = true) String adminMemo,
+	@Schema(nullable = true) String approvalWarning,
+	OffsetDateTime createdAt,
+	OffsetDateTime updatedAt,
 	String displayGroup,
 	ReservationActionsResponse actions
 ) {
@@ -46,19 +49,19 @@ public record AdminReservationResponse(
 			result.status(),
 			result.paymentSource(),
 			result.coupon() == null ? null : AdminReservationCouponResponse.from(result.coupon()),
-			result.paymentDueAt(),
-			result.approvalRequestedAt(),
-			result.adminConfirmedAt(),
-			result.rejectedAt(),
+			ApiDateTime.toSeoulOffset(result.paymentDueAt()),
+			ApiDateTime.toSeoulOffset(result.approvalRequestedAt()),
+			ApiDateTime.toSeoulOffset(result.adminConfirmedAt()),
+			ApiDateTime.toSeoulOffset(result.rejectedAt()),
 			result.rejectedBy(),
 			result.rejectionReason(),
-			result.cancelledAt(),
+			ApiDateTime.toSeoulOffset(result.cancelledAt()),
 			result.cancellationResponsibility(),
 			result.couponAction(),
 			result.adminMemo(),
 			result.approvalWarning(),
-			result.createdAt(),
-			result.updatedAt(),
+			ApiDateTime.toSeoulOffset(result.createdAt()),
+			ApiDateTime.toSeoulOffset(result.updatedAt()),
 			result.displayGroup(),
 			ReservationActionsResponse.from(result.actions()));
 	}

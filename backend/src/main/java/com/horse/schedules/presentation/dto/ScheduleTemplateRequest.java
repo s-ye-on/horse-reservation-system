@@ -14,9 +14,9 @@ import jakarta.validation.constraints.Size;
 public record ScheduleTemplateRequest(
 	@Schema(requiredMode = Schema.RequiredMode.REQUIRED)
 	@NotNull DayOfWeek dayOfWeek,
-	@Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+	@Schema(requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "time")
 	@NotNull LocalTime startTime,
-	@Schema(requiredMode = Schema.RequiredMode.REQUIRED)
+	@Schema(requiredMode = Schema.RequiredMode.REQUIRED, type = "string", format = "time")
 	@NotNull LocalTime endTime,
 	@Schema(requiredMode = Schema.RequiredMode.REQUIRED)
 	@NotNull @PositiveOrZero Integer totalCapacity,

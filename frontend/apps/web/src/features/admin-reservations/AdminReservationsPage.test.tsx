@@ -6,9 +6,45 @@ import type { ReactNode } from 'react'
 import type { AdminReservationsApi } from './admin-reservations.api'
 import { AdminReservationsPage } from './admin-reservations-page'
 
+const BASE_RESERVATION: AdminReservationResponse = {
+  reservationId: 0,
+  memberId: 0,
+  memberName: '',
+  memberPhone: '',
+  classType: 'FIRST_RIDE',
+  lessonDate: new Date('2026-08-01'),
+  startTime: '09:00:00',
+  status: 'pending_admin_approval',
+  paymentSource: 'coupon',
+  coupon: null,
+  paymentDueAt: null,
+  approvalRequestedAt: new Date('2026-07-29T01:00:00Z'),
+  adminConfirmedAt: null,
+  rejectedAt: null,
+  rejectedBy: null,
+  rejectionReason: null,
+  cancelledAt: null,
+  cancellationResponsibility: null,
+  couponAction: null,
+  adminMemo: null,
+  approvalWarning: null,
+  createdAt: new Date('2026-07-29T01:00:00Z'),
+  updatedAt: new Date('2026-07-29T01:00:00Z'),
+  displayGroup: 'UPCOMING',
+  actions: {
+    change: { allowed: true, blockedReason: null },
+    cancel: { allowed: true, blockedReason: null },
+    complete: { allowed: false, blockedReason: null },
+    noShow: { allowed: false, blockedReason: null },
+    approve: { allowed: true, blockedReason: null },
+  },
+}
+
 const RESERVATIONS: AdminReservationResponse[] = [
   {
+    ...BASE_RESERVATION,
     reservationId: 1,
+    memberId: 1,
     memberName: '김긴급',
     memberPhone: '010-1111-1111',
     classType: 'ROUND_BEGINNER',
@@ -17,10 +53,12 @@ const RESERVATIONS: AdminReservationResponse[] = [
     status: 'pending_admin_approval',
     paymentSource: 'coupon',
     approvalWarning: 'critical',
-    coupon: { couponId: 21, couponType: 'GENERAL', remainingCount: 4, heldCount: 1 },
+    coupon: { couponId: 21, couponType: 'GENERAL', status: 'active', remainingCount: 4, heldCount: 1, expiresAt: null },
   },
   {
+    ...BASE_RESERVATION,
     reservationId: 2,
+    memberId: 2,
     memberName: '이확인',
     memberPhone: '010-2222-2222',
     classType: 'ROUND_TROT',
@@ -29,10 +67,12 @@ const RESERVATIONS: AdminReservationResponse[] = [
     status: 'pending_admin_approval',
     paymentSource: 'coupon',
     approvalWarning: 'warning',
-    coupon: { couponId: 22, couponType: 'GENERAL', remainingCount: 8, heldCount: 1 },
+    coupon: { couponId: 22, couponType: 'GENERAL', status: 'active', remainingCount: 8, heldCount: 1, expiresAt: null },
   },
   {
+    ...BASE_RESERVATION,
     reservationId: 3,
+    memberId: 3,
     memberName: '박정상',
     memberPhone: '010-3333-3333',
     classType: 'LARGE_ARENA_TROT',
@@ -41,10 +81,12 @@ const RESERVATIONS: AdminReservationResponse[] = [
     status: 'pending_admin_approval',
     paymentSource: 'coupon',
     approvalWarning: 'normal',
-    coupon: { couponId: 23, couponType: 'GENERAL', remainingCount: 9, heldCount: 1 },
+    coupon: { couponId: 23, couponType: 'GENERAL', status: 'active', remainingCount: 9, heldCount: 1, expiresAt: null },
   },
   {
+    ...BASE_RESERVATION,
     reservationId: 4,
+    memberId: 4,
     memberName: '최입금',
     memberPhone: '010-4444-4444',
     classType: 'FIRST_RIDE',
@@ -55,7 +97,9 @@ const RESERVATIONS: AdminReservationResponse[] = [
     paymentDueAt: new Date('2026-08-01T12:00:00+09:00'),
   },
   {
+    ...BASE_RESERVATION,
     reservationId: 5,
+    memberId: 5,
     memberName: '정만료',
     memberPhone: '010-5555-5555',
     classType: 'DRESSAGE',
@@ -65,7 +109,9 @@ const RESERVATIONS: AdminReservationResponse[] = [
     paymentSource: 'single_payment',
   },
   {
+    ...BASE_RESERVATION,
     reservationId: 6,
+    memberId: 6,
     memberName: '한확정',
     memberPhone: '010-6666-6666',
     classType: 'ROUND_BEGINNER',
@@ -73,7 +119,7 @@ const RESERVATIONS: AdminReservationResponse[] = [
     startTime: '09:00:00',
     status: 'confirmed',
     paymentSource: 'coupon',
-    coupon: { couponId: 26, couponType: 'GENERAL', remainingCount: 7, heldCount: 1 },
+    coupon: { couponId: 26, couponType: 'GENERAL', status: 'active', remainingCount: 7, heldCount: 1, expiresAt: null },
   },
 ]
 
@@ -86,9 +132,9 @@ function createApi(overrides: Partial<AdminReservationsApi> = {}): AdminReservat
     reject: vi.fn().mockResolvedValue(undefined),
     restore: vi.fn().mockResolvedValue(undefined),
     getTimeSlots: vi.fn().mockResolvedValue([
-      { id: 100, lessonDate: new Date('2026-08-14'), startTime: '09:00:00', closed: false },
-      { id: 101, lessonDate: new Date('2026-08-15'), startTime: '10:00:00', closed: false },
-      { id: 102, lessonDate: new Date('2026-08-16'), startTime: '11:00:00', closed: true },
+      { id: 100, lessonDate: new Date('2026-08-14'), startTime: '09:00:00', totalCapacity: 8, roundArenaCapacity: 4, classCapacities: {}, closed: false, createdAt: new Date('2026-07-29T01:00:00Z'), updatedAt: new Date('2026-07-29T01:00:00Z') },
+      { id: 101, lessonDate: new Date('2026-08-15'), startTime: '10:00:00', totalCapacity: 8, roundArenaCapacity: 4, classCapacities: {}, closed: false, createdAt: new Date('2026-07-29T01:00:00Z'), updatedAt: new Date('2026-07-29T01:00:00Z') },
+      { id: 102, lessonDate: new Date('2026-08-16'), startTime: '11:00:00', totalCapacity: 8, roundArenaCapacity: 4, classCapacities: {}, closed: true, createdAt: new Date('2026-07-29T01:00:00Z'), updatedAt: new Date('2026-07-29T01:00:00Z') },
     ]),
     previewCancellation: vi.fn((_reservationId, responsibility) => Promise.resolve({
       reservationId: 6,

@@ -13,8 +13,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ScheduleDateResponse(
 	LocalDate scheduleDate,
 	ScheduleDateStatus status,
-	ScheduleDateStatus resumeStatus,
-	String reason,
+	@Schema(nullable = true) ScheduleDateStatus resumeStatus,
+	@Schema(nullable = true) String reason,
 	long appliedConfigVersion,
 	long version
 ) {

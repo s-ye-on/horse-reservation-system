@@ -75,7 +75,7 @@ class AdminReservationConfirmApiTest {
 			.andExpect(jsonPath("$.status").value("confirmed"))
 			.andExpect(jsonPath("$.paymentSource").value("coupon"))
 			.andExpect(jsonPath("$.couponId").value(couponId))
-			.andExpect(jsonPath("$.adminConfirmedAt").value("2026-07-14T10:00:00"));
+			.andExpect(jsonPath("$.adminConfirmedAt").value("2026-07-14T10:00:00+09:00"));
 
 		assertThat(reservationStatus(reservationId)).isEqualTo("confirmed");
 		assertThat(couponHeldCount(couponId)).isEqualTo(1);
@@ -93,7 +93,7 @@ class AdminReservationConfirmApiTest {
 			.andExpect(jsonPath("$.status").value("confirmed"))
 			.andExpect(jsonPath("$.paymentSource").value("single_payment"))
 			.andExpect(jsonPath("$.couponId").doesNotExist())
-			.andExpect(jsonPath("$.adminConfirmedAt").value("2026-07-14T10:00:00"));
+			.andExpect(jsonPath("$.adminConfirmedAt").value("2026-07-14T10:00:00+09:00"));
 
 		assertThat(reservationStatus(reservationId)).isEqualTo("confirmed");
 		assertThat(totalUsageLogCount()).isZero();

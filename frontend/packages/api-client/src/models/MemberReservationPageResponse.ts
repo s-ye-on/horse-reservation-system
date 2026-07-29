@@ -32,43 +32,49 @@ export interface MemberReservationPageResponse {
      * @type {Array<MemberReservationResponse>}
      * @memberof MemberReservationPageResponse
      */
-    content?: Array<MemberReservationResponse>;
+    content: Array<MemberReservationResponse>;
     /**
      *
      * @type {number}
      * @memberof MemberReservationPageResponse
      */
-    page?: number;
+    page: number;
     /**
      *
      * @type {number}
      * @memberof MemberReservationPageResponse
      */
-    size?: number;
+    size: number;
     /**
      *
      * @type {number}
      * @memberof MemberReservationPageResponse
      */
-    totalElements?: number;
+    totalElements: number;
     /**
      *
      * @type {number}
      * @memberof MemberReservationPageResponse
      */
-    totalPages?: number;
+    totalPages: number;
     /**
      *
      * @type {boolean}
      * @memberof MemberReservationPageResponse
      */
-    hasNext?: boolean;
+    hasNext: boolean;
 }
 
 /**
  * Check if a given object implements the MemberReservationPageResponse interface.
  */
 export function instanceOfMemberReservationPageResponse(value: object): value is MemberReservationPageResponse {
+    if (!('content' in value) || value['content'] === undefined) return false;
+    if (!('page' in value) || value['page'] === undefined) return false;
+    if (!('size' in value) || value['size'] === undefined) return false;
+    if (!('totalElements' in value) || value['totalElements'] === undefined) return false;
+    if (!('totalPages' in value) || value['totalPages'] === undefined) return false;
+    if (!('hasNext' in value) || value['hasNext'] === undefined) return false;
     return true;
 }
 
@@ -82,12 +88,12 @@ export function MemberReservationPageResponseFromJSONTyped(json: any, ignoreDisc
     }
     return {
 
-        'content': json['content'] == null ? undefined : ((json['content'] as Array<any>).map(MemberReservationResponseFromJSON)),
-        'page': json['page'] == null ? undefined : json['page'],
-        'size': json['size'] == null ? undefined : json['size'],
-        'totalElements': json['totalElements'] == null ? undefined : json['totalElements'],
-        'totalPages': json['totalPages'] == null ? undefined : json['totalPages'],
-        'hasNext': json['hasNext'] == null ? undefined : json['hasNext'],
+        'content': ((json['content'] as Array<any>).map(MemberReservationResponseFromJSON)),
+        'page': json['page'],
+        'size': json['size'],
+        'totalElements': json['totalElements'],
+        'totalPages': json['totalPages'],
+        'hasNext': json['hasNext'],
     };
 }
 
@@ -102,7 +108,7 @@ export function MemberReservationPageResponseToJSONTyped(value?: MemberReservati
 
     return {
 
-        'content': value['content'] == null ? undefined : ((value['content'] as Array<any>).map(MemberReservationResponseToJSON)),
+        'content': ((value['content'] as Array<any>).map(MemberReservationResponseToJSON)),
         'page': value['page'],
         'size': value['size'],
         'totalElements': value['totalElements'],

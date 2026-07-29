@@ -36,19 +36,19 @@ export interface ScheduleSynchronizationResponse {
      * @type {number}
      * @memberof ScheduleSynchronizationResponse
      */
-    pendingVersion?: number;
+    pendingVersion: number | null;
     /**
      *
      * @type {Date}
      * @memberof ScheduleSynchronizationResponse
      */
-    horizonStart: Date;
+    horizonStart: Date | null;
     /**
      *
      * @type {Date}
      * @memberof ScheduleSynchronizationResponse
      */
-    horizonEnd: Date;
+    horizonEnd: Date | null;
     /**
      *
      * @type {number}
@@ -78,31 +78,31 @@ export interface ScheduleSynchronizationResponse {
      * @type {Date}
      * @memberof ScheduleSynchronizationResponse
      */
-    syncStartedAt?: Date;
+    syncStartedAt: Date | null;
     /**
      *
      * @type {Date}
      * @memberof ScheduleSynchronizationResponse
      */
-    lastCompletedAt?: Date;
+    lastCompletedAt: Date | null;
     /**
      *
      * @type {Date}
      * @memberof ScheduleSynchronizationResponse
      */
-    lastFailedAt?: Date;
+    lastFailedAt: Date | null;
     /**
      *
      * @type {string}
      * @memberof ScheduleSynchronizationResponse
      */
-    lastFailureCode?: string;
+    lastFailureCode: string | null;
     /**
      *
      * @type {string}
      * @memberof ScheduleSynchronizationResponse
      */
-    lastFailureSummary?: string;
+    lastFailureSummary: string | null;
     /**
      *
      * @type {boolean}
@@ -128,12 +128,18 @@ export type ScheduleSynchronizationResponseStatusEnum = typeof ScheduleSynchroni
 export function instanceOfScheduleSynchronizationResponse(value: object): value is ScheduleSynchronizationResponse {
     if (!('status' in value) || value['status'] === undefined) return false;
     if (!('activeVersion' in value) || value['activeVersion'] === undefined) return false;
+    if (!('pendingVersion' in value) || value['pendingVersion'] === undefined) return false;
     if (!('horizonStart' in value) || value['horizonStart'] === undefined) return false;
     if (!('horizonEnd' in value) || value['horizonEnd'] === undefined) return false;
     if (!('totalDateCount' in value) || value['totalDateCount'] === undefined) return false;
     if (!('appliedDateCount' in value) || value['appliedDateCount'] === undefined) return false;
     if (!('remainingDateCount' in value) || value['remainingDateCount'] === undefined) return false;
     if (!('progressPercent' in value) || value['progressPercent'] === undefined) return false;
+    if (!('syncStartedAt' in value) || value['syncStartedAt'] === undefined) return false;
+    if (!('lastCompletedAt' in value) || value['lastCompletedAt'] === undefined) return false;
+    if (!('lastFailedAt' in value) || value['lastFailedAt'] === undefined) return false;
+    if (!('lastFailureCode' in value) || value['lastFailureCode'] === undefined) return false;
+    if (!('lastFailureSummary' in value) || value['lastFailureSummary'] === undefined) return false;
     if (!('longRunning' in value) || value['longRunning'] === undefined) return false;
     return true;
 }
@@ -150,18 +156,18 @@ export function ScheduleSynchronizationResponseFromJSONTyped(json: any, ignoreDi
 
         'status': json['status'],
         'activeVersion': json['activeVersion'],
-        'pendingVersion': json['pendingVersion'] == null ? undefined : json['pendingVersion'],
-        'horizonStart': (new Date(json['horizonStart'])),
-        'horizonEnd': (new Date(json['horizonEnd'])),
+        'pendingVersion': json['pendingVersion'],
+        'horizonStart': (json['horizonStart'] == null ? null : new Date(json['horizonStart'])),
+        'horizonEnd': (json['horizonEnd'] == null ? null : new Date(json['horizonEnd'])),
         'totalDateCount': json['totalDateCount'],
         'appliedDateCount': json['appliedDateCount'],
         'remainingDateCount': json['remainingDateCount'],
         'progressPercent': json['progressPercent'],
-        'syncStartedAt': json['syncStartedAt'] == null ? undefined : (new Date(json['syncStartedAt'])),
-        'lastCompletedAt': json['lastCompletedAt'] == null ? undefined : (new Date(json['lastCompletedAt'])),
-        'lastFailedAt': json['lastFailedAt'] == null ? undefined : (new Date(json['lastFailedAt'])),
-        'lastFailureCode': json['lastFailureCode'] == null ? undefined : json['lastFailureCode'],
-        'lastFailureSummary': json['lastFailureSummary'] == null ? undefined : json['lastFailureSummary'],
+        'syncStartedAt': (json['syncStartedAt'] == null ? null : new Date(json['syncStartedAt'])),
+        'lastCompletedAt': (json['lastCompletedAt'] == null ? null : new Date(json['lastCompletedAt'])),
+        'lastFailedAt': (json['lastFailedAt'] == null ? null : new Date(json['lastFailedAt'])),
+        'lastFailureCode': json['lastFailureCode'],
+        'lastFailureSummary': json['lastFailureSummary'],
         'longRunning': json['longRunning'],
     };
 }
@@ -180,8 +186,8 @@ export function ScheduleSynchronizationResponseToJSONTyped(value?: ScheduleSynch
         'status': value['status'],
         'activeVersion': value['activeVersion'],
         'pendingVersion': value['pendingVersion'],
-        'horizonStart': value['horizonStart'].toISOString().substring(0,10),
-        'horizonEnd': value['horizonEnd'].toISOString().substring(0,10),
+        'horizonStart': value['horizonStart'] == null ? value['horizonStart'] : value['horizonStart'].toISOString().substring(0,10),
+        'horizonEnd': value['horizonEnd'] == null ? value['horizonEnd'] : value['horizonEnd'].toISOString().substring(0,10),
         'totalDateCount': value['totalDateCount'],
         'appliedDateCount': value['appliedDateCount'],
         'remainingDateCount': value['remainingDateCount'],

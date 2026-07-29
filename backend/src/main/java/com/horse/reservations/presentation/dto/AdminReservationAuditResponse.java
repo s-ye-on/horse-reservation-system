@@ -1,10 +1,13 @@
 package com.horse.reservations.presentation.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.AdminReservationAuditResult;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record AdminReservationAuditResponse(
 	Long auditLogId,
@@ -17,14 +20,14 @@ public record AdminReservationAuditResponse(
 	String fromStatus,
 	String toStatus,
 	LocalDate fromLessonDate,
-	LocalTime fromStartTime,
+	@Schema(type = "string", format = "time") LocalTime fromStartTime,
 	LocalDate toLessonDate,
-	LocalTime toStartTime,
+	@Schema(type = "string", format = "time") LocalTime toStartTime,
 	String couponAction,
-	Long couponId,
-	LocalDateTime paymentDueAt,
-	String memo,
-	LocalDateTime occurredAt
+	@Schema(nullable = true) Long couponId,
+	@Schema(nullable = true) OffsetDateTime paymentDueAt,
+	@Schema(nullable = true) String memo,
+	OffsetDateTime occurredAt
 ) {
 
 	public static AdminReservationAuditResponse from(AdminReservationAuditResult result) {
@@ -44,8 +47,8 @@ public record AdminReservationAuditResponse(
 			result.toStartTime(),
 			result.couponAction().databaseValue(),
 			result.couponId(),
-			result.paymentDueAt(),
+			ApiDateTime.toSeoulOffset(result.paymentDueAt()),
 			result.memo(),
-			result.occurredAt());
+			ApiDateTime.toSeoulOffset(result.occurredAt()));
 	}
 }

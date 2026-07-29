@@ -24,43 +24,49 @@ export interface ReservationCancelResponse {
      * @type {number}
      * @memberof ReservationCancelResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof ReservationCancelResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof ReservationCancelResponse
      */
-    responsibility?: string;
+    responsibility: string;
     /**
      *
      * @type {string}
      * @memberof ReservationCancelResponse
      */
-    couponAction?: string;
+    couponAction: string;
     /**
      *
      * @type {Date}
      * @memberof ReservationCancelResponse
      */
-    cancelledAt?: Date;
+    cancelledAt: Date;
     /**
      *
      * @type {boolean}
      * @memberof ReservationCancelResponse
      */
-    changed?: boolean;
+    changed: boolean;
 }
 
 /**
  * Check if a given object implements the ReservationCancelResponse interface.
  */
 export function instanceOfReservationCancelResponse(value: object): value is ReservationCancelResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('responsibility' in value) || value['responsibility'] === undefined) return false;
+    if (!('couponAction' in value) || value['couponAction'] === undefined) return false;
+    if (!('cancelledAt' in value) || value['cancelledAt'] === undefined) return false;
+    if (!('changed' in value) || value['changed'] === undefined) return false;
     return true;
 }
 
@@ -74,12 +80,12 @@ export function ReservationCancelResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'responsibility': json['responsibility'] == null ? undefined : json['responsibility'],
-        'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
-        'cancelledAt': json['cancelledAt'] == null ? undefined : (new Date(json['cancelledAt'])),
-        'changed': json['changed'] == null ? undefined : json['changed'],
+        'reservationId': json['reservationId'],
+        'status': json['status'],
+        'responsibility': json['responsibility'],
+        'couponAction': json['couponAction'],
+        'cancelledAt': (new Date(json['cancelledAt'])),
+        'changed': json['changed'],
     };
 }
 
@@ -98,7 +104,7 @@ export function ReservationCancelResponseToJSONTyped(value?: ReservationCancelRe
         'status': value['status'],
         'responsibility': value['responsibility'],
         'couponAction': value['couponAction'],
-        'cancelledAt': value['cancelledAt'] == null ? value['cancelledAt'] : value['cancelledAt'].toISOString(),
+        'cancelledAt': value['cancelledAt'].toISOString(),
         'changed': value['changed'],
     };
 }

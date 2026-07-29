@@ -24,43 +24,49 @@ export interface AdminReservationCouponResponse {
      * @type {number}
      * @memberof AdminReservationCouponResponse
      */
-    couponId?: number;
+    couponId: number;
     /**
      *
      * @type {string}
      * @memberof AdminReservationCouponResponse
      */
-    couponType?: string;
+    couponType: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationCouponResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {number}
      * @memberof AdminReservationCouponResponse
      */
-    remainingCount?: number;
+    remainingCount: number;
     /**
      *
      * @type {number}
      * @memberof AdminReservationCouponResponse
      */
-    heldCount?: number;
+    heldCount: number;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationCouponResponse
      */
-    expiresAt?: Date;
+    expiresAt: Date | null;
 }
 
 /**
  * Check if a given object implements the AdminReservationCouponResponse interface.
  */
 export function instanceOfAdminReservationCouponResponse(value: object): value is AdminReservationCouponResponse {
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('couponType' in value) || value['couponType'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('remainingCount' in value) || value['remainingCount'] === undefined) return false;
+    if (!('heldCount' in value) || value['heldCount'] === undefined) return false;
+    if (!('expiresAt' in value) || value['expiresAt'] === undefined) return false;
     return true;
 }
 
@@ -74,12 +80,12 @@ export function AdminReservationCouponResponseFromJSONTyped(json: any, ignoreDis
     }
     return {
 
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'couponType': json['couponType'] == null ? undefined : json['couponType'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'remainingCount': json['remainingCount'] == null ? undefined : json['remainingCount'],
-        'heldCount': json['heldCount'] == null ? undefined : json['heldCount'],
-        'expiresAt': json['expiresAt'] == null ? undefined : (new Date(json['expiresAt'])),
+        'couponId': json['couponId'],
+        'couponType': json['couponType'],
+        'status': json['status'],
+        'remainingCount': json['remainingCount'],
+        'heldCount': json['heldCount'],
+        'expiresAt': (json['expiresAt'] == null ? null : new Date(json['expiresAt'])),
     };
 }
 

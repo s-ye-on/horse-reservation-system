@@ -12,7 +12,7 @@ const TIME_SLOTS: MemberAvailableTimeSlotsResponse = {
   date: new Date('2026-07-15'),
   classType: 'ROUND_BEGINNER',
   timeSlots: [
-    { timeSlotId: 1, lessonDate: new Date('2026-07-15'), startTime: '09:00:00', closed: false, reservable: true, remainingCapacity: 2 },
+    { timeSlotId: 1, lessonDate: new Date('2026-07-15'), startTime: '09:00:00', closed: false, reservable: true, remainingCapacity: 2, unavailableReason: null },
     { timeSlotId: 2, lessonDate: new Date('2026-07-15'), startTime: '11:00:00', closed: true, reservable: false, remainingCapacity: 4, unavailableReason: 'CLOSED' },
     { timeSlotId: 3, lessonDate: new Date('2026-07-15'), startTime: '14:00:00', closed: false, reservable: false, remainingCapacity: 0, unavailableReason: 'FULL' },
   ],

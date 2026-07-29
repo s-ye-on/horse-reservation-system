@@ -164,7 +164,7 @@ class AdminReservationAuditQueryApiTest {
 			.andExpect(jsonPath("$.content[0].toStartTime").value("10:00:00"))
 			.andExpect(jsonPath("$.content[0].couponAction").value("free_change_used"))
 			.andExpect(jsonPath("$.content[0].memo").value("무료 변경 승인"))
-			.andExpect(jsonPath("$.content[0].occurredAt").value("2026-07-16T10:30:00"));
+			.andExpect(jsonPath("$.content[0].occurredAt").value("2026-07-16T10:30:00+09:00"));
 	}
 
 	@Test

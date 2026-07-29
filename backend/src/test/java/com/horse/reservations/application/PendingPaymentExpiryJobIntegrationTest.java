@@ -85,7 +85,7 @@ class PendingPaymentExpiryJobIntegrationTest {
 		mockMvc.perform(post(ENDPOINT).with(adminJwt()))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.expiredCount").value(2))
-			.andExpect(jsonPath("$.executedAt").value("2026-07-15T10:00:00"));
+			.andExpect(jsonPath("$.executedAt").value("2026-07-15T10:00:00+09:00"));
 
 		assertThat(reservationStatus(beforeBoundaryId)).isEqualTo("payment_expired");
 		assertThat(reservationStatus(boundaryId)).isEqualTo("payment_expired");

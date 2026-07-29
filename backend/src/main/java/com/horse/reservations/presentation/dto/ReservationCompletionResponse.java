@@ -2,11 +2,13 @@ package com.horse.reservations.presentation.dto;
 
 import com.horse.reservations.application.ReservationCompletionResult;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record ReservationCompletionResponse(
 	Long reservationId,
 	String status,
 	String paymentSource,
-	Long couponId,
+	@Schema(nullable = true) Long couponId,
 	int generalRideCount,
 	int dressageRideCount,
 	int jumpingRideCount

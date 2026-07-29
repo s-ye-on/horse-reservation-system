@@ -84,7 +84,7 @@ export interface TimeSlotClosureImpactResponse {
      * @type {number}
      * @memberof TimeSlotClosureImpactResponse
      */
-    couponId?: number;
+    couponId: number | null;
 }
 
 /**
@@ -101,6 +101,7 @@ export function instanceOfTimeSlotClosureImpactResponse(value: object): value is
     if (!('memberPhone' in value) || value['memberPhone'] === undefined) return false;
     if (!('classType' in value) || value['classType'] === undefined) return false;
     if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
     return true;
 }
 
@@ -124,7 +125,7 @@ export function TimeSlotClosureImpactResponseFromJSONTyped(json: any, ignoreDisc
         'memberPhone': json['memberPhone'],
         'classType': json['classType'],
         'paymentSource': json['paymentSource'],
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
+        'couponId': json['couponId'],
     };
 }
 

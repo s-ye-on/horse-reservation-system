@@ -1,7 +1,8 @@
 package com.horse.reservations.presentation.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.ReservationCancelResult;
 
 public record ReservationCancelResponse(
@@ -9,7 +10,7 @@ public record ReservationCancelResponse(
 	String status,
 	String responsibility,
 	String couponAction,
-	LocalDateTime cancelledAt,
+	OffsetDateTime cancelledAt,
 	boolean changed
 ) {
 
@@ -19,7 +20,7 @@ public record ReservationCancelResponse(
 			result.status().databaseValue(),
 			result.responsibility().databaseValue(),
 			result.couponAction().databaseValue(),
-			result.cancelledAt(),
+			ApiDateTime.toSeoulOffset(result.cancelledAt()),
 			result.changed());
 	}
 }

@@ -24,37 +24,42 @@ export interface ReservationConfirmResponse {
      * @type {number}
      * @memberof ReservationConfirmResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof ReservationConfirmResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof ReservationConfirmResponse
      */
-    paymentSource?: string;
+    paymentSource: string;
     /**
      *
      * @type {number}
      * @memberof ReservationConfirmResponse
      */
-    couponId?: number;
+    couponId: number | null;
     /**
      *
      * @type {Date}
      * @memberof ReservationConfirmResponse
      */
-    adminConfirmedAt?: Date;
+    adminConfirmedAt: Date;
 }
 
 /**
  * Check if a given object implements the ReservationConfirmResponse interface.
  */
 export function instanceOfReservationConfirmResponse(value: object): value is ReservationConfirmResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('adminConfirmedAt' in value) || value['adminConfirmedAt'] === undefined) return false;
     return true;
 }
 
@@ -68,11 +73,11 @@ export function ReservationConfirmResponseFromJSONTyped(json: any, ignoreDiscrim
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'paymentSource': json['paymentSource'] == null ? undefined : json['paymentSource'],
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'adminConfirmedAt': json['adminConfirmedAt'] == null ? undefined : (new Date(json['adminConfirmedAt'])),
+        'reservationId': json['reservationId'],
+        'status': json['status'],
+        'paymentSource': json['paymentSource'],
+        'couponId': json['couponId'],
+        'adminConfirmedAt': (new Date(json['adminConfirmedAt'])),
     };
 }
 
@@ -91,7 +96,7 @@ export function ReservationConfirmResponseToJSONTyped(value?: ReservationConfirm
         'status': value['status'],
         'paymentSource': value['paymentSource'],
         'couponId': value['couponId'],
-        'adminConfirmedAt': value['adminConfirmedAt'] == null ? value['adminConfirmedAt'] : value['adminConfirmedAt'].toISOString(),
+        'adminConfirmedAt': value['adminConfirmedAt'].toISOString(),
     };
 }
 

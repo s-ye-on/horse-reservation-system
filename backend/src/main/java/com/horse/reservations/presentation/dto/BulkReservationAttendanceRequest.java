@@ -9,10 +9,13 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record BulkReservationAttendanceRequest(
 	@NotNull
 	LocalDate lessonDate,
 	@NotNull
+	@Schema(type = "string", format = "time")
 	LocalTime startTime,
 	@NotEmpty
 	@Size(max = MAX_ITEMS)

@@ -68,13 +68,13 @@ export interface TimeSlotClosureResponse {
      * @type {Date}
      * @memberof TimeSlotClosureResponse
      */
-    completedAt?: Date;
+    completedAt: Date | null;
     /**
      *
      * @type {Date}
      * @memberof TimeSlotClosureResponse
      */
-    withdrawnAt?: Date;
+    withdrawnAt: Date | null;
     /**
      *
      * @type {number}
@@ -135,6 +135,8 @@ export function instanceOfTimeSlotClosureResponse(value: object): value is TimeS
     if (!('status' in value) || value['status'] === undefined) return false;
     if (!('reason' in value) || value['reason'] === undefined) return false;
     if (!('startedAt' in value) || value['startedAt'] === undefined) return false;
+    if (!('completedAt' in value) || value['completedAt'] === undefined) return false;
+    if (!('withdrawnAt' in value) || value['withdrawnAt'] === undefined) return false;
     if (!('version' in value) || value['version'] === undefined) return false;
     if (!('totalCount' in value) || value['totalCount'] === undefined) return false;
     if (!('resolvedCount' in value) || value['resolvedCount'] === undefined) return false;
@@ -160,8 +162,8 @@ export function TimeSlotClosureResponseFromJSONTyped(json: any, ignoreDiscrimina
         'status': json['status'],
         'reason': json['reason'],
         'startedAt': (new Date(json['startedAt'])),
-        'completedAt': json['completedAt'] == null ? undefined : (new Date(json['completedAt'])),
-        'withdrawnAt': json['withdrawnAt'] == null ? undefined : (new Date(json['withdrawnAt'])),
+        'completedAt': (json['completedAt'] == null ? null : new Date(json['completedAt'])),
+        'withdrawnAt': (json['withdrawnAt'] == null ? null : new Date(json['withdrawnAt'])),
         'version': json['version'],
         'totalCount': json['totalCount'],
         'resolvedCount': json['resolvedCount'],

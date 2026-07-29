@@ -24,49 +24,56 @@ export interface ReservationRejectResponse {
      * @type {number}
      * @memberof ReservationRejectResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof ReservationRejectResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof ReservationRejectResponse
      */
-    paymentSource?: string;
+    paymentSource: string;
     /**
      *
      * @type {number}
      * @memberof ReservationRejectResponse
      */
-    couponId?: number;
+    couponId: number | null;
     /**
      *
      * @type {Date}
      * @memberof ReservationRejectResponse
      */
-    rejectedAt?: Date;
+    rejectedAt: Date;
     /**
      *
      * @type {string}
      * @memberof ReservationRejectResponse
      */
-    rejectedBy?: string;
+    rejectedBy: string;
     /**
      *
      * @type {string}
      * @memberof ReservationRejectResponse
      */
-    rejectionReason?: string;
+    rejectionReason: string;
 }
 
 /**
  * Check if a given object implements the ReservationRejectResponse interface.
  */
 export function instanceOfReservationRejectResponse(value: object): value is ReservationRejectResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('rejectedAt' in value) || value['rejectedAt'] === undefined) return false;
+    if (!('rejectedBy' in value) || value['rejectedBy'] === undefined) return false;
+    if (!('rejectionReason' in value) || value['rejectionReason'] === undefined) return false;
     return true;
 }
 
@@ -80,13 +87,13 @@ export function ReservationRejectResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'paymentSource': json['paymentSource'] == null ? undefined : json['paymentSource'],
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'rejectedAt': json['rejectedAt'] == null ? undefined : (new Date(json['rejectedAt'])),
-        'rejectedBy': json['rejectedBy'] == null ? undefined : json['rejectedBy'],
-        'rejectionReason': json['rejectionReason'] == null ? undefined : json['rejectionReason'],
+        'reservationId': json['reservationId'],
+        'status': json['status'],
+        'paymentSource': json['paymentSource'],
+        'couponId': json['couponId'],
+        'rejectedAt': (new Date(json['rejectedAt'])),
+        'rejectedBy': json['rejectedBy'],
+        'rejectionReason': json['rejectionReason'],
     };
 }
 
@@ -105,7 +112,7 @@ export function ReservationRejectResponseToJSONTyped(value?: ReservationRejectRe
         'status': value['status'],
         'paymentSource': value['paymentSource'],
         'couponId': value['couponId'],
-        'rejectedAt': value['rejectedAt'] == null ? value['rejectedAt'] : value['rejectedAt'].toISOString(),
+        'rejectedAt': value['rejectedAt'].toISOString(),
         'rejectedBy': value['rejectedBy'],
         'rejectionReason': value['rejectionReason'],
     };

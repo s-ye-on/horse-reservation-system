@@ -32,31 +32,35 @@ export interface BulkReservationAttendanceResponse {
      * @type {number}
      * @memberof BulkReservationAttendanceResponse
      */
-    requestedCount?: number;
+    requestedCount: number;
     /**
      *
      * @type {number}
      * @memberof BulkReservationAttendanceResponse
      */
-    succeededCount?: number;
+    succeededCount: number;
     /**
      *
      * @type {number}
      * @memberof BulkReservationAttendanceResponse
      */
-    failedCount?: number;
+    failedCount: number;
     /**
      *
      * @type {Array<BulkReservationAttendanceItemResponse>}
      * @memberof BulkReservationAttendanceResponse
      */
-    items?: Array<BulkReservationAttendanceItemResponse>;
+    items: Array<BulkReservationAttendanceItemResponse>;
 }
 
 /**
  * Check if a given object implements the BulkReservationAttendanceResponse interface.
  */
 export function instanceOfBulkReservationAttendanceResponse(value: object): value is BulkReservationAttendanceResponse {
+    if (!('requestedCount' in value) || value['requestedCount'] === undefined) return false;
+    if (!('succeededCount' in value) || value['succeededCount'] === undefined) return false;
+    if (!('failedCount' in value) || value['failedCount'] === undefined) return false;
+    if (!('items' in value) || value['items'] === undefined) return false;
     return true;
 }
 
@@ -70,10 +74,10 @@ export function BulkReservationAttendanceResponseFromJSONTyped(json: any, ignore
     }
     return {
 
-        'requestedCount': json['requestedCount'] == null ? undefined : json['requestedCount'],
-        'succeededCount': json['succeededCount'] == null ? undefined : json['succeededCount'],
-        'failedCount': json['failedCount'] == null ? undefined : json['failedCount'],
-        'items': json['items'] == null ? undefined : ((json['items'] as Array<any>).map(BulkReservationAttendanceItemResponseFromJSON)),
+        'requestedCount': json['requestedCount'],
+        'succeededCount': json['succeededCount'],
+        'failedCount': json['failedCount'],
+        'items': ((json['items'] as Array<any>).map(BulkReservationAttendanceItemResponseFromJSON)),
     };
 }
 
@@ -91,7 +95,7 @@ export function BulkReservationAttendanceResponseToJSONTyped(value?: BulkReserva
         'requestedCount': value['requestedCount'],
         'succeededCount': value['succeededCount'],
         'failedCount': value['failedCount'],
-        'items': value['items'] == null ? undefined : ((value['items'] as Array<any>).map(BulkReservationAttendanceItemResponseToJSON)),
+        'items': ((value['items'] as Array<any>).map(BulkReservationAttendanceItemResponseToJSON)),
     };
 }
 

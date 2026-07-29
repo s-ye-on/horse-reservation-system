@@ -39,157 +39,182 @@ export interface AdminReservationResponse {
      * @type {number}
      * @memberof AdminReservationResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {number}
      * @memberof AdminReservationResponse
      */
-    memberId?: number;
+    memberId: number;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    memberName?: string;
+    memberName: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    memberPhone?: string;
+    memberPhone: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    classType?: string;
+    classType: string;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationResponse
      */
-    lessonDate?: Date;
+    lessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    startTime?: string;
+    startTime: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    paymentSource?: string;
+    paymentSource: string;
     /**
      *
      * @type {AdminReservationCouponResponse}
      * @memberof AdminReservationResponse
      */
-    coupon?: AdminReservationCouponResponse;
+    coupon: AdminReservationCouponResponse | null;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationResponse
      */
-    paymentDueAt?: Date;
+    paymentDueAt: Date | null;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationResponse
      */
-    approvalRequestedAt?: Date;
+    approvalRequestedAt: Date;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationResponse
      */
-    adminConfirmedAt?: Date;
+    adminConfirmedAt: Date | null;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationResponse
      */
-    rejectedAt?: Date;
+    rejectedAt: Date | null;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    rejectedBy?: string;
+    rejectedBy: string | null;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    rejectionReason?: string;
+    rejectionReason: string | null;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationResponse
      */
-    cancelledAt?: Date;
+    cancelledAt: Date | null;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    cancellationResponsibility?: string;
+    cancellationResponsibility: string | null;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    couponAction?: string;
+    couponAction: string | null;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    adminMemo?: string;
+    adminMemo: string | null;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    approvalWarning?: string;
+    approvalWarning: string | null;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationResponse
      */
-    createdAt?: Date;
+    createdAt: Date;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationResponse
      */
-    updatedAt?: Date;
+    updatedAt: Date;
     /**
      *
      * @type {string}
      * @memberof AdminReservationResponse
      */
-    displayGroup?: string;
+    displayGroup: string;
     /**
      *
      * @type {ReservationActionsResponse}
      * @memberof AdminReservationResponse
      */
-    actions?: ReservationActionsResponse;
+    actions: ReservationActionsResponse;
 }
 
 /**
  * Check if a given object implements the AdminReservationResponse interface.
  */
 export function instanceOfAdminReservationResponse(value: object): value is AdminReservationResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('memberId' in value) || value['memberId'] === undefined) return false;
+    if (!('memberName' in value) || value['memberName'] === undefined) return false;
+    if (!('memberPhone' in value) || value['memberPhone'] === undefined) return false;
+    if (!('classType' in value) || value['classType'] === undefined) return false;
+    if (!('lessonDate' in value) || value['lessonDate'] === undefined) return false;
+    if (!('startTime' in value) || value['startTime'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('coupon' in value) || value['coupon'] === undefined) return false;
+    if (!('paymentDueAt' in value) || value['paymentDueAt'] === undefined) return false;
+    if (!('approvalRequestedAt' in value) || value['approvalRequestedAt'] === undefined) return false;
+    if (!('adminConfirmedAt' in value) || value['adminConfirmedAt'] === undefined) return false;
+    if (!('rejectedAt' in value) || value['rejectedAt'] === undefined) return false;
+    if (!('rejectedBy' in value) || value['rejectedBy'] === undefined) return false;
+    if (!('rejectionReason' in value) || value['rejectionReason'] === undefined) return false;
+    if (!('cancelledAt' in value) || value['cancelledAt'] === undefined) return false;
+    if (!('cancellationResponsibility' in value) || value['cancellationResponsibility'] === undefined) return false;
+    if (!('couponAction' in value) || value['couponAction'] === undefined) return false;
+    if (!('adminMemo' in value) || value['adminMemo'] === undefined) return false;
+    if (!('approvalWarning' in value) || value['approvalWarning'] === undefined) return false;
+    if (!('createdAt' in value) || value['createdAt'] === undefined) return false;
+    if (!('updatedAt' in value) || value['updatedAt'] === undefined) return false;
+    if (!('displayGroup' in value) || value['displayGroup'] === undefined) return false;
+    if (!('actions' in value) || value['actions'] === undefined) return false;
     return true;
 }
 
@@ -203,31 +228,31 @@ export function AdminReservationResponseFromJSONTyped(json: any, ignoreDiscrimin
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'memberId': json['memberId'] == null ? undefined : json['memberId'],
-        'memberName': json['memberName'] == null ? undefined : json['memberName'],
-        'memberPhone': json['memberPhone'] == null ? undefined : json['memberPhone'],
-        'classType': json['classType'] == null ? undefined : json['classType'],
-        'lessonDate': json['lessonDate'] == null ? undefined : (new Date(json['lessonDate'])),
-        'startTime': json['startTime'] == null ? undefined : json['startTime'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'paymentSource': json['paymentSource'] == null ? undefined : json['paymentSource'],
-        'coupon': json['coupon'] == null ? undefined : AdminReservationCouponResponseFromJSON(json['coupon']),
-        'paymentDueAt': json['paymentDueAt'] == null ? undefined : (new Date(json['paymentDueAt'])),
-        'approvalRequestedAt': json['approvalRequestedAt'] == null ? undefined : (new Date(json['approvalRequestedAt'])),
-        'adminConfirmedAt': json['adminConfirmedAt'] == null ? undefined : (new Date(json['adminConfirmedAt'])),
-        'rejectedAt': json['rejectedAt'] == null ? undefined : (new Date(json['rejectedAt'])),
-        'rejectedBy': json['rejectedBy'] == null ? undefined : json['rejectedBy'],
-        'rejectionReason': json['rejectionReason'] == null ? undefined : json['rejectionReason'],
-        'cancelledAt': json['cancelledAt'] == null ? undefined : (new Date(json['cancelledAt'])),
-        'cancellationResponsibility': json['cancellationResponsibility'] == null ? undefined : json['cancellationResponsibility'],
-        'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
-        'adminMemo': json['adminMemo'] == null ? undefined : json['adminMemo'],
-        'approvalWarning': json['approvalWarning'] == null ? undefined : json['approvalWarning'],
-        'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
-        'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
-        'displayGroup': json['displayGroup'] == null ? undefined : json['displayGroup'],
-        'actions': json['actions'] == null ? undefined : ReservationActionsResponseFromJSON(json['actions']),
+        'reservationId': json['reservationId'],
+        'memberId': json['memberId'],
+        'memberName': json['memberName'],
+        'memberPhone': json['memberPhone'],
+        'classType': json['classType'],
+        'lessonDate': (new Date(json['lessonDate'])),
+        'startTime': json['startTime'],
+        'status': json['status'],
+        'paymentSource': json['paymentSource'],
+        'coupon': AdminReservationCouponResponseFromJSON(json['coupon']),
+        'paymentDueAt': (json['paymentDueAt'] == null ? null : new Date(json['paymentDueAt'])),
+        'approvalRequestedAt': (new Date(json['approvalRequestedAt'])),
+        'adminConfirmedAt': (json['adminConfirmedAt'] == null ? null : new Date(json['adminConfirmedAt'])),
+        'rejectedAt': (json['rejectedAt'] == null ? null : new Date(json['rejectedAt'])),
+        'rejectedBy': json['rejectedBy'],
+        'rejectionReason': json['rejectionReason'],
+        'cancelledAt': (json['cancelledAt'] == null ? null : new Date(json['cancelledAt'])),
+        'cancellationResponsibility': json['cancellationResponsibility'],
+        'couponAction': json['couponAction'],
+        'adminMemo': json['adminMemo'],
+        'approvalWarning': json['approvalWarning'],
+        'createdAt': (new Date(json['createdAt'])),
+        'updatedAt': (new Date(json['updatedAt'])),
+        'displayGroup': json['displayGroup'],
+        'actions': ReservationActionsResponseFromJSON(json['actions']),
     };
 }
 
@@ -247,13 +272,13 @@ export function AdminReservationResponseToJSONTyped(value?: AdminReservationResp
         'memberName': value['memberName'],
         'memberPhone': value['memberPhone'],
         'classType': value['classType'],
-        'lessonDate': value['lessonDate'] == null ? value['lessonDate'] : value['lessonDate'].toISOString().substring(0,10),
+        'lessonDate': value['lessonDate'].toISOString().substring(0,10),
         'startTime': value['startTime'],
         'status': value['status'],
         'paymentSource': value['paymentSource'],
         'coupon': AdminReservationCouponResponseToJSON(value['coupon']),
         'paymentDueAt': value['paymentDueAt'] == null ? value['paymentDueAt'] : value['paymentDueAt'].toISOString(),
-        'approvalRequestedAt': value['approvalRequestedAt'] == null ? value['approvalRequestedAt'] : value['approvalRequestedAt'].toISOString(),
+        'approvalRequestedAt': value['approvalRequestedAt'].toISOString(),
         'adminConfirmedAt': value['adminConfirmedAt'] == null ? value['adminConfirmedAt'] : value['adminConfirmedAt'].toISOString(),
         'rejectedAt': value['rejectedAt'] == null ? value['rejectedAt'] : value['rejectedAt'].toISOString(),
         'rejectedBy': value['rejectedBy'],
@@ -263,8 +288,8 @@ export function AdminReservationResponseToJSONTyped(value?: AdminReservationResp
         'couponAction': value['couponAction'],
         'adminMemo': value['adminMemo'],
         'approvalWarning': value['approvalWarning'],
-        'createdAt': value['createdAt'] == null ? value['createdAt'] : value['createdAt'].toISOString(),
-        'updatedAt': value['updatedAt'] == null ? value['updatedAt'] : value['updatedAt'].toISOString(),
+        'createdAt': value['createdAt'].toISOString(),
+        'updatedAt': value['updatedAt'].toISOString(),
         'displayGroup': value['displayGroup'],
         'actions': ReservationActionsResponseToJSON(value['actions']),
     };

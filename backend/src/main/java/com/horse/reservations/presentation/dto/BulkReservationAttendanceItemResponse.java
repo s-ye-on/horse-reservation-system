@@ -2,13 +2,15 @@ package com.horse.reservations.presentation.dto;
 
 import com.horse.reservations.application.BulkReservationAttendanceItemResult;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record BulkReservationAttendanceItemResponse(
 	Long reservationId,
 	String action,
 	boolean success,
-	String status,
-	String errorCode,
-	String errorMessage
+	@Schema(nullable = true) String status,
+	@Schema(nullable = true) String errorCode,
+	@Schema(nullable = true) String errorMessage
 ) {
 
 	public static BulkReservationAttendanceItemResponse from(BulkReservationAttendanceItemResult result) {

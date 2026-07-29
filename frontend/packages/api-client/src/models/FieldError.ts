@@ -24,19 +24,21 @@ export interface FieldError {
      * @type {string}
      * @memberof FieldError
      */
-    field?: string;
+    field: string;
     /**
      *
      * @type {string}
      * @memberof FieldError
      */
-    message?: string;
+    message: string;
 }
 
 /**
  * Check if a given object implements the FieldError interface.
  */
 export function instanceOfFieldError(value: object): value is FieldError {
+    if (!('field' in value) || value['field'] === undefined) return false;
+    if (!('message' in value) || value['message'] === undefined) return false;
     return true;
 }
 
@@ -50,8 +52,8 @@ export function FieldErrorFromJSONTyped(json: any, ignoreDiscriminator: boolean)
     }
     return {
 
-        'field': json['field'] == null ? undefined : json['field'],
-        'message': json['message'] == null ? undefined : json['message'],
+        'field': json['field'],
+        'message': json['message'],
     };
 }
 

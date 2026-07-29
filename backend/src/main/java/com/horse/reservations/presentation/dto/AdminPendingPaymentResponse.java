@@ -1,10 +1,13 @@
 package com.horse.reservations.presentation.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.AdminPendingPaymentResult;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record AdminPendingPaymentResponse(
 	Long reservationId,
@@ -13,10 +16,10 @@ public record AdminPendingPaymentResponse(
 	String memberPhone,
 	String classType,
 	LocalDate lessonDate,
-	LocalTime startTime,
+	@Schema(type = "string", format = "time") LocalTime startTime,
 	String status,
-	LocalDateTime approvalRequestedAt,
-	LocalDateTime paymentDueAt,
+	OffsetDateTime approvalRequestedAt,
+	OffsetDateTime paymentDueAt,
 	boolean deadlineExceeded
 ) {
 
@@ -30,8 +33,8 @@ public record AdminPendingPaymentResponse(
 			result.lessonDate(),
 			result.startTime(),
 			result.status(),
-			result.approvalRequestedAt(),
-			result.paymentDueAt(),
+			ApiDateTime.toSeoulOffset(result.approvalRequestedAt()),
+			ApiDateTime.toSeoulOffset(result.paymentDueAt()),
 			result.deadlineExceeded());
 	}
 }

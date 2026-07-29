@@ -24,49 +24,56 @@ export interface ReservationChangeResponse {
      * @type {number}
      * @memberof ReservationChangeResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {Date}
      * @memberof ReservationChangeResponse
      */
-    lessonDate?: Date;
+    lessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof ReservationChangeResponse
      */
-    startTime?: string;
+    startTime: string;
     /**
      *
      * @type {string}
      * @memberof ReservationChangeResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof ReservationChangeResponse
      */
-    couponAction?: string;
+    couponAction: string;
     /**
      *
      * @type {boolean}
      * @memberof ReservationChangeResponse
      */
-    freeChangeUsed?: boolean;
+    freeChangeUsed: boolean;
     /**
      *
      * @type {boolean}
      * @memberof ReservationChangeResponse
      */
-    changed?: boolean;
+    changed: boolean;
 }
 
 /**
  * Check if a given object implements the ReservationChangeResponse interface.
  */
 export function instanceOfReservationChangeResponse(value: object): value is ReservationChangeResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('lessonDate' in value) || value['lessonDate'] === undefined) return false;
+    if (!('startTime' in value) || value['startTime'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('couponAction' in value) || value['couponAction'] === undefined) return false;
+    if (!('freeChangeUsed' in value) || value['freeChangeUsed'] === undefined) return false;
+    if (!('changed' in value) || value['changed'] === undefined) return false;
     return true;
 }
 
@@ -80,13 +87,13 @@ export function ReservationChangeResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'lessonDate': json['lessonDate'] == null ? undefined : (new Date(json['lessonDate'])),
-        'startTime': json['startTime'] == null ? undefined : json['startTime'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
-        'freeChangeUsed': json['freeChangeUsed'] == null ? undefined : json['freeChangeUsed'],
-        'changed': json['changed'] == null ? undefined : json['changed'],
+        'reservationId': json['reservationId'],
+        'lessonDate': (new Date(json['lessonDate'])),
+        'startTime': json['startTime'],
+        'status': json['status'],
+        'couponAction': json['couponAction'],
+        'freeChangeUsed': json['freeChangeUsed'],
+        'changed': json['changed'],
     };
 }
 
@@ -102,7 +109,7 @@ export function ReservationChangeResponseToJSONTyped(value?: ReservationChangeRe
     return {
 
         'reservationId': value['reservationId'],
-        'lessonDate': value['lessonDate'] == null ? value['lessonDate'] : value['lessonDate'].toISOString().substring(0,10),
+        'lessonDate': value['lessonDate'].toISOString().substring(0,10),
         'startTime': value['startTime'],
         'status': value['status'],
         'couponAction': value['couponAction'],

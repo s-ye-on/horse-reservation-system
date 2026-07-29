@@ -24,19 +24,21 @@ export interface ReservationActionAvailabilityResponse {
      * @type {boolean}
      * @memberof ReservationActionAvailabilityResponse
      */
-    allowed?: boolean;
+    allowed: boolean;
     /**
      *
      * @type {string}
      * @memberof ReservationActionAvailabilityResponse
      */
-    blockedReason?: string;
+    blockedReason: string | null;
 }
 
 /**
  * Check if a given object implements the ReservationActionAvailabilityResponse interface.
  */
 export function instanceOfReservationActionAvailabilityResponse(value: object): value is ReservationActionAvailabilityResponse {
+    if (!('allowed' in value) || value['allowed'] === undefined) return false;
+    if (!('blockedReason' in value) || value['blockedReason'] === undefined) return false;
     return true;
 }
 
@@ -50,8 +52,8 @@ export function ReservationActionAvailabilityResponseFromJSONTyped(json: any, ig
     }
     return {
 
-        'allowed': json['allowed'] == null ? undefined : json['allowed'],
-        'blockedReason': json['blockedReason'] == null ? undefined : json['blockedReason'],
+        'allowed': json['allowed'],
+        'blockedReason': json['blockedReason'],
     };
 }
 

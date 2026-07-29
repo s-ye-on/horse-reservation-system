@@ -1,10 +1,9 @@
 package com.horse.schedules.presentation.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.schedules.domain.ScheduleConfigStatus;
 import com.horse.schedules.application.ScheduleSynchronizationStatus;
 
@@ -17,22 +16,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record ScheduleSynchronizationResponse(
 	ScheduleConfigStatus status,
 	long activeVersion,
-	Long pendingVersion,
-	LocalDate horizonStart,
-	LocalDate horizonEnd,
+	@Schema(nullable = true) Long pendingVersion,
+	@Schema(nullable = true) LocalDate horizonStart,
+	@Schema(nullable = true) LocalDate horizonEnd,
 	long totalDateCount,
 	long appliedDateCount,
 	long remainingDateCount,
 	int progressPercent,
-	OffsetDateTime syncStartedAt,
-	OffsetDateTime lastCompletedAt,
-	OffsetDateTime lastFailedAt,
-	String lastFailureCode,
-	String lastFailureSummary,
+	@Schema(nullable = true) OffsetDateTime syncStartedAt,
+	@Schema(nullable = true) OffsetDateTime lastCompletedAt,
+	@Schema(nullable = true) OffsetDateTime lastFailedAt,
+	@Schema(nullable = true) String lastFailureCode,
+	@Schema(nullable = true) String lastFailureSummary,
 	boolean longRunning
 ) {
-
-	private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 
 	public static ScheduleSynchronizationResponse from(ScheduleSynchronizationStatus status) {
 		final long remainingCount = Math.max(
@@ -53,15 +50,12 @@ public record ScheduleSynchronizationResponse(
 			status.appliedDateCount(),
 			remainingCount,
 			progress,
-			toOffset(status.syncStartedAt()),
-			toOffset(status.lastCompletedAt()),
-			toOffset(status.lastFailedAt()),
+			ApiDateTime.toSeoulOffset(status.syncStartedAt()),
+			ApiDateTime.toSeoulOffset(status.lastCompletedAt()),
+			ApiDateTime.toSeoulOffset(status.lastFailedAt()),
 			status.lastFailureCode(),
 			status.lastFailureSummary(),
 			status.longRunning());
 	}
 
-	private static OffsetDateTime toOffset(LocalDateTime value) {
-		return value == null ? null : value.atZone(SEOUL_ZONE).toOffsetDateTime();
-	}
 }

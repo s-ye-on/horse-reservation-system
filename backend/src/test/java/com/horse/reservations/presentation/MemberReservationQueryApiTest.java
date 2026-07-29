@@ -88,7 +88,7 @@ class MemberReservationQueryApiTest {
 			.andExpect(jsonPath("$.totalPages").value(1))
 			.andExpect(jsonPath("$.hasNext").value(false))
 			.andExpect(jsonPath("$.content[0].reservationId").value(pendingPaymentId))
-			.andExpect(jsonPath("$.content[0].paymentDueAt").value("2026-07-15T12:00:00"))
+			.andExpect(jsonPath("$.content[0].paymentDueAt").value("2026-07-15T12:00:00+09:00"))
 			.andExpect(jsonPath("$.content[0].displayGroup").value("UPCOMING"))
 			.andExpect(jsonPath("$.content[0].actions.change.allowed").value(true))
 			.andExpect(jsonPath("$.content[0].actions.cancel.allowed").value(true))

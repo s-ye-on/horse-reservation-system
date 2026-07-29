@@ -36,13 +36,13 @@ export interface ScheduleDateResponse {
      * @type {ScheduleDateResponseResumeStatusEnum}
      * @memberof ScheduleDateResponse
      */
-    resumeStatus?: ScheduleDateResponseResumeStatusEnum;
+    resumeStatus: ScheduleDateResponseResumeStatusEnum | null;
     /**
      *
      * @type {string}
      * @memberof ScheduleDateResponse
      */
-    reason?: string;
+    reason: string | null;
     /**
      *
      * @type {number}
@@ -87,6 +87,8 @@ export type ScheduleDateResponseResumeStatusEnum = typeof ScheduleDateResponseRe
 export function instanceOfScheduleDateResponse(value: object): value is ScheduleDateResponse {
     if (!('scheduleDate' in value) || value['scheduleDate'] === undefined) return false;
     if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('resumeStatus' in value) || value['resumeStatus'] === undefined) return false;
+    if (!('reason' in value) || value['reason'] === undefined) return false;
     if (!('appliedConfigVersion' in value) || value['appliedConfigVersion'] === undefined) return false;
     if (!('version' in value) || value['version'] === undefined) return false;
     return true;
@@ -104,8 +106,8 @@ export function ScheduleDateResponseFromJSONTyped(json: any, ignoreDiscriminator
 
         'scheduleDate': (new Date(json['scheduleDate'])),
         'status': json['status'],
-        'resumeStatus': json['resumeStatus'] == null ? undefined : json['resumeStatus'],
-        'reason': json['reason'] == null ? undefined : json['reason'],
+        'resumeStatus': json['resumeStatus'],
+        'reason': json['reason'],
         'appliedConfigVersion': json['appliedConfigVersion'],
         'version': json['version'],
     };

@@ -1,14 +1,15 @@
 package com.horse.reservations.presentation.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.ReservationPaymentRestoreResult;
 
 public record ReservationPaymentRestoreResponse(
 	Long reservationId,
 	String status,
 	String paymentSource,
-	LocalDateTime adminConfirmedAt
+	OffsetDateTime adminConfirmedAt
 ) {
 
 	public static ReservationPaymentRestoreResponse from(ReservationPaymentRestoreResult result) {
@@ -16,6 +17,6 @@ public record ReservationPaymentRestoreResponse(
 			result.reservationId(),
 			result.status(),
 			result.paymentSource(),
-			result.adminConfirmedAt());
+			ApiDateTime.toSeoulOffset(result.adminConfirmedAt()));
 	}
 }

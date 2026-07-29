@@ -700,7 +700,7 @@ interface ImpactView {
   classType: string
   currentStatus: string
   paymentSource: string
-  couponId?: number
+  couponId?: number | null
   resolved: boolean
   moved: boolean
 }

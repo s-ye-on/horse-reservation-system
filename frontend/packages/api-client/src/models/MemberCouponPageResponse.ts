@@ -32,43 +32,49 @@ export interface MemberCouponPageResponse {
      * @type {Array<MemberCouponResponse>}
      * @memberof MemberCouponPageResponse
      */
-    content?: Array<MemberCouponResponse>;
+    content: Array<MemberCouponResponse>;
     /**
      *
      * @type {number}
      * @memberof MemberCouponPageResponse
      */
-    page?: number;
+    page: number;
     /**
      *
      * @type {number}
      * @memberof MemberCouponPageResponse
      */
-    size?: number;
+    size: number;
     /**
      *
      * @type {number}
      * @memberof MemberCouponPageResponse
      */
-    totalElements?: number;
+    totalElements: number;
     /**
      *
      * @type {number}
      * @memberof MemberCouponPageResponse
      */
-    totalPages?: number;
+    totalPages: number;
     /**
      *
      * @type {boolean}
      * @memberof MemberCouponPageResponse
      */
-    hasNext?: boolean;
+    hasNext: boolean;
 }
 
 /**
  * Check if a given object implements the MemberCouponPageResponse interface.
  */
 export function instanceOfMemberCouponPageResponse(value: object): value is MemberCouponPageResponse {
+    if (!('content' in value) || value['content'] === undefined) return false;
+    if (!('page' in value) || value['page'] === undefined) return false;
+    if (!('size' in value) || value['size'] === undefined) return false;
+    if (!('totalElements' in value) || value['totalElements'] === undefined) return false;
+    if (!('totalPages' in value) || value['totalPages'] === undefined) return false;
+    if (!('hasNext' in value) || value['hasNext'] === undefined) return false;
     return true;
 }
 
@@ -82,12 +88,12 @@ export function MemberCouponPageResponseFromJSONTyped(json: any, ignoreDiscrimin
     }
     return {
 
-        'content': json['content'] == null ? undefined : ((json['content'] as Array<any>).map(MemberCouponResponseFromJSON)),
-        'page': json['page'] == null ? undefined : json['page'],
-        'size': json['size'] == null ? undefined : json['size'],
-        'totalElements': json['totalElements'] == null ? undefined : json['totalElements'],
-        'totalPages': json['totalPages'] == null ? undefined : json['totalPages'],
-        'hasNext': json['hasNext'] == null ? undefined : json['hasNext'],
+        'content': ((json['content'] as Array<any>).map(MemberCouponResponseFromJSON)),
+        'page': json['page'],
+        'size': json['size'],
+        'totalElements': json['totalElements'],
+        'totalPages': json['totalPages'],
+        'hasNext': json['hasNext'],
     };
 }
 
@@ -102,7 +108,7 @@ export function MemberCouponPageResponseToJSONTyped(value?: MemberCouponPageResp
 
     return {
 
-        'content': value['content'] == null ? undefined : ((value['content'] as Array<any>).map(MemberCouponResponseToJSON)),
+        'content': ((value['content'] as Array<any>).map(MemberCouponResponseToJSON)),
         'page': value['page'],
         'size': value['size'],
         'totalElements': value['totalElements'],

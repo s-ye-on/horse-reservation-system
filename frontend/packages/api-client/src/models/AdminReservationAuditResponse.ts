@@ -24,115 +24,133 @@ export interface AdminReservationAuditResponse {
      * @type {number}
      * @memberof AdminReservationAuditResponse
      */
-    auditLogId?: number;
+    auditLogId: number;
     /**
      *
      * @type {number}
      * @memberof AdminReservationAuditResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {number}
      * @memberof AdminReservationAuditResponse
      */
-    memberId?: number;
+    memberId: number;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    memberName?: string;
+    memberName: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    actorAuthSubject?: string;
+    actorAuthSubject: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    actorType?: string;
+    actorType: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    changeType?: string;
+    changeType: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    fromStatus?: string;
+    fromStatus: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    toStatus?: string;
+    toStatus: string;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationAuditResponse
      */
-    fromLessonDate?: Date;
+    fromLessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    fromStartTime?: string;
+    fromStartTime: string;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationAuditResponse
      */
-    toLessonDate?: Date;
+    toLessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    toStartTime?: string;
+    toStartTime: string;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    couponAction?: string;
+    couponAction: string;
     /**
      *
      * @type {number}
      * @memberof AdminReservationAuditResponse
      */
-    couponId?: number;
+    couponId: number | null;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationAuditResponse
      */
-    paymentDueAt?: Date;
+    paymentDueAt: Date | null;
     /**
      *
      * @type {string}
      * @memberof AdminReservationAuditResponse
      */
-    memo?: string;
+    memo: string | null;
     /**
      *
      * @type {Date}
      * @memberof AdminReservationAuditResponse
      */
-    occurredAt?: Date;
+    occurredAt: Date;
 }
 
 /**
  * Check if a given object implements the AdminReservationAuditResponse interface.
  */
 export function instanceOfAdminReservationAuditResponse(value: object): value is AdminReservationAuditResponse {
+    if (!('auditLogId' in value) || value['auditLogId'] === undefined) return false;
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('memberId' in value) || value['memberId'] === undefined) return false;
+    if (!('memberName' in value) || value['memberName'] === undefined) return false;
+    if (!('actorAuthSubject' in value) || value['actorAuthSubject'] === undefined) return false;
+    if (!('actorType' in value) || value['actorType'] === undefined) return false;
+    if (!('changeType' in value) || value['changeType'] === undefined) return false;
+    if (!('fromStatus' in value) || value['fromStatus'] === undefined) return false;
+    if (!('toStatus' in value) || value['toStatus'] === undefined) return false;
+    if (!('fromLessonDate' in value) || value['fromLessonDate'] === undefined) return false;
+    if (!('fromStartTime' in value) || value['fromStartTime'] === undefined) return false;
+    if (!('toLessonDate' in value) || value['toLessonDate'] === undefined) return false;
+    if (!('toStartTime' in value) || value['toStartTime'] === undefined) return false;
+    if (!('couponAction' in value) || value['couponAction'] === undefined) return false;
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('paymentDueAt' in value) || value['paymentDueAt'] === undefined) return false;
+    if (!('memo' in value) || value['memo'] === undefined) return false;
+    if (!('occurredAt' in value) || value['occurredAt'] === undefined) return false;
     return true;
 }
 
@@ -146,24 +164,24 @@ export function AdminReservationAuditResponseFromJSONTyped(json: any, ignoreDisc
     }
     return {
 
-        'auditLogId': json['auditLogId'] == null ? undefined : json['auditLogId'],
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'memberId': json['memberId'] == null ? undefined : json['memberId'],
-        'memberName': json['memberName'] == null ? undefined : json['memberName'],
-        'actorAuthSubject': json['actorAuthSubject'] == null ? undefined : json['actorAuthSubject'],
-        'actorType': json['actorType'] == null ? undefined : json['actorType'],
-        'changeType': json['changeType'] == null ? undefined : json['changeType'],
-        'fromStatus': json['fromStatus'] == null ? undefined : json['fromStatus'],
-        'toStatus': json['toStatus'] == null ? undefined : json['toStatus'],
-        'fromLessonDate': json['fromLessonDate'] == null ? undefined : (new Date(json['fromLessonDate'])),
-        'fromStartTime': json['fromStartTime'] == null ? undefined : json['fromStartTime'],
-        'toLessonDate': json['toLessonDate'] == null ? undefined : (new Date(json['toLessonDate'])),
-        'toStartTime': json['toStartTime'] == null ? undefined : json['toStartTime'],
-        'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'paymentDueAt': json['paymentDueAt'] == null ? undefined : (new Date(json['paymentDueAt'])),
-        'memo': json['memo'] == null ? undefined : json['memo'],
-        'occurredAt': json['occurredAt'] == null ? undefined : (new Date(json['occurredAt'])),
+        'auditLogId': json['auditLogId'],
+        'reservationId': json['reservationId'],
+        'memberId': json['memberId'],
+        'memberName': json['memberName'],
+        'actorAuthSubject': json['actorAuthSubject'],
+        'actorType': json['actorType'],
+        'changeType': json['changeType'],
+        'fromStatus': json['fromStatus'],
+        'toStatus': json['toStatus'],
+        'fromLessonDate': (new Date(json['fromLessonDate'])),
+        'fromStartTime': json['fromStartTime'],
+        'toLessonDate': (new Date(json['toLessonDate'])),
+        'toStartTime': json['toStartTime'],
+        'couponAction': json['couponAction'],
+        'couponId': json['couponId'],
+        'paymentDueAt': (json['paymentDueAt'] == null ? null : new Date(json['paymentDueAt'])),
+        'memo': json['memo'],
+        'occurredAt': (new Date(json['occurredAt'])),
     };
 }
 
@@ -187,15 +205,15 @@ export function AdminReservationAuditResponseToJSONTyped(value?: AdminReservatio
         'changeType': value['changeType'],
         'fromStatus': value['fromStatus'],
         'toStatus': value['toStatus'],
-        'fromLessonDate': value['fromLessonDate'] == null ? value['fromLessonDate'] : value['fromLessonDate'].toISOString().substring(0,10),
+        'fromLessonDate': value['fromLessonDate'].toISOString().substring(0,10),
         'fromStartTime': value['fromStartTime'],
-        'toLessonDate': value['toLessonDate'] == null ? value['toLessonDate'] : value['toLessonDate'].toISOString().substring(0,10),
+        'toLessonDate': value['toLessonDate'].toISOString().substring(0,10),
         'toStartTime': value['toStartTime'],
         'couponAction': value['couponAction'],
         'couponId': value['couponId'],
         'paymentDueAt': value['paymentDueAt'] == null ? value['paymentDueAt'] : value['paymentDueAt'].toISOString(),
         'memo': value['memo'],
-        'occurredAt': value['occurredAt'] == null ? value['occurredAt'] : value['occurredAt'].toISOString(),
+        'occurredAt': value['occurredAt'].toISOString(),
     };
 }
 

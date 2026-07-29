@@ -24,61 +24,70 @@ export interface AdminMemberResponse {
      * @type {number}
      * @memberof AdminMemberResponse
      */
-    id?: number;
+    id: number;
     /**
      *
      * @type {string}
      * @memberof AdminMemberResponse
      */
-    name?: string;
+    name: string;
     /**
      *
      * @type {string}
      * @memberof AdminMemberResponse
      */
-    phone?: string;
+    phone: string;
     /**
      *
      * @type {number}
      * @memberof AdminMemberResponse
      */
-    generalRideCount?: number;
+    generalRideCount: number;
     /**
      *
      * @type {number}
      * @memberof AdminMemberResponse
      */
-    dressageRideCount?: number;
+    dressageRideCount: number;
     /**
      *
      * @type {number}
      * @memberof AdminMemberResponse
      */
-    jumpingRideCount?: number;
+    jumpingRideCount: number;
     /**
      *
      * @type {boolean}
      * @memberof AdminMemberResponse
      */
-    dressageApproved?: boolean;
+    dressageApproved: boolean;
     /**
      *
      * @type {boolean}
      * @memberof AdminMemberResponse
      */
-    jumpingApproved?: boolean;
+    jumpingApproved: boolean;
     /**
      *
      * @type {boolean}
      * @memberof AdminMemberResponse
      */
-    canUseLargeArena?: boolean;
+    canUseLargeArena: boolean;
 }
 
 /**
  * Check if a given object implements the AdminMemberResponse interface.
  */
 export function instanceOfAdminMemberResponse(value: object): value is AdminMemberResponse {
+    if (!('id' in value) || value['id'] === undefined) return false;
+    if (!('name' in value) || value['name'] === undefined) return false;
+    if (!('phone' in value) || value['phone'] === undefined) return false;
+    if (!('generalRideCount' in value) || value['generalRideCount'] === undefined) return false;
+    if (!('dressageRideCount' in value) || value['dressageRideCount'] === undefined) return false;
+    if (!('jumpingRideCount' in value) || value['jumpingRideCount'] === undefined) return false;
+    if (!('dressageApproved' in value) || value['dressageApproved'] === undefined) return false;
+    if (!('jumpingApproved' in value) || value['jumpingApproved'] === undefined) return false;
+    if (!('canUseLargeArena' in value) || value['canUseLargeArena'] === undefined) return false;
     return true;
 }
 
@@ -92,15 +101,15 @@ export function AdminMemberResponseFromJSONTyped(json: any, ignoreDiscriminator:
     }
     return {
 
-        'id': json['id'] == null ? undefined : json['id'],
-        'name': json['name'] == null ? undefined : json['name'],
-        'phone': json['phone'] == null ? undefined : json['phone'],
-        'generalRideCount': json['generalRideCount'] == null ? undefined : json['generalRideCount'],
-        'dressageRideCount': json['dressageRideCount'] == null ? undefined : json['dressageRideCount'],
-        'jumpingRideCount': json['jumpingRideCount'] == null ? undefined : json['jumpingRideCount'],
-        'dressageApproved': json['dressageApproved'] == null ? undefined : json['dressageApproved'],
-        'jumpingApproved': json['jumpingApproved'] == null ? undefined : json['jumpingApproved'],
-        'canUseLargeArena': json['canUseLargeArena'] == null ? undefined : json['canUseLargeArena'],
+        'id': json['id'],
+        'name': json['name'],
+        'phone': json['phone'],
+        'generalRideCount': json['generalRideCount'],
+        'dressageRideCount': json['dressageRideCount'],
+        'jumpingRideCount': json['jumpingRideCount'],
+        'dressageApproved': json['dressageApproved'],
+        'jumpingApproved': json['jumpingApproved'],
+        'canUseLargeArena': json['canUseLargeArena'],
     };
 }
 

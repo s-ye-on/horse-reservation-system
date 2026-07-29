@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.Base64;
 import java.util.Map;
 
@@ -68,6 +69,15 @@ class ErrorResponseContractApiTest {
 				.content("{}")), 400, "COMMON_INVALID_REQUEST", ENDPOINT + "/requests")
 			.andExpect(jsonPath("$.fieldErrors[0].field").value("name"))
 			.andExpect(jsonPath("$.fieldErrors[0].message").value("이름은 필수입니다."));
+	}
+
+	@Test
+	void 오프셋이_없는_timestamp는_400_공통_응답을_반환한다() throws Exception {
+		assertErrorResponse(mockMvc.perform(post(ENDPOINT + "/timestamps")
+				.with(memberJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"timestamp\":\"2026-07-22T10:00:00\"}")),
+			400, "COMMON_INVALID_REQUEST", ENDPOINT + "/timestamps");
 	}
 
 	@Test
@@ -174,6 +184,10 @@ class ErrorResponseContractApiTest {
 		void request(@Valid @RequestBody ErrorContractRequest request) {
 		}
 
+		@PostMapping("/timestamps")
+		void timestamp(@RequestBody TimestampRequest request) {
+		}
+
 		@GetMapping("/member")
 		void member() {
 		}
@@ -201,6 +215,9 @@ class ErrorResponseContractApiTest {
 		@NotBlank(message = "이름은 필수입니다.")
 		String name
 	) {
+	}
+
+	private record TimestampRequest(OffsetDateTime timestamp) {
 	}
 
 	private enum ContractType {

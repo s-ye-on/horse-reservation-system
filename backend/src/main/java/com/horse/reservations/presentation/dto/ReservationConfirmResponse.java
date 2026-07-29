@@ -1,15 +1,18 @@
 package com.horse.reservations.presentation.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.reservations.application.ReservationConfirmResult;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record ReservationConfirmResponse(
 	Long reservationId,
 	String status,
 	String paymentSource,
-	Long couponId,
-	LocalDateTime adminConfirmedAt
+	@Schema(nullable = true) Long couponId,
+	OffsetDateTime adminConfirmedAt
 ) {
 
 	public static ReservationConfirmResponse from(ReservationConfirmResult result) {
@@ -18,6 +21,6 @@ public record ReservationConfirmResponse(
 			result.status(),
 			result.paymentSource(),
 			result.couponId(),
-			result.adminConfirmedAt());
+			ApiDateTime.toSeoulOffset(result.adminConfirmedAt()));
 	}
 }

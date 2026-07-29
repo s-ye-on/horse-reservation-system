@@ -7,7 +7,17 @@ import type { AdminTimeSlotsApi } from './admin-timeslots.api'
 import { AdminTimeSlotsPage } from './admin-timeslots-page'
 
 const CLASS_CAPACITIES = { FIRST_RIDE: 2, ROUND_BEGINNER: 2, ROUND_TROT: 2, LARGE_ARENA_BEGINNER: 3, LARGE_ARENA_TROT: 3, DRESSAGE: 1, JUMPING: 1 }
-const SLOT: TimeSlotResponse = { id: 4, lessonDate: new Date('2026-08-10'), startTime: '09:00:00', totalCapacity: 8, roundArenaCapacity: 4, classCapacities: CLASS_CAPACITIES, closed: false }
+const SLOT: TimeSlotResponse = {
+  id: 4,
+  lessonDate: new Date('2026-08-10'),
+  startTime: '09:00:00',
+  totalCapacity: 8,
+  roundArenaCapacity: 4,
+  classCapacities: CLASS_CAPACITIES,
+  closed: false,
+  createdAt: new Date('2026-07-29T01:00:00Z'),
+  updatedAt: new Date('2026-07-29T01:00:00Z'),
+}
 
 afterEach(cleanup)
 

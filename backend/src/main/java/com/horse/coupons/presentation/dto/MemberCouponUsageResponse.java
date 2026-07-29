@@ -1,16 +1,19 @@
 package com.horse.coupons.presentation.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 import com.horse.coupons.application.MemberCouponUsageResult;
+import com.horse.global.time.ApiDateTime;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record MemberCouponUsageResponse(
 	Long usageLogId,
 	Long couponId,
-	Long reservationId,
+	@Schema(nullable = true) Long reservationId,
 	String action,
 	int countDelta,
-	LocalDateTime occurredAt,
+	OffsetDateTime occurredAt,
 	String actorType
 ) {
 
@@ -21,7 +24,7 @@ public record MemberCouponUsageResponse(
 			result.reservationId(),
 			result.action(),
 			result.countDelta(),
-			result.occurredAt(),
+			ApiDateTime.toSeoulOffset(result.occurredAt()),
 			result.actorType());
 	}
 }

@@ -24,43 +24,43 @@ export interface MemberAvailableTimeSlotResponse {
      * @type {number}
      * @memberof MemberAvailableTimeSlotResponse
      */
-    timeSlotId?: number;
+    timeSlotId: number;
     /**
      *
      * @type {Date}
      * @memberof MemberAvailableTimeSlotResponse
      */
-    lessonDate?: Date;
+    lessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof MemberAvailableTimeSlotResponse
      */
-    startTime?: string;
+    startTime: string;
     /**
      *
      * @type {boolean}
      * @memberof MemberAvailableTimeSlotResponse
      */
-    closed?: boolean;
+    closed: boolean;
     /**
      *
      * @type {boolean}
      * @memberof MemberAvailableTimeSlotResponse
      */
-    reservable?: boolean;
+    reservable: boolean;
     /**
      *
      * @type {number}
      * @memberof MemberAvailableTimeSlotResponse
      */
-    remainingCapacity?: number;
+    remainingCapacity: number;
     /**
      *
      * @type {MemberAvailableTimeSlotResponseUnavailableReasonEnum}
      * @memberof MemberAvailableTimeSlotResponse
      */
-    unavailableReason?: MemberAvailableTimeSlotResponseUnavailableReasonEnum;
+    unavailableReason: MemberAvailableTimeSlotResponseUnavailableReasonEnum | null;
 }
 
 
@@ -79,6 +79,13 @@ export type MemberAvailableTimeSlotResponseUnavailableReasonEnum = typeof Member
  * Check if a given object implements the MemberAvailableTimeSlotResponse interface.
  */
 export function instanceOfMemberAvailableTimeSlotResponse(value: object): value is MemberAvailableTimeSlotResponse {
+    if (!('timeSlotId' in value) || value['timeSlotId'] === undefined) return false;
+    if (!('lessonDate' in value) || value['lessonDate'] === undefined) return false;
+    if (!('startTime' in value) || value['startTime'] === undefined) return false;
+    if (!('closed' in value) || value['closed'] === undefined) return false;
+    if (!('reservable' in value) || value['reservable'] === undefined) return false;
+    if (!('remainingCapacity' in value) || value['remainingCapacity'] === undefined) return false;
+    if (!('unavailableReason' in value) || value['unavailableReason'] === undefined) return false;
     return true;
 }
 
@@ -92,13 +99,13 @@ export function MemberAvailableTimeSlotResponseFromJSONTyped(json: any, ignoreDi
     }
     return {
 
-        'timeSlotId': json['timeSlotId'] == null ? undefined : json['timeSlotId'],
-        'lessonDate': json['lessonDate'] == null ? undefined : (new Date(json['lessonDate'])),
-        'startTime': json['startTime'] == null ? undefined : json['startTime'],
-        'closed': json['closed'] == null ? undefined : json['closed'],
-        'reservable': json['reservable'] == null ? undefined : json['reservable'],
-        'remainingCapacity': json['remainingCapacity'] == null ? undefined : json['remainingCapacity'],
-        'unavailableReason': json['unavailableReason'] == null ? undefined : json['unavailableReason'],
+        'timeSlotId': json['timeSlotId'],
+        'lessonDate': (new Date(json['lessonDate'])),
+        'startTime': json['startTime'],
+        'closed': json['closed'],
+        'reservable': json['reservable'],
+        'remainingCapacity': json['remainingCapacity'],
+        'unavailableReason': json['unavailableReason'],
     };
 }
 
@@ -114,7 +121,7 @@ export function MemberAvailableTimeSlotResponseToJSONTyped(value?: MemberAvailab
     return {
 
         'timeSlotId': value['timeSlotId'],
-        'lessonDate': value['lessonDate'] == null ? value['lessonDate'] : value['lessonDate'].toISOString().substring(0,10),
+        'lessonDate': value['lessonDate'].toISOString().substring(0,10),
         'startTime': value['startTime'],
         'closed': value['closed'],
         'reservable': value['reservable'],

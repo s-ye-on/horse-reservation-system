@@ -24,49 +24,56 @@ export interface ReservationCompletionResponse {
      * @type {number}
      * @memberof ReservationCompletionResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof ReservationCompletionResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {string}
      * @memberof ReservationCompletionResponse
      */
-    paymentSource?: string;
+    paymentSource: string;
     /**
      *
      * @type {number}
      * @memberof ReservationCompletionResponse
      */
-    couponId?: number;
+    couponId: number | null;
     /**
      *
      * @type {number}
      * @memberof ReservationCompletionResponse
      */
-    generalRideCount?: number;
+    generalRideCount: number;
     /**
      *
      * @type {number}
      * @memberof ReservationCompletionResponse
      */
-    dressageRideCount?: number;
+    dressageRideCount: number;
     /**
      *
      * @type {number}
      * @memberof ReservationCompletionResponse
      */
-    jumpingRideCount?: number;
+    jumpingRideCount: number;
 }
 
 /**
  * Check if a given object implements the ReservationCompletionResponse interface.
  */
 export function instanceOfReservationCompletionResponse(value: object): value is ReservationCompletionResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('paymentSource' in value) || value['paymentSource'] === undefined) return false;
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('generalRideCount' in value) || value['generalRideCount'] === undefined) return false;
+    if (!('dressageRideCount' in value) || value['dressageRideCount'] === undefined) return false;
+    if (!('jumpingRideCount' in value) || value['jumpingRideCount'] === undefined) return false;
     return true;
 }
 
@@ -80,13 +87,13 @@ export function ReservationCompletionResponseFromJSONTyped(json: any, ignoreDisc
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'status': json['status'] == null ? undefined : json['status'],
-        'paymentSource': json['paymentSource'] == null ? undefined : json['paymentSource'],
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'generalRideCount': json['generalRideCount'] == null ? undefined : json['generalRideCount'],
-        'dressageRideCount': json['dressageRideCount'] == null ? undefined : json['dressageRideCount'],
-        'jumpingRideCount': json['jumpingRideCount'] == null ? undefined : json['jumpingRideCount'],
+        'reservationId': json['reservationId'],
+        'status': json['status'],
+        'paymentSource': json['paymentSource'],
+        'couponId': json['couponId'],
+        'generalRideCount': json['generalRideCount'],
+        'dressageRideCount': json['dressageRideCount'],
+        'jumpingRideCount': json['jumpingRideCount'],
     };
 }
 

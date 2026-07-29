@@ -15,6 +15,7 @@ const DATE_STATE = {
 const DATE_IMPACT: ScheduleDateClosureImpactResponse = {
   scheduleDate: DATE_STATE.scheduleDate,
   status: 'NORMAL',
+  resumeStatus: null,
   version: 3,
   initialReservationCount: 2,
   activeReservationCount: 2,
@@ -40,6 +41,7 @@ const DATE_IMPACT: ScheduleDateClosureImpactResponse = {
       classType: 'FIRST_RIDE',
       status: 'PENDING_PAYMENT',
       paymentSource: 'SINGLE_PAYMENT',
+      couponId: null,
     },
   ],
   changed: false,
@@ -60,6 +62,8 @@ const SLOT_CLOSURE: TimeSlotClosureResponse = {
   status: 'IN_PROGRESS',
   reason: '우천',
   startedAt: new Date('2026-07-30T01:00:00.000Z'),
+  completedAt: null,
+  withdrawnAt: null,
   version: 2,
   totalCount: 2,
   resolvedCount: 1,
@@ -90,6 +94,7 @@ const SLOT_CLOSURE: TimeSlotClosureResponse = {
       memberPhone: '010-1111-1111',
       classType: 'FIRST_RIDE',
       paymentSource: 'SINGLE_PAYMENT',
+      couponId: null,
     },
   ],
 }

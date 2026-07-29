@@ -32,19 +32,19 @@ export interface MemberAvailableTimeSlotsResponse {
      * @type {Date}
      * @memberof MemberAvailableTimeSlotsResponse
      */
-    date?: Date;
+    date: Date;
     /**
      *
      * @type {MemberAvailableTimeSlotsResponseClassTypeEnum}
      * @memberof MemberAvailableTimeSlotsResponse
      */
-    classType?: MemberAvailableTimeSlotsResponseClassTypeEnum;
+    classType: MemberAvailableTimeSlotsResponseClassTypeEnum;
     /**
      *
      * @type {Array<MemberAvailableTimeSlotResponse>}
      * @memberof MemberAvailableTimeSlotsResponse
      */
-    timeSlots?: Array<MemberAvailableTimeSlotResponse>;
+    timeSlots: Array<MemberAvailableTimeSlotResponse>;
 }
 
 
@@ -67,6 +67,9 @@ export type MemberAvailableTimeSlotsResponseClassTypeEnum = typeof MemberAvailab
  * Check if a given object implements the MemberAvailableTimeSlotsResponse interface.
  */
 export function instanceOfMemberAvailableTimeSlotsResponse(value: object): value is MemberAvailableTimeSlotsResponse {
+    if (!('date' in value) || value['date'] === undefined) return false;
+    if (!('classType' in value) || value['classType'] === undefined) return false;
+    if (!('timeSlots' in value) || value['timeSlots'] === undefined) return false;
     return true;
 }
 
@@ -80,9 +83,9 @@ export function MemberAvailableTimeSlotsResponseFromJSONTyped(json: any, ignoreD
     }
     return {
 
-        'date': json['date'] == null ? undefined : (new Date(json['date'])),
-        'classType': json['classType'] == null ? undefined : json['classType'],
-        'timeSlots': json['timeSlots'] == null ? undefined : ((json['timeSlots'] as Array<any>).map(MemberAvailableTimeSlotResponseFromJSON)),
+        'date': (new Date(json['date'])),
+        'classType': json['classType'],
+        'timeSlots': ((json['timeSlots'] as Array<any>).map(MemberAvailableTimeSlotResponseFromJSON)),
     };
 }
 
@@ -97,9 +100,9 @@ export function MemberAvailableTimeSlotsResponseToJSONTyped(value?: MemberAvaila
 
     return {
 
-        'date': value['date'] == null ? value['date'] : value['date'].toISOString().substring(0,10),
+        'date': value['date'].toISOString().substring(0,10),
         'classType': value['classType'],
-        'timeSlots': value['timeSlots'] == null ? undefined : ((value['timeSlots'] as Array<any>).map(MemberAvailableTimeSlotResponseToJSON)),
+        'timeSlots': ((value['timeSlots'] as Array<any>).map(MemberAvailableTimeSlotResponseToJSON)),
     };
 }
 

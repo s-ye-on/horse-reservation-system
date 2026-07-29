@@ -24,49 +24,56 @@ export interface ReservationChangePreviewResponse {
      * @type {number}
      * @memberof ReservationChangePreviewResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {number}
      * @memberof ReservationChangePreviewResponse
      */
-    targetTimeSlotId?: number;
+    targetTimeSlotId: number;
     /**
      *
      * @type {Date}
      * @memberof ReservationChangePreviewResponse
      */
-    targetLessonDate?: Date;
+    targetLessonDate: Date;
     /**
      *
      * @type {string}
      * @memberof ReservationChangePreviewResponse
      */
-    targetStartTime?: string;
+    targetStartTime: string;
     /**
      *
      * @type {string}
      * @memberof ReservationChangePreviewResponse
      */
-    timing?: string;
+    timing: string;
     /**
      *
      * @type {string}
      * @memberof ReservationChangePreviewResponse
      */
-    couponAction?: string;
+    couponAction: string;
     /**
      *
      * @type {boolean}
      * @memberof ReservationChangePreviewResponse
      */
-    freeChangeUsed?: boolean;
+    freeChangeUsed: boolean;
 }
 
 /**
  * Check if a given object implements the ReservationChangePreviewResponse interface.
  */
 export function instanceOfReservationChangePreviewResponse(value: object): value is ReservationChangePreviewResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('targetTimeSlotId' in value) || value['targetTimeSlotId'] === undefined) return false;
+    if (!('targetLessonDate' in value) || value['targetLessonDate'] === undefined) return false;
+    if (!('targetStartTime' in value) || value['targetStartTime'] === undefined) return false;
+    if (!('timing' in value) || value['timing'] === undefined) return false;
+    if (!('couponAction' in value) || value['couponAction'] === undefined) return false;
+    if (!('freeChangeUsed' in value) || value['freeChangeUsed'] === undefined) return false;
     return true;
 }
 
@@ -80,13 +87,13 @@ export function ReservationChangePreviewResponseFromJSONTyped(json: any, ignoreD
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'targetTimeSlotId': json['targetTimeSlotId'] == null ? undefined : json['targetTimeSlotId'],
-        'targetLessonDate': json['targetLessonDate'] == null ? undefined : (new Date(json['targetLessonDate'])),
-        'targetStartTime': json['targetStartTime'] == null ? undefined : json['targetStartTime'],
-        'timing': json['timing'] == null ? undefined : json['timing'],
-        'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
-        'freeChangeUsed': json['freeChangeUsed'] == null ? undefined : json['freeChangeUsed'],
+        'reservationId': json['reservationId'],
+        'targetTimeSlotId': json['targetTimeSlotId'],
+        'targetLessonDate': (new Date(json['targetLessonDate'])),
+        'targetStartTime': json['targetStartTime'],
+        'timing': json['timing'],
+        'couponAction': json['couponAction'],
+        'freeChangeUsed': json['freeChangeUsed'],
     };
 }
 
@@ -103,7 +110,7 @@ export function ReservationChangePreviewResponseToJSONTyped(value?: ReservationC
 
         'reservationId': value['reservationId'],
         'targetTimeSlotId': value['targetTimeSlotId'],
-        'targetLessonDate': value['targetLessonDate'] == null ? value['targetLessonDate'] : value['targetLessonDate'].toISOString().substring(0,10),
+        'targetLessonDate': value['targetLessonDate'].toISOString().substring(0,10),
         'targetStartTime': value['targetStartTime'],
         'timing': value['timing'],
         'couponAction': value['couponAction'],

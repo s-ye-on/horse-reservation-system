@@ -14,7 +14,7 @@ public record RecurringHolidayResponse(
 	long holidayId,
 	DayOfWeek dayOfWeek,
 	LocalDate effectiveFrom,
-	LocalDate effectiveTo,
+	@Schema(nullable = true) LocalDate effectiveTo,
 	String reason,
 	boolean active,
 	long version

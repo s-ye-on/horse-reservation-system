@@ -293,7 +293,7 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
           holidayId: holiday.holidayId,
           dayOfWeek: holiday.dayOfWeek,
           effectiveFrom: holiday.effectiveFrom,
-          effectiveTo: holiday.effectiveTo,
+          effectiveTo: holiday.effectiveTo ?? undefined,
         })
         openPending({
           type: 'holiday-activation',

@@ -4093,7 +4093,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "totalCapacity": {
             "type": "integer",
@@ -4121,7 +4122,18 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "classCapacities",
+          "closed",
+          "createdAt",
+          "id",
+          "lessonDate",
+          "roundArenaCapacity",
+          "startTime",
+          "totalCapacity",
+          "updatedAt"
+        ]
       },
       "ScheduleTemplateRequest": {
         "type": "object",
@@ -4139,10 +4151,12 @@
             ]
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "endTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "totalCapacity": {
             "type": "integer",
@@ -4195,15 +4209,24 @@
             "format": "int64"
           },
           "pendingVersion": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "horizonStart": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "horizonEnd": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "totalDateCount": {
@@ -4223,22 +4246,37 @@
             "format": "int32"
           },
           "syncStartedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "lastCompletedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "lastFailedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "lastFailureCode": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "lastFailureSummary": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "longRunning": {
             "type": "boolean"
@@ -4249,10 +4287,16 @@
           "appliedDateCount",
           "horizonEnd",
           "horizonStart",
+          "lastCompletedAt",
+          "lastFailedAt",
+          "lastFailureCode",
+          "lastFailureSummary",
           "longRunning",
+          "pendingVersion",
           "progressPercent",
           "remainingDateCount",
           "status",
+          "syncStartedAt",
           "totalDateCount"
         ]
       },
@@ -4322,10 +4366,12 @@
             ]
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "endTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "totalCapacity": {
             "type": "integer",
@@ -4497,7 +4543,10 @@
             "format": "date"
           },
           "effectiveTo": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date"
           },
           "reason": {
@@ -4515,6 +4564,7 @@
           "active",
           "dayOfWeek",
           "effectiveFrom",
+          "effectiveTo",
           "holidayId",
           "reason",
           "version"
@@ -4547,7 +4597,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "status": {
             "type": "string"
@@ -4556,13 +4607,33 @@
             "type": "string"
           },
           "coupon": {
-            "$ref": "#/components/schemas/ReservationCouponResponse"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ReservationCouponResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "paymentDueAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "classType",
+          "coupon",
+          "lessonDate",
+          "paymentDueAt",
+          "paymentSource",
+          "reservationId",
+          "startTime",
+          "status"
+        ]
       },
       "ReservationCouponResponse": {
         "type": "object",
@@ -4572,7 +4643,10 @@
             "format": "int64"
           },
           "expiresAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "remainingCount": {
@@ -4587,7 +4661,14 @@
             "type": "integer",
             "format": "int32"
           }
-        }
+        },
+        "required": [
+          "availableCount",
+          "couponId",
+          "expiresAt",
+          "heldCount",
+          "remainingCount"
+        ]
       },
       "MemberReservationChangeRequest": {
         "type": "object",
@@ -4613,7 +4694,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "status": {
             "type": "string"
@@ -4627,7 +4709,16 @@
           "changed": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "changed",
+          "couponAction",
+          "freeChangeUsed",
+          "lessonDate",
+          "reservationId",
+          "startTime",
+          "status"
+        ]
       },
       "MemberReservationCancelRequest": {
         "type": "object",
@@ -4665,7 +4756,15 @@
           "changed": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "cancelledAt",
+          "changed",
+          "couponAction",
+          "reservationId",
+          "responsibility",
+          "status"
+        ]
       },
       "TimeSlotCreateRequest": {
         "type": "object",
@@ -4675,7 +4774,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "totalCapacity": {
             "type": "integer",
@@ -4756,12 +4856,16 @@
             "type": "string"
           },
           "couponId": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           }
         },
         "required": [
           "classType",
+          "couponId",
           "currentStatus",
           "memberId",
           "memberName",
@@ -4802,11 +4906,17 @@
             "format": "date-time"
           },
           "completedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "withdrawnAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "version": {
@@ -4839,6 +4949,7 @@
         "required": [
           "adminClosed",
           "closed",
+          "completedAt",
           "impacts",
           "progressPercent",
           "reason",
@@ -4848,7 +4959,8 @@
           "timeSlotId",
           "totalCount",
           "unresolvedCount",
-          "version"
+          "version",
+          "withdrawnAt"
         ]
       },
       "TimeSlotClosureActionRequest": {
@@ -4889,7 +5001,8 @@
             ]
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           }
         },
         "required": [
@@ -4932,7 +5045,10 @@
             ]
           },
           "resumeStatus": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "NORMAL",
               "OPEN",
@@ -4982,6 +5098,7 @@
           "remainingReservationCount",
           "reservations",
           "resolvedReservationCount",
+          "resumeStatus",
           "scheduleDate",
           "status",
           "version"
@@ -5014,12 +5131,16 @@
             "type": "string"
           },
           "couponId": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           }
         },
         "required": [
           "classType",
+          "couponId",
           "memberId",
           "memberName",
           "memberPhone",
@@ -5086,7 +5207,13 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "adminConfirmedAt",
+          "paymentSource",
+          "reservationId",
+          "status"
+        ]
       },
       "ReservationRejectRequest": {
         "type": "object",
@@ -5115,7 +5242,10 @@
             "type": "string"
           },
           "couponId": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "rejectedAt": {
@@ -5128,7 +5258,16 @@
           "rejectionReason": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "couponId",
+          "paymentSource",
+          "rejectedAt",
+          "rejectedBy",
+          "rejectionReason",
+          "reservationId",
+          "status"
+        ]
       },
       "ReservationNoShowRequest": {
         "type": "object",
@@ -5162,16 +5301,30 @@
             "type": "string"
           },
           "couponId": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "couponAction": {
             "type": "string"
           },
           "adminMemo": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
-        }
+        },
+        "required": [
+          "adminMemo",
+          "couponAction",
+          "couponId",
+          "paymentSource",
+          "reservationId",
+          "status"
+        ]
       },
       "ReservationConfirmResponse": {
         "type": "object",
@@ -5187,14 +5340,24 @@
             "type": "string"
           },
           "couponId": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "adminConfirmedAt": {
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "adminConfirmedAt",
+          "couponId",
+          "paymentSource",
+          "reservationId",
+          "status"
+        ]
       },
       "ReservationCompletionResponse": {
         "type": "object",
@@ -5210,7 +5373,10 @@
             "type": "string"
           },
           "couponId": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "generalRideCount": {
@@ -5225,7 +5391,16 @@
             "type": "integer",
             "format": "int32"
           }
-        }
+        },
+        "required": [
+          "couponId",
+          "dressageRideCount",
+          "generalRideCount",
+          "jumpingRideCount",
+          "paymentSource",
+          "reservationId",
+          "status"
+        ]
       },
       "AdminReservationChangeRequest": {
         "type": "object",
@@ -5291,7 +5466,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "items": {
             "type": "array",
@@ -5322,15 +5498,32 @@
             "type": "boolean"
           },
           "status": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "errorCode": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "errorMessage": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
-        }
+        },
+        "required": [
+          "action",
+          "errorCode",
+          "errorMessage",
+          "reservationId",
+          "status",
+          "success"
+        ]
       },
       "BulkReservationAttendanceResponse": {
         "type": "object",
@@ -5353,7 +5546,13 @@
               "$ref": "#/components/schemas/BulkReservationAttendanceItemResponse"
             }
           }
-        }
+        },
+        "required": [
+          "failedCount",
+          "items",
+          "requestedCount",
+          "succeededCount"
+        ]
       },
       "RecurringHolidayPreviewRequest": {
         "type": "object",
@@ -5427,11 +5626,17 @@
             "format": "int32"
           },
           "firstUsedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "expiresAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "freeChangeUsed": {
@@ -5447,7 +5652,21 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "createdAt",
+          "createdBy",
+          "expiresAt",
+          "firstUsedAt",
+          "freeChangeUsed",
+          "heldCount",
+          "id",
+          "memberId",
+          "remainingCount",
+          "status",
+          "totalCount",
+          "type"
+        ]
       },
       "ScheduleSynchronizationRetryRequest": {
         "type": "object",
@@ -5508,7 +5727,11 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "executedAt",
+          "expiredCount"
+        ]
       },
       "ApprovalExpiryResponse": {
         "type": "object",
@@ -5521,7 +5744,11 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "executedAt",
+          "expiredCount"
+        ]
       },
       "TimeSlotStatusUpdateRequest": {
         "type": "object",
@@ -5598,7 +5825,18 @@
           "canUseLargeArena": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "canUseLargeArena",
+          "dressageApproved",
+          "dressageRideCount",
+          "generalRideCount",
+          "id",
+          "jumpingApproved",
+          "jumpingRideCount",
+          "name",
+          "phone"
+        ]
       },
       "MemberAvailableTimeSlotResponse": {
         "type": "object",
@@ -5612,7 +5850,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "closed": {
             "type": "boolean"
@@ -5625,14 +5864,26 @@
             "format": "int32"
           },
           "unavailableReason": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "NOT_ELIGIBLE",
               "CLOSED",
               "FULL"
             ]
           }
-        }
+        },
+        "required": [
+          "closed",
+          "lessonDate",
+          "remainingCapacity",
+          "reservable",
+          "startTime",
+          "timeSlotId",
+          "unavailableReason"
+        ]
       },
       "MemberAvailableTimeSlotsResponse": {
         "type": "object",
@@ -5659,7 +5910,12 @@
               "$ref": "#/components/schemas/MemberAvailableTimeSlotResponse"
             }
           }
-        }
+        },
+        "required": [
+          "classType",
+          "date",
+          "timeSlots"
+        ]
       },
       "MemberReservationCouponResponse": {
         "type": "object",
@@ -5687,10 +5943,22 @@
             "format": "int32"
           },
           "expiresAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "availableCount",
+          "couponId",
+          "couponType",
+          "expiresAt",
+          "heldCount",
+          "remainingCount",
+          "status"
+        ]
       },
       "MemberReservationPageResponse": {
         "type": "object",
@@ -5720,7 +5988,15 @@
           "hasNext": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
       },
       "MemberReservationResponse": {
         "type": "object",
@@ -5737,7 +6013,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "status": {
             "type": "string"
@@ -5746,32 +6023,57 @@
             "type": "string"
           },
           "coupon": {
-            "$ref": "#/components/schemas/MemberReservationCouponResponse"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberReservationCouponResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "paymentDueAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "rejectionReason": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "couponAction": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "approvalRequestedAt": {
             "type": "string",
             "format": "date-time"
           },
           "adminConfirmedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "rejectedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "cancelledAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "displayGroup": {
@@ -5780,7 +6082,25 @@
           "actions": {
             "$ref": "#/components/schemas/ReservationActionsResponse"
           }
-        }
+        },
+        "required": [
+          "actions",
+          "adminConfirmedAt",
+          "approvalRequestedAt",
+          "cancelledAt",
+          "classType",
+          "coupon",
+          "couponAction",
+          "displayGroup",
+          "lessonDate",
+          "paymentDueAt",
+          "paymentSource",
+          "rejectedAt",
+          "rejectionReason",
+          "reservationId",
+          "startTime",
+          "status"
+        ]
       },
       "ReservationActionAvailabilityResponse": {
         "type": "object",
@@ -5789,9 +6109,16 @@
             "type": "boolean"
           },
           "blockedReason": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
-        }
+        },
+        "required": [
+          "allowed",
+          "blockedReason"
+        ]
       },
       "ReservationActionsResponse": {
         "type": "object",
@@ -5811,7 +6138,14 @@
           "approve": {
             "$ref": "#/components/schemas/ReservationActionAvailabilityResponse"
           }
-        }
+        },
+        "required": [
+          "approve",
+          "cancel",
+          "change",
+          "complete",
+          "noShow"
+        ]
       },
       "ReservationChangePreviewResponse": {
         "type": "object",
@@ -5829,7 +6163,8 @@
             "format": "date"
           },
           "targetStartTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "timing": {
             "type": "string"
@@ -5840,7 +6175,16 @@
           "freeChangeUsed": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "couponAction",
+          "freeChangeUsed",
+          "reservationId",
+          "targetLessonDate",
+          "targetStartTime",
+          "targetTimeSlotId",
+          "timing"
+        ]
       },
       "ReservationCancellationPreviewResponse": {
         "type": "object",
@@ -5858,7 +6202,13 @@
           "couponAction": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "couponAction",
+          "reservationId",
+          "responsibility",
+          "timing"
+        ]
       },
       "MemberAvailableRidingClassesResponse": {
         "type": "object",
@@ -5897,7 +6247,14 @@
               ]
             }
           }
-        }
+        },
+        "required": [
+          "availableRidingClasses",
+          "canUseLargeArena",
+          "currentGeneralGrade",
+          "dressageApproved",
+          "jumpingApproved"
+        ]
       },
       "MemberCouponPageResponse": {
         "type": "object",
@@ -5927,7 +6284,15 @@
           "hasNext": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
       },
       "MemberCouponResponse": {
         "type": "object",
@@ -5956,11 +6321,17 @@
             "format": "int32"
           },
           "firstUsedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "expiresAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "freeChangeUsed": {
@@ -5969,7 +6340,19 @@
           "status": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "availableCount",
+          "couponId",
+          "expiresAt",
+          "firstUsedAt",
+          "freeChangeUsed",
+          "heldCount",
+          "remainingCount",
+          "status",
+          "totalCount",
+          "type"
+        ]
       },
       "MemberCouponUsagePageResponse": {
         "type": "object",
@@ -5999,7 +6382,15 @@
           "hasNext": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
       },
       "MemberCouponUsageResponse": {
         "type": "object",
@@ -6013,7 +6404,10 @@
             "format": "int64"
           },
           "reservationId": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "action": {
@@ -6030,7 +6424,16 @@
           "actorType": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "action",
+          "actorType",
+          "countDelta",
+          "couponId",
+          "occurredAt",
+          "reservationId",
+          "usageLogId"
+        ]
       },
       "ScheduleDateResponse": {
         "type": "object",
@@ -6049,7 +6452,10 @@
             ]
           },
           "resumeStatus": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "enum": [
               "NORMAL",
               "OPEN",
@@ -6058,7 +6464,10 @@
             ]
           },
           "reason": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "appliedConfigVersion": {
             "type": "integer",
@@ -6071,6 +6480,8 @@
         },
         "required": [
           "appliedConfigVersion",
+          "reason",
+          "resumeStatus",
           "scheduleDate",
           "status",
           "version"
@@ -6098,10 +6509,21 @@
             "format": "int32"
           },
           "expiresAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "couponId",
+          "couponType",
+          "expiresAt",
+          "heldCount",
+          "remainingCount",
+          "status"
+        ]
       },
       "AdminReservationPageResponse": {
         "type": "object",
@@ -6131,7 +6553,15 @@
           "hasNext": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
       },
       "AdminReservationResponse": {
         "type": "object",
@@ -6158,7 +6588,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "status": {
             "type": "string"
@@ -6167,10 +6598,20 @@
             "type": "string"
           },
           "coupon": {
-            "$ref": "#/components/schemas/AdminReservationCouponResponse"
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AdminReservationCouponResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "paymentDueAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "approvalRequestedAt": {
@@ -6178,34 +6619,61 @@
             "format": "date-time"
           },
           "adminConfirmedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "rejectedAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "rejectedBy": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "rejectionReason": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "cancelledAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "cancellationResponsibility": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "couponAction": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "adminMemo": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "approvalWarning": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "createdAt": {
             "type": "string",
@@ -6221,7 +6689,34 @@
           "actions": {
             "$ref": "#/components/schemas/ReservationActionsResponse"
           }
-        }
+        },
+        "required": [
+          "actions",
+          "adminConfirmedAt",
+          "adminMemo",
+          "approvalRequestedAt",
+          "approvalWarning",
+          "cancellationResponsibility",
+          "cancelledAt",
+          "classType",
+          "coupon",
+          "couponAction",
+          "createdAt",
+          "displayGroup",
+          "lessonDate",
+          "memberId",
+          "memberName",
+          "memberPhone",
+          "paymentDueAt",
+          "paymentSource",
+          "rejectedAt",
+          "rejectedBy",
+          "rejectionReason",
+          "reservationId",
+          "startTime",
+          "status",
+          "updatedAt"
+        ]
       },
       "AdminReservationDailySummaryResponse": {
         "type": "object",
@@ -6240,7 +6735,12 @@
               "$ref": "#/components/schemas/ReservationStatusCountResponse"
             }
           }
-        }
+        },
+        "required": [
+          "lessonDate",
+          "statusCounts",
+          "totalCount"
+        ]
       },
       "AdminReservationSummaryResponse": {
         "type": "object",
@@ -6269,7 +6769,14 @@
               "$ref": "#/components/schemas/AdminReservationDailySummaryResponse"
             }
           }
-        }
+        },
+        "required": [
+          "dailyCounts",
+          "lessonDateFrom",
+          "lessonDateTo",
+          "statusCounts",
+          "totalCount"
+        ]
       },
       "ReservationStatusCountResponse": {
         "type": "object",
@@ -6281,7 +6788,11 @@
             "type": "integer",
             "format": "int64"
           }
-        }
+        },
+        "required": [
+          "count",
+          "status"
+        ]
       },
       "AdminPendingPaymentResponse": {
         "type": "object",
@@ -6308,7 +6819,8 @@
             "format": "date"
           },
           "startTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "status": {
             "type": "string"
@@ -6324,7 +6836,20 @@
           "deadlineExceeded": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "approvalRequestedAt",
+          "classType",
+          "deadlineExceeded",
+          "lessonDate",
+          "memberId",
+          "memberName",
+          "memberPhone",
+          "paymentDueAt",
+          "reservationId",
+          "startTime",
+          "status"
+        ]
       },
       "AdminMemberPageResponse": {
         "type": "object",
@@ -6354,7 +6879,15 @@
           "hasNext": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
       },
       "AdminReservationAuditPageResponse": {
         "type": "object",
@@ -6384,7 +6917,15 @@
           "hasNext": {
             "type": "boolean"
           }
-        }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
       },
       "AdminReservationAuditResponse": {
         "type": "object",
@@ -6424,34 +6965,65 @@
             "format": "date"
           },
           "fromStartTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "toLessonDate": {
             "type": "string",
             "format": "date"
           },
           "toStartTime": {
-            "type": "string"
+            "type": "string",
+            "format": "time"
           },
           "couponAction": {
             "type": "string"
           },
           "couponId": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "format": "int64"
           },
           "paymentDueAt": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "memo": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "occurredAt": {
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "actorAuthSubject",
+          "actorType",
+          "auditLogId",
+          "changeType",
+          "couponAction",
+          "couponId",
+          "fromLessonDate",
+          "fromStartTime",
+          "fromStatus",
+          "memberId",
+          "memberName",
+          "memo",
+          "occurredAt",
+          "paymentDueAt",
+          "reservationId",
+          "toLessonDate",
+          "toStartTime",
+          "toStatus"
+        ]
       },
       "ErrorResponse": {
         "properties": {
@@ -6501,7 +7073,11 @@
           "message": {
             "type": "string"
           }
-        }
+        },
+        "required": [
+          "field",
+          "message"
+        ]
       }
     },
     "securitySchemes": {

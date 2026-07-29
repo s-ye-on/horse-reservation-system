@@ -24,49 +24,56 @@ export interface MemberCouponUsageResponse {
      * @type {number}
      * @memberof MemberCouponUsageResponse
      */
-    usageLogId?: number;
+    usageLogId: number;
     /**
      *
      * @type {number}
      * @memberof MemberCouponUsageResponse
      */
-    couponId?: number;
+    couponId: number;
     /**
      *
      * @type {number}
      * @memberof MemberCouponUsageResponse
      */
-    reservationId?: number;
+    reservationId: number | null;
     /**
      *
      * @type {string}
      * @memberof MemberCouponUsageResponse
      */
-    action?: string;
+    action: string;
     /**
      *
      * @type {number}
      * @memberof MemberCouponUsageResponse
      */
-    countDelta?: number;
+    countDelta: number;
     /**
      *
      * @type {Date}
      * @memberof MemberCouponUsageResponse
      */
-    occurredAt?: Date;
+    occurredAt: Date;
     /**
      *
      * @type {string}
      * @memberof MemberCouponUsageResponse
      */
-    actorType?: string;
+    actorType: string;
 }
 
 /**
  * Check if a given object implements the MemberCouponUsageResponse interface.
  */
 export function instanceOfMemberCouponUsageResponse(value: object): value is MemberCouponUsageResponse {
+    if (!('usageLogId' in value) || value['usageLogId'] === undefined) return false;
+    if (!('couponId' in value) || value['couponId'] === undefined) return false;
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('action' in value) || value['action'] === undefined) return false;
+    if (!('countDelta' in value) || value['countDelta'] === undefined) return false;
+    if (!('occurredAt' in value) || value['occurredAt'] === undefined) return false;
+    if (!('actorType' in value) || value['actorType'] === undefined) return false;
     return true;
 }
 
@@ -80,13 +87,13 @@ export function MemberCouponUsageResponseFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
-        'usageLogId': json['usageLogId'] == null ? undefined : json['usageLogId'],
-        'couponId': json['couponId'] == null ? undefined : json['couponId'],
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'action': json['action'] == null ? undefined : json['action'],
-        'countDelta': json['countDelta'] == null ? undefined : json['countDelta'],
-        'occurredAt': json['occurredAt'] == null ? undefined : (new Date(json['occurredAt'])),
-        'actorType': json['actorType'] == null ? undefined : json['actorType'],
+        'usageLogId': json['usageLogId'],
+        'couponId': json['couponId'],
+        'reservationId': json['reservationId'],
+        'action': json['action'],
+        'countDelta': json['countDelta'],
+        'occurredAt': (new Date(json['occurredAt'])),
+        'actorType': json['actorType'],
     };
 }
 
@@ -106,7 +113,7 @@ export function MemberCouponUsageResponseToJSONTyped(value?: MemberCouponUsageRe
         'reservationId': value['reservationId'],
         'action': value['action'],
         'countDelta': value['countDelta'],
-        'occurredAt': value['occurredAt'] == null ? value['occurredAt'] : value['occurredAt'].toISOString(),
+        'occurredAt': value['occurredAt'].toISOString(),
         'actorType': value['actorType'],
     };
 }

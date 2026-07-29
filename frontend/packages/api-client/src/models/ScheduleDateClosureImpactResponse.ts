@@ -44,7 +44,7 @@ export interface ScheduleDateClosureImpactResponse {
      * @type {ScheduleDateClosureImpactResponseResumeStatusEnum}
      * @memberof ScheduleDateClosureImpactResponse
      */
-    resumeStatus?: ScheduleDateClosureImpactResponseResumeStatusEnum;
+    resumeStatus: ScheduleDateClosureImpactResponseResumeStatusEnum | null;
     /**
      *
      * @type {number}
@@ -125,6 +125,7 @@ export type ScheduleDateClosureImpactResponseResumeStatusEnum = typeof ScheduleD
 export function instanceOfScheduleDateClosureImpactResponse(value: object): value is ScheduleDateClosureImpactResponse {
     if (!('scheduleDate' in value) || value['scheduleDate'] === undefined) return false;
     if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('resumeStatus' in value) || value['resumeStatus'] === undefined) return false;
     if (!('version' in value) || value['version'] === undefined) return false;
     if (!('initialReservationCount' in value) || value['initialReservationCount'] === undefined) return false;
     if (!('activeReservationCount' in value) || value['activeReservationCount'] === undefined) return false;
@@ -148,7 +149,7 @@ export function ScheduleDateClosureImpactResponseFromJSONTyped(json: any, ignore
 
         'scheduleDate': (new Date(json['scheduleDate'])),
         'status': json['status'],
-        'resumeStatus': json['resumeStatus'] == null ? undefined : json['resumeStatus'],
+        'resumeStatus': json['resumeStatus'],
         'version': json['version'],
         'initialReservationCount': json['initialReservationCount'],
         'activeReservationCount': json['activeReservationCount'],

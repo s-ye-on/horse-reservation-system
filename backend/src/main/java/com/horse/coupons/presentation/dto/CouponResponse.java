@@ -1,8 +1,11 @@
 package com.horse.coupons.presentation.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 import com.horse.coupons.application.CouponRegistrationResult;
+import com.horse.global.time.ApiDateTime;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record CouponResponse(
 	Long id,
@@ -11,12 +14,12 @@ public record CouponResponse(
 	int totalCount,
 	int remainingCount,
 	int heldCount,
-	LocalDateTime firstUsedAt,
-	LocalDateTime expiresAt,
+	@Schema(nullable = true) OffsetDateTime firstUsedAt,
+	@Schema(nullable = true) OffsetDateTime expiresAt,
 	boolean freeChangeUsed,
 	String status,
 	String createdBy,
-	LocalDateTime createdAt
+	OffsetDateTime createdAt
 ) {
 
 	public static CouponResponse from(CouponRegistrationResult result) {
@@ -27,11 +30,11 @@ public record CouponResponse(
 			result.totalCount(),
 			result.remainingCount(),
 			result.heldCount(),
-			result.firstUsedAt(),
-			result.expiresAt(),
+			ApiDateTime.toSeoulOffset(result.firstUsedAt()),
+			ApiDateTime.toSeoulOffset(result.expiresAt()),
 			result.freeChangeUsed(),
 			result.status(),
 			result.createdBy(),
-			result.createdAt());
+			ApiDateTime.toSeoulOffset(result.createdAt()));
 	}
 }

@@ -14,6 +14,25 @@ const RESERVATION: MemberReservationResponse = {
   startTime: '09:00:00',
   status: 'confirmed',
   paymentSource: 'coupon',
+  coupon: {
+    couponId: 41, couponType: 'GENERAL', status: 'active', remainingCount: 5,
+    heldCount: 1, availableCount: 4, expiresAt: new Date('2026-10-01'),
+  },
+  paymentDueAt: null,
+  rejectionReason: null,
+  couponAction: null,
+  approvalRequestedAt: new Date('2026-07-01T01:00:00Z'),
+  adminConfirmedAt: new Date('2026-07-01T02:00:00Z'),
+  rejectedAt: null,
+  cancelledAt: null,
+  displayGroup: 'UPCOMING',
+  actions: {
+    change: { allowed: true, blockedReason: null },
+    cancel: { allowed: true, blockedReason: null },
+    complete: { allowed: false, blockedReason: null },
+    noShow: { allowed: false, blockedReason: null },
+    approve: { allowed: false, blockedReason: null },
+  },
 }
 
 afterEach(cleanup)
@@ -25,8 +44,8 @@ function createApi(overrides: Partial<ReservationChangeApi> = {}): ReservationCh
       date: new Date('2026-07-21T00:00:00+09:00'),
       classType: 'ROUND_BEGINNER',
       timeSlots: [
-        { timeSlotId: 31, lessonDate: new Date('2026-07-21T00:00:00+09:00'), startTime: '10:00:00', reservable: true, remainingCapacity: 2 },
-        { timeSlotId: 32, lessonDate: new Date('2026-07-21T00:00:00+09:00'), startTime: '11:00:00', reservable: false, remainingCapacity: 0 },
+        { timeSlotId: 31, lessonDate: new Date('2026-07-21T00:00:00+09:00'), startTime: '10:00:00', closed: false, reservable: true, remainingCapacity: 2, unavailableReason: null },
+        { timeSlotId: 32, lessonDate: new Date('2026-07-21T00:00:00+09:00'), startTime: '11:00:00', closed: false, reservable: false, remainingCapacity: 0, unavailableReason: 'FULL' },
       ],
     }),
     previewChange: vi.fn().mockResolvedValue({

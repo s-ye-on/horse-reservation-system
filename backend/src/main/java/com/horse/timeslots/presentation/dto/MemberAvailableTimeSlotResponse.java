@@ -6,14 +6,16 @@ import java.time.LocalTime;
 import com.horse.timeslots.application.MemberAvailableTimeSlotResult;
 import com.horse.timeslots.application.TimeSlotAvailabilityReason;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record MemberAvailableTimeSlotResponse(
 	Long timeSlotId,
 	LocalDate lessonDate,
-	LocalTime startTime,
+	@Schema(type = "string", format = "time") LocalTime startTime,
 	boolean closed,
 	boolean reservable,
 	int remainingCapacity,
-	TimeSlotAvailabilityReason unavailableReason
+	@Schema(nullable = true) TimeSlotAvailabilityReason unavailableReason
 ) {
 
 	public static MemberAvailableTimeSlotResponse from(MemberAvailableTimeSlotResult result) {

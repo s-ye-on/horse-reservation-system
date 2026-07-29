@@ -12,6 +12,7 @@ import { AdminBulkAttendancePanel } from './admin-bulk-attendance-panel'
 
 const COUPON_RESERVATION: AdminReservationResponse = {
   reservationId: 41,
+  memberId: 41,
   memberName: '김쿠폰',
   memberPhone: '010-4141-4141',
   classType: 'ROUND_TROT',
@@ -19,11 +20,25 @@ const COUPON_RESERVATION: AdminReservationResponse = {
   startTime: '09:00:00',
   status: 'confirmed',
   paymentSource: 'coupon',
-  coupon: { couponId: 81, couponType: 'GENERAL', remainingCount: 4, heldCount: 1 },
+  coupon: { couponId: 81, couponType: 'GENERAL', status: 'active', remainingCount: 4, heldCount: 1, expiresAt: null },
+  paymentDueAt: null,
+  approvalRequestedAt: new Date('2026-07-01T01:00:00Z'),
+  adminConfirmedAt: new Date('2026-07-01T02:00:00Z'),
+  rejectedAt: null,
+  rejectedBy: null,
+  rejectionReason: null,
+  cancelledAt: null,
+  cancellationResponsibility: null,
+  couponAction: null,
+  adminMemo: null,
+  approvalWarning: null,
+  createdAt: new Date('2026-07-01T01:00:00Z'),
+  updatedAt: new Date('2026-07-01T02:00:00Z'),
   displayGroup: 'PAST',
   actions: {
-    complete: { allowed: true }, noShow: { allowed: true },
-    change: { allowed: false }, cancel: { allowed: false }, approve: { allowed: false },
+    complete: { allowed: true, blockedReason: null }, noShow: { allowed: true, blockedReason: null },
+    change: { allowed: false, blockedReason: null }, cancel: { allowed: false, blockedReason: null },
+    approve: { allowed: false, blockedReason: null },
   },
 }
 
@@ -32,7 +47,7 @@ const PAYMENT_RESERVATION: AdminReservationResponse = {
   reservationId: 42,
   memberName: '이결제',
   paymentSource: 'single_payment',
-  coupon: undefined,
+  coupon: null,
 }
 
 const NEXT_SLOT_RESERVATION: AdminReservationResponse = {
@@ -50,7 +65,8 @@ const BLOCKED_RESERVATION: AdminReservationResponse = {
   actions: {
     complete: { allowed: false, blockedReason: 'RESERVATION_LESSON_NOT_STARTED' },
     noShow: { allowed: false, blockedReason: 'RESERVATION_LESSON_NOT_STARTED' },
-    change: { allowed: true }, cancel: { allowed: true }, approve: { allowed: false },
+    change: { allowed: true, blockedReason: null }, cancel: { allowed: true, blockedReason: null },
+    approve: { allowed: false, blockedReason: null },
   },
 }
 

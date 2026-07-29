@@ -8,7 +8,7 @@ import type { MyCouponsApi } from './my-coupons.api'
 import { MyCouponsPage } from './my-coupons-page'
 
 const COUPONS: MemberCouponResponse[] = [
-  { couponId: 1, type: 'general', totalCount: 10, remainingCount: 10, heldCount: 1, availableCount: 9, freeChangeUsed: false, status: 'active' },
+  { couponId: 1, type: 'general', totalCount: 10, remainingCount: 10, heldCount: 1, availableCount: 9, firstUsedAt: null, expiresAt: null, freeChangeUsed: false, status: 'active' },
   { couponId: 2, type: 'dressage', totalCount: 10, remainingCount: 6, heldCount: 2, availableCount: 4, firstUsedAt: new Date('2026-07-01'), expiresAt: new Date('2026-10-01'), freeChangeUsed: true, status: 'expired' },
   { couponId: 3, type: 'jumping', totalCount: 10, remainingCount: 0, heldCount: 0, availableCount: 0, firstUsedAt: new Date('2026-06-01'), expiresAt: new Date('2026-09-01'), freeChangeUsed: false, status: 'depleted' },
 ]
@@ -17,7 +17,7 @@ const ACTIONS = ['held', 'confirmed', 'used', 'released', 'deducted', 'expired',
 const USAGE_LOGS: MemberCouponUsageResponse[] = ACTIONS.map((action, index) => ({
   usageLogId: index + 1,
   couponId: index < 4 ? 1 : 2,
-  reservationId: action === 'expired' ? undefined : 100 + index,
+  reservationId: action === 'expired' ? null : 100 + index,
   action,
   countDelta: action === 'used' || action === 'deducted' ? -1 : 0,
   occurredAt: new Date(`2026-07-${String(10 + index).padStart(2, '0')}T10:00:00+09:00`),

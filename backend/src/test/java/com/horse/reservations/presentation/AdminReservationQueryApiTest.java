@@ -205,7 +205,7 @@ class AdminReservationQueryApiTest {
 			.andExpect(jsonPath("$.coupon.couponId").value(couponId))
 			.andExpect(jsonPath("$.coupon.couponType").value("general"))
 			.andExpect(jsonPath("$.coupon.remainingCount").value(10))
-			.andExpect(jsonPath("$.approvalRequestedAt").value("2026-07-15T09:00:00"))
+			.andExpect(jsonPath("$.approvalRequestedAt").value("2026-07-15T09:00:00+09:00"))
 			.andExpect(jsonPath("$.approvalWarning").value("normal"))
 			.andExpect(jsonPath("$.displayGroup").value("UPCOMING"))
 			.andExpect(jsonPath("$.actions.change.allowed").value(true))

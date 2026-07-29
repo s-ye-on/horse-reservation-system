@@ -93,7 +93,7 @@ class PendingPaymentReservationApiTest {
 			.andExpect(jsonPath("$.status").value("pending_payment"))
 			.andExpect(jsonPath("$.paymentSource").value("single_payment"))
 			.andExpect(jsonPath("$.coupon").doesNotExist())
-			.andExpect(jsonPath("$.paymentDueAt").value("2026-07-14T12:00:00"));
+			.andExpect(jsonPath("$.paymentDueAt").value("2026-07-14T12:00:00+09:00"));
 
 		assertThat(reservationCount()).isEqualTo(1);
 		assertThat(paymentDueAt()).isEqualTo("2026-07-14 12:00:00");
@@ -193,7 +193,7 @@ class PendingPaymentReservationApiTest {
 				.content(request(timeSlotId, "FIRST_RIDE")))
 			.andExpect(status().isCreated())
 			.andExpect(jsonPath("$.status").value("pending_payment"))
-			.andExpect(jsonPath("$.paymentDueAt").value("2026-08-01T08:00:00"));
+			.andExpect(jsonPath("$.paymentDueAt").value("2026-08-01T08:00:00+09:00"));
 
 		assertThat(reservationCount()).isEqualTo(1);
 		assertThat(paymentDueAt()).isEqualTo("2026-08-01 08:00:00");

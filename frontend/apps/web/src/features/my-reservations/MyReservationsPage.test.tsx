@@ -7,15 +7,20 @@ import type { ReactNode } from 'react'
 import type { MyReservationsApi } from './my-reservations.api'
 import { MyReservationsPage } from './my-reservations-page'
 
-const ALLOWED_ACTIONS = {
-  change: { allowed: true }, cancel: { allowed: true }, complete: { allowed: false },
-  noShow: { allowed: false }, approve: { allowed: false },
+const ALLOWED_ACTIONS: MemberReservationResponse['actions'] = {
+  change: { allowed: true, blockedReason: null },
+  cancel: { allowed: true, blockedReason: null },
+  complete: { allowed: false, blockedReason: null },
+  noShow: { allowed: false, blockedReason: null },
+  approve: { allowed: false, blockedReason: null },
 }
 
-const PAST_ACTIONS = {
+const PAST_ACTIONS: MemberReservationResponse['actions'] = {
   change: { allowed: false, blockedReason: 'RESERVATION_LESSON_ALREADY_STARTED' },
   cancel: { allowed: false, blockedReason: 'RESERVATION_LESSON_ALREADY_STARTED' },
-  complete: { allowed: false }, noShow: { allowed: false }, approve: { allowed: false },
+  complete: { allowed: false, blockedReason: null },
+  noShow: { allowed: false, blockedReason: null },
+  approve: { allowed: false, blockedReason: null },
 }
 
 const RESERVATIONS: MemberReservationResponse[] = [
@@ -52,12 +57,16 @@ function reservation(
     displayGroup,
     actions,
     paymentSource,
-    paymentDueAt: paymentSource === 'single_payment' ? new Date('2026-08-01T14:00:00+09:00') : undefined,
-    rejectionReason: status === 'rejected' ? '해당 수업 운영이 어렵습니다.' : undefined,
-    couponAction: status === 'completed' || status === 'no_show' ? 'deduct' : status === 'cancelled' ? 'return' : undefined,
+    paymentDueAt: paymentSource === 'single_payment' ? new Date('2026-08-01T14:00:00+09:00') : null,
+    rejectionReason: status === 'rejected' ? '해당 수업 운영이 어렵습니다.' : null,
+    couponAction: status === 'completed' || status === 'no_show' ? 'deduct' : status === 'cancelled' ? 'return' : null,
     coupon: paymentSource === 'coupon'
-      ? { couponId: 40 + reservationId, couponType: 'GENERAL', remainingCount: 5, heldCount: 1, availableCount: 4, expiresAt: new Date('2026-10-01') }
-      : undefined,
+      ? { couponId: 40 + reservationId, couponType: 'GENERAL', status: 'active', remainingCount: 5, heldCount: 1, availableCount: 4, expiresAt: new Date('2026-10-01') }
+      : null,
+    approvalRequestedAt: new Date('2026-07-01T01:00:00Z'),
+    adminConfirmedAt: null,
+    rejectedAt: status === 'rejected' ? new Date('2026-07-16T01:00:00Z') : null,
+    cancelledAt: status === 'cancelled' ? new Date('2026-07-17T01:00:00Z') : null,
   }
 }
 

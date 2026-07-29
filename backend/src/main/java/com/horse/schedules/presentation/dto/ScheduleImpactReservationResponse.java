@@ -16,7 +16,7 @@ public record ScheduleImpactReservationResponse(
 	String classType,
 	String status,
 	String paymentSource,
-	Long couponId
+	@Schema(nullable = true) Long couponId
 ) {
 
 	public static ScheduleImpactReservationResponse from(

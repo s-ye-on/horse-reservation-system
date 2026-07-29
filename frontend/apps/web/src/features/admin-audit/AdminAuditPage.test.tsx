@@ -23,6 +23,8 @@ const AUDIT_PAGE: AdminReservationAuditPageResponse = {
     toLessonDate: new Date('2026-07-20T00:00:00.000Z'),
     toStartTime: '10:00:00',
     couponAction: 'free_change_used',
+    couponId: null,
+    paymentDueAt: null,
     memo: '회원 요청으로 시간 변경',
     occurredAt: new Date('2026-07-16T01:30:00.000Z'),
   }],
@@ -30,6 +32,7 @@ const AUDIT_PAGE: AdminReservationAuditPageResponse = {
   size: 20,
   totalElements: 21,
   totalPages: 2,
+  hasNext: true,
 }
 
 afterEach(() => cleanup())

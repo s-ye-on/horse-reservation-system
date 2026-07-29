@@ -24,19 +24,21 @@ export interface ReservationStatusCountResponse {
      * @type {string}
      * @memberof ReservationStatusCountResponse
      */
-    status?: string;
+    status: string;
     /**
      *
      * @type {number}
      * @memberof ReservationStatusCountResponse
      */
-    count?: number;
+    count: number;
 }
 
 /**
  * Check if a given object implements the ReservationStatusCountResponse interface.
  */
 export function instanceOfReservationStatusCountResponse(value: object): value is ReservationStatusCountResponse {
+    if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('count' in value) || value['count'] === undefined) return false;
     return true;
 }
 
@@ -50,8 +52,8 @@ export function ReservationStatusCountResponseFromJSONTyped(json: any, ignoreDis
     }
     return {
 
-        'status': json['status'] == null ? undefined : json['status'],
-        'count': json['count'] == null ? undefined : json['count'],
+        'status': json['status'],
+        'count': json['count'],
     };
 }
 

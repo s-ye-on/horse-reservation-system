@@ -1,22 +1,25 @@
 package com.horse.timeslots.presentation.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
+import com.horse.global.time.ApiDateTime;
 import com.horse.timeslots.application.TimeSlotResult;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 
 public record TimeSlotResponse(
 	Long id,
 	LocalDate lessonDate,
-	LocalTime startTime,
+	@Schema(type = "string", format = "time") LocalTime startTime,
 	int totalCapacity,
 	int roundArenaCapacity,
 	Map<String, Integer> classCapacities,
 	boolean closed,
-	LocalDateTime createdAt,
-	LocalDateTime updatedAt
+	OffsetDateTime createdAt,
+	OffsetDateTime updatedAt
 ) {
 
 	public static TimeSlotResponse from(TimeSlotResult result) {
@@ -28,8 +31,8 @@ public record TimeSlotResponse(
 			result.roundArenaCapacity(),
 			result.classCapacities(),
 			result.closed(),
-			result.createdAt(),
-			result.updatedAt());
+			ApiDateTime.toSeoulOffset(result.createdAt()),
+			ApiDateTime.toSeoulOffset(result.updatedAt()));
 	}
 
 }

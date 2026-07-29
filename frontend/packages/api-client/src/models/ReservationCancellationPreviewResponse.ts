@@ -24,31 +24,35 @@ export interface ReservationCancellationPreviewResponse {
      * @type {number}
      * @memberof ReservationCancellationPreviewResponse
      */
-    reservationId?: number;
+    reservationId: number;
     /**
      *
      * @type {string}
      * @memberof ReservationCancellationPreviewResponse
      */
-    timing?: string;
+    timing: string;
     /**
      *
      * @type {string}
      * @memberof ReservationCancellationPreviewResponse
      */
-    responsibility?: string;
+    responsibility: string;
     /**
      *
      * @type {string}
      * @memberof ReservationCancellationPreviewResponse
      */
-    couponAction?: string;
+    couponAction: string;
 }
 
 /**
  * Check if a given object implements the ReservationCancellationPreviewResponse interface.
  */
 export function instanceOfReservationCancellationPreviewResponse(value: object): value is ReservationCancellationPreviewResponse {
+    if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('timing' in value) || value['timing'] === undefined) return false;
+    if (!('responsibility' in value) || value['responsibility'] === undefined) return false;
+    if (!('couponAction' in value) || value['couponAction'] === undefined) return false;
     return true;
 }
 
@@ -62,10 +66,10 @@ export function ReservationCancellationPreviewResponseFromJSONTyped(json: any, i
     }
     return {
 
-        'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
-        'timing': json['timing'] == null ? undefined : json['timing'],
-        'responsibility': json['responsibility'] == null ? undefined : json['responsibility'],
-        'couponAction': json['couponAction'] == null ? undefined : json['couponAction'],
+        'reservationId': json['reservationId'],
+        'timing': json['timing'],
+        'responsibility': json['responsibility'],
+        'couponAction': json['couponAction'],
     };
 }
 

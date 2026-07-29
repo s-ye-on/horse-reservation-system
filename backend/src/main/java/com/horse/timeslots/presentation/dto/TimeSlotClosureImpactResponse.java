@@ -4,6 +4,8 @@ import com.horse.timeslots.application.TimeSlotClosureImpactView;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 @Schema(requiredProperties = {
 	"reservationId", "reservationStatusAtStart", "currentStatus", "resolved",
 	"moved", "memberId", "memberName", "memberPhone", "classType", "paymentSource"
@@ -19,7 +21,7 @@ public record TimeSlotClosureImpactResponse(
 	String memberPhone,
 	String classType,
 	String paymentSource,
-	Long couponId
+	@Schema(nullable = true) Long couponId
 ) {
 
 	public static TimeSlotClosureImpactResponse from(TimeSlotClosureImpactView view) {

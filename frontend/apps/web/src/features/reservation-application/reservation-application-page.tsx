@@ -121,7 +121,7 @@ function ApplicationResult({ response }: { response: ReservationApplicationRespo
   )
 }
 
-function unavailableLabel(reason?: string) {
+function unavailableLabel(reason?: string | null) {
   if (reason === 'CLOSED') return '운영 마감'
   if (reason === 'FULL') return '예약 마감'
   return '예약 불가'

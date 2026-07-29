@@ -32,25 +32,28 @@ export interface AdminReservationDailySummaryResponse {
      * @type {Date}
      * @memberof AdminReservationDailySummaryResponse
      */
-    lessonDate?: Date;
+    lessonDate: Date;
     /**
      *
      * @type {number}
      * @memberof AdminReservationDailySummaryResponse
      */
-    totalCount?: number;
+    totalCount: number;
     /**
      *
      * @type {Array<ReservationStatusCountResponse>}
      * @memberof AdminReservationDailySummaryResponse
      */
-    statusCounts?: Array<ReservationStatusCountResponse>;
+    statusCounts: Array<ReservationStatusCountResponse>;
 }
 
 /**
  * Check if a given object implements the AdminReservationDailySummaryResponse interface.
  */
 export function instanceOfAdminReservationDailySummaryResponse(value: object): value is AdminReservationDailySummaryResponse {
+    if (!('lessonDate' in value) || value['lessonDate'] === undefined) return false;
+    if (!('totalCount' in value) || value['totalCount'] === undefined) return false;
+    if (!('statusCounts' in value) || value['statusCounts'] === undefined) return false;
     return true;
 }
 
@@ -64,9 +67,9 @@ export function AdminReservationDailySummaryResponseFromJSONTyped(json: any, ign
     }
     return {
 
-        'lessonDate': json['lessonDate'] == null ? undefined : (new Date(json['lessonDate'])),
-        'totalCount': json['totalCount'] == null ? undefined : json['totalCount'],
-        'statusCounts': json['statusCounts'] == null ? undefined : ((json['statusCounts'] as Array<any>).map(ReservationStatusCountResponseFromJSON)),
+        'lessonDate': (new Date(json['lessonDate'])),
+        'totalCount': json['totalCount'],
+        'statusCounts': ((json['statusCounts'] as Array<any>).map(ReservationStatusCountResponseFromJSON)),
     };
 }
 
@@ -81,9 +84,9 @@ export function AdminReservationDailySummaryResponseToJSONTyped(value?: AdminRes
 
     return {
 
-        'lessonDate': value['lessonDate'] == null ? value['lessonDate'] : value['lessonDate'].toISOString().substring(0,10),
+        'lessonDate': value['lessonDate'].toISOString().substring(0,10),
         'totalCount': value['totalCount'],
-        'statusCounts': value['statusCounts'] == null ? undefined : ((value['statusCounts'] as Array<any>).map(ReservationStatusCountResponseToJSON)),
+        'statusCounts': ((value['statusCounts'] as Array<any>).map(ReservationStatusCountResponseToJSON)),
     };
 }
 
