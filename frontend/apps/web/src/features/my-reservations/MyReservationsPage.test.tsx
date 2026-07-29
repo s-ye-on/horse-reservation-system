@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { ResponseError, type MemberReservationResponse } from '@horse/api-client'
+import { ResponseError, type MemberReservationPageResponse, type MemberReservationResponse } from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
-import type { MyReservationsApi } from './my-reservations.api'
+import type { MyReservationsApi, MyReservationsQuery } from './my-reservations.api'
 import { MyReservationsPage } from './my-reservations-page'
 
 const ALLOWED_ACTIONS: MemberReservationResponse['actions'] = {
@@ -70,8 +70,25 @@ function reservation(
   }
 }
 
+function reservationPage(
+  content: MemberReservationResponse[],
+  page = 0,
+  totalPages = content.length === 0 ? 0 : 1,
+  totalElements = content.length,
+): MemberReservationPageResponse {
+  return { content, page, size: 20, totalElements, totalPages, hasNext: page + 1 < totalPages }
+}
+
 function createApi(overrides: Partial<MyReservationsApi> = {}): MyReservationsApi {
-  return { getMyReservations: vi.fn().mockResolvedValue(RESERVATIONS), ...overrides }
+  return {
+    getMyReservations: vi.fn((query: MyReservationsQuery) => {
+      const content = RESERVATIONS.filter((reservation) =>
+        reservation.displayGroup === query.displayGroup
+        && (query.status === undefined || reservation.status === query.status))
+      return Promise.resolve(reservationPage(content))
+    }),
+    ...overrides,
+  }
 }
 
 function renderPage(api: MyReservationsApi) {
@@ -85,7 +102,7 @@ describe('MyReservationsPage', () => {
     renderPage(createApi())
     const upcomingTab = await screen.findByRole('tab', { name: /예정 예약/ })
     expect(upcomingTab).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getAllByRole('article')).toHaveLength(4)
+    expect(await screen.findAllByRole('article')).toHaveLength(4)
     expect(screen.getByText('관리자 승인대기')).toBeInTheDocument()
     expect(screen.queryByText('수업 완료')).not.toBeInTheDocument()
   })
@@ -96,7 +113,7 @@ describe('MyReservationsPage', () => {
     fireEvent.keyDown(upcomingTab, { key: 'ArrowRight' })
 
     expect(screen.getByRole('tab', { name: /지난 예약/ })).toHaveAttribute('aria-selected', 'true')
-    const cards = screen.getAllByRole('article')
+    const cards = await screen.findAllByRole('article')
     expect(within(cards[0]).getByText('노쇼')).toBeInTheDocument()
     expect(within(cards[3]).getByText('수업 완료')).toBeInTheDocument()
   })
@@ -106,7 +123,7 @@ describe('MyReservationsPage', () => {
     await screen.findByRole('tab', { name: /예정 예약/ })
     fireEvent.click(screen.getByRole('button', { name: '입금대기' }))
 
-    expect(screen.getAllByRole('article')).toHaveLength(1)
+    expect(await screen.findAllByRole('article')).toHaveLength(1)
     expect(screen.getByText('입금 확인 대기')).toBeInTheDocument()
     expect(screen.getByText('입금 기한')).toBeInTheDocument()
   })
@@ -122,25 +139,126 @@ describe('MyReservationsPage', () => {
     renderPage(createApi())
     fireEvent.click(await screen.findByRole('tab', { name: /지난 예약/ }))
 
+    expect(await screen.findAllByText('수업 시작 이후에는 예약을 변경하거나 취소할 수 없습니다.')).toHaveLength(4)
     expect(screen.queryByRole('link', { name: '예약 변경' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '취소하기' })).not.toBeInTheDocument()
-    expect(screen.getAllByText('수업 시작 이후에는 예약을 변경하거나 취소할 수 없습니다.')).toHaveLength(4)
   })
 
   it('반려와_취소_및_쿠폰_처리_결과를_구분한다', async () => {
     renderPage(createApi())
     fireEvent.click(await screen.findByRole('tab', { name: /지난 예약/ }))
 
-    expect(screen.getByText('예약 반려')).toBeInTheDocument()
+    expect(await screen.findByText('예약 반려')).toBeInTheDocument()
     expect(screen.getByText('예약 취소')).toBeInTheDocument()
     expect(screen.getByText('해당 수업 운영이 어렵습니다.')).toBeInTheDocument()
     expect(screen.getAllByText('1회 차감')).toHaveLength(2)
     expect(screen.getByText('반환')).toBeInTheDocument()
   })
 
+  it('서버_Page와_필터를_사용하고_탭_건수는_totalElements로_표시한다', async () => {
+    const upcoming = RESERVATIONS.filter((reservation) => reservation.displayGroup === 'UPCOMING')
+    const past = RESERVATIONS.filter((reservation) => reservation.displayGroup === 'PAST')
+    const getMyReservations = vi.fn((query: MyReservationsQuery) => {
+      const source = query.displayGroup === 'UPCOMING' ? upcoming : past
+      const filtered = query.status === undefined
+        ? source
+        : source.filter((reservation) => reservation.status === query.status)
+      const content = query.size === 1
+        ? filtered.slice(0, 1)
+        : filtered.slice(query.page, query.page + 1)
+      const totalPages = filtered.length
+      return Promise.resolve(reservationPage(content, query.page, totalPages, filtered.length))
+    })
+    renderPage(createApi({ getMyReservations }))
+
+    expect(await screen.findByRole('tab', { name: new RegExp(`예정 예약\\s*${upcoming.length}`) })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: new RegExp(`지난 예약\\s*${past.length}`) })).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: '예정 예약 페이지' })
+    expect(within(navigation).getByRole('button', { name: '이전' })).toBeDisabled()
+    fireEvent.click(within(navigation).getByRole('button', { name: '다음' }))
+    expect(await within(navigation).findByText(`2 / ${upcoming.length} 페이지`)).toBeInTheDocument()
+    expect(getMyReservations).toHaveBeenCalledWith(expect.objectContaining({
+      displayGroup: 'UPCOMING',
+      page: 1,
+      status: undefined,
+    }))
+
+    fireEvent.click(screen.getByRole('button', { name: '입금대기' }))
+    await waitFor(() => expect(getMyReservations).toHaveBeenCalledWith(expect.objectContaining({
+      displayGroup: 'UPCOMING',
+      page: 0,
+      status: 'pending_payment',
+    })))
+
+    fireEvent.click(screen.getByRole('tab', { name: new RegExp(`지난 예약\\s*${past.length}`) }))
+    await waitFor(() => expect(getMyReservations).toHaveBeenCalledWith(expect.objectContaining({
+      displayGroup: 'PAST',
+      page: 0,
+      status: undefined,
+    })))
+  })
+
+  it('늦게_도착한_이전_탭_응답이_현재_탭을_덮지_않는다', async () => {
+    const upcoming = RESERVATIONS.filter((reservation) => reservation.displayGroup === 'UPCOMING')
+    const past = RESERVATIONS.filter((reservation) => reservation.displayGroup === 'PAST')
+    let resolveUpcoming: ((value: MemberReservationPageResponse) => void) | undefined
+    let resolvePast: ((value: MemberReservationPageResponse) => void) | undefined
+    const getMyReservations = vi.fn((query: MyReservationsQuery) => {
+      if (query.size === 1) {
+        const source = query.displayGroup === 'UPCOMING' ? upcoming : past
+        return Promise.resolve(reservationPage(source.slice(0, 1), 0, source.length, source.length))
+      }
+      return new Promise<MemberReservationPageResponse>((resolve) => {
+        if (query.displayGroup === 'UPCOMING') resolveUpcoming = resolve
+        else resolvePast = resolve
+      })
+    })
+    renderPage(createApi({ getMyReservations }))
+
+    fireEvent.click(await screen.findByRole('tab', { name: /지난 예약/ }))
+    resolvePast?.(reservationPage(past))
+    expect(await screen.findByText('노쇼')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: /지난 예약/ })).toHaveAttribute('aria-selected', 'true')
+
+    resolveUpcoming?.(reservationPage(upcoming))
+    await waitFor(() => {
+      expect(screen.getByRole('tab', { name: /지난 예약/ })).toHaveAttribute('aria-selected', 'true')
+      expect(screen.getAllByRole('article')).toHaveLength(past.length)
+    })
+  })
+
   it('빈_예약_목록을_표시한다', async () => {
-    renderPage(createApi({ getMyReservations: vi.fn().mockResolvedValue([]) }))
+    renderPage(createApi({ getMyReservations: vi.fn().mockResolvedValue(reservationPage([])) }))
     expect(await screen.findByText('아직 예약 내역이 없습니다.')).toBeInTheDocument()
+  })
+
+  it('탭_건수_조회_실패가_활성_예약_목록을_막지_않고_재시도된다', async () => {
+    const upcoming = RESERVATIONS.filter((reservation) => reservation.displayGroup === 'UPCOMING')
+    const past = RESERVATIONS.filter((reservation) => reservation.displayGroup === 'PAST')
+    let pastCountRequestCount = 0
+    const getMyReservations = vi.fn((query: MyReservationsQuery) => {
+      const source = query.displayGroup === 'UPCOMING' ? upcoming : past
+      if (query.size === 1 && query.displayGroup === 'PAST') {
+        pastCountRequestCount += 1
+        if (pastCountRequestCount === 1) return Promise.reject(new Error('count failed'))
+      }
+      return Promise.resolve(reservationPage(
+        query.size === 1 ? source.slice(0, 1) : source,
+        0,
+        1,
+        source.length,
+      ))
+    })
+    renderPage(createApi({ getMyReservations }))
+
+    expect(await screen.findByText('관리자 승인대기')).toBeInTheDocument()
+    const alert = screen.getByRole('alert')
+    expect(alert).toHaveTextContent('예약 건수를 불러오지 못했습니다.')
+    expect(screen.getByRole('tab', { name: /지난 예약—/ })).toBeInTheDocument()
+    fireEvent.click(within(alert).getByRole('button', { name: '다시 시도' }))
+
+    expect(await screen.findByRole('tab', { name: new RegExp(`지난 예약\\s*${past.length}`) })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
   it.each([[401, '다시 로그인'], [500, '불러오지 못했습니다']])('%i_조회_오류를_구분한다', async (status, message) => {

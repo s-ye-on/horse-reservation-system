@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { ResponseError, type AdminMemberResponse } from '@horse/api-client'
+import { ResponseError, type AdminMemberPageResponse, type AdminMemberResponse } from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import type { AdminMembersApi } from './admin-members.api'
@@ -20,9 +20,18 @@ const MEMBER: AdminMemberResponse = {
 
 afterEach(cleanup)
 
+function memberPage(
+  content: AdminMemberResponse[],
+  page = 0,
+  totalPages = content.length === 0 ? 0 : 1,
+  totalElements = content.length,
+): AdminMemberPageResponse {
+  return { content, page, size: 20, totalElements, totalPages, hasNext: page + 1 < totalPages }
+}
+
 function createApi(overrides: Partial<AdminMembersApi> = {}): AdminMembersApi {
   return {
-    getMembers: vi.fn().mockResolvedValue([MEMBER]),
+    getMembers: vi.fn().mockResolvedValue(memberPage([MEMBER])),
     getMember: vi.fn().mockResolvedValue(MEMBER),
     changeRidingPermissions: vi.fn().mockResolvedValue(MEMBER),
     ...overrides,
@@ -90,13 +99,39 @@ describe('AdminMembersPage', () => {
   })
 
   it('빈_목록과_권한_거부를_구분해_표시한다', async () => {
-    const emptyView = renderPage(createApi({ getMembers: vi.fn().mockResolvedValue([]) }))
+    const emptyView = renderPage(createApi({ getMembers: vi.fn().mockResolvedValue(memberPage([])) }))
     expect(await screen.findByText('등록된 회원이 없습니다.')).toBeInTheDocument()
     emptyView.unmount()
 
     const forbidden = new ResponseError(new Response(null, { status: 403 }), 'forbidden')
     renderPage(createApi({ getMembers: vi.fn().mockRejectedValue(forbidden) }))
     expect(await screen.findByRole('alert')).toHaveTextContent('관리자 권한이 없어')
+  })
+
+  it('회원_Page를_이동하고_전체_건수와_버튼_경계를_표시한다', async () => {
+    const secondMember = { ...MEMBER, id: 2, name: '이기승', phone: '010-2222-2222' }
+    const getMembers = vi.fn((page: number) => Promise.resolve(
+      page === 0
+        ? memberPage([MEMBER], 0, 2, 2)
+        : memberPage([secondMember], 1, 2, 2),
+    ))
+    const getMember = vi.fn((memberId: number) => Promise.resolve(
+      memberId === MEMBER.id ? MEMBER : secondMember,
+    ))
+    renderPage(createApi({ getMembers, getMember }))
+
+    expect(await screen.findByText('전체 2명')).toBeInTheDocument()
+    const navigation = screen.getByRole('navigation', { name: '회원 목록 페이지' })
+    expect(screen.getByText('1 / 2 페이지')).toBeInTheDocument()
+    expect(navigation.querySelector('button:first-of-type')).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: '다음' }))
+    expect(await screen.findByRole('button', { name: /이기승/ })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '이기승' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '김승마' })).not.toBeInTheDocument()
+    expect(screen.getByText('2 / 2 페이지')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: '이전' }))
+    expect(await screen.findByRole('button', { name: /김승마/ })).toBeInTheDocument()
   })
 
   it('320px_화면에서도_회원_선택과_승인_제어가_노출된다', async () => {

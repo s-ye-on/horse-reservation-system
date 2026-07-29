@@ -1,17 +1,13 @@
 import {
   MemberCouponQueryControllerApi,
   ResponseError,
-  type MemberCouponResponse,
-  type MemberCouponUsageResponse,
+  type MemberCouponPageResponse,
+  type MemberCouponUsagePageResponse,
 } from '@horse/api-client'
 
-export interface MemberCouponOverview {
-  coupons: MemberCouponResponse[]
-  usageLogs: MemberCouponUsageResponse[]
-}
-
 export interface MyCouponsApi {
-  getOverview(): Promise<MemberCouponOverview>
+  getCoupons(page: number, size: number): Promise<MemberCouponPageResponse>
+  getUsageLogs(page: number, size: number): Promise<MemberCouponUsagePageResponse>
 }
 
 export function isMyCouponsUnauthorized(error: unknown) {
@@ -21,11 +17,6 @@ export function isMyCouponsUnauthorized(error: unknown) {
 const queryApi = new MemberCouponQueryControllerApi()
 
 export const myCouponsApi: MyCouponsApi = {
-  getOverview: async () => {
-    const [couponPage, usageLogPage] = await Promise.all([queryApi.getCoupons(), queryApi.getUsageLogs()])
-    return {
-      coupons: couponPage.content ?? [],
-      usageLogs: usageLogPage.content ?? [],
-    }
-  },
+  getCoupons: (page, size) => queryApi.getCoupons({ page, size }),
+  getUsageLogs: (page, size) => queryApi.getUsageLogs({ page, size }),
 }

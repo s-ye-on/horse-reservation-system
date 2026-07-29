@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState } from 'react'
+import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { AdminReservationResponse, TimeSlotResponse } from '@horse/api-client'
 import {
   adminReservationsApi,
@@ -17,6 +17,17 @@ const STATUS_META = {
   payment_expired: { label: '입금만료', description: '현재 정원이 남아 있는 경우에만 복구할 수 있습니다.' },
   confirmed: { label: '예약 확정', description: '확정된 예약의 시간 변경과 취소를 처리합니다.' },
 } as const
+
+type ActionableStatus = keyof typeof STATUS_META
+
+const ACTIONABLE_STATUSES = Object.keys(STATUS_META) as ActionableStatus[]
+const PAGE_SIZE = 20
+const INITIAL_PAGES: Record<ActionableStatus, number> = {
+  pending_admin_approval: 0,
+  pending_payment: 0,
+  payment_expired: 0,
+  confirmed: 0,
+}
 
 const WARNING_META = {
   critical: { label: '긴급', rank: 0 },
@@ -57,25 +68,31 @@ function getErrorMessage(error: unknown) {
   return '예약을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.'
 }
 
-function compareReservations(left: AdminReservationResponse, right: AdminReservationResponse) {
-  const warningRank = (reservation: AdminReservationResponse) =>
-    WARNING_META[reservation.approvalWarning as keyof typeof WARNING_META]?.rank ?? 3
-  const warning = warningRank(left) - warningRank(right)
-  if (warning !== 0) return warning
-  const date = String(left.lessonDate ?? '').localeCompare(String(right.lessonDate ?? ''))
-  if (date !== 0) return date
-  const time = String(left.startTime ?? '').localeCompare(String(right.startTime ?? ''))
-  if (time !== 0) return time
-  return (left.reservationId ?? 0) - (right.reservationId ?? 0)
-}
-
 export function AdminReservationsPage({ api = adminReservationsApi }: { api?: AdminReservationsApi }) {
   const queryClient = useQueryClient()
   const commandLocked = useRef(false)
+  const [pages, setPages] = useState<Record<ActionableStatus, number>>(INITIAL_PAGES)
   const [selectedAction, setSelectedAction] = useState<SelectedAction>()
   const [note, setNote] = useState('')
   const [localError, setLocalError] = useState<string>()
-  const query = useQuery({ queryKey: RESERVATIONS_KEY, queryFn: api.getActionableReservations })
+  const queries = useQueries({
+    queries: ACTIONABLE_STATUSES.map((status) => ({
+      queryKey: [...RESERVATIONS_KEY, status, pages[status]],
+      queryFn: () => api.getReservations(status, pages[status], PAGE_SIZE),
+      placeholderData: keepPreviousData,
+    })),
+  })
+
+  useEffect(() => {
+    ACTIONABLE_STATUSES.forEach((status, index) => {
+      const totalPages = queries[index].data?.totalPages
+      if (totalPages === undefined) return
+      const validPage = totalPages === 0 ? 0 : Math.min(pages[status], totalPages - 1)
+      if (validPage !== pages[status]) {
+        setPages((current) => ({ ...current, [status]: validPage }))
+      }
+    })
+  }, [pages, queries])
 
   const command = useMutation({
     mutationFn: async (operation: ReservationCommand) => {
@@ -95,14 +112,6 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
       setLocalError(undefined)
     },
   })
-
-  const grouped = useMemo(() => {
-    const source = query.data ?? []
-    return Object.fromEntries(Object.keys(STATUS_META).map((status) => [
-      status,
-      source.filter((reservation) => reservation.status === status).toSorted(compareReservations),
-    ])) as Record<keyof typeof STATUS_META, AdminReservationResponse[]>
-  }, [query.data])
 
   const chooseAction = (reservationId: number, kind: ActionKind) => {
     setSelectedAction({ reservationId, kind })
@@ -126,10 +135,11 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
     command.mutate(operation, { onSettled: () => { commandLocked.current = false } })
   }
 
-  if (query.isPending) return <ReservationsState message="처리할 예약을 불러오는 중입니다." />
-  if (query.isError) return <ReservationsState error message={getErrorMessage(query.error)} />
+  if (queries.some((query) => query.isPending)) {
+    return <ReservationsState message="처리할 예약을 불러오는 중입니다." />
+  }
 
-  const total = query.data.length
+  const total = queries.reduce((sum, query) => sum + (query.data?.totalElements ?? 0), 0)
 
   return (
     <main className="admin-reservations-page">
@@ -147,16 +157,30 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
         {localError ? <p className="admin-reservations-error" role="alert">{localError}</p> : null}
 
         <div className="admin-reservations-columns">
-          {(Object.keys(STATUS_META) as Array<keyof typeof STATUS_META>).map((status) => {
+          {ACTIONABLE_STATUSES.map((status, index) => {
             const meta = STATUS_META[status]
-            const reservations = grouped[status]
+            const query = queries[index]
+            const reservations = query.data?.content ?? []
+            const totalPages = query.data?.totalPages ?? 0
             return (
-              <section className="admin-reservations-section" key={status} aria-labelledby={`${status}-title`}>
+              <section
+                className="admin-reservations-section"
+                key={status}
+                aria-labelledby={`${status}-title`}
+                aria-busy={query.isFetching}
+              >
                 <div className="admin-reservations-section-title">
                   <div><h2 id={`${status}-title`}>{meta.label}</h2><p>{meta.description}</p></div>
-                  <strong>{reservations.length}</strong>
+                  <strong>{query.data?.totalElements ?? 0}</strong>
                 </div>
-                {reservations.length === 0 ? <p className="admin-reservations-empty">처리할 예약이 없습니다.</p> : (
+                {query.isError ? (
+                  <div className="admin-reservations-empty" role="alert">
+                    <p>{getErrorMessage(query.error)}</p>
+                    <button type="button" onClick={() => { void query.refetch() }}>다시 시도</button>
+                  </div>
+                ) : reservations.length === 0 ? (
+                  <p className="admin-reservations-empty">처리할 예약이 없습니다.</p>
+                ) : (
                   <div className="admin-reservations-list">
                     {reservations.map((reservation) => (
                       <ReservationCard
@@ -178,6 +202,22 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
                     ))}
                   </div>
                 )}
+                {totalPages > 0 ? (
+                  <nav className="admin-reservations-pagination" aria-label={`${meta.label} 페이지`}>
+                    <button
+                      type="button"
+                      disabled={pages[status] === 0 || query.isFetching}
+                      onClick={() => setPages((current) => ({ ...current, [status]: current[status] - 1 }))}
+                    >이전</button>
+                    <span aria-live="polite">{pages[status] + 1} / {totalPages}</span>
+                    <button
+                      type="button"
+                      disabled={pages[status] + 1 >= totalPages || !query.data?.hasNext || query.isFetching}
+                      onClick={() => setPages((current) => ({ ...current, [status]: current[status] + 1 }))}
+                    >다음</button>
+                  </nav>
+                ) : null}
+                {query.isFetching ? <p className="admin-reservations-page-loading" role="status">페이지 이동 중입니다.</p> : null}
               </section>
             )
           })}

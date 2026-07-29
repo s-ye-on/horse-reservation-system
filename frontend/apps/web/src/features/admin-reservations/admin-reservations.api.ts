@@ -7,20 +7,13 @@ import {
   AdminReservationRejectControllerApi,
   AdminTimeSlotControllerApi,
   ResponseError,
-  type AdminReservationResponse,
+  type AdminReservationPageResponse,
   type ReservationCancellationPreviewResponse,
   type TimeSlotResponse,
 } from '@horse/api-client'
 
-const ACTIONABLE_STATUSES = [
-  'pending_admin_approval',
-  'pending_payment',
-  'payment_expired',
-  'confirmed',
-] as const
-
 export interface AdminReservationsApi {
-  getActionableReservations(): Promise<AdminReservationResponse[]>
+  getReservations(status: string, page: number, size: number): Promise<AdminReservationPageResponse>
   confirm(reservationId: number): Promise<void>
   reject(reservationId: number, reason: string): Promise<void>
   restore(reservationId: number, memo: string): Promise<void>
@@ -49,11 +42,7 @@ const changeApi = new AdminReservationChangeControllerApi()
 const cancelApi = new AdminReservationCancelControllerApi()
 
 export const adminReservationsApi: AdminReservationsApi = {
-  getActionableReservations: async () => {
-    const pages = await Promise.all(ACTIONABLE_STATUSES.map((status) =>
-      queryApi.getReservations({ status, page: 0, size: 100 })))
-    return pages.flatMap((page) => page.content ?? [])
-  },
+  getReservations: (status, page, size) => queryApi.getReservations({ status, page, size }),
   confirm: async (reservationId) => {
     await confirmApi.confirm({ reservationId })
   },

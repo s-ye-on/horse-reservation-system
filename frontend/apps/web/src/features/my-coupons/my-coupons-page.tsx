@@ -1,10 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import type { MemberCouponResponse, MemberCouponUsageResponse } from '@horse/api-client'
 import { isMyCouponsUnauthorized, myCouponsApi, type MyCouponsApi } from './my-coupons.api'
 import './my-coupons-page.css'
 
 const TYPE_LABELS: Record<string, string> = { general: '일반 10회권', dressage: '마장마술 10회권', jumping: '장애물 10회권' }
+const PAGE_SIZE = 20
 const STATUS_META: Record<string, { label: string; tone: string }> = {
   active: { label: '사용 가능', tone: 'active' },
   expired: { label: '기간 만료', tone: 'expired' },
@@ -21,9 +23,49 @@ const ACTION_LABELS: Record<string, string> = {
 }
 
 export function MyCouponsPage({ api = myCouponsApi }: { api?: MyCouponsApi }) {
-  const query = useQuery({ queryKey: ['member', 'coupon-overview'], queryFn: api.getOverview })
-  if (query.isPending) return <CouponsState message="쿠폰과 사용 내역을 불러오는 중입니다." />
-  if (query.isError) return <CouponsState error message={isMyCouponsUnauthorized(query.error) ? '회원 인증을 확인할 수 없습니다. 다시 로그인해 주세요.' : '쿠폰 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'} />
+  const [couponPage, setCouponPage] = useState(0)
+  const [usagePage, setUsagePage] = useState(0)
+  const couponsQuery = useQuery({
+    queryKey: ['member', 'coupons', couponPage],
+    queryFn: () => api.getCoupons(couponPage, PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  })
+  const usageQuery = useQuery({
+    queryKey: ['member', 'coupon-usage', usagePage],
+    queryFn: () => api.getUsageLogs(usagePage, PAGE_SIZE),
+    placeholderData: keepPreviousData,
+  })
+  const coupons = couponsQuery.data?.content ?? []
+  const usageLogs = usageQuery.data?.content ?? []
+
+  useEffect(() => {
+    const totalPages = couponsQuery.data?.totalPages
+    if (totalPages === undefined) return
+    const validPage = totalPages === 0 ? 0 : Math.min(couponPage, totalPages - 1)
+    if (validPage !== couponPage) setCouponPage(validPage)
+  }, [couponPage, couponsQuery.data?.totalPages])
+
+  useEffect(() => {
+    const totalPages = usageQuery.data?.totalPages
+    if (totalPages === undefined) return
+    const validPage = totalPages === 0 ? 0 : Math.min(usagePage, totalPages - 1)
+    if (validPage !== usagePage) setUsagePage(validPage)
+  }, [usagePage, usageQuery.data?.totalPages])
+
+  if (couponsQuery.isPending || usageQuery.isPending) {
+    return <CouponsState message="쿠폰과 사용 내역을 불러오는 중입니다." />
+  }
+
+  const unauthorizedError = couponsQuery.error ?? usageQuery.error
+  if ((couponsQuery.isError || usageQuery.isError) && couponsQuery.data === undefined && usageQuery.data === undefined) {
+    return (
+      <CouponsState
+        error
+        message={isMyCouponsUnauthorized(unauthorizedError) ? '회원 인증을 확인할 수 없습니다. 다시 로그인해 주세요.' : '쿠폰 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'}
+        onRetry={() => { void Promise.all([couponsQuery.refetch(), usageQuery.refetch()]) }}
+      />
+    )
+  }
 
   return (
     <main className="my-coupons-page">
@@ -33,21 +75,94 @@ export function MyCouponsPage({ api = myCouponsApi }: { api?: MyCouponsApi }) {
           <Link to="/reservations">수업 예약</Link>
         </header>
 
-        <section className="my-coupons-section" aria-labelledby="coupon-list-title">
-          <div className="my-coupons-section-heading"><h2 id="coupon-list-title">보유 쿠폰</h2><span>{query.data.coupons.length}장</span></div>
-          {query.data.coupons.length === 0 ? <CouponsState embedded message="등록된 쿠폰이 없습니다." /> : (
-            <div className="my-coupon-list">{query.data.coupons.map((coupon) => <CouponCard key={coupon.couponId} coupon={coupon} />)}</div>
+        <section className="my-coupons-section" aria-labelledby="coupon-list-title" aria-busy={couponsQuery.isFetching}>
+          <div className="my-coupons-section-heading">
+            <h2 id="coupon-list-title">보유 쿠폰</h2>
+            <span>{couponsQuery.data?.totalElements ?? 0}장</span>
+          </div>
+          {couponsQuery.isError ? (
+            <CouponsState
+              embedded
+              error
+              message="쿠폰 목록을 불러오지 못했습니다."
+              onRetry={() => { void couponsQuery.refetch() }}
+            />
+          ) : coupons.length === 0 ? (
+            <CouponsState embedded message="등록된 쿠폰이 없습니다." />
+          ) : (
+            <div className="my-coupon-list">{coupons.map((coupon) => <CouponCard key={coupon.couponId} coupon={coupon} />)}</div>
           )}
+          <CouponPagination
+            label="보유 쿠폰"
+            page={couponPage}
+            totalPages={couponsQuery.data?.totalPages ?? 0}
+            hasNext={couponsQuery.data?.hasNext ?? false}
+            loading={couponsQuery.isFetching}
+            onPrevious={() => setCouponPage((current) => current - 1)}
+            onNext={() => setCouponPage((current) => current + 1)}
+          />
         </section>
 
-        <section className="my-coupons-section" aria-labelledby="usage-list-title">
-          <div className="my-coupons-section-heading"><h2 id="usage-list-title">사용 내역</h2><span>{query.data.usageLogs.length}건</span></div>
-          {query.data.usageLogs.length === 0 ? <CouponsState embedded message="아직 쿠폰 사용 내역이 없습니다." /> : (
-            <ol className="my-coupon-usage-list">{query.data.usageLogs.map((usage) => <UsageItem key={usage.usageLogId} usage={usage} />)}</ol>
+        <section className="my-coupons-section" aria-labelledby="usage-list-title" aria-busy={usageQuery.isFetching}>
+          <div className="my-coupons-section-heading">
+            <h2 id="usage-list-title">사용 내역</h2>
+            <span>{usageQuery.data?.totalElements ?? 0}건</span>
+          </div>
+          {usageQuery.isError ? (
+            <CouponsState
+              embedded
+              error
+              message="쿠폰 사용 내역을 불러오지 못했습니다."
+              onRetry={() => { void usageQuery.refetch() }}
+            />
+          ) : usageLogs.length === 0 ? (
+            <CouponsState embedded message="아직 쿠폰 사용 내역이 없습니다." />
+          ) : (
+            <ol className="my-coupon-usage-list">{usageLogs.map((usage) => <UsageItem key={usage.usageLogId} usage={usage} />)}</ol>
           )}
+          <CouponPagination
+            label="쿠폰 사용 내역"
+            page={usagePage}
+            totalPages={usageQuery.data?.totalPages ?? 0}
+            hasNext={usageQuery.data?.hasNext ?? false}
+            loading={usageQuery.isFetching}
+            onPrevious={() => setUsagePage((current) => current - 1)}
+            onNext={() => setUsagePage((current) => current + 1)}
+          />
         </section>
       </div>
     </main>
+  )
+}
+
+interface CouponPaginationProps {
+  label: string
+  page: number
+  totalPages: number
+  hasNext: boolean
+  loading: boolean
+  onPrevious: () => void
+  onNext: () => void
+}
+
+function CouponPagination({
+  label,
+  page,
+  totalPages,
+  hasNext,
+  loading,
+  onPrevious,
+  onNext,
+}: CouponPaginationProps) {
+  if (totalPages === 0) return null
+
+  return (
+    <nav className="my-coupons-pagination" aria-label={`${label} 페이지`}>
+      <button type="button" disabled={page === 0 || loading} onClick={onPrevious}>이전</button>
+      <span aria-live="polite">{page + 1} / {totalPages} 페이지</span>
+      <button type="button" disabled={page + 1 >= totalPages || !hasNext || loading} onClick={onNext}>다음</button>
+      {loading ? <small role="status">페이지 이동 중입니다.</small> : null}
+    </nav>
   )
 }
 
@@ -87,7 +202,22 @@ function formatDate(date: Date) {
 function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
 }
-function CouponsState({ message, error = false, embedded = false }: { message: string; error?: boolean; embedded?: boolean }) {
-  const content = <section className="my-coupons-state" role={error ? 'alert' : undefined}>{message}</section>
+function CouponsState({
+  message,
+  error = false,
+  embedded = false,
+  onRetry,
+}: {
+  message: string
+  error?: boolean
+  embedded?: boolean
+  onRetry?: () => void
+}) {
+  const content = (
+    <section className="my-coupons-state" role={error ? 'alert' : undefined}>
+      <p>{message}</p>
+      {onRetry ? <button type="button" onClick={onRetry}>다시 시도</button> : null}
+    </section>
+  )
   return embedded ? content : <main className="my-coupons-page"><div className="my-coupons-shell">{content}</div></main>
 }

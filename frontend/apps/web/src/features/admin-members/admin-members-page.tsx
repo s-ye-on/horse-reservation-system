@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import type { AdminMemberResponse } from '@horse/api-client'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { AdminMemberPageResponse, AdminMemberResponse } from '@horse/api-client'
 import {
   adminMembersApi,
   getAdminMembersErrorKind,
@@ -8,7 +8,8 @@ import {
 } from './admin-members.api'
 import './admin-members-page.css'
 
-const MEMBER_LIST_QUERY_KEY = ['admin', 'members'] as const
+const MEMBER_LIST_QUERY_KEY = ['admin', 'member-list'] as const
+const PAGE_SIZE = 20
 const EMPTY_MEMBERS: AdminMemberResponse[] = []
 
 interface AdminMembersPageProps {
@@ -42,19 +43,28 @@ function MemberRideStat({ label, count }: { label: string; count?: number }) {
 
 export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProps) {
   const queryClient = useQueryClient()
+  const [page, setPage] = useState(0)
   const [selectedMemberId, setSelectedMemberId] = useState<number>()
   const membersQuery = useQuery({
-    queryKey: MEMBER_LIST_QUERY_KEY,
-    queryFn: () => api.getMembers(),
+    queryKey: [...MEMBER_LIST_QUERY_KEY, page],
+    queryFn: () => api.getMembers(page, PAGE_SIZE),
+    placeholderData: keepPreviousData,
   })
-  const members = membersQuery.data ?? EMPTY_MEMBERS
-  const activeMemberId = selectedMemberId ?? members[0]?.id
+  const members = membersQuery.data?.content ?? EMPTY_MEMBERS
+  const totalElements = membersQuery.data?.totalElements ?? 0
+  const totalPages = membersQuery.data?.totalPages ?? 0
+  const activeMemberId = selectedMemberId !== undefined
+    && members.some((member) => member.id === selectedMemberId)
+    ? selectedMemberId
+    : members[0]?.id
 
   useEffect(() => {
-    if (selectedMemberId !== undefined && !members.some((member) => member.id === selectedMemberId)) {
-      setSelectedMemberId(members[0]?.id)
+    if (totalPages === 0 && page !== 0) {
+      setPage(0)
+    } else if (totalPages > 0 && page >= totalPages) {
+      setPage(totalPages - 1)
     }
-  }, [members, selectedMemberId])
+  }, [page, totalPages])
 
   const memberQuery = useQuery({
     queryKey: ['admin', 'members', activeMemberId],
@@ -68,9 +78,10 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
       permissions: { dressageApproved: boolean; jumpingApproved: boolean }
     }) => api.changeRidingPermissions(memberId, permissions),
     onSuccess: (updatedMember) => {
-      queryClient.setQueryData<AdminMemberResponse[]>(MEMBER_LIST_QUERY_KEY, (current = []) =>
-        current.map((member) => member.id === updatedMember.id ? updatedMember : member),
-      )
+      queryClient.setQueriesData<AdminMemberPageResponse>({ queryKey: MEMBER_LIST_QUERY_KEY }, (current) => current ? {
+        ...current,
+        content: current.content.map((member) => member.id === updatedMember.id ? updatedMember : member),
+      } : current)
       queryClient.setQueryData(['admin', 'members', updatedMember.id], updatedMember)
     },
   })
@@ -99,8 +110,14 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
     return <AdminMembersState message="회원 목록을 불러오는 중입니다." />
   }
 
-  if (membersQuery.isError) {
-    return <AdminMembersState error message={getErrorMessage(membersQuery.error, 'list')} />
+  if (membersQuery.isError && membersQuery.data === undefined) {
+    return (
+      <AdminMembersState
+        error
+        message={getErrorMessage(membersQuery.error, 'list')}
+        onRetry={() => { void membersQuery.refetch() }}
+      />
+    )
   }
 
   return (
@@ -111,8 +128,15 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
             <p className="admin-members-eyebrow">MEMBER OPERATIONS</p>
             <h1>회원 및 기승 승인</h1>
           </div>
-          <p className="admin-members-count">전체 {members.length}명</p>
+          <p className="admin-members-count">전체 {totalElements}명</p>
         </header>
+
+        {membersQuery.isError ? (
+          <div className="admin-members-page-error" role="alert">
+            <span>{getErrorMessage(membersQuery.error, 'list')}</span>
+            <button type="button" onClick={() => { void membersQuery.refetch() }}>다시 시도</button>
+          </div>
+        ) : null}
 
         {members.length === 0 ? (
           <section className="admin-members-panel admin-members-state" aria-live="polite">
@@ -120,7 +144,7 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
           </section>
         ) : (
           <div className="admin-members-layout">
-            <nav className="admin-members-panel" aria-label="회원 목록">
+            <section className="admin-members-panel" aria-label="회원 목록" aria-busy={membersQuery.isFetching}>
               <ul className="admin-members-list">
                 {members.map((member) => (
                   <li key={member.id}>
@@ -136,7 +160,23 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
                   </li>
                 ))}
               </ul>
-            </nav>
+              {totalPages > 0 ? (
+                <nav className="admin-members-pagination" aria-label="회원 목록 페이지">
+                  <button
+                    type="button"
+                    disabled={page === 0 || membersQuery.isFetching}
+                    onClick={() => setPage((current) => current - 1)}
+                  >이전</button>
+                  <span aria-live="polite">{page + 1} / {totalPages} 페이지</span>
+                  <button
+                    type="button"
+                    disabled={page + 1 >= totalPages || !membersQuery.data?.hasNext || membersQuery.isFetching}
+                    onClick={() => setPage((current) => current + 1)}
+                  >다음</button>
+                </nav>
+              ) : null}
+              {membersQuery.isFetching ? <p className="admin-members-page-loading" role="status">페이지 이동 중입니다.</p> : null}
+            </section>
 
             <section className="admin-members-panel" aria-label="회원 상세">
               {memberQuery.isPending ? (
@@ -163,7 +203,15 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
   )
 }
 
-function AdminMembersState({ message, error = false }: { message: string; error?: boolean }) {
+function AdminMembersState({
+  message,
+  error = false,
+  onRetry,
+}: {
+  message: string
+  error?: boolean
+  onRetry?: () => void
+}) {
   return (
     <main className="admin-members-page">
       <div className="admin-members-shell">
@@ -172,7 +220,8 @@ function AdminMembersState({ message, error = false }: { message: string; error?
           role={error ? 'alert' : undefined}
           aria-live="polite"
         >
-          {message}
+          <p>{message}</p>
+          {onRetry ? <button type="button" onClick={onRetry}>다시 시도</button> : null}
         </section>
       </div>
     </main>

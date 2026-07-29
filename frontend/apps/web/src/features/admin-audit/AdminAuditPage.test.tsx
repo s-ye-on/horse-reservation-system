@@ -159,6 +159,39 @@ describe('AdminAuditPage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('관리자 권한이 없어')
   })
 
+  it('조회_오류를_재시도한다', async () => {
+    const getAuditLogs = vi.fn()
+      .mockRejectedValueOnce(new Error('failed'))
+      .mockResolvedValue(AUDIT_PAGE)
+    renderPage(createApi({ getAuditLogs }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('감사 이력을 불러오지 못했습니다')
+    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }))
+
+    expect(await screen.findByText('김하늘')).toBeInTheDocument()
+    expect(getAuditLogs).toHaveBeenCalledTimes(2)
+  })
+
+  it('현재_페이지가_범위를_벗어나면_마지막_유효_페이지로_복귀한다', async () => {
+    let secondPageRequested = false
+    const getAuditLogs = vi.fn((filters: { page?: number }) => {
+      if (filters.page === 1) {
+        secondPageRequested = true
+        return Promise.resolve({ ...AUDIT_PAGE, page: 1, totalPages: 1, hasNext: false })
+      }
+      return Promise.resolve(AUDIT_PAGE)
+    })
+    renderPage(createApi({ getAuditLogs }))
+    await screen.findByText('김하늘')
+
+    fireEvent.click(screen.getByRole('button', { name: '다음' }))
+
+    await waitFor(() => expect(secondPageRequested).toBe(true))
+    await waitFor(() => expect(getAuditLogs).toHaveBeenLastCalledWith(expect.objectContaining({ page: 0 })))
+    expect(await screen.findByText('1 / 2 페이지')).toBeInTheDocument()
+  })
+
   it('로딩_중에는_결과_대신_상태를_표시한다', () => {
     renderPage(createApi({
       getAuditLogs: vi.fn(() => new Promise<AdminReservationAuditPageResponse>(() => undefined)),

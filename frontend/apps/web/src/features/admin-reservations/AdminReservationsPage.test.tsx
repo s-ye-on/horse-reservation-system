@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
-import { ResponseError, type AdminReservationResponse } from '@horse/api-client'
+import { ResponseError, type AdminReservationPageResponse, type AdminReservationResponse } from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import type { AdminReservationsApi } from './admin-reservations.api'
@@ -125,9 +125,27 @@ const RESERVATIONS: AdminReservationResponse[] = [
 
 afterEach(cleanup)
 
+function reservationPage(
+  content: AdminReservationResponse[],
+  page = 0,
+  totalPages = content.length === 0 ? 0 : 1,
+  totalElements = content.length,
+): AdminReservationPageResponse {
+  return {
+    content,
+    page,
+    size: 20,
+    totalElements,
+    totalPages,
+    hasNext: page + 1 < totalPages,
+  }
+}
+
 function createApi(overrides: Partial<AdminReservationsApi> = {}): AdminReservationsApi {
   return {
-    getActionableReservations: vi.fn().mockResolvedValue(RESERVATIONS),
+    getReservations: vi.fn((status: string) => Promise.resolve(
+      reservationPage(RESERVATIONS.filter((reservation) => reservation.status === status)),
+    )),
     confirm: vi.fn().mockResolvedValue(undefined),
     reject: vi.fn().mockResolvedValue(undefined),
     restore: vi.fn().mockResolvedValue(undefined),
@@ -175,6 +193,54 @@ describe('AdminReservationsPage', () => {
     expect(within(cards[2]).getByRole('heading', { name: '박정상' })).toBeInTheDocument()
   })
 
+  it('상태별_Page를_독립적으로_이동하고_페이지_경계를_표시한다', async () => {
+    const getReservations = vi.fn((status: string, page: number) => {
+      if (status !== 'pending_admin_approval') {
+        return Promise.resolve(reservationPage(
+          RESERVATIONS.filter((reservation) => reservation.status === status),
+        ))
+      }
+      return Promise.resolve(page === 0
+        ? reservationPage([RESERVATIONS[0]], 0, 2, 2)
+        : reservationPage([RESERVATIONS[1]], 1, 2, 2))
+    })
+    renderPage(createApi({ getReservations }))
+
+    const navigation = await screen.findByRole('navigation', { name: '쿠폰 승인대기 페이지' })
+    expect(within(navigation).getByRole('button', { name: '이전' })).toBeDisabled()
+    expect(within(navigation).getByText('1 / 2')).toBeInTheDocument()
+    fireEvent.click(within(navigation).getByRole('button', { name: '다음' }))
+
+    expect(await screen.findByRole('heading', { name: '이확인' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '김긴급' })).not.toBeInTheDocument()
+    const secondPageNavigation = screen.getByRole('navigation', { name: '쿠폰 승인대기 페이지' })
+    expect(within(secondPageNavigation).getByText('2 / 2')).toBeInTheDocument()
+    expect(within(secondPageNavigation).getByRole('button', { name: '다음' })).toBeDisabled()
+    fireEvent.click(within(secondPageNavigation).getByRole('button', { name: '이전' }))
+    expect(await screen.findByRole('heading', { name: '김긴급' })).toBeInTheDocument()
+  })
+
+  it('상태별_조회_오류를_재시도한다', async () => {
+    let approvalRequestCount = 0
+    const getReservations = vi.fn((status: string) => {
+      if (status === 'pending_admin_approval') {
+        approvalRequestCount += 1
+        if (approvalRequestCount === 1) {
+          return Promise.reject(new ResponseError(new Response(null, { status: 500 }), 'failed'))
+        }
+      }
+      return Promise.resolve(reservationPage(
+        RESERVATIONS.filter((reservation) => reservation.status === status),
+      ))
+    })
+    renderPage(createApi({ getReservations }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('예약을 처리하지 못했습니다')
+    fireEvent.click(within(alert).getByRole('button', { name: '다시 시도' }))
+    expect(await screen.findByRole('heading', { name: '김긴급' })).toBeInTheDocument()
+  })
+
   it('쿠폰_예약을_확정하고_반려_사유를_확인한_뒤_전송한다', async () => {
     const confirm = vi.fn().mockResolvedValue(undefined)
     const reject = vi.fn().mockResolvedValue(undefined)
@@ -213,9 +279,11 @@ describe('AdminReservationsPage', () => {
 
   it.each([[409, '최신 목록'], [403, '관리자 권한']])('%i_처리_오류는_목록을_최신화하고_중복_제출을_막는다', async (status, message) => {
     const error = new ResponseError(new Response(null, { status }), 'failed')
-    const getActionableReservations = vi.fn().mockResolvedValue(RESERVATIONS)
+    const getReservations = vi.fn((status: string) => Promise.resolve(
+      reservationPage(RESERVATIONS.filter((reservation) => reservation.status === status)),
+    ))
     const confirm = vi.fn().mockRejectedValue(error)
-    renderPage(createApi({ getActionableReservations, confirm }))
+    renderPage(createApi({ getReservations, confirm }))
     const card = await cardFor('김긴급')
     fireEvent.click(within(card).getByRole('button', { name: '쿠폰 예약 확정' }))
     const submit = within(card).getByRole('button', { name: '예약 확정 확인' })
@@ -223,7 +291,7 @@ describe('AdminReservationsPage', () => {
     fireEvent.click(submit)
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
     expect(confirm).toHaveBeenCalledTimes(1)
-    expect(getActionableReservations).toHaveBeenCalledTimes(2)
+    expect(getReservations).toHaveBeenCalledTimes(8)
   })
 
   it('확정_예약을_열린_시간대와_필수_메모로_변경한다', async () => {

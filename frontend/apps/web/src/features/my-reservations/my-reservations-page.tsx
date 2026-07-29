@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useQueries, useQuery } from '@tanstack/react-query'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router'
 import type { MemberReservationResponse, ReservationActionAvailabilityResponse } from '@horse/api-client'
 import { isMyReservationsUnauthorized, myReservationsApi, type MyReservationsApi } from './my-reservations.api'
@@ -37,23 +37,80 @@ const UPCOMING_FILTERS = [
 
 type ReservationTab = typeof RESERVATION_TABS[number]['value']
 type UpcomingFilter = typeof UPCOMING_FILTERS[number]['value']
+const PAGE_SIZE = 20
+const COUNT_PAGE_SIZE = 1
 
 export function MyReservationsPage({ api = myReservationsApi }: { api?: MyReservationsApi }) {
   const [activeTab, setActiveTab] = useState<ReservationTab>('UPCOMING')
   const [upcomingFilter, setUpcomingFilter] = useState<UpcomingFilter>('all')
+  const [pages, setPages] = useState<Record<ReservationTab, number>>({ UPCOMING: 0, PAST: 0 })
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
-  const query = useQuery({ queryKey: ['member', 'reservations'], queryFn: api.getMyReservations })
-  if (query.isPending) return <ReservationsState message="내 예약을 불러오는 중입니다." />
-  if (query.isError) return <ReservationsState error message={isMyReservationsUnauthorized(query.error) ? '회원 인증을 확인할 수 없습니다. 다시 로그인해 주세요.' : '예약 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'} />
+  const status = activeTab === 'UPCOMING' && upcomingFilter !== 'all' ? upcomingFilter : undefined
+  const page = pages[activeTab]
+  const query = useQuery({
+    queryKey: ['member', 'reservations', activeTab, status ?? 'all', page],
+    queryFn: () => api.getMyReservations({ displayGroup: activeTab, status, page, size: PAGE_SIZE }),
+    placeholderData: (previousData, previousQuery) => {
+      const previousKey = previousQuery?.queryKey
+      return previousKey?.[2] === activeTab && previousKey?.[3] === (status ?? 'all')
+        ? previousData
+        : undefined
+    },
+  })
+  const countQueries = useQueries({
+    queries: RESERVATION_TABS.map((tab) => ({
+      queryKey: ['member', 'reservations', 'count', tab.value],
+      queryFn: () => api.getMyReservations({
+        displayGroup: tab.value,
+        page: 0,
+        size: COUNT_PAGE_SIZE,
+      }),
+    })),
+  })
+  const totalPages = query.data?.totalPages ?? 0
+  const visibleReservations = query.data?.content ?? []
 
-  const groupedReservations = query.data.filter((reservation) => reservation.displayGroup === activeTab)
-  const visibleReservations = activeTab === 'UPCOMING' && upcomingFilter !== 'all'
-    ? groupedReservations.filter((reservation) => reservation.status === upcomingFilter)
-    : groupedReservations
+  useEffect(() => {
+    if (totalPages === 0 && page !== 0) {
+      setPages((current) => ({ ...current, [activeTab]: 0 }))
+    } else if (totalPages > 0 && page >= totalPages) {
+      setPages((current) => ({ ...current, [activeTab]: totalPages - 1 }))
+    }
+  }, [activeTab, page, totalPages])
+
+  const retryAllQueries = () => {
+    void Promise.all([query.refetch(), ...countQueries.map((countQuery) => countQuery.refetch())])
+  }
+
+  if (query.isError) {
+    return (
+      <ReservationsState
+        error
+        message={isMyReservationsUnauthorized(query.error) ? '회원 인증을 확인할 수 없습니다. 다시 로그인해 주세요.' : '예약 내역을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'}
+        onRetry={retryAllQueries}
+      />
+    )
+  }
+
+  const tabCounts = Object.fromEntries(RESERVATION_TABS.map((tab, index) => [
+    tab.value,
+    countQueries[index].data?.totalElements,
+  ])) as Record<ReservationTab, number | undefined>
+  const countsAvailable = Object.values(tabCounts).every((count) => count !== undefined)
+  const totalReservations = countsAvailable
+    ? (tabCounts.UPCOMING ?? 0) + (tabCounts.PAST ?? 0)
+    : undefined
+  const countQueryFailed = countQueries.some((countQuery) => countQuery.isError)
 
   const selectTab = (tab: ReservationTab) => {
     setActiveTab(tab)
     setUpcomingFilter('all')
+    setPages((current) => ({ ...current, [tab]: 0 }))
+  }
+
+  const selectUpcomingFilter = (filter: UpcomingFilter) => {
+    setUpcomingFilter(filter)
+    setPages((current) => ({ ...current, UPCOMING: 0 }))
   }
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -92,15 +149,31 @@ export function MyReservationsPage({ api = myReservationsApi }: { api?: MyReserv
               onKeyDown={(event) => handleTabKeyDown(event, index)}
             >
               {tab.label}
-              <span>{query.data.filter((reservation) => reservation.displayGroup === tab.value).length}</span>
+              <span>{tabCounts[tab.value] ?? '—'}</span>
             </button>
           ))}
         </div>
+        {countQueryFailed ? (
+          <div className="my-reservations-count-error" role="alert">
+            <span>예약 건수를 불러오지 못했습니다.</span>
+            <button
+              type="button"
+              onClick={() => {
+                void Promise.all(countQueries
+                  .filter((countQuery) => countQuery.isError)
+                  .map((countQuery) => countQuery.refetch()))
+              }}
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : null}
         <section
           id={`reservation-panel-${activeTab.toLowerCase()}`}
           className="my-reservations-panel"
           role="tabpanel"
           aria-labelledby={`reservation-tab-${activeTab.toLowerCase()}`}
+          aria-busy={query.isFetching}
           tabIndex={0}
         >
           {activeTab === 'UPCOMING' ? (
@@ -110,20 +183,43 @@ export function MyReservationsPage({ api = myReservationsApi }: { api?: MyReserv
                   key={filter.value}
                   type="button"
                   aria-pressed={upcomingFilter === filter.value}
-                  onClick={() => setUpcomingFilter(filter.value)}
+                  onClick={() => selectUpcomingFilter(filter.value)}
                 >
                   {filter.label}
                 </button>
               ))}
             </div>
           ) : null}
-          {visibleReservations.length === 0 ? (
-            <ReservationsState embedded message={query.data.length === 0 ? '아직 예약 내역이 없습니다.' : `${activeTab === 'UPCOMING' ? '예정' : '지난'} 예약이 없습니다.`} />
+          {query.isPending ? (
+            <ReservationsState embedded message="예약 목록을 불러오는 중입니다." />
+          ) : visibleReservations.length === 0 ? (
+            <ReservationsState
+              embedded
+              message={totalReservations === 0
+                ? '아직 예약 내역이 없습니다.'
+                : `${activeTab === 'UPCOMING' ? '예정' : '지난'} 예약이 없습니다.`}
+            />
           ) : (
             <div className="my-reservations-list" aria-label={`${activeTab === 'UPCOMING' ? '예정' : '지난'} 예약 목록`}>
               {visibleReservations.map((reservation) => <ReservationItem key={reservation.reservationId} reservation={reservation} />)}
             </div>
           )}
+          {totalPages > 0 ? (
+            <nav className="my-reservations-pagination" aria-label={`${activeTab === 'UPCOMING' ? '예정' : '지난'} 예약 페이지`}>
+              <button
+                type="button"
+                disabled={page === 0 || query.isFetching}
+                onClick={() => setPages((current) => ({ ...current, [activeTab]: current[activeTab] - 1 }))}
+              >이전</button>
+              <span aria-live="polite">{page + 1} / {totalPages} 페이지</span>
+              <button
+                type="button"
+                disabled={page + 1 >= totalPages || !query.data?.hasNext || query.isFetching}
+                onClick={() => setPages((current) => ({ ...current, [activeTab]: current[activeTab] + 1 }))}
+              >다음</button>
+            </nav>
+          ) : null}
+          {query.isFetching ? <p className="my-reservations-page-loading" role="status">페이지 이동 중입니다.</p> : null}
         </section>
       </div>
     </main>
@@ -216,7 +312,22 @@ function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date)
 }
 
-function ReservationsState({ message, error = false, embedded = false }: { message: string; error?: boolean; embedded?: boolean }) {
-  const content = <section className="my-reservations-state" role={error ? 'alert' : undefined}>{message}</section>
+function ReservationsState({
+  message,
+  error = false,
+  embedded = false,
+  onRetry,
+}: {
+  message: string
+  error?: boolean
+  embedded?: boolean
+  onRetry?: () => void
+}) {
+  const content = (
+    <section className="my-reservations-state" role={error ? 'alert' : undefined}>
+      <p>{message}</p>
+      {onRetry ? <button type="button" onClick={onRetry}>다시 시도</button> : null}
+    </section>
+  )
   return embedded ? content : <main className="my-reservations-page"><div className="my-reservations-shell">{content}</div></main>
 }

@@ -2,12 +2,13 @@ import {
   AdminMemberQueryControllerApi,
   AdminMemberRidingPermissionControllerApi,
   ResponseError,
+  type AdminMemberPageResponse,
   type AdminMemberResponse,
   type MemberRidingPermissionUpdateRequest,
 } from '@horse/api-client'
 
 export interface AdminMembersApi {
-  getMembers(): Promise<AdminMemberResponse[]>
+  getMembers(page: number, size: number): Promise<AdminMemberPageResponse>
   getMember(memberId: number): Promise<AdminMemberResponse>
   changeRidingPermissions(
     memberId: number,
@@ -37,7 +38,7 @@ const queryApi = new AdminMemberQueryControllerApi()
 const permissionApi = new AdminMemberRidingPermissionControllerApi()
 
 export const adminMembersApi: AdminMembersApi = {
-  getMembers: async () => (await queryApi.getMembers()).content ?? [],
+  getMembers: (page, size) => queryApi.getMembers({ page, size }),
   getMember: (memberId) => queryApi.getMember({ memberId }),
   changeRidingPermissions: (memberId, permissions) =>
     permissionApi.changeRidingPermissions({

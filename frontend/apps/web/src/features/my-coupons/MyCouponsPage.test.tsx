@@ -1,7 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { ResponseError, type MemberCouponResponse, type MemberCouponUsageResponse } from '@horse/api-client'
+import {
+  ResponseError,
+  type MemberCouponPageResponse,
+  type MemberCouponResponse,
+  type MemberCouponUsagePageResponse,
+  type MemberCouponUsageResponse,
+} from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import type { MyCouponsApi } from './my-coupons.api'
@@ -26,8 +32,30 @@ const USAGE_LOGS: MemberCouponUsageResponse[] = ACTIONS.map((action, index) => (
 
 afterEach(cleanup)
 
+function couponPage(
+  content: MemberCouponResponse[],
+  page = 0,
+  totalPages = content.length === 0 ? 0 : 1,
+  totalElements = content.length,
+): MemberCouponPageResponse {
+  return { content, page, size: 20, totalElements, totalPages, hasNext: page + 1 < totalPages }
+}
+
+function usagePage(
+  content: MemberCouponUsageResponse[],
+  page = 0,
+  totalPages = content.length === 0 ? 0 : 1,
+  totalElements = content.length,
+): MemberCouponUsagePageResponse {
+  return { content, page, size: 20, totalElements, totalPages, hasNext: page + 1 < totalPages }
+}
+
 function createApi(overrides: Partial<MyCouponsApi> = {}): MyCouponsApi {
-  return { getOverview: vi.fn().mockResolvedValue({ coupons: COUPONS, usageLogs: USAGE_LOGS }), ...overrides }
+  return {
+    getCoupons: vi.fn().mockResolvedValue(couponPage(COUPONS)),
+    getUsageLogs: vi.fn().mockResolvedValue(usagePage(USAGE_LOGS)),
+    ...overrides,
+  }
 }
 
 function renderPage(api: MyCouponsApi) {
@@ -80,15 +108,48 @@ describe('MyCouponsPage', () => {
   })
 
   it('쿠폰과_사용_이력이_없는_상태를_각각_표시한다', async () => {
-    renderPage(createApi({ getOverview: vi.fn().mockResolvedValue({ coupons: [], usageLogs: [] }) }))
+    renderPage(createApi({
+      getCoupons: vi.fn().mockResolvedValue(couponPage([])),
+      getUsageLogs: vi.fn().mockResolvedValue(usagePage([])),
+    }))
     expect(await screen.findByText('등록된 쿠폰이 없습니다.')).toBeInTheDocument()
     expect(screen.getByText('아직 쿠폰 사용 내역이 없습니다.')).toBeInTheDocument()
   })
 
   it.each([[401, '다시 로그인'], [500, '불러오지 못했습니다']])('%i_조회_오류를_구분한다', async (status, message) => {
     const error = new ResponseError(new Response(null, { status }), 'failed')
-    renderPage(createApi({ getOverview: vi.fn().mockRejectedValue(error) }))
+    renderPage(createApi({
+      getCoupons: vi.fn().mockRejectedValue(error),
+      getUsageLogs: vi.fn().mockRejectedValue(error),
+    }))
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
+  })
+
+  it('쿠폰과_사용_이력을_독립된_Page로_이동한다', async () => {
+    const getCoupons = vi.fn((page: number) => Promise.resolve(
+      page === 0
+        ? couponPage([COUPONS[0]], 0, 2, 2)
+        : couponPage([COUPONS[1]], 1, 2, 2),
+    ))
+    const getUsageLogs = vi.fn((page: number) => Promise.resolve(
+      page === 0
+        ? usagePage([USAGE_LOGS[0]], 0, 2, 2)
+        : usagePage([USAGE_LOGS[1]], 1, 2, 2),
+    ))
+    renderPage(createApi({ getCoupons, getUsageLogs }))
+
+    const couponNavigation = await screen.findByRole('navigation', { name: '보유 쿠폰 페이지' })
+    expect(within(couponNavigation).getByRole('button', { name: '이전' })).toBeDisabled()
+    fireEvent.click(within(couponNavigation).getByRole('button', { name: '다음' }))
+    expect(await screen.findByRole('heading', { name: '마장마술 10회권' })).toBeInTheDocument()
+    expect(within(couponNavigation).getByText('2 / 2 페이지')).toBeInTheDocument()
+    expect(within(couponNavigation).getByRole('button', { name: '다음' })).toBeDisabled()
+
+    const usageNavigation = screen.getByRole('navigation', { name: '쿠폰 사용 내역 페이지' })
+    fireEvent.click(within(usageNavigation).getByRole('button', { name: '다음' }))
+    expect(await screen.findByText('예약 점유 확정')).toBeInTheDocument()
+    fireEvent.click(within(usageNavigation).getByRole('button', { name: '이전' }))
+    expect(await screen.findByText('예약 임시 점유')).toBeInTheDocument()
   })
 
   it('320px_화면에서도_쿠폰_요약과_사용_내역을_확인할_수_있다', async () => {

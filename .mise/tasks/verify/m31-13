@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-13 web Page navigation UX"
+# Task name: verify:m31-13
+
+set -euo pipefail
+
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-audit/AdminAuditPage.test.tsx \
+  src/features/admin-members/AdminMembersPage.test.tsx \
+  src/features/admin-reservations/AdminReservationsPage.test.tsx \
+  src/features/my-coupons/MyCouponsPage.test.tsx \
+  src/features/my-reservations/MyReservationsPage.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+pnpm --dir frontend/apps/web build

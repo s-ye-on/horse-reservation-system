@@ -232,6 +232,75 @@
   background: #fff7f8;
 }
 
+.admin-members-state p {
+  margin: 0;
+}
+
+.admin-members-state button,
+.admin-members-page-error button,
+.admin-members-pagination button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--admin-accent);
+  border-radius: 5px;
+  color: var(--admin-accent);
+  background: #ffffff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-members-state button {
+  margin-top: 14px;
+}
+
+.admin-members-page-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border-left: 3px solid var(--admin-accent);
+  color: #742137;
+  background: #fff7f8;
+  font-size: 0.84rem;
+}
+
+.admin-members-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-members-pagination span,
+.admin-members-page-loading {
+  color: var(--admin-muted);
+  font-size: 0.76rem;
+  text-align: center;
+}
+
+.admin-members-page-loading {
+  margin: 0;
+  padding: 0 10px 10px;
+}
+
+.admin-members-state button:focus-visible,
+.admin-members-page-error button:focus-visible,
+.admin-members-pagination button:focus-visible {
+  outline: 3px solid rgba(122, 31, 53, 0.25);
+  outline-offset: 2px;
+}
+
+.admin-members-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .admin-member-inline-error {
   margin: 14px 0 0;
   padding: 10px 12px;
@@ -249,6 +318,11 @@
 
   .admin-members-header {
     align-items: start;
+    flex-direction: column;
+  }
+
+  .admin-members-page-error {
+    align-items: stretch;
     flex-direction: column;
   }
 

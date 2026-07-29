@@ -1,11 +1,20 @@
 import {
   MemberReservationQueryControllerApi,
   ResponseError,
-  type MemberReservationResponse,
+  type GetMyReservationsDisplayGroupEnum,
+  type GetMyReservationsStatusEnum,
+  type MemberReservationPageResponse,
 } from '@horse/api-client'
 
+export interface MyReservationsQuery {
+  displayGroup: GetMyReservationsDisplayGroupEnum
+  status?: GetMyReservationsStatusEnum
+  page: number
+  size: number
+}
+
 export interface MyReservationsApi {
-  getMyReservations(): Promise<MemberReservationResponse[]>
+  getMyReservations(query: MyReservationsQuery): Promise<MemberReservationPageResponse>
 }
 
 export function isMyReservationsUnauthorized(error: unknown) {
@@ -15,5 +24,5 @@ export function isMyReservationsUnauthorized(error: unknown) {
 const queryApi = new MemberReservationQueryControllerApi()
 
 export const myReservationsApi: MyReservationsApi = {
-  getMyReservations: async () => (await queryApi.getMyReservations()).content ?? [],
+  getMyReservations: (query) => queryApi.getMyReservations(query),
 }

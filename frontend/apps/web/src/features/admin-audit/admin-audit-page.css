@@ -56,8 +56,12 @@
 .admin-audit-memo span { color: var(--audit-muted); font-size: .68rem; }
 .admin-audit-state { padding: 36px 16px; border: 1px solid var(--audit-line); border-radius: 8px; color: var(--audit-muted); background: #fff; text-align: center; }
 .admin-audit-state[role='alert'] { color: var(--audit-accent-dark); border-color: #d9a8b4; background: #fff8fa; }
+.admin-audit-state p { margin: 0; }
+.admin-audit-state button { min-height: 38px; margin-top: 13px; padding: 0 12px; border: 1px solid var(--audit-accent); border-radius: 5px; color: var(--audit-accent-dark); background: #fff; font: inherit; font-size: .78rem; font-weight: 710; cursor: pointer; }
+.admin-audit-state button:focus-visible { outline: 3px solid #e7b8c4; outline-offset: 2px; }
 .admin-audit-pagination { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 16px; }
 .admin-audit-pagination span { color: var(--audit-muted); font-size: .78rem; }
+.admin-audit-page-loading { margin: 8px 0 0; color: var(--audit-muted); font-size: .76rem; text-align: center; }
 
 @media (max-width: 880px) {
   .admin-audit-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }

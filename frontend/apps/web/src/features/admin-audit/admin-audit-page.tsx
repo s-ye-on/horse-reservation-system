@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import type { AdminReservationAuditResponse } from '@horse/api-client'
 import {
@@ -77,7 +77,15 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
   const query = useQuery({
     queryKey: ['admin', 'audit-logs', appliedFilters, page],
     queryFn: () => api.getAuditLogs(toApiFilters(appliedFilters, page)),
+    placeholderData: keepPreviousData,
   })
+
+  useEffect(() => {
+    const totalPages = query.data?.totalPages
+    if (totalPages === undefined) return
+    const validPage = totalPages === 0 ? 0 : Math.min(page, totalPages - 1)
+    if (validPage !== page) setPage(validPage)
+  }, [page, query.data?.totalPages])
 
   const applyFilters = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -188,7 +196,13 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
           </div>
 
           {query.isPending ? <AuditState message="감사 이력을 불러오는 중입니다." /> : null}
-          {query.isError ? <AuditState error message={errorMessage(query.error)} /> : null}
+          {query.isError ? (
+            <AuditState
+              error
+              message={errorMessage(query.error)}
+              onRetry={() => { void query.refetch() }}
+            />
+          ) : null}
           {query.isSuccess && content.length === 0
             ? <AuditState message="조회 조건에 해당하는 예약 감사 이력이 없습니다." />
             : null}
@@ -202,11 +216,12 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
 
           {query.isSuccess && totalPages > 0 ? (
             <nav className="admin-audit-pagination" aria-label="감사 이력 페이지">
-              <button type="button" disabled={page === 0} onClick={() => setPage((current) => current - 1)}>이전</button>
-              <span>{page + 1} / {totalPages} 페이지</span>
-              <button type="button" disabled={page + 1 >= totalPages} onClick={() => setPage((current) => current + 1)}>다음</button>
+              <button type="button" disabled={page === 0 || query.isFetching} onClick={() => setPage((current) => current - 1)}>이전</button>
+              <span aria-live="polite">{page + 1} / {totalPages} 페이지</span>
+              <button type="button" disabled={page + 1 >= totalPages || !query.data?.hasNext || query.isFetching} onClick={() => setPage((current) => current + 1)}>다음</button>
             </nav>
           ) : null}
+          {query.isFetching && !query.isPending ? <p className="admin-audit-page-loading" role="status">페이지 이동 중입니다.</p> : null}
         </section>
       </div>
     </main>
@@ -289,6 +304,11 @@ function formatOccurredAt(value?: Date) {
   }).format(value)
 }
 
-function AuditState({ message, error = false }: { message: string; error?: boolean }) {
-  return <div className="admin-audit-state" role={error ? 'alert' : 'status'}>{message}</div>
+function AuditState({ message, error = false, onRetry }: { message: string; error?: boolean; onRetry?: () => void }) {
+  return (
+    <div className="admin-audit-state" role={error ? 'alert' : 'status'}>
+      <p>{message}</p>
+      {onRetry ? <button type="button" onClick={onRetry}>다시 시도</button> : null}
+    </div>
+  )
 }
