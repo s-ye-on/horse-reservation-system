@@ -6,6 +6,7 @@ import {
   type AdminMemberResponse,
   type MemberRidingPermissionUpdateRequest,
 } from '@horse/api-client'
+import { apiConfiguration } from '../../config/api-configuration'
 
 export interface AdminMembersApi {
   getMembers(page: number, size: number): Promise<AdminMemberPageResponse>
@@ -34,8 +35,8 @@ export function getAdminMembersErrorKind(error: unknown): AdminMembersErrorKind 
   return 'unknown'
 }
 
-const queryApi = new AdminMemberQueryControllerApi()
-const permissionApi = new AdminMemberRidingPermissionControllerApi()
+const queryApi = new AdminMemberQueryControllerApi(apiConfiguration)
+const permissionApi = new AdminMemberRidingPermissionControllerApi(apiConfiguration)
 
 export const adminMembersApi: AdminMembersApi = {
   getMembers: (page, size) => queryApi.getMembers({ page, size }),

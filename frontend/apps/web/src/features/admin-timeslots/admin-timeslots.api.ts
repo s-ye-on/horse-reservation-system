@@ -5,6 +5,7 @@ import {
   type TimeSlotCreateRequest,
   type TimeSlotResponse,
 } from '@horse/api-client'
+import { apiConfiguration } from '../../config/api-configuration'
 
 export interface AdminTimeSlotsApi {
   getTimeSlots(): Promise<TimeSlotResponse[]>
@@ -23,7 +24,7 @@ export function getTimeSlotErrorKind(error: unknown): TimeSlotErrorKind {
   return 'unknown'
 }
 
-const api = new AdminTimeSlotControllerApi()
+const api = new AdminTimeSlotControllerApi(apiConfiguration)
 
 export const adminTimeSlotsApi: AdminTimeSlotsApi = {
   getTimeSlots: () => api.getTimeSlots(),

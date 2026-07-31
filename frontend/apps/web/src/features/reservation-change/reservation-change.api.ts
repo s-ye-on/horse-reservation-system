@@ -8,6 +8,7 @@ import {
   type ReservationChangePreviewResponse,
   type ReservationChangeResponse,
 } from '@horse/api-client'
+import { apiConfiguration } from '../../config/api-configuration'
 
 export interface ReservationChangeApi {
   getMyReservations(): Promise<MemberReservationResponse[]>
@@ -26,9 +27,9 @@ export function getReservationChangeErrorKind(error: unknown): ReservationChange
   return 'unknown'
 }
 
-const reservationQueryApi = new MemberReservationQueryControllerApi()
-const timeSlotsApi = new MemberAvailableTimeSlotsControllerApi()
-const reservationChangeClient = new MemberReservationChangeControllerApi()
+const reservationQueryApi = new MemberReservationQueryControllerApi(apiConfiguration)
+const timeSlotsApi = new MemberAvailableTimeSlotsControllerApi(apiConfiguration)
+const reservationChangeClient = new MemberReservationChangeControllerApi(apiConfiguration)
 
 export const reservationChangeApi: ReservationChangeApi = {
   getMyReservations: async () => (await reservationQueryApi.getMyReservations()).content ?? [],

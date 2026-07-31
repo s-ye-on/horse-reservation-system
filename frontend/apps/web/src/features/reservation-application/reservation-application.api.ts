@@ -5,6 +5,7 @@ import {
   type MemberAvailableTimeSlotResponse,
   type ReservationApplicationResponse,
 } from '@horse/api-client'
+import { apiConfiguration } from '../../config/api-configuration'
 
 export interface ReservationApplicationApi {
   getSelectedTimeSlot(date: string, classType: string, timeSlotId: number): Promise<MemberAvailableTimeSlotResponse | undefined>
@@ -21,8 +22,8 @@ export function getReservationApplicationErrorKind(error: unknown): ReservationA
   return 'unknown'
 }
 
-const timeSlotsApi = new MemberAvailableTimeSlotsControllerApi()
-const applicationApi = new ReservationApplicationControllerApi()
+const timeSlotsApi = new MemberAvailableTimeSlotsControllerApi(apiConfiguration)
+const applicationApi = new ReservationApplicationControllerApi(apiConfiguration)
 
 export const reservationApplicationApi: ReservationApplicationApi = {
   getSelectedTimeSlot: async (date, classType, timeSlotId) => {

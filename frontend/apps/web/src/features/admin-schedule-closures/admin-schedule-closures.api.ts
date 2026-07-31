@@ -10,6 +10,7 @@ import {
   type TimeSlotClosureResponse,
   type TimeSlotResponse,
 } from '@horse/api-client'
+import { apiConfiguration } from '../../config/api-configuration'
 
 export interface AdminScheduleClosuresApi {
   getScheduleDate(scheduleDate: Date): Promise<ScheduleDateResponse>
@@ -58,9 +59,9 @@ export async function readScheduleClosureApiError(error: unknown): Promise<Sched
   }
 }
 
-const scheduleDateApi = new AdminScheduleDateControllerApi()
-const timeSlotClosureApi = new AdminTimeSlotClosureControllerApi()
-const timeSlotApi = new AdminTimeSlotControllerApi()
+const scheduleDateApi = new AdminScheduleDateControllerApi(apiConfiguration)
+const timeSlotClosureApi = new AdminTimeSlotClosureControllerApi(apiConfiguration)
+const timeSlotApi = new AdminTimeSlotControllerApi(apiConfiguration)
 
 export const adminScheduleClosuresApi: AdminScheduleClosuresApi = {
   getScheduleDate: (scheduleDate) => scheduleDateApi.getScheduleDate({ scheduleDate }),
