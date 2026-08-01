@@ -1,0 +1,12 @@
+# Docker build context 에서 제외할 로컬 산출물.
+# package.json, pnpm-lock.yaml, pnpm-workspace.yaml, apps/**, packages/** 는 workspace 설치에 필요하므로 제외하지 않는다.
+# apps/mobile 도 workspace 구성원이라 제외하면 --frozen-lockfile 설치가 깨지므로 남겨 둔다.
+**/node_modules
+**/dist
+**/coverage
+**/test-results
+**/playwright-report
+**/.expo
+**/web-build
+.DS_Store
+*.log

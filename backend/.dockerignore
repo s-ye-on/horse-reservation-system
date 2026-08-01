@@ -1,0 +1,9 @@
+# Docker build context 에서 제외할 로컬 산출물과 IDE 파일.
+# gradlew, gradle/, build.gradle, settings.gradle, src/, config/ 는 빌드에 필요하므로 제외하지 않는다.
+.gradle
+build
+out
+.idea
+*.iml
+.DS_Store
+*.log

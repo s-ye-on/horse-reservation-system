@@ -1,0 +1,29 @@
+# Horse web(React + Vite) 정적 자산 이미지. Build context: ./frontend
+
+FROM node:24-bookworm-slim AS builder
+
+# 저장소가 선언한 packageManager(pnpm@11.7.0)를 Corepack 이 그대로 활성화한다.
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+ENV CI=true
+RUN corepack enable
+
+WORKDIR /workspace
+
+# pnpm workspace(apps/*, packages/*) 전체가 있어야 --frozen-lockfile 설치가 성립한다.
+COPY . .
+
+# 운영 기본값은 same-origin 이므로 값을 주입하지 않는다.
+# 공개 가능한 API URL 이 필요한 경우에만 지정하고, secret 은 번들에 포함되므로 넣지 않는다.
+ARG VITE_API_BASE_URL=""
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter web build
+
+FROM nginx:stable-alpine
+
+# Vite production 산출물만 정적 루트로 복사한다. Node/pnpm/소스는 런타임 이미지에 포함하지 않는다.
+COPY --from=builder /workspace/apps/web/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80

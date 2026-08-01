@@ -1,0 +1,79 @@
+# Lightsail staging 전용 독립 실행형 Compose 파일.
+# 개발용 compose.yaml 과 합쳐서 실행하지 않는다(개발용은 host 3306 을 공개한다).
+# 사용: docker compose --env-file .env -f compose.prod.yaml up -d --build
+name: horse-staging
+
+services:
+  mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-horse}"
+      MYSQL_USER: "${MYSQL_USER:-horse}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set in .env}"
+      TZ: "${TZ:-Asia/Seoul}"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    # $$ 로 escape 해 Compose 가 아닌 컨테이너 셸이 환경변수를 해석하게 한다.
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - horse
+    # host 포트를 공개하지 않는다.
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      # host 는 Compose service 이름인 mysql 이다. & 가 포함되므로 전체를 quote 한다.
+      DB_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-horse}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul"
+      DB_USERNAME: "${MYSQL_USER:-horse}"
+      DB_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set in .env}"
+      TZ: "${TZ:-Asia/Seoul}"
+    # 내부 네트워크에서만 접근한다. host 포트는 publish 하지 않는다.
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+    networks:
+      - horse
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    # 외부에 공개하는 유일한 포트.
+    ports:
+      - "80:80"
+    networks:
+      - horse
+
+networks:
+  horse:
+    driver: bridge
+
+volumes:
+  # docker compose down 으로 컨테이너를 재생성해도 DB 데이터는 유지된다(down -v 제외).
+  mysql_data:
