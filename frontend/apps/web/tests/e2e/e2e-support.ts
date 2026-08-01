@@ -2,8 +2,10 @@ import { createHmac } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
 import type { Browser, BrowserContextOptions } from '@playwright/test'
 
-const API_BASE_URL = 'http://localhost:8080'
-const WEB_BASE_URL = 'http://127.0.0.1:5173'
+const CLIENT_API_BASE_URL = 'http://localhost:8080'
+const BACKEND_BASE_URL = process.env.HORSE_E2E_BACKEND_BASE_URL ?? CLIENT_API_BASE_URL
+const WEB_BASE_URL = process.env.HORSE_E2E_WEB_BASE_URL ?? 'http://127.0.0.1:5173'
+const E2E_DATABASE = process.env.HORSE_E2E_DATABASE
 const DEFAULT_JWT_SECRET = 'local-development-jwt-secret-change-me-32-bytes'
 const COUPON_MEMBER_SUBJECT = 'e2e-m1-29-coupon-member'
 const SINGLE_PAYMENT_MEMBER_SUBJECT = 'e2e-m1-29-single-payment-member'
@@ -115,7 +117,7 @@ export async function createAuthenticatedPage(
   const page = await context.newPage()
   const token = createJwt(authSubject, role)
 
-  await page.route(`${API_BASE_URL}/**`, async (route) => {
+  await page.route(`${CLIENT_API_BASE_URL}/**`, async (route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({
         status: 204,
@@ -125,6 +127,7 @@ export async function createAuthenticatedPage(
     }
 
     const response = await route.fetch({
+      url: route.request().url().replace(CLIENT_API_BASE_URL, BACKEND_BASE_URL),
       headers: {
         ...route.request().headers(),
         authorization: `Bearer ${token}`,
@@ -165,7 +168,7 @@ export function prepareMvpOneFixture(): MvpOneFixture {
       total_capacity,
       round_arena_capacity,
       class_capacity_json,
-      is_closed
+      admin_closed
     ) VALUES
       ('${couponLessonDate}', '${COUPON_START_TIME}', 8, 4, '${classCapacityJson()}', FALSE),
       ('${singlePaymentLessonDate}', '${SINGLE_PAYMENT_START_TIME}', 8, 4, '${classCapacityJson()}', FALSE);
@@ -201,6 +204,33 @@ export function cleanupFixture(fixture: MvpOneFixture) {
   cleanupMvpOneFixture(fixture.couponMember.lessonDate, fixture.singlePaymentMember.lessonDate)
 }
 
+export function makeMvpOneCouponReservationAttendable(fixture: MvpOneFixture) {
+  const lessonDate = addDays(seoulDateKey(), -1)
+  runSql(`
+    SET @active_config_version = (
+      SELECT active_version
+      FROM schedule_config_guard
+      WHERE id = 1
+    );
+
+    INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
+    VALUES ('${lessonDate}', 'NORMAL', @active_config_version)
+    ON DUPLICATE KEY UPDATE
+      status = VALUES(status),
+      applied_config_version = VALUES(applied_config_version);
+
+    UPDATE reservations reservation
+    JOIN members member ON member.id = reservation.member_id
+    SET reservation.lesson_date = '${lessonDate}'
+    WHERE member.auth_subject = '${COUPON_MEMBER_SUBJECT}';
+
+    UPDATE time_slot_capacities
+    SET lesson_date = '${lessonDate}'
+    WHERE id = ${fixture.couponMember.timeSlotId};
+  `)
+  fixture.couponMember.lessonDate = lessonDate
+}
+
 export function prepareMvpTwoFixture(): MvpTwoFixture {
   const today = seoulDateKey()
   const beforeLessonDate = addDays(today, 2)
@@ -227,7 +257,7 @@ export function prepareMvpTwoFixture(): MvpTwoFixture {
     WHERE auth_subject IN (${quoteList(Object.values(subjects))});
 
     INSERT INTO time_slot_capacities (
-      lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, is_closed
+      lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, admin_closed
     ) VALUES
       ('${beforeLessonDate}', '09:00:00', 8, 4, '${classCapacityJson()}', FALSE),
       ('${beforeTargetDate}', '09:00:00', 8, 4, '${classCapacityJson()}', FALSE),
@@ -349,9 +379,20 @@ export function cleanupMvpTwoFixture(today: string) {
     JOIN members member ON member.id = usage_log.member_id
     WHERE member.auth_subject IN (${quoteList(subjects)});
 
+    DELETE idempotency
+    FROM reservation_application_idempotencies idempotency
+    JOIN reservations reservation ON reservation.id = idempotency.reservation_id
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN (${quoteList(subjects)});
+
     DELETE reservation
     FROM reservations reservation
     JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN (${quoteList(subjects)});
+
+    DELETE member_day_guard
+    FROM reservation_member_day_guards member_day_guard
+    JOIN members member ON member.id = member_day_guard.member_id
     WHERE member.auth_subject IN (${quoteList(subjects)});
 
     DELETE coupon
@@ -370,7 +411,7 @@ export function cleanupMvpTwoFixture(today: string) {
 }
 
 export function prepareMvpThreeFixture(): MvpThreeFixture {
-  const lessonDate = addDays(seoulDateKey(), 20)
+  const lessonDate = addDays(seoulDateKey(), -1)
   const pendingSubject = 'e2e-m3-11-pending-member'
   const completedSubject = 'e2e-m3-11-completed-member'
   const pendingMemberName = 'E2E 운영 승인대기'
@@ -378,6 +419,18 @@ export function prepareMvpThreeFixture(): MvpThreeFixture {
 
   cleanupMvpThreeFixture(lessonDate)
   runSql(`
+    SET @active_config_version = (
+      SELECT active_version
+      FROM schedule_config_guard
+      WHERE id = 1
+    );
+
+    INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
+    VALUES ('${lessonDate}', 'NORMAL', @active_config_version)
+    ON DUPLICATE KEY UPDATE
+      status = VALUES(status),
+      applied_config_version = VALUES(applied_config_version);
+
     INSERT INTO members (auth_subject, name, phone, general_ride_count)
     VALUES
       ('${pendingSubject}', '${pendingMemberName}', '010-9300-0001', 6),
@@ -391,7 +444,7 @@ export function prepareMvpThreeFixture(): MvpThreeFixture {
     WHERE auth_subject IN ('${pendingSubject}', '${completedSubject}');
 
     INSERT INTO time_slot_capacities (
-      lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, is_closed
+      lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, admin_closed
     ) VALUES
       ('${lessonDate}', '16:00:00', 8, 4, '${classCapacityJson()}', FALSE),
       ('${lessonDate}', '17:00:00', 8, 4, '${classCapacityJson()}', FALSE);
@@ -474,9 +527,20 @@ export function cleanupMvpThreeFixture(lessonDate: string) {
     JOIN members member ON member.id = usage_log.member_id
     WHERE member.auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
 
+    DELETE idempotency
+    FROM reservation_application_idempotencies idempotency
+    JOIN reservations reservation ON reservation.id = idempotency.reservation_id
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
+
     DELETE reservation
     FROM reservations reservation
     JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
+
+    DELETE member_day_guard
+    FROM reservation_member_day_guards member_day_guard
+    JOIN members member ON member.id = member_day_guard.member_id
     WHERE member.auth_subject IN ('e2e-m3-11-pending-member', 'e2e-m3-11-completed-member');
 
     DELETE coupon
@@ -522,6 +586,18 @@ export function prepareReservationLifecycleFixture(): ReservationLifecycleFixtur
 
   cleanupReservationLifecycleFixture()
   runSql(`
+    SET @active_config_version := (
+      SELECT active_version
+      FROM schedule_config_guard
+      WHERE id = 1
+    );
+
+    INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
+    VALUES
+      ('${pastLessonDate}', 'NORMAL', @active_config_version),
+      ('${futureLessonDate}', 'NORMAL', @active_config_version)
+    ON DUPLICATE KEY UPDATE schedule_date = VALUES(schedule_date);
+
     INSERT INTO members (auth_subject, name, phone, general_ride_count)
     VALUES
       ('${memberSubject}', 'E2E 생명주기 회원', '010-9318-0001', 6),
@@ -588,6 +664,11 @@ export function cleanupReservationLifecycleFixture() {
     DELETE reservation
     FROM reservations reservation
     JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('e2e-m3-18-member', 'e2e-m3-18-overdue', 'e2e-m3-18-upcoming');
+
+    DELETE member_day_guard
+    FROM reservation_member_day_guards member_day_guard
+    JOIN members member ON member.id = member_day_guard.member_id
     WHERE member.auth_subject IN ('e2e-m3-18-member', 'e2e-m3-18-overdue', 'e2e-m3-18-upcoming');
 
     DELETE coupon
@@ -1027,9 +1108,20 @@ function cleanupMvpOneFixture(couponLessonDate: string, singlePaymentLessonDate:
     JOIN members member ON member.id = usage_log.member_id
     WHERE member.auth_subject IN ('${COUPON_MEMBER_SUBJECT}', '${SINGLE_PAYMENT_MEMBER_SUBJECT}');
 
+    DELETE idempotency
+    FROM reservation_application_idempotencies idempotency
+    JOIN reservations reservation ON reservation.id = idempotency.reservation_id
+    JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('${COUPON_MEMBER_SUBJECT}', '${SINGLE_PAYMENT_MEMBER_SUBJECT}');
+
     DELETE reservation
     FROM reservations reservation
     JOIN members member ON member.id = reservation.member_id
+    WHERE member.auth_subject IN ('${COUPON_MEMBER_SUBJECT}', '${SINGLE_PAYMENT_MEMBER_SUBJECT}');
+
+    DELETE member_day_guard
+    FROM reservation_member_day_guards member_day_guard
+    JOIN members member ON member.id = member_day_guard.member_id
     WHERE member.auth_subject IN ('${COUPON_MEMBER_SUBJECT}', '${SINGLE_PAYMENT_MEMBER_SUBJECT}');
 
     DELETE coupon
@@ -1047,15 +1139,19 @@ function cleanupMvpOneFixture(couponLessonDate: string, singlePaymentLessonDate:
 }
 
 function runSql(sql: string) {
+  if (E2E_DATABASE !== undefined && !/^[A-Za-z0-9_]+$/.test(E2E_DATABASE)) {
+    throw new Error('E2E database name contains unsupported characters.')
+  }
   return execFileSync(
     'docker',
     [
       'exec',
       '-i',
+      ...(E2E_DATABASE === undefined ? [] : ['--env', `HORSE_E2E_DATABASE=${E2E_DATABASE}`]),
       'horse-mysql',
       'sh',
       '-c',
-      'exec env MYSQL_PWD="$MYSQL_PASSWORD" mysql --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --default-character-set=utf8mb4 --batch --skip-column-names',
+      'exec env MYSQL_PWD="$MYSQL_PASSWORD" mysql --user="$MYSQL_USER" --database="${HORSE_E2E_DATABASE:-$MYSQL_DATABASE}" --default-character-set=utf8mb4 --batch --skip-column-names',
     ],
     { input: sql, encoding: 'utf8' },
   ).trim()

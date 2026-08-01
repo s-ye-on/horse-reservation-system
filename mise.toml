@@ -46,23 +46,19 @@ run = "docker compose ps mysql"
 
 [tasks."backend:test"]
 description = "Run Spring Boot unit tests"
-dir = "backend"
-run = "./gradlew test"
+run = "./scripts/run-isolated-gradle.sh test"
 
 [tasks."backend:check"]
 description = "Run Spring Boot checks"
-dir = "backend"
-run = "./gradlew check"
+run = "./scripts/run-isolated-gradle.sh check"
 
 [tasks."backend:convention"]
 description = "Enforce backend architecture and coding conventions"
-dir = "backend"
-run = "./gradlew checkstyleMain checkstyleTest test --tests '*ConventionTest' --tests '*ExceptionCodeTest' --tests '*GlobalExceptionHandlerTest' --tests '*MemberTest' --tests '*GeneralRidingGradeTest' --tests '*MemberRepositoryIntegrationTest'"
+run = "./scripts/run-isolated-gradle.sh checkstyleMain checkstyleTest test --tests '*ConventionTest' --tests '*ExceptionCodeTest' --tests '*GlobalExceptionHandlerTest' --tests '*MemberTest' --tests '*GeneralRidingGradeTest' --tests '*MemberRepositoryIntegrationTest'"
 
 [tasks."backend:integration"]
 description = "Run Spring Boot integration tests"
-dir = "backend"
-run = "./gradlew test --tests '*HorseBackendApplicationTests'"
+run = "./scripts/run-isolated-gradle.sh test --tests '*HorseBackendApplicationTests'"
 
 [tasks."backend:build"]
 description = "Build the Spring Boot application"
@@ -418,7 +414,7 @@ run = "pnpm --dir frontend/apps/web exec vitest run src/features/my-coupons/MyCo
 
 [tasks."verify:m1-29"]
 description = "Verify MVP 1 reservation end-to-end flows"
-run = "pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp1-reservation.spec.ts"
+run = "pnpm --dir frontend/apps/web test:e2e -- tests/e2e/mvp1-reservation.spec.ts"
 
 [tasks."verify:m1-30"]
 description = "Verify TimeSlot capacity cannot fall below active occupancy"
@@ -504,7 +500,7 @@ run = '''
 ./backend/gradlew -p backend test --tests '*ReservationChangeDeadlinePolicyTest' --tests '*ReservationChangeApiTest' --tests '*ReservationCancellationPolicyTest' --tests '*MemberReservationCancelApiTest' --tests '*AdminReservationCancelApiTest'
 pnpm --dir frontend/apps/web lint
 mise run web:typecheck
-pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp2-reservation-policy.spec.ts
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/mvp2-reservation-policy.spec.ts
 '''
 
 [tasks."verify:m3-00"]
@@ -582,7 +578,7 @@ run = "./backend/gradlew -p backend test --tests '*OperationalJobLoggerTest' --t
 description = "Verify MVP 1 through 3 quality gates and core browser flows"
 run = '''
 mise run verify:all
-pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp1-reservation.spec.ts tests/e2e/mvp2-reservation-policy.spec.ts tests/e2e/mvp3-admin-operations.spec.ts
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/mvp1-reservation.spec.ts tests/e2e/mvp2-reservation-policy.spec.ts tests/e2e/mvp3-admin-operations.spec.ts
 '''
 
 [tasks."verify:m3-12"]
@@ -626,7 +622,7 @@ mise run web:typecheck
 description = "Verify time-based reservation lifecycle regression"
 run = '''
 mise run verify:all
-pnpm --dir frontend/apps/web exec playwright test tests/e2e/mvp3-reservation-lifecycle.spec.ts
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/mvp3-reservation-lifecycle.spec.ts
 '''
 
 [tasks."verify:m31-00"]
@@ -992,7 +988,7 @@ pnpm --dir frontend/apps/web exec vitest run \
 pnpm --dir frontend/apps/web lint
 mise run web:typecheck
 pnpm --dir frontend/apps/web build
-pnpm --dir frontend/apps/web exec playwright test tests/e2e/m31-r13-responsive.spec.ts
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m31-r13-responsive.spec.ts
 rg -q '@media \(max-width: 520px\)' \
   frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.css
 ! rg -n 'fetch[(]' \
@@ -1060,7 +1056,7 @@ pnpm --dir frontend/apps/web exec vitest run \
 pnpm --dir frontend/apps/web lint
 mise run web:typecheck
 pnpm --dir frontend/apps/web build
-pnpm --dir frontend/apps/web exec playwright test tests/e2e/m31-r13-responsive.spec.ts
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m31-r13-responsive.spec.ts
 rg -q 'role="tabpanel"' \
   frontend/apps/web/src/features/admin-schedule-closures/admin-schedule-closures-page.tsx
 rg -q 'aria-controls="date-closure-panel"' \
@@ -1081,7 +1077,7 @@ run = '''
 mise run db:up
 mise run db:preflight-m31-r01
 mise run db:preflight-m31-r02
-./backend/gradlew -p backend test \
+./scripts/run-isolated-gradle.sh test \
   --tests '*M31R01PreflightIntegrationTest' \
   --tests '*M31R01LessonIntervalMigrationIntegrationTest' \
   --tests '*M31R02ScheduleFoundationMigrationIntegrationTest' \
@@ -1112,7 +1108,11 @@ mise run db:preflight-m31-r02
   --tests '*SpecialRideCompletionApiTest' \
   --tests '*AdminNoShowApiTest'
 mise run api:check
-pnpm --dir frontend/apps/web exec playwright test \
+pnpm --dir frontend/apps/web test:e2e -- \
+  tests/e2e/mvp1-reservation.spec.ts \
+  tests/e2e/mvp2-reservation-policy.spec.ts \
+  tests/e2e/mvp3-admin-operations.spec.ts \
+  tests/e2e/mvp3-reservation-lifecycle.spec.ts \
   tests/e2e/m31-r14-checkpoint.spec.ts \
   tests/e2e/m31-r13-responsive.spec.ts
 '''

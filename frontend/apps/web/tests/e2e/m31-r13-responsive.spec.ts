@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
 
 const API_ORIGIN = 'http://localhost:8080'
+const WEB_ORIGIN = process.env.HORSE_E2E_WEB_BASE_URL ?? 'http://127.0.0.1:5173'
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': 'http://127.0.0.1:5173',
+  'Access-Control-Allow-Origin': WEB_ORIGIN,
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
   'Content-Type': 'application/json',

@@ -10,6 +10,11 @@ group = 'com.horse'
 version = '0.0.1-SNAPSHOT'
 description = 'Horse riding reservation backend'
 
+def isolatedBuildDir = providers.gradleProperty('isolatedBuildDir')
+if (isolatedBuildDir.isPresent()) {
+	layout.buildDirectory.set(file(isolatedBuildDir.get()))
+}
+
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
@@ -55,12 +60,18 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
+def openapiServerPort = providers.gradleProperty('openapiServerPort').getOrElse('8080')
+
 openApi {
-	apiDocsUrl.set('http://localhost:8080/v3/api-docs')
+	apiDocsUrl.set("http://127.0.0.1:${openapiServerPort}/v3/api-docs")
 	outputDir.set(file(project.findProperty('openapiOutputDir') ?: "$projectDir/openapi"))
 	outputFileName.set('horse-api.json')
 	waitTimeInSeconds.set(30)
 	customBootRun {
-		args.set(['--spring.profiles.active=openapi'])
+		args.set([
+			'--spring.profiles.active=openapi',
+			'--server.address=127.0.0.1',
+			"--server.port=${openapiServerPort}"
+		])
 	}
 }

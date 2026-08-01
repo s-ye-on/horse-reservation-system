@@ -1,8 +1,15 @@
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { tmpdir } from 'node:os'
 import { defineConfig, devices } from '@playwright/test'
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
+const backendPort = Number(process.env.HORSE_E2E_BACKEND_PORT ?? '8080')
+const webPort = Number(process.env.HORSE_E2E_WEB_PORT ?? '5173')
+const runtimeDir = process.env.HORSE_E2E_RUNTIME_DIR
+  ?? resolve(tmpdir(), 'horse-playwright-direct')
+const backendBaseUrl = `http://127.0.0.1:${backendPort}`
+const webBaseUrl = `http://127.0.0.1:${webPort}`
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -11,8 +18,9 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 10_000 },
   reporter: [['list']],
+  outputDir: resolve(runtimeDir, 'playwright-output'),
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: webBaseUrl,
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
@@ -24,16 +32,16 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: 'mise run db:up && mise run backend:build && exec java -jar backend/build/libs/horse-backend-0.0.1-SNAPSHOT.jar',
+      command: 'exec ./scripts/run-e2e-backend.sh',
       cwd: repositoryRoot,
-      url: 'http://127.0.0.1:8080/actuator/health',
+      url: `${backendBaseUrl}/actuator/health`,
       timeout: 180_000,
       reuseExistingServer: false,
     },
     {
-      command: 'pnpm --dir frontend/apps/web exec vite --host 127.0.0.1 --port 5173',
+      command: `exec pnpm --dir frontend/apps/web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,
       cwd: repositoryRoot,
-      url: 'http://127.0.0.1:5173',
+      url: webBaseUrl,
       timeout: 60_000,
       reuseExistingServer: false,
     },

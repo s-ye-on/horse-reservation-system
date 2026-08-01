@@ -28,7 +28,7 @@ test.describe('MVP 3 시간 기반 예약 생명주기', () => {
       })
       return { status: response.status, body: await response.json() }
     })
-    expect(expiryResponse.status).toBe(200)
+    expect(expiryResponse.status, JSON.stringify(expiryResponse.body)).toBe(200)
 
     const memberPage = await createAuthenticatedPage(browser, fixture.memberSubject, 'MEMBER')
     await memberPage.goto('/my/reservations')

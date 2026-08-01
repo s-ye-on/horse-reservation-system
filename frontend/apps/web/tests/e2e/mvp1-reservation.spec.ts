@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import {
   cleanupFixture,
   createAuthenticatedPage,
+  makeMvpOneCouponReservationAttendable,
   prepareMvpOneFixture,
   type MemberFixture,
   type MvpOneFixture,
@@ -36,6 +37,7 @@ test.describe('MVP 1 예약 핵심 흐름', () => {
     await expect(confirmedReservation.getByText('예약 확정', { exact: true })).toBeVisible()
     await expect(confirmedReservation.getByText(`사용 예정 쿠폰 #${member.couponId}`)).toBeVisible()
 
+    makeMvpOneCouponReservationAttendable(fixture)
     await adminPage.goto('/admin/attendance')
     const attendanceCard = adminPage.locator('article').filter({ hasText: member.name })
     await attendanceCard.getByRole('button', { name: '수업 완료' }).click()
@@ -48,6 +50,7 @@ test.describe('MVP 1 예약 핵심 흐름', () => {
     await expect(adminPage.getByText('일반 2회')).toBeVisible()
 
     await memberPage.goto('/my/reservations')
+    await memberPage.getByRole('tab', { name: /지난 예약/ }).click()
     const completedReservation = reservationCard(memberPage, '원형초보')
     await expect(completedReservation.getByText('수업 완료', { exact: true })).toBeVisible()
 
