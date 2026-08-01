@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-15 production JWT secret enforcement"
+# Task name: verify:m31-15
+
+set -euo pipefail
+
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*ProdJwtSecretConfigurationTest' \
+  --tests '*ProdProfileStartupIntegrationTest' \
+  --tests '*HorseBackendApplicationTests' \
+  --tests '*SecurityBoundaryTest' \
+  --tests '*ErrorResponseContractApiTest'
+node --test scripts/local-demo-proxy.test.mjs
+
+rg -Fq 'secret: ${JWT_SECRET:}' backend/src/main/resources/application-prod.yml
+rg -Fq 'export SPRING_PROFILES_ACTIVE=prod' README.md
+rg -Fq 'export JWT_SECRET="${JWT_SECRET_FROM_SECRET_STORE:?외부 Secret 주입 필요}"' README.md
+rg -Fq 'export JWT_SECRET="$(<"$RUNTIME_DIR/jwt-secret")"' scripts/local-demo.sh
+
+if rg -n 'JWT_SECRET|security\.jwt\.secret' compose.yaml; then
+  echo 'compose.yaml must not contain a backend JWT secret or fallback' >&2
+  exit 1
+fi
+
+if rg -n 'local-development-jwt-secret-change-me-32-bytes|replace-with-at-least-32-byte-jwt-secret' \
+  backend/src/main/resources/application-prod.yml; then
+  echo 'application-prod.yml must not contain development or placeholder secrets' >&2
+  exit 1
+fi

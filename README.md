@@ -46,6 +46,21 @@ mise run demo:down
 mise run mobile:dev
 ```
 
+## 운영 실행 계약
+
+운영 백엔드는 반드시 `prod` 프로필과 외부 JWT Secret을 함께 주입해서 실행한다.
+실제 Secret은 저장소의 설정 파일, Compose, 문서 또는 이미지에 기록하지 않는다.
+
+```bash
+export SPRING_PROFILES_ACTIVE=prod
+export JWT_SECRET="${JWT_SECRET_FROM_SECRET_STORE:?외부 Secret 주입 필요}"
+java -jar backend/build/libs/horse-backend-0.0.1-SNAPSHOT.jar
+```
+
+`prod`에서 `JWT_SECRET`이 누락되거나 비어 있거나 32바이트 미만이거나 개발 기본값·알려진
+placeholder이면 애플리케이션이 시작되지 않는다. 기본 프로필의 개발 fallback은 로컬 실행
+전용이므로 운영 배포에서 `SPRING_PROFILES_ACTIVE=prod`를 생략해서는 안 된다.
+
 ## 검증
 
 ```bash
