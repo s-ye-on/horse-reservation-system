@@ -224,8 +224,11 @@ class AuthApiIntegrationTest {
 		final String firstRefreshToken = login(EMAIL, PASSWORD).get("refreshToken").asText();
 
 		final JsonNode rotated = refresh(firstRefreshToken, 200);
-		assertThat(rotated.get("refreshToken").asText()).isNotEqualTo(firstRefreshToken);
+		final String successorRefreshToken = rotated.get("refreshToken").asText();
+		assertThat(successorRefreshToken).isNotEqualTo(firstRefreshToken);
 		refresh(firstRefreshToken, 401);
+		refresh(firstRefreshToken, 401);
+		refresh(successorRefreshToken, 401);
 		assertThat(refreshTokenSessionRepository.count()).isEqualTo(2L);
 	}
 
@@ -324,7 +327,18 @@ class AuthApiIntegrationTest {
 				.content(objectMapper.writeValueAsString(new TokenRequest(token))))
 			.andExpect(status().is(expectedStatus))
 			.andReturn();
-		return objectMapper.readTree(result.getResponse().getContentAsString());
+		final String responseBody = result.getResponse().getContentAsString();
+		final JsonNode response = objectMapper.readTree(responseBody);
+		if (expectedStatus == 401) {
+			assertThat(response.get("code").asText()).isEqualTo("AUTH_INVALID_REFRESH_TOKEN");
+			assertThat(response.get("details").isEmpty()).isTrue();
+			assertThat(responseBody)
+				.doesNotContain(token)
+				.doesNotContain("refreshToken")
+				.doesNotContain("tokenHash")
+				.doesNotContain("sessionId");
+		}
+		return response;
 	}
 
 	private void logout(String token, int expectedStatus) throws Exception {

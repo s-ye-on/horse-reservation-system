@@ -1,6 +1,7 @@
 package com.horse.auth.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,13 +104,20 @@ class AuthConcurrencyIntegrationTest {
 
 		assertThat(results).filteredOn(AuthTokenResult.class::isInstance).hasSize(1);
 		assertThat(results).filteredOn("AUTH_INVALID_REFRESH_TOKEN"::equals).hasSize(1);
+		final AuthTokenResult successfulResult = (AuthTokenResult) results.stream()
+			.filter(AuthTokenResult.class::isInstance)
+			.findFirst()
+			.orElseThrow();
 		assertThat(refreshTokenSessionRepository.findAll())
 			.extracting(session -> session.getStatus())
-			.containsExactlyInAnyOrder(RefreshTokenSessionStatus.ROTATED, RefreshTokenSessionStatus.ACTIVE);
+			.containsExactlyInAnyOrder(RefreshTokenSessionStatus.ROTATED, RefreshTokenSessionStatus.REVOKED);
 		assertThat(jdbcTemplate.queryForObject(
 			"SELECT COUNT(*) FROM refresh_token_sessions WHERE parent_session_id IS NOT NULL",
 			Long.class
 		)).isOne();
+		assertThatThrownBy(() -> sessionService.refresh(successfulResult.refreshToken()))
+			.isInstanceOfSatisfying(AuthException.class, exception ->
+				assertThat(exception.code()).isEqualTo("AUTH_INVALID_REFRESH_TOKEN"));
 	}
 
 	@Test

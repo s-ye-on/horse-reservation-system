@@ -13,7 +13,9 @@ import com.horse.auth.AuthTokenProperties;
 import com.horse.auth.domain.AuthAccount;
 import com.horse.auth.domain.AuthCredentialPolicy;
 import com.horse.auth.domain.RefreshTokenSession;
+import com.horse.auth.domain.RefreshTokenSessionStatus;
 import com.horse.auth.domain.exception.AuthException;
+import com.horse.auth.domain.exception.RefreshTokenReuseDetectedException;
 import com.horse.auth.infrastructure.AuthAccountRepository;
 import com.horse.auth.infrastructure.RefreshTokenSessionRepository;
 import com.horse.global.exception.ExceptionCode;
@@ -65,12 +67,16 @@ public class AuthSessionService {
 		return createSession(account);
 	}
 
-	@Transactional
+	@Transactional(noRollbackFor = RefreshTokenReuseDetectedException.class)
 	public AuthTokenResult refresh(String rawRefreshToken) {
 		final String tokenHash = refreshTokenCodec.hash(rawRefreshToken);
 		final RefreshTokenSession session = refreshTokenSessionRepository.findByTokenHashForUpdate(tokenHash)
 			.orElseThrow(() -> new AuthException(ExceptionCode.AUTH_INVALID_REFRESH_TOKEN));
 		final LocalDateTime now = now();
+		if (session.isRotated()) {
+			revokeActiveFamilySessions(session.getFamilyId(), now);
+			throw new RefreshTokenReuseDetectedException();
+		}
 		if (!session.isUsableAt(now)) {
 			throw new AuthException(ExceptionCode.AUTH_INVALID_REFRESH_TOKEN);
 		}
@@ -87,6 +93,13 @@ public class AuthSessionService {
 			successorExpiresAt
 		));
 		return tokenResult(account, successorRawToken, successorExpiresAt);
+	}
+
+	private void revokeActiveFamilySessions(String familyId, LocalDateTime now) {
+		refreshTokenSessionRepository.findByFamilyIdAndStatusForUpdate(
+			familyId,
+			RefreshTokenSessionStatus.ACTIVE
+		).forEach(session -> session.revoke(now));
 	}
 
 	@Transactional

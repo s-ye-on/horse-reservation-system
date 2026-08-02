@@ -47,8 +47,20 @@
 - 기본 수명은 30일이다. 세션은 계정, 상태, 만료 시각, token family와 이전 세션 관계를 추적한다.
 - refresh는 token hash 행을 `PESSIMISTIC_WRITE`로 잠근 트랜잭션에서 기존 세션을 ROTATED로 바꾸고
   후속 세션을 생성한다. 이전 세션은 재사용할 수 없고 동시 요청은 하나만 성공한다.
+- M31-16A2부터 재사용 정책은 `REJECT_ONLY`가 아니라 `FAMILY_REVOCATION`이다. 이미 `ROTATED`된
+  Token이 다시 제출되면 같은 트랜잭션에서 해당 family의 모든 `ACTIVE` Session을 ID 순서로 잠그고
+  `REVOKED` 처리한 뒤 기존 `AUTH_INVALID_REFRESH_TOKEN` 401을 반환한다.
+- 알 수 없음·만료·이미 `REVOKED`된 Token은 family 폐기를 실행하지 않는다. 서로 다른 로그인은
+  독립된 `family_id`를 사용하므로 다른 기기나 로그인 family에는 영향을 주지 않는다.
+- 서버는 탈취 재사용과 정상적인 중복 네트워크 요청을 구분할 수 없다. 같은 ACTIVE Token의 동시
+  refresh 중 뒤늦은 요청도 재사용으로 판단해 새 successor를 폐기하므로 사용자는 다시 로그인해야 한다.
+  서버에는 grace period를 두지 않으며 M31-16B2의 클라이언트 single-flight refresh로 중복 요청을 막는다.
 - logout은 현재 refresh session을 REVOKED로 바꾼다. 이미 ROTATED 또는 REVOKED인 알려진 세션의
   반복 logout은 성공으로 처리하지만, 알 수 없거나 만료된 토큰은 인증 실패다.
+- 일반 logout은 제출된 Session 하나만 처리하며 family 전체 또는 다른 로그인 Session을 폐기하지 않는다.
+- V35는 parent FK와 `UNIQUE(parent_session_id)`를 제공하지만 parent와 child의 `family_id` 일치 자체를
+  DB 제약으로 강제하지 않는다. 같은 family 전파는 `RefreshTokenSession.createSuccessor()`의
+  애플리케이션 불변식이며, schema 재설계가 필요해지는 시점까지 통합 테스트로 보호한다.
 - 토큰은 JSON body로 전달한다. 웹은 XSS를 고려한 저장 방식, 모바일은 OS secure storage를 후속 UI에서
   결정한다. Cookie를 채택할 경우 CSRF 방어는 별도 ADR 없이 암묵적으로 생략할 수 없다.
 

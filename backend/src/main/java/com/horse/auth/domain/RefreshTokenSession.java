@@ -117,6 +117,10 @@ public class RefreshTokenSession {
 		return status == RefreshTokenSessionStatus.ACTIVE && now.isBefore(expiresAt);
 	}
 
+	public boolean isRotated() {
+		return status == RefreshTokenSessionStatus.ROTATED;
+	}
+
 	public boolean isKnownLogoutReplay() {
 		return status == RefreshTokenSessionStatus.ROTATED || status == RefreshTokenSessionStatus.REVOKED;
 	}
@@ -150,6 +154,10 @@ public class RefreshTokenSession {
 
 	public String getFamilyId() {
 		return familyId;
+	}
+
+	public Long getParentSessionId() {
+		return parentSessionId;
 	}
 
 	public RefreshTokenSessionStatus getStatus() {
