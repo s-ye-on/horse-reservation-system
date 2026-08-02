@@ -32,6 +32,9 @@ server:
 security:
   jwt:
     secret: ${JWT_SECRET:local-development-jwt-secret-change-me-32-bytes}
+    issuer: ${JWT_ISSUER:horse-api}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT15M}
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:P30D}
 
 springdoc:
   api-docs:

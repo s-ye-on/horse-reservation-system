@@ -13,6 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.testcontainers.mysql.MySQLContainer;
@@ -32,6 +33,9 @@ class ProdProfileStartupIntegrationTest {
 	Environment environment;
 
 	@Autowired
+	ApplicationContext applicationContext;
+
+	@Autowired
 	JwtDecoder jwtDecoder;
 
 	@Autowired
@@ -42,6 +46,7 @@ class ProdProfileStartupIntegrationTest {
 		assertThat(environment.matchesProfiles("prod")).isTrue();
 		assertThat(environment.getProperty("security.jwt.secret")).isEqualTo(TEST_SECRET);
 		assertThat(jwtDecoder).isNotNull();
+		assertThat(applicationContext.containsBean("initialAdminBootstrapRunner")).isFalse();
 		assertThat(output).doesNotContain(TEST_SECRET);
 	}
 

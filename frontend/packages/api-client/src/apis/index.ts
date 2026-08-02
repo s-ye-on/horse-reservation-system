@@ -25,6 +25,7 @@ export * from './AdminScheduleSynchronizationControllerApi';
 export * from './AdminScheduleTemplateControllerApi';
 export * from './AdminTimeSlotClosureControllerApi';
 export * from './AdminTimeSlotControllerApi';
+export * from './AuthControllerApi';
 export * from './MemberAvailableRidingClassesControllerApi';
 export * from './MemberAvailableTimeSlotsControllerApi';
 export * from './MemberCouponQueryControllerApi';

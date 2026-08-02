@@ -17,9 +17,12 @@
 - 운영 실행은 `SPRING_PROFILES_ACTIVE=prod`와 외부 `JWT_SECRET`을 함께 요구한다.
 - `prod`에서 Secret이 누락되거나 빈 값·공백·32바이트 미만·개발 기본값·알려진
   placeholder이면 시작에 실패한다.
-- 토큰 발급, 갱신, 폐기, 클라이언트 저장 정책은 로그인 구현 task에서 확정한다.
+- M31-16A부터 Access Token 발급과 Refresh Token 갱신·폐기는
+  `adr-022-auth-account-and-refresh-session.md`를 따른다.
 
-MVP-1은 외부에서 발급된 JWT 또는 로컬 개발 토큰을 검증하는 Resource Server 역할까지만 구현한다. 로그인 화면, 토큰 발급·갱신·폐기와 웹·앱 저장 흐름은 후속 MVP 범위다.
+MVP-1은 외부에서 발급된 JWT 또는 로컬 개발 토큰을 검증하는 Resource Server 역할까지만 구현했다.
+M31-16A는 같은 JWT 검증 계약을 유지하면서 백엔드 로그인과 토큰 수명주기를 추가한다. 웹·앱 로그인
+화면과 안전한 클라이언트 저장 방식은 후속 범위다.
 
 ## 결과
 

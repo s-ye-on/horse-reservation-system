@@ -61,6 +61,20 @@ java -jar backend/build/libs/horse-backend-0.0.1-SNAPSHOT.jar
 placeholder이면 애플리케이션이 시작되지 않는다. 기본 프로필의 개발 fallback은 로컬 실행
 전용이므로 운영 배포에서 `SPRING_PROFILES_ACTIVE=prod`를 생략해서는 안 된다.
 
+최초 관리자 계정은 일회성 `bootstrap-admin` 프로필로만 생성한다. 실제 이메일과 비밀번호는
+저장소에 기록하지 않고 배포 환경의 Secret에서 주입한다.
+
+```bash
+export SPRING_PROFILES_ACTIVE='prod,bootstrap-admin'
+export JWT_SECRET="${JWT_SECRET_FROM_SECRET_STORE:?외부 Secret 주입 필요}"
+export BOOTSTRAP_ADMIN_EMAIL="${BOOTSTRAP_ADMIN_EMAIL_FROM_SECRET_STORE:?관리자 이메일 주입 필요}"
+export BOOTSTRAP_ADMIN_PASSWORD="${BOOTSTRAP_ADMIN_PASSWORD_FROM_SECRET_STORE:?관리자 비밀번호 주입 필요}"
+java -jar backend/build/libs/horse-backend-0.0.1-SNAPSHOT.jar
+```
+
+최초 관리자 생성이 확인되면 다음 실행부터 `bootstrap-admin` 프로필과 두 Bootstrap 환경 변수를
+모두 제거하고 `prod`만 활성화한다. Bootstrap을 일반 관리자 추가 수단으로 반복 사용하지 않는다.
+
 ## 검증
 
 ```bash

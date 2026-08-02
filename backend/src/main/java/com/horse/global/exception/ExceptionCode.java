@@ -10,6 +10,22 @@ public enum ExceptionCode {
 	COMMON_METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않는 요청 방식입니다."),
 	COMMON_INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "요청 처리 중 오류가 발생했습니다."),
 
+	AUTH_INVALID_EMAIL(HttpStatus.BAD_REQUEST, "이메일 형식이 올바르지 않습니다."),
+	AUTH_INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "비밀번호 형식이 올바르지 않습니다."),
+	AUTH_INVALID_PASSWORD_HASH(HttpStatus.INTERNAL_SERVER_ERROR, "저장할 비밀번호 정보가 올바르지 않습니다."),
+	AUTH_INVALID_SUBJECT(HttpStatus.INTERNAL_SERVER_ERROR, "인증 주체 정보가 올바르지 않습니다."),
+	AUTH_INVALID_MEMBER_REFERENCE(HttpStatus.INTERNAL_SERVER_ERROR, "인증 계정의 회원 참조가 올바르지 않습니다."),
+	AUTH_INVALID_REFRESH_SESSION(HttpStatus.INTERNAL_SERVER_ERROR, "Refresh Session 정보가 올바르지 않습니다."),
+	AUTH_INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "이메일 또는 비밀번호가 올바르지 않습니다."),
+	AUTH_INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Refresh Token이 유효하지 않습니다."),
+	AUTH_EMAIL_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 사용 중인 이메일입니다."),
+	AUTH_ACCOUNT_CREATION_CONFLICT(HttpStatus.CONFLICT, "인증 계정을 생성할 수 없습니다."),
+	AUTH_TOKEN_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "인증 토큰을 처리할 수 없습니다."),
+	AUTH_BOOTSTRAP_CONFIGURATION_INVALID(
+		HttpStatus.INTERNAL_SERVER_ERROR,
+		"최초 관리자 Bootstrap 설정이 올바르지 않습니다."),
+	AUTH_BOOTSTRAP_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "최초 관리자 Bootstrap을 완료할 수 없습니다."),
+
 	MEMBER_INVALID_AUTH_SUBJECT(HttpStatus.BAD_REQUEST, "회원 인증 주체는 필수입니다."),
 	MEMBER_INVALID_NAME(HttpStatus.BAD_REQUEST, "회원 이름은 필수입니다."),
 	MEMBER_INVALID_PHONE(HttpStatus.BAD_REQUEST, "회원 전화번호는 필수입니다."),
