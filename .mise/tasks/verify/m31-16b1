@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-16B1 web login and in-memory authentication"
+# Task name: verify:m31-16b1
+
+set -euo pipefail
+
+node --test scripts/local-demo-proxy.test.mjs
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/auth/auth-api.test.ts \
+  src/features/auth/auth-flow.test.tsx \
+  src/app.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+pnpm --dir frontend/apps/web build
+
+if rg -n 'localStorage|sessionStorage|indexedDB|dangerouslySetInnerHTML|innerHTML|eval\(' \
+  frontend/apps/web/src/features/auth frontend/apps/web/src/api \
+  --glob '!*.test.ts' --glob '!*.test.tsx'; then
+  echo 'B1 authentication must use memory-only tokens and React text rendering.' >&2
+  exit 1
+fi
+
+if rg -n 'refreshWebAccessToken|/api/auth/web/refresh' \
+  frontend/apps/web/src/features/auth frontend/apps/web/src/api; then
+  echo 'Automatic refresh belongs to M31-16B2.' >&2
+  exit 1
+fi

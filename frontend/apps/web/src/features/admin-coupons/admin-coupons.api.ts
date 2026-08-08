@@ -5,6 +5,7 @@ import {
   type AdminMemberResponse,
   type CouponResponse,
 } from '@horse/api-client'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export type CouponType = 'general' | 'dressage' | 'jumping'
 
@@ -23,8 +24,8 @@ export function getAdminCouponErrorKind(error: unknown): AdminCouponErrorKind {
   return 'unknown'
 }
 
-const memberApi = new AdminMemberQueryControllerApi()
-const couponApi = new AdminCouponRegistrationControllerApi()
+const memberApi = new AdminMemberQueryControllerApi(bearerApiConfiguration)
+const couponApi = new AdminCouponRegistrationControllerApi(bearerApiConfiguration)
 
 export const adminCouponsApi: AdminCouponsApi = {
   getMembers: async () => (await memberApi.getMembers()).content ?? [],

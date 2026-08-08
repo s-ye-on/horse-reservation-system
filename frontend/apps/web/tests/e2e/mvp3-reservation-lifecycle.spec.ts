@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import {
   cleanupReservationLifecycleFixture,
   createAuthenticatedPage,
+  navigateWithinApp,
   prepareReservationLifecycleFixture,
   type ReservationLifecycleFixture,
 } from './e2e-support'
@@ -21,7 +22,7 @@ test.describe('MVP 3 시간 기반 예약 생명주기', () => {
 
   test('지난_승인대기는_만료되고_회원은_예정과_지난_예약을_구분한다', async ({ browser }) => {
     const adminPage = await createAuthenticatedPage(browser, 'e2e-m3-18-admin', 'ADMIN')
-    await adminPage.goto('/admin/dashboard')
+    await navigateWithinApp(adminPage, '/admin/dashboard')
     const expiryResponse = await adminPage.evaluate(async () => {
       const response = await fetch('http://localhost:8080/api/admin/jobs/expire-pending-approvals', {
         method: 'POST',
@@ -31,7 +32,7 @@ test.describe('MVP 3 시간 기반 예약 생명주기', () => {
     expect(expiryResponse.status, JSON.stringify(expiryResponse.body)).toBe(200)
 
     const memberPage = await createAuthenticatedPage(browser, fixture.memberSubject, 'MEMBER')
-    await memberPage.goto('/my/reservations')
+    await navigateWithinApp(memberPage, '/my/reservations')
 
     await expect(memberPage.getByRole('tab', { name: /예정 예약 1/ })).toHaveAttribute('aria-selected', 'true')
     const upcomingCard = memberPage.locator('article').filter({ hasText: '원형초보' })
@@ -51,7 +52,7 @@ test.describe('MVP 3 시간 기반 예약 생명주기', () => {
 
   test('관리자_출석은_지난_미처리만_실행하고_시작_전_수업은_차단한다', async ({ browser }) => {
     const page = await createAuthenticatedPage(browser, 'e2e-m3-18-admin', 'ADMIN')
-    await page.goto('/admin/attendance')
+    await navigateWithinApp(page, '/admin/attendance')
 
     const overdueSection = page.getByRole('region', { name: '지난 미처리' })
     const overdueCard = overdueSection.locator('article').filter({ hasText: fixture.overdueMemberName })

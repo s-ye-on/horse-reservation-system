@@ -9,7 +9,7 @@ const webPort = Number(process.env.HORSE_E2E_WEB_PORT ?? '5173')
 const runtimeDir = process.env.HORSE_E2E_RUNTIME_DIR
   ?? resolve(tmpdir(), 'horse-playwright-direct')
 const backendBaseUrl = `http://127.0.0.1:${backendPort}`
-const webBaseUrl = `http://127.0.0.1:${webPort}`
+const webBaseUrl = `http://localhost:${webPort}`
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -39,7 +39,7 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      command: `exec pnpm --dir frontend/apps/web exec vite --host 127.0.0.1 --port ${webPort} --strictPort`,
+      command: `exec pnpm --dir frontend/apps/web exec vite --host localhost --port ${webPort} --strictPort`,
       cwd: repositoryRoot,
       url: webBaseUrl,
       timeout: 60_000,

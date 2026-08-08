@@ -135,7 +135,7 @@ async function main() {
     HORSE_E2E_BACKEND_PORT: String(backendPort),
     HORSE_E2E_WEB_PORT: String(webPort),
     HORSE_E2E_BACKEND_BASE_URL: `http://127.0.0.1:${backendPort}`,
-    HORSE_E2E_WEB_BASE_URL: `http://127.0.0.1:${webPort}`,
+    HORSE_E2E_WEB_BASE_URL: `http://localhost:${webPort}`,
     HORSE_E2E_DATABASE: databaseName,
     HORSE_E2E_RUNTIME_DIR: runtimeDir,
     TMPDIR: runtimeDir,

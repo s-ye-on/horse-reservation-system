@@ -1,10 +1,10 @@
 import { createHmac } from 'node:crypto'
 import { execFileSync } from 'node:child_process'
-import type { Browser, BrowserContextOptions } from '@playwright/test'
+import type { Browser, BrowserContextOptions, Page, Route } from '@playwright/test'
 
-const CLIENT_API_BASE_URL = 'http://localhost:8080'
-const BACKEND_BASE_URL = process.env.HORSE_E2E_BACKEND_BASE_URL ?? CLIENT_API_BASE_URL
-const WEB_BASE_URL = process.env.HORSE_E2E_WEB_BASE_URL ?? 'http://127.0.0.1:5173'
+const BACKEND_BASE_URL = process.env.HORSE_E2E_BACKEND_BASE_URL ?? 'http://localhost:8080'
+const WEB_BASE_URL = process.env.HORSE_E2E_WEB_BASE_URL ?? 'http://localhost:5173'
+const LEGACY_CLIENT_API_BASE_URL = 'http://localhost:8080'
 const E2E_DATABASE = process.env.HORSE_E2E_DATABASE
 const DEFAULT_JWT_SECRET = 'local-development-jwt-secret-change-me-32-bytes'
 const COUPON_MEMBER_SUBJECT = 'e2e-m1-29-coupon-member'
@@ -116,8 +116,14 @@ export async function createAuthenticatedPage(
   const context = await browser.newContext(contextOptions)
   const page = await context.newPage()
   const token = createJwt(authSubject, role)
+  await context.addCookies([{
+    name: 'XSRF-TOKEN',
+    value: 'e2e-csrf-token',
+    url: WEB_BASE_URL,
+    sameSite: 'Lax',
+  }])
 
-  await page.route(`${CLIENT_API_BASE_URL}/**`, async (route) => {
+  const handleApiRoute = async (route: Route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({
         status: 204,
@@ -126,8 +132,46 @@ export async function createAuthenticatedPage(
       return
     }
 
+    const path = new URL(route.request().url()).pathname
+    if (path === '/api/auth/web/csrf') {
+      await route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ headerName: 'X-XSRF-TOKEN', cookieName: 'XSRF-TOKEN' }),
+      })
+      return
+    }
+    if (path === '/api/auth/web/login') {
+      await route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          accessToken: token,
+          tokenType: 'Bearer',
+          accessTokenExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+        }),
+      })
+      return
+    }
+    if (path === '/api/auth/me') {
+      await route.fulfill({
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          subject: authSubject,
+          memberId: null,
+          email: `${authSubject}@e2e.test`,
+          role,
+          status: 'ACTIVE',
+        }),
+      })
+      return
+    }
+
     const response = await route.fetch({
-      url: route.request().url().replace(CLIENT_API_BASE_URL, BACKEND_BASE_URL),
+      url: route.request().url()
+        .replace(WEB_BASE_URL, BACKEND_BASE_URL)
+        .replace(LEGACY_CLIENT_API_BASE_URL, BACKEND_BASE_URL),
       headers: {
         ...route.request().headers(),
         authorization: `Bearer ${token}`,
@@ -140,9 +184,38 @@ export async function createAuthenticatedPage(
         ...corsHeaders(),
       },
     })
-  })
+  }
+  await page.route(`${WEB_BASE_URL}/api/**`, handleApiRoute)
+  await page.route(`${LEGACY_CLIENT_API_BASE_URL}/api/**`, handleApiRoute)
+
+  await page.goto('/login')
+  await page.getByLabel('이메일').fill(`${authSubject}@e2e.test`)
+  await page.getByLabel('비밀번호').fill('e2e-password-not-sent-to-backend')
+  await page.getByRole('button', { name: '로그인' }).click()
+  const destination = role === 'ADMIN' ? '**/admin' : '**/reservations'
+  await Promise.race([
+    page.waitForURL(destination),
+    page.getByRole('alert').waitFor({ state: 'visible' }),
+  ])
+  if (!page.url().endsWith(role === 'ADMIN' ? '/admin' : '/reservations')) {
+    throw new Error(`E2E authentication failed: ${await page.getByRole('alert').textContent()}`)
+  }
 
   return page
+}
+
+export async function navigateWithinApp(page: Page, destination: string) {
+  await page.evaluate((path) => {
+    window.history.pushState({}, '', path)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+  }, destination)
+  await page.waitForURL((url) => `${url.pathname}${url.search}${url.hash}` === destination)
+}
+
+export async function refreshWithinApp(page: Page) {
+  const destination = await page.evaluate(() => `${location.pathname}${location.search}${location.hash}`)
+  await navigateWithinApp(page, '/')
+  await navigateWithinApp(page, destination)
 }
 
 export function prepareMvpOneFixture(): MvpOneFixture {
@@ -236,6 +309,10 @@ export function prepareMvpTwoFixture(): MvpTwoFixture {
   const beforeLessonDate = addDays(today, 2)
   const beforeTargetDate = addDays(today, 3)
   const afterTargetDate = addDays(today, 4)
+  const afterCutoffLessonDate = seoulHour() >= 21 ? addDays(today, 1) : today
+  const afterChangeStartTime = afterCutoffLessonDate === today ? '23:00:00' : '10:00:00'
+  const afterCancelStartTime = afterCutoffLessonDate === today ? '23:05:00' : '14:00:00'
+  const adminCancelStartTime = afterCutoffLessonDate === today ? '23:14:00' : '15:00:00'
   const subjects = mvpTwoSubjects()
 
   cleanupMvpTwoFixture(today)
@@ -261,13 +338,13 @@ export function prepareMvpTwoFixture(): MvpTwoFixture {
     ) VALUES
       ('${beforeLessonDate}', '09:00:00', 8, 4, '${classCapacityJson()}', FALSE),
       ('${beforeTargetDate}', '09:00:00', 8, 4, '${classCapacityJson()}', FALSE),
-      ('${today}', '10:00:00', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${afterCutoffLessonDate}', '${afterChangeStartTime}', 8, 4, '${classCapacityJson()}', FALSE),
       ('${afterTargetDate}', '10:00:00', 8, 4, '${classCapacityJson()}', FALSE),
       ('${today}', '11:00:00', 8, 4, '${classCapacityJson()}', FALSE),
       ('${today}', '12:00:00', 8, 4, '${classCapacityJson()}', FALSE),
       ('${beforeLessonDate}', '13:00:00', 8, 4, '${classCapacityJson()}', FALSE),
-      ('${today}', '14:00:00', 8, 4, '${classCapacityJson()}', FALSE),
-      ('${today}', '15:00:00', 8, 4, '${classCapacityJson()}', FALSE);
+      ('${afterCutoffLessonDate}', '${afterCancelStartTime}', 8, 4, '${classCapacityJson()}', FALSE),
+      ('${afterCutoffLessonDate}', '${adminCancelStartTime}', 8, 4, '${classCapacityJson()}', FALSE);
 
     INSERT INTO reservations (
       member_id, class_type, lesson_date, start_time, status, payment_source, coupon_id,
@@ -278,7 +355,7 @@ export function prepareMvpTwoFixture(): MvpTwoFixture {
     FROM members member JOIN coupons coupon ON coupon.member_id = member.id
     WHERE member.auth_subject = '${subjects.beforeChange}'
     UNION ALL
-    SELECT member.id, 'ROUND_BEGINNER', '${today}', '10:00:00',
+    SELECT member.id, 'ROUND_BEGINNER', '${afterCutoffLessonDate}', '${afterChangeStartTime}',
       'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
     FROM members member JOIN coupons coupon ON coupon.member_id = member.id
     WHERE member.auth_subject = '${subjects.afterChange}'
@@ -293,12 +370,12 @@ export function prepareMvpTwoFixture(): MvpTwoFixture {
     FROM members member JOIN coupons coupon ON coupon.member_id = member.id
     WHERE member.auth_subject = '${subjects.beforeCancel}'
     UNION ALL
-    SELECT member.id, 'ROUND_BEGINNER', '${today}', '14:00:00',
+    SELECT member.id, 'ROUND_BEGINNER', '${afterCutoffLessonDate}', '${afterCancelStartTime}',
       'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
     FROM members member JOIN coupons coupon ON coupon.member_id = member.id
     WHERE member.auth_subject = '${subjects.afterCancel}'
     UNION ALL
-    SELECT member.id, 'ROUND_BEGINNER', '${today}', '15:00:00',
+    SELECT member.id, 'ROUND_BEGINNER', '${afterCutoffLessonDate}', '${adminCancelStartTime}',
       'confirmed', 'coupon', coupon.id, NOW(6), NOW(6)
     FROM members member JOIN coupons coupon ON coupon.member_id = member.id
     WHERE member.auth_subject = '${subjects.adminCancel}';
@@ -334,8 +411,8 @@ export function prepareMvpTwoFixture(): MvpTwoFixture {
     },
     afterCutoffChange: {
       ...fixtures.afterChange,
-      name: 'E2E 무료 변경', lessonDate: today, startTime: '10:00:00',
-      timeSlotId: findTimeSlot(today, '10:00:00'),
+      name: 'E2E 무료 변경', lessonDate: afterCutoffLessonDate, startTime: afterChangeStartTime,
+      timeSlotId: findTimeSlot(afterCutoffLessonDate, afterChangeStartTime),
       targetLessonDate: afterTargetDate, targetStartTime: '10:00:00',
       targetTimeSlotId: findTimeSlot(afterTargetDate, '10:00:00'),
     },
@@ -353,13 +430,13 @@ export function prepareMvpTwoFixture(): MvpTwoFixture {
     },
     afterCutoffCancel: {
       ...fixtures.afterCancel,
-      name: 'E2E 마감후 취소', lessonDate: today, startTime: '14:00:00',
-      timeSlotId: findTimeSlot(today, '14:00:00'),
+      name: 'E2E 마감후 취소', lessonDate: afterCutoffLessonDate, startTime: afterCancelStartTime,
+      timeSlotId: findTimeSlot(afterCutoffLessonDate, afterCancelStartTime),
     },
     adminCancel: {
       ...fixtures.adminCancel,
-      name: 'E2E 관리자 취소', lessonDate: today, startTime: '15:00:00',
-      timeSlotId: findTimeSlot(today, '15:00:00'),
+      name: 'E2E 관리자 취소', lessonDate: afterCutoffLessonDate, startTime: adminCancelStartTime,
+      timeSlotId: findTimeSlot(afterCutoffLessonDate, adminCancelStartTime),
     },
     todayIsWeekend: isWeekend(today),
   }
@@ -406,7 +483,9 @@ export function cleanupMvpTwoFixture(today: string) {
     WHERE (lesson_date = '${addDays(today, 2)}' AND start_time IN ('09:00:00', '13:00:00'))
        OR (lesson_date = '${addDays(today, 3)}' AND start_time = '09:00:00')
        OR (lesson_date = '${addDays(today, 4)}' AND start_time = '10:00:00')
-       OR (lesson_date = '${today}' AND start_time IN ('10:00:00', '11:00:00', '12:00:00', '14:00:00', '15:00:00'));
+       OR (lesson_date IN ('${today}', '${addDays(today, 1)}')
+         AND start_time IN ('10:00:00', '11:00:00', '12:00:00', '14:00:00', '15:00:00',
+           '23:00:00', '23:05:00', '23:14:00'));
   `)
 }
 
@@ -1232,6 +1311,14 @@ function seoulDateKey() {
   }).formatToParts(new Date())
   const values = Object.fromEntries(parts.map((part) => [part.type, part.value]))
   return `${values.year}-${values.month}-${values.day}`
+}
+
+function seoulHour() {
+  return Number(new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    hourCycle: 'h23',
+  }).format(new Date()))
 }
 
 function addDays(dateKey: string, amount: number) {

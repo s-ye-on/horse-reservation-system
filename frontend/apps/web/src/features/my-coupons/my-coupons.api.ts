@@ -4,6 +4,7 @@ import {
   type MemberCouponPageResponse,
   type MemberCouponUsagePageResponse,
 } from '@horse/api-client'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface MyCouponsApi {
   getCoupons(page: number, size: number): Promise<MemberCouponPageResponse>
@@ -14,7 +15,7 @@ export function isMyCouponsUnauthorized(error: unknown) {
   return error instanceof ResponseError && (error.response.status === 401 || error.response.status === 403)
 }
 
-const queryApi = new MemberCouponQueryControllerApi()
+const queryApi = new MemberCouponQueryControllerApi(bearerApiConfiguration)
 
 export const myCouponsApi: MyCouponsApi = {
   getCoupons: (page, size) => queryApi.getCoupons({ page, size }),

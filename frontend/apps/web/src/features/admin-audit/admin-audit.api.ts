@@ -4,6 +4,7 @@ import {
   ResponseError,
   type AdminReservationAuditPageResponse,
 } from '@horse/api-client'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface AdminAuditCriteria {
   keyword?: string
@@ -39,8 +40,8 @@ export function getAdminAuditErrorKind(error: unknown): AdminAuditErrorKind {
   return 'unknown'
 }
 
-const auditApi = new AdminReservationAuditQueryControllerApi()
-const auditExportApi = new AdminReservationAuditExportControllerApi()
+const auditApi = new AdminReservationAuditQueryControllerApi(bearerApiConfiguration)
+const auditExportApi = new AdminReservationAuditExportControllerApi(bearerApiConfiguration)
 const FALLBACK_CSV_FILE_NAME = 'reservation-audit.csv'
 
 function toApiDate(value?: string) {

@@ -6,6 +6,7 @@ import {
   type ReservationCancellationPreviewResponse,
   type ReservationCancelResponse,
 } from '@horse/api-client'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface ReservationCancelApi {
   getMyReservations(): Promise<MemberReservationResponse[]>
@@ -23,8 +24,8 @@ export function getReservationCancelErrorKind(error: unknown): ReservationCancel
   return 'unknown'
 }
 
-const reservationQueryApi = new MemberReservationQueryControllerApi()
-const reservationCancelClient = new MemberReservationCancelControllerApi()
+const reservationQueryApi = new MemberReservationQueryControllerApi(bearerApiConfiguration)
+const reservationCancelClient = new MemberReservationCancelControllerApi(bearerApiConfiguration)
 
 export const reservationCancelApi: ReservationCancelApi = {
   getMyReservations: async () => (await reservationQueryApi.getMyReservations()).content ?? [],

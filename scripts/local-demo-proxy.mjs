@@ -35,7 +35,7 @@ export function createDemoProxy({
       headers: {
         ...incoming.headers,
         host: `${targetHost}:${targetPort}`,
-        authorization: `Bearer ${createJwt(authSubject, jwtSecret)}`,
+        authorization: incoming.headers.authorization ?? `Bearer ${createJwt(authSubject, jwtSecret)}`,
       },
     }, (response) => {
       outgoing.writeHead(response.statusCode ?? 502, {

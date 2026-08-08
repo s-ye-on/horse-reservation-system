@@ -5,6 +5,7 @@ import {
   type MemberAvailableRidingClassesResponse,
   type MemberAvailableTimeSlotsResponse,
 } from '@horse/api-client'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface ReservationCalendarApi {
   getAvailableClasses(): Promise<MemberAvailableRidingClassesResponse>
@@ -20,8 +21,8 @@ export function getReservationCalendarErrorKind(error: unknown): ReservationCale
   return 'unknown'
 }
 
-const classesApi = new MemberAvailableRidingClassesControllerApi()
-const timeSlotsApi = new MemberAvailableTimeSlotsControllerApi()
+const classesApi = new MemberAvailableRidingClassesControllerApi(bearerApiConfiguration)
+const timeSlotsApi = new MemberAvailableTimeSlotsControllerApi(bearerApiConfiguration)
 
 export const reservationCalendarApi: ReservationCalendarApi = {
   getAvailableClasses: () => classesApi.getAvailableRidingClasses(),

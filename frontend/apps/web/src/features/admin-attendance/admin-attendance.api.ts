@@ -10,6 +10,7 @@ import {
   type ReservationCompletionResponse,
   type ReservationNoShowResponse,
 } from '@horse/api-client'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface AdminAttendanceApi {
   getConfirmedReservations(): Promise<AdminReservationResponse[]>
@@ -32,10 +33,10 @@ export function getAdminAttendanceErrorKind(error: unknown): AdminAttendanceErro
   return 'unknown'
 }
 
-const queryApi = new AdminReservationQueryControllerApi()
-const bulkAttendanceApi = new AdminBulkReservationAttendanceControllerApi()
-const completionApi = new AdminReservationCompletionControllerApi()
-const noShowApi = new AdminReservationNoShowControllerApi()
+const queryApi = new AdminReservationQueryControllerApi(bearerApiConfiguration)
+const bulkAttendanceApi = new AdminBulkReservationAttendanceControllerApi(bearerApiConfiguration)
+const completionApi = new AdminReservationCompletionControllerApi(bearerApiConfiguration)
+const noShowApi = new AdminReservationNoShowControllerApi(bearerApiConfiguration)
 const ATTENDANCE_HISTORY_START = new Date('1970-01-01T00:00:00.000Z')
 
 export const adminAttendanceApi: AdminAttendanceApi = {
