@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-16B2 web session restore and single-flight refresh"
+# Task name: verify:m31-16b2
+
+set -euo pipefail
+
+pnpm --dir frontend/apps/web exec vitest run \
+  src/api/web-api-configuration.test.ts \
+  src/api/web-auth-session.test.ts \
+  src/api/web-authenticated-fetch.test.ts \
+  src/features/auth/auth-api.test.ts \
+  src/features/auth/auth-flow.test.tsx \
+  src/app.test.tsx
+pnpm --dir frontend/apps/web lint
+pnpm --dir frontend/apps/web typecheck
+pnpm --dir frontend/apps/web build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m31-16b2-web-auth.spec.ts
+
+if rg -n 'localStorage|sessionStorage|indexedDB|dangerouslySetInnerHTML|innerHTML|eval\(' \
+  frontend/apps/web/src/features/auth frontend/apps/web/src/api \
+  --glob '!*.test.ts' --glob '!*.test.tsx'; then
+  echo 'B2 authentication must keep tokens in memory and use React text rendering.' >&2
+  exit 1
+fi
+
+if rg -n 'HORSE_REFRESH_TOKEN|refreshToken' \
+  frontend/apps/web/src/features/auth frontend/apps/web/src/api \
+  --glob '!*.test.ts' --glob '!*.test.tsx'; then
+  echo 'B2 JavaScript must not access the HttpOnly Refresh Token.' >&2
+  exit 1
+fi

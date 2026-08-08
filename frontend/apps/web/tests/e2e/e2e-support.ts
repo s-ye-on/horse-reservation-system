@@ -153,6 +153,26 @@ export async function createAuthenticatedPage(
       })
       return
     }
+    if (path === '/api/auth/web/refresh') {
+      await route.fulfill({
+        status: 401,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          code: 'AUTH_INVALID_REFRESH_TOKEN',
+          message: 'Refresh Token이 유효하지 않습니다.',
+          status: 401,
+          timestamp: new Date().toISOString(),
+          path,
+          details: {},
+          fieldErrors: [],
+        }),
+      })
+      return
+    }
+    if (path === '/api/auth/web/logout') {
+      await route.fulfill({ status: 204 })
+      return
+    }
     if (path === '/api/auth/me') {
       await route.fulfill({
         status: 200,

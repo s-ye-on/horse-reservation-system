@@ -1,7 +1,6 @@
 import {
   AuthControllerApi,
   ResponseError,
-  WebAuthControllerApi,
   type AuthAccountResponse,
   type AuthLoginRequest,
   type AuthSignupRequest,
@@ -10,13 +9,17 @@ import {
 } from '@horse/api-client'
 import {
   bearerApiConfiguration,
-  cookieApiConfiguration,
   publicApiConfiguration,
 } from '../../api/web-api-configuration'
+import {
+  ensureWebCsrfToken,
+  requireWebCsrfInitialization,
+  webAuthApiClient,
+} from '../../api/web-auth-csrf'
+import { refreshWebAuthentication } from '../../api/web-auth-session'
 
 const authApiClient = new AuthControllerApi(publicApiConfiguration)
 const authenticatedAuthApiClient = new AuthControllerApi(bearerApiConfiguration)
-const webAuthApiClient = new WebAuthControllerApi(cookieApiConfiguration)
 
 const FIELD_LABELS: Record<string, string> = {
   email: '이메일',
@@ -28,49 +31,39 @@ const FIELD_LABELS: Record<string, string> = {
 export interface AuthApi {
   signup(request: AuthSignupRequest): Promise<AuthAccountResponse>
   login(request: AuthLoginRequest): Promise<WebAuthTokenResponse>
+  refreshAccessToken(): Promise<WebAuthTokenResponse>
   getCurrentAccount(): Promise<AuthAccountResponse>
   logout(): Promise<void>
-}
-
-function readCookie(cookieName: string): string | null {
-  const prefix = `${encodeURIComponent(cookieName)}=`
-  const cookie = document.cookie
-    .split(';')
-    .map((value) => value.trim())
-    .find((value) => value.startsWith(prefix))
-
-  if (!cookie) return null
-
-  const value = cookie.slice(prefix.length)
-  try {
-    return decodeURIComponent(value)
-  } catch {
-    return value
-  }
-}
-
-async function initializeCsrfToken(): Promise<string> {
-  const contract = await webAuthApiClient.initializeWebCsrfToken()
-  const token = readCookie(contract.cookieName)
-  if (!token) {
-    throw new Error('CSRF Cookie를 확인할 수 없습니다.')
-  }
-  return token
 }
 
 export const authApi: AuthApi = {
   signup: (request) => authApiClient.signup({ authSignupRequest: request }),
   login: async (request) => {
-    const csrfToken = await initializeCsrfToken()
-    return webAuthApiClient.webLogin({
-      xXSRFTOKEN: csrfToken,
-      authLoginRequest: request,
-    })
+    const csrfToken = await ensureWebCsrfToken()
+    try {
+      return await webAuthApiClient.webLogin({
+        xXSRFTOKEN: csrfToken,
+        authLoginRequest: request,
+      })
+    } catch (error) {
+      if (error instanceof ResponseError && error.response.status === 403) {
+        requireWebCsrfInitialization()
+      }
+      throw error
+    }
   },
+  refreshAccessToken: refreshWebAuthentication,
   getCurrentAccount: () => authenticatedAuthApiClient.getCurrentAuthAccount(),
   logout: async () => {
-    const csrfToken = await initializeCsrfToken()
-    await webAuthApiClient.webLogout({ xXSRFTOKEN: csrfToken })
+    const csrfToken = await ensureWebCsrfToken()
+    try {
+      await webAuthApiClient.webLogout({ xXSRFTOKEN: csrfToken })
+    } catch (error) {
+      if (error instanceof ResponseError && error.response.status === 403) {
+        requireWebCsrfInitialization()
+      }
+      throw error
+    }
   },
 }
 

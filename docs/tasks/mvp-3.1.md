@@ -40,6 +40,7 @@ M31-R00~M31-R14를 완료해야 M31-06을 시작할 수 있다.
 | M31-16 | OpenAPI·E2E·병렬 빌드 하네스 격리 | M31-12, M31-15 | 전용 포트·build 격리·중요 E2E의 `verify:all` 포함 성공 | CI 병렬 분산 | `mise run verify:m31-16` |
 | M31-16B0 | 웹 인증 Cookie·CSRF 계약 | M31-16A2 | Access Token JSON·Refresh HttpOnly Cookie·STATELESS CSRF·CORS와 기존 JSON API 호환 성공 | React 인증 상태·자동 refresh·브라우저 E2E | `mise run verify:m31-16b0` |
 | M31-16B1 | 웹 로그인과 메모리 인증 상태 | M31-16B0 | signup→login→`/me`·Bearer·권한 Route·logout과 메모리 Token 검증 성공 | 자동 refresh·세션 복구·동시 401·브라우저 인증 E2E | `mise run verify:m31-16b1` |
+| M31-16B2 | 웹 인증 세션 복구와 자동 갱신 | M31-16B1 | 시작 시 Cookie refresh·single-flight·401 1회 재시도·실제 브라우저 인증 E2E 성공 | 다중 탭 refresh 조정·배포 | `mise run verify:m31-16b2` |
 | M31-17 | Phase A 전체 품질 Gate | M31-13, M31-14, M31-16 | preflight와 `verify:all` 연속 2회 및 Checkpoint 보고 승인 | Phase B 구현 | `mise run verify:m31-17` |
 
 모든 항목은 [실행 작업 템플릿](TEMPLATE.md)의 중단 조건을 상속한다. 백엔드 코드를

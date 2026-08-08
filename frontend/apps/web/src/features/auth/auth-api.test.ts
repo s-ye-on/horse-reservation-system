@@ -68,6 +68,28 @@ describe('authApi', () => {
     })
   })
 
+  it('refresh는_기존_CSRF_Cookie를_사용해_한_번만_요청한다', async () => {
+    document.cookie = 'XSRF-TOKEN=refresh-csrf-token; Path=/'
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({
+      accessToken: 'refreshed-access-token',
+      tokenType: 'Bearer',
+      accessTokenExpiresAt: '2026-08-08T11:15:00Z',
+    }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(authApi.refreshAccessToken()).resolves.toMatchObject({
+      accessToken: 'refreshed-access-token',
+    })
+
+    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/auth/web/refresh')
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+      method: 'POST',
+      credentials: 'include',
+      headers: expect.objectContaining({ 'X-XSRF-TOKEN': 'refresh-csrf-token' }),
+    })
+  })
+
   it('로그아웃에_CSRF와_credentials를_전달한다', async () => {
     const fetchMock = vi.fn()
       .mockImplementationOnce(() => {
@@ -85,5 +107,32 @@ describe('authApi', () => {
       credentials: 'include',
       headers: expect.objectContaining({ 'X-XSRF-TOKEN': 'logout-csrf-token' }),
     })
+  })
+
+  it('로그인_CSRF_403_후_다음_시도는_CSRF를_다시_초기화한다', async () => {
+    document.cookie = 'XSRF-TOKEN=stale-csrf-token; Path=/'
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(null, { status: 403 }))
+      .mockImplementationOnce(() => {
+        document.cookie = 'XSRF-TOKEN=fresh-csrf-token; Path=/'
+        return Promise.resolve(jsonResponse({ headerName: 'X-XSRF-TOKEN', cookieName: 'XSRF-TOKEN' }))
+      })
+      .mockResolvedValueOnce(jsonResponse({
+        accessToken: 'access-token-value',
+        tokenType: 'Bearer',
+        accessTokenExpiresAt: '2026-08-08T11:15:00Z',
+      }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(authApi.login({ email: 'member@horse.test', password: 'password-1234' }))
+      .rejects.toMatchObject({ response: { status: 403 } })
+    await expect(authApi.login({ email: 'member@horse.test', password: 'password-1234' }))
+      .resolves.toMatchObject({ accessToken: 'access-token-value' })
+
+    expect(fetchMock.mock.calls.map(([input]) => input)).toEqual([
+      '/api/auth/web/login',
+      '/api/auth/web/csrf',
+      '/api/auth/web/login',
+    ])
   })
 })

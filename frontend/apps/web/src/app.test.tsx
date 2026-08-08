@@ -14,8 +14,10 @@ vi.mock('./features/auth/use-auth', () => ({
   useAuth: () => ({
     account: authState.account,
     isAuthenticated: authState.account !== null,
+    status: authState.account === null ? 'unauthenticated' : 'authenticated',
     login: vi.fn(),
     logout: vi.fn(),
+    retrySessionRestore: vi.fn(),
   }),
 }))
 
