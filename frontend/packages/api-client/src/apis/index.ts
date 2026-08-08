@@ -33,3 +33,4 @@ export * from './MemberReservationCancelControllerApi';
 export * from './MemberReservationChangeControllerApi';
 export * from './MemberReservationQueryControllerApi';
 export * from './ReservationApplicationControllerApi';
+export * from './WebAuthControllerApi';

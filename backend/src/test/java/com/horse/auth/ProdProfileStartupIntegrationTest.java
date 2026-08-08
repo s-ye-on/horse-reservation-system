@@ -21,7 +21,8 @@ import org.testcontainers.mysql.MySQLContainer;
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(properties = {
 	"spring.profiles.active=prod",
-	"JWT_SECRET=m31-prod-startup-test-only-secret-more-than-32-bytes"
+	"JWT_SECRET=m31-prod-startup-test-only-secret-more-than-32-bytes",
+	"WEB_ALLOWED_ORIGINS=https://web.example.test"
 })
 @ExtendWith(OutputCaptureExtension.class)
 class ProdProfileStartupIntegrationTest {
@@ -39,6 +40,9 @@ class ProdProfileStartupIntegrationTest {
 	JwtDecoder jwtDecoder;
 
 	@Autowired
+	WebAuthProperties webAuthProperties;
+
+	@Autowired
 	MySQLContainer mysqlContainer;
 
 	@Test
@@ -46,6 +50,8 @@ class ProdProfileStartupIntegrationTest {
 		assertThat(environment.matchesProfiles("prod")).isTrue();
 		assertThat(environment.getProperty("security.jwt.secret")).isEqualTo(TEST_SECRET);
 		assertThat(jwtDecoder).isNotNull();
+		assertThat(webAuthProperties.refreshCookie().secure()).isTrue();
+		assertThat(webAuthProperties.allowedOrigins()).containsExactly("https://web.example.test");
 		assertThat(applicationContext.containsBean("initialAdminBootstrapRunner")).isFalse();
 		assertThat(output).doesNotContain(TEST_SECRET);
 	}

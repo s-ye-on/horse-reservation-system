@@ -61,8 +61,31 @@
 - V35는 parent FK와 `UNIQUE(parent_session_id)`를 제공하지만 parent와 child의 `family_id` 일치 자체를
   DB 제약으로 강제하지 않는다. 같은 family 전파는 `RefreshTokenSession.createSuccessor()`의
   애플리케이션 불변식이며, schema 재설계가 필요해지는 시점까지 통합 테스트로 보호한다.
-- 토큰은 JSON body로 전달한다. 웹은 XSS를 고려한 저장 방식, 모바일은 OS secure storage를 후속 UI에서
-  결정한다. Cookie를 채택할 경우 CSRF 방어는 별도 ADR 없이 암묵적으로 생략할 수 없다.
+- 기존 모바일·CLI용 `/api/auth/**` API는 Access Token과 Refresh Token을 JSON body로 전달하는 계약을
+  유지한다. 웹 전용 `/api/auth/web/**` API는 Access Token만 JSON으로 전달하고 Refresh Token은
+  JavaScript가 읽을 수 없는 HttpOnly Cookie로 전달한다. 두 API는 같은 로그인·회전·family 폐기·logout
+  Application Service를 사용하며 인증 상태 전이 로직을 복제하지 않는다.
+
+### 웹 Token 전달과 CSRF
+
+- 웹 회원가입은 기존 `/api/auth/signup`을 사용하고 자동 로그인하지 않는다. 가입 후 웹 login을 별도로
+  호출해야 Refresh Cookie가 생성된다. `/api/auth/me`도 기존 Bearer Access Token 계약을 유지한다.
+- 웹 Refresh Cookie는 host-only, `HttpOnly`, `SameSite=Lax`, `Path=/api/auth/web`이며 Max-Age는
+  Refresh Session TTL과 같다. 운영에서는 `Secure=true`, localhost HTTP 개발에서만 `false`다.
+  발급·회전·삭제는 같은 Cookie 속성을 사용한다.
+- Cookie가 자동 전송되는 웹 login·refresh·logout은 Spring Security의 SPA CSRF 지원과
+  `CookieCsrfTokenRepository`로 보호한다. `XSRF-TOKEN` Cookie와 `X-XSRF-TOKEN` Header를 사용하며
+  Refresh Cookie는 인증 자격 증명, CSRF Token은 브라우저 자동 요청을 구분하는 증명값이다.
+- 서버 Session은 만들지 않고 `SessionCreationPolicy.STATELESS`를 유지한다. CSRF Token은 Cookie에
+  저장하므로 `JSESSIONID`가 필요하지 않다. refresh 성공마다 별도 CSRF 회전 로직을 추가하지 않는다.
+- 개발 CORS는 `http://localhost:5173`을 정확히 허용하고 credential 요청에 wildcard Origin을 사용하지
+  않는다. 운영 Origin은 외부 설정으로 주입하며 같은 origin reverse proxy 배포를 우선한다.
+- 웹 logout은 유효한 현재 Session만 기존 로직으로 폐기한다. 누락·만료·폐기·알 수 없는 Cookie도
+  Cookie를 삭제하고 204를 반환해 최종 로그아웃 상태를 멱등 보장하며 다른 family는 건드리지 않는다.
+- M31-16B1은 React의 Access Token 메모리 보관, 인증 화면과 보호 Route를 담당한다. M31-16B2는 앱 시작
+  복구, single-flight refresh와 동시 401 처리를 담당한다. 웹 요청은 `credentials: include`를 사용해야 한다.
+- XSS sanitizer, 전용 backend filter와 CSP 상세 정책은 M31-16B0 범위가 아니다. 후속 React 화면은 서버
+  문자열을 일반 text rendering으로 출력하고 `dangerouslySetInnerHTML`을 사용하지 않는다.
 
 ### 최초 관리자 Bootstrap
 

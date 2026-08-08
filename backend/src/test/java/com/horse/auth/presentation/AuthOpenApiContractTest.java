@@ -44,6 +44,15 @@ class AuthOpenApiContractTest {
 		assertThat(document.at("/paths/~1api~1auth~1logout/post/operationId").asText()).isEqualTo("logout");
 		assertThat(document.at("/paths/~1api~1auth~1me/get/operationId").asText())
 			.isEqualTo("getCurrentAuthAccount");
+		assertThat(document.at("/paths/~1api~1auth~1web~1csrf/get/operationId").asText())
+			.isEqualTo("initializeWebCsrfToken");
+		assertThat(document.at("/paths/~1api~1auth~1web~1csrf/get/parameters").isMissingNode()).isTrue();
+		assertThat(document.at("/paths/~1api~1auth~1web~1login/post/operationId").asText())
+			.isEqualTo("webLogin");
+		assertThat(document.at("/paths/~1api~1auth~1web~1refresh/post/operationId").asText())
+			.isEqualTo("refreshWebAccessToken");
+		assertThat(document.at("/paths/~1api~1auth~1web~1logout/post/operationId").asText())
+			.isEqualTo("webLogout");
 		assertThat(document.at("/paths/~1api~1auth~1me/get/security/0/bearerAuth").isArray()).isTrue();
 		assertThat(document.at("/paths/~1api~1auth~1login/post/security").isMissingNode()).isTrue();
 
@@ -60,6 +69,15 @@ class AuthOpenApiContractTest {
 			"accessTokenExpiresAt",
 			"refreshTokenExpiresAt"
 		);
+		assertRequired(document, "WebAuthTokenResponse", "accessToken", "tokenType", "accessTokenExpiresAt");
+		assertRequired(document, "WebCsrfTokenResponse", "headerName", "cookieName");
+		assertThat(document.at("/components/schemas/WebAuthTokenResponse/properties/refreshToken").isMissingNode())
+			.isTrue();
+		assertThat(document.at("/paths/~1api~1auth~1web~1refresh/post/requestBody").isMissingNode()).isTrue();
+		assertThat(document.at("/paths/~1api~1auth~1web~1logout/post/requestBody").isMissingNode()).isTrue();
+		assertRequiredHeader(document, "/paths/~1api~1auth~1web~1login/post/parameters", "X-XSRF-TOKEN");
+		assertRequiredHeader(document, "/paths/~1api~1auth~1web~1refresh/post/parameters", "X-XSRF-TOKEN");
+		assertRequiredHeader(document, "/paths/~1api~1auth~1web~1logout/post/parameters", "X-XSRF-TOKEN");
 		assertRequired(document, "AuthAccountResponse", "subject", "memberId", "email", "role", "status");
 		assertThat(document.at("/components/schemas/AuthSignupRequest/properties/role").isMissingNode()).isTrue();
 		assertThat(document.at("/components/schemas/AuthSignupRequest/properties/password/writeOnly").asBoolean())
@@ -87,5 +105,14 @@ class AuthOpenApiContractTest {
 			.map(JsonNode::asText)
 			.toList();
 		assertThat(required).containsExactlyInAnyOrder(fields);
+	}
+
+	private void assertRequiredHeader(JsonNode document, String path, String name) {
+		assertThat(document.at(path).valueStream())
+			.anySatisfy(parameter -> {
+				assertThat(parameter.get("name").asText()).isEqualTo(name);
+				assertThat(parameter.get("in").asText()).isEqualTo("header");
+				assertThat(parameter.get("required").asBoolean()).isTrue();
+			});
 	}
 }

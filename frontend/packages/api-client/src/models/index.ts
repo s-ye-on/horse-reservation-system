@@ -89,3 +89,5 @@ export * from './TimeSlotClosureStartRequest';
 export * from './TimeSlotCreateRequest';
 export * from './TimeSlotResponse';
 export * from './TimeSlotStatusUpdateRequest';
+export * from './WebAuthTokenResponse';
+export * from './WebCsrfTokenResponse';
