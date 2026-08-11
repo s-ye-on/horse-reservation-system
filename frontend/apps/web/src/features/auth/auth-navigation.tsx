@@ -35,6 +35,16 @@ export function AuthNavigation() {
   return (
     <div className="auth-session-bar">
       <p><strong>{account.email}</strong> 로그인</p>
+      <nav className="auth-session-links" aria-label={account.role === 'MEMBER' ? '회원 메뉴' : '관리자 메뉴'}>
+        <Link to="/">홈</Link>
+        {account.role === 'MEMBER' ? (
+          <>
+            <Link to="/reservations">수업 예약</Link>
+            <Link to="/my/reservations">내 예약</Link>
+            <Link to="/my/coupons">내 쿠폰</Link>
+          </>
+        ) : <Link to="/admin">관리자</Link>}
+      </nav>
       <button type="button" onClick={handleLogout} disabled={isLoggingOut}>
         {isLoggingOut ? '로그아웃 중' : '로그아웃'}
       </button>

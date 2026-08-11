@@ -112,7 +112,7 @@ describe('MyCouponsPage', () => {
       getCoupons: vi.fn().mockResolvedValue(couponPage([])),
       getUsageLogs: vi.fn().mockResolvedValue(usagePage([])),
     }))
-    expect(await screen.findByText('등록된 쿠폰이 없습니다.')).toBeInTheDocument()
+    expect(await screen.findByText('보유한 쿠폰이 없습니다. 쿠폰 등록은 관리자에게 문의해 주세요.')).toBeInTheDocument()
     expect(screen.getByText('아직 쿠폰 사용 내역이 없습니다.')).toBeInTheDocument()
   })
 

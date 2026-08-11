@@ -123,6 +123,24 @@ class AuthApiIntegrationTest {
 	}
 
 	@Test
+	void 회원가입은_8자_비밀번호를_허용하고_7자를_거부한다() throws Exception {
+		mockMvc.perform(post("/api/auth/signup")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(
+					new SignupRequest("eight@example.com", "12345678", "8자 회원", "010-1111-2222")
+				)))
+			.andExpect(status().isCreated());
+
+		mockMvc.perform(post("/api/auth/signup")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(objectMapper.writeValueAsString(
+					new SignupRequest("seven@example.com", "1234567", "7자 회원", "010-2222-3333")
+				)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("password"));
+	}
+
+	@Test
 	void 공개_회원가입_body의_role은_ADMIN을_만들지_못한다() throws Exception {
 		mockMvc.perform(post("/api/auth/signup")
 				.contentType(MediaType.APPLICATION_JSON)

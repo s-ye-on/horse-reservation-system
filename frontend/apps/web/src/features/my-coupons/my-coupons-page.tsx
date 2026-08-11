@@ -88,7 +88,7 @@ export function MyCouponsPage({ api = myCouponsApi }: { api?: MyCouponsApi }) {
               onRetry={() => { void couponsQuery.refetch() }}
             />
           ) : coupons.length === 0 ? (
-            <CouponsState embedded message="등록된 쿠폰이 없습니다." />
+            <CouponsState embedded message="보유한 쿠폰이 없습니다. 쿠폰 등록은 관리자에게 문의해 주세요." />
           ) : (
             <div className="my-coupon-list">{coupons.map((coupon) => <CouponCard key={coupon.couponId} coupon={coupon} />)}</div>
           )}

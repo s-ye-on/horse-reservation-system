@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ResponseError, type AuthAccountResponse } from '@horse/api-client'
 import { clearWebAccessToken, setWebAccessToken } from '../../api/web-access-token-memory'
+import { clearWebAccountQueryCache } from '../../api/web-query-client'
 import {
   beginWebAuthOperation,
   getWebAuthOperationVersion,
@@ -34,11 +35,13 @@ export function AuthProvider({ children, api = authApi }: AuthProviderProps) {
         setWebAccessToken(tokenResponse.accessToken)
         const currentAccount = await api.getCurrentAccount()
         if (!isCurrentWebAuthOperation(operationVersion) || !mountedRef.current) return
+        clearWebAccountQueryCache()
         setAccount(currentAccount)
         setStatus('authenticated')
       } catch (error) {
         if (isStaleWebAuthOperationError(error) || !isCurrentWebAuthOperation(operationVersion)) return
         clearWebAccessToken()
+        clearWebAccountQueryCache()
         if (!mountedRef.current) return
         setAccount(null)
         if (error instanceof ResponseError && error.response.status === 401) {
@@ -60,6 +63,7 @@ export function AuthProvider({ children, api = authApi }: AuthProviderProps) {
     mountedRef.current = true
     const unsubscribe = subscribeToWebAuthSession((event) => {
       if (!mountedRef.current) return
+      clearWebAccountQueryCache()
       setAccount(null)
       setStatus(event === 'unauthorized' ? 'unauthenticated' : 'restore-error')
     })
@@ -86,6 +90,7 @@ export function AuthProvider({ children, api = authApi }: AuthProviderProps) {
         if (!isCurrentWebAuthOperation(operationVersion)) {
           throw new Error('로그인 요청이 더 최신 인증 작업으로 대체되었습니다.')
         }
+        clearWebAccountQueryCache()
         setAccount(currentAccount)
         setStatus('authenticated')
         return currentAccount
@@ -103,6 +108,7 @@ export function AuthProvider({ children, api = authApi }: AuthProviderProps) {
       await api.logout()
       if (!isCurrentWebAuthOperation(operationVersion)) return
       clearWebAccessToken()
+      clearWebAccountQueryCache()
       setAccount(null)
       setStatus('unauthenticated')
     },

@@ -82,6 +82,8 @@ class AuthOpenApiContractTest {
 		assertThat(document.at("/components/schemas/AuthSignupRequest/properties/role").isMissingNode()).isTrue();
 		assertThat(document.at("/components/schemas/AuthSignupRequest/properties/password/writeOnly").asBoolean())
 			.isTrue();
+		assertThat(document.at("/components/schemas/AuthSignupRequest/properties/password/minLength").asInt())
+			.isEqualTo(8);
 		assertThat(document.at("/components/schemas/AuthAccountResponse/properties/memberId/type")
 			.valueStream().map(JsonNode::asText).toList())
 			.containsExactly("integer", "null");
