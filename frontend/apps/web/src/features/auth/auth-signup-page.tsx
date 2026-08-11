@@ -36,8 +36,8 @@ export function AuthSignupPage() {
           <label htmlFor="signup-email">이메일</label>
           <input id="signup-email" name="email" type="email" autoComplete="email" maxLength={254} required value={email} onChange={(event) => setEmail(event.target.value)} />
           <label htmlFor="signup-password">비밀번호</label>
-          <input id="signup-password" name="password" type="password" autoComplete="new-password" minLength={12} maxLength={72} required value={password} onChange={(event) => setPassword(event.target.value)} />
-          <p className="auth-field-hint">12자 이상 입력해 주세요.</p>
+          <input id="signup-password" name="password" type="password" autoComplete="new-password" minLength={8} maxLength={72} required value={password} onChange={(event) => setPassword(event.target.value)} />
+          <p className="auth-field-hint">8자 이상 입력해 주세요.</p>
           <label htmlFor="signup-name">이름</label>
           <input id="signup-name" name="name" type="text" autoComplete="name" maxLength={100} required value={name} onChange={(event) => setName(event.target.value)} />
           <label htmlFor="signup-phone">전화번호</label>

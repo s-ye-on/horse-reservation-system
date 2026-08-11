@@ -5271,7 +5271,7 @@
           "password": {
             "type": "string",
             "maxLength": 72,
-            "minLength": 12,
+            "minLength": 8,
             "writeOnly": true
           },
           "name": {

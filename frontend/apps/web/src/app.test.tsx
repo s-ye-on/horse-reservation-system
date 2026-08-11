@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
 import { describe, expect, it, vi } from 'vitest'
 import App from './app'
@@ -63,6 +63,20 @@ describe('App', () => {
       'href',
       '/admin/schedule-closures',
     )
+  })
+
+  it('회원_공통_메뉴에_쿠폰_잔여_조회_진입점을_제공한다', () => {
+    authState.account = {
+      subject: 'member-subject', memberId: 1, email: 'member@horse.test', role: 'MEMBER', status: 'ACTIVE',
+    }
+    render(
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>,
+    )
+
+    const memberNavigation = screen.getByRole('navigation', { name: '회원 메뉴' })
+    expect(within(memberNavigation).getByRole('link', { name: '내 쿠폰' })).toHaveAttribute('href', '/my/coupons')
   })
 
   it('정규_시간표_관리_route를_렌더링한다', () => {

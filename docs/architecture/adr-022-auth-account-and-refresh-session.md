@@ -32,6 +32,7 @@
 - 이메일은 앞뒤 공백 제거 후 `Locale.ROOT` 소문자로 정규화하고 binary collation UNIQUE로 최종 보장한다.
 - 비밀번호는 Spring Security의 delegating `PasswordEncoder`를 사용한다. 현재 기본은 bcrypt이며
   알고리즘 식별자를 hash에 포함해 향후 안전한 점진 업그레이드를 허용한다.
+- 비밀번호는 최소 8자이며 bcrypt 입력 한계와 맞춰 UTF-8 기준 최대 72 byte로 제한한다.
 - 회원가입과 관리자 Bootstrap은 같은 `PasswordEncoder` bean을 사용하고 원문은 저장·로그·응답하지 않는다.
 
 ### Access Token

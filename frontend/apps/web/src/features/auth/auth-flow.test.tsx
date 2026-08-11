@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useNavigate } from 'react-router'
 import { ResponseError, type AuthAccountResponse } from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { clearWebAccessToken, getWebAccessToken } from '../../api/web-access-token-memory'
+import { webQueryClient } from '../../api/web-query-client'
 import { refreshWebAuthentication } from '../../api/web-auth-session'
 import { authApi, type AuthApi } from './auth-api'
 import { AuthLoginPage } from './auth-login-page'
@@ -65,6 +66,7 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
   clearWebAccessToken()
+  webQueryClient.clear()
 })
 
 describe('웹 인증 흐름', () => {
@@ -86,6 +88,17 @@ describe('웹 인증 흐름', () => {
     fireEvent.click(screen.getByRole('button', { name: '회원가입' }))
 
     expect(await screen.findByText('회원가입이 완료되었습니다. 로그인해 주세요.')).toBeInTheDocument()
+  })
+
+  it('회원가입_비밀번호는_8자부터_입력할_수_있다', () => {
+    render(
+      <MemoryRouter>
+        <AuthSignupPage />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByLabelText('비밀번호')).toHaveAttribute('minlength', '8')
+    expect(screen.getByText('8자 이상 입력해 주세요.')).toBeInTheDocument()
   })
 
   it('회원가입_validation_오류를_공통_ErrorResponse로_표시한다', async () => {
@@ -127,6 +140,27 @@ describe('웹 인증 흐름', () => {
     expect(getWebAccessToken()).toBe('memory-access-token')
     expect(storageSpy).not.toHaveBeenCalled()
 
+  })
+
+  it('다른_회원으로_로그인하면_이전_회원_조회_캐시를_제거한다', async () => {
+    const api = createApi()
+    render(
+      <AuthProvider api={api}>
+        <LoginHarness />
+      </AuthProvider>,
+    )
+
+    await screen.findByText('anonymous')
+    webQueryClient.setQueryData(['member', 'available-classes'], {
+      currentGeneralGrade: 'LARGE_ARENA_TROT',
+    })
+    webQueryClient.setQueryData(['member', 'coupons', 0], { content: [{ couponId: 99 }] })
+
+    fireEvent.click(screen.getByRole('button', { name: 'login' }))
+
+    expect(await screen.findByText('member@horse.test')).toBeInTheDocument()
+    expect(webQueryClient.getQueryData(['member', 'available-classes'])).toBeUndefined()
+    expect(webQueryClient.getQueryData(['member', 'coupons', 0])).toBeUndefined()
   })
 
   it('logout_204_후_메모리_인증_상태를_초기화한다', async () => {

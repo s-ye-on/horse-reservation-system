@@ -16,6 +16,18 @@
   margin: 0;
 }
 
+.auth-session-links {
+  align-items: center;
+  margin-left: auto;
+}
+
+.auth-session-links a {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 4px;
+}
+
 .auth-page-shell {
   display: grid;
   place-items: start center;
@@ -91,6 +103,11 @@
 }
 
 @media (max-width: 480px) {
+  .auth-session-links {
+    width: 100%;
+    margin-left: 0;
+  }
+
   .auth-page-shell {
     width: min(100% - 24px, 960px);
     padding-top: 24px;

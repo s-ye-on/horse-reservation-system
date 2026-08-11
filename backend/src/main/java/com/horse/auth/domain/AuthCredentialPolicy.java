@@ -9,7 +9,7 @@ import com.horse.global.exception.ExceptionCode;
 
 public final class AuthCredentialPolicy {
 
-	public static final int MINIMUM_PASSWORD_LENGTH = 12;
+	public static final int MINIMUM_PASSWORD_LENGTH = 8;
 	public static final int MAXIMUM_PASSWORD_BYTES = 72;
 
 	private static final int MAXIMUM_EMAIL_LENGTH = 254;

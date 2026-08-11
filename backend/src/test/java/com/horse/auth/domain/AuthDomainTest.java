@@ -19,6 +19,12 @@ class AuthDomainTest {
 	}
 
 	@Test
+	void 비밀번호는_8자부터_허용한다() {
+		assertThat(AuthCredentialPolicy.isSupportedPassword("12345678")).isTrue();
+		assertThat(AuthCredentialPolicy.isSupportedPassword("1234567")).isFalse();
+	}
+
+	@Test
 	void 회원_계정은_회원_역할과_활성_상태로_생성한다() {
 		final AuthAccount account = AuthAccount.createMember(
 			1L,
