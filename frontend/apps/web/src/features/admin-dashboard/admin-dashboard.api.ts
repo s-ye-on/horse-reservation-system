@@ -4,7 +4,7 @@ import {
   type AdminReservationResponse,
   type AdminReservationSummaryResponse,
 } from '@horse/api-client'
-import { apiConfiguration } from '../../config/api-configuration'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export type DashboardReservationStatus =
   | 'pending_admin_approval'
@@ -29,7 +29,7 @@ export function getAdminDashboardErrorKind(error: unknown): AdminDashboardErrorK
   return 'unknown'
 }
 
-const queryApi = new AdminReservationQueryControllerApi(apiConfiguration)
+const queryApi = new AdminReservationQueryControllerApi(bearerApiConfiguration)
 
 function toApiDate(value?: string) {
   return value ? new Date(`${value}T00:00:00.000Z`) : undefined

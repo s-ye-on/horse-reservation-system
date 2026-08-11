@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import {
   cleanupMvpTwoFixture,
   createAuthenticatedPage,
+  navigateWithinApp,
   prepareMvpTwoFixture,
   readReservationPolicySnapshot,
   type MvpTwoFixture,
@@ -73,8 +74,18 @@ test.describe('MVP 2 예약 변경·취소 정책 행렬', () => {
     const policyCase = fixture.sameDayChange
     const page = await createAuthenticatedPage(browser, policyCase.authSubject, 'MEMBER')
 
-    await openChangePreview(page, policyCase)
-    if (fixture.todayIsWeekend) {
+    await openChangePage(page, policyCase)
+    const target = changeTarget(page, policyCase)
+    if (await target.count() === 0) {
+      await expect(target).toHaveCount(0)
+      expect(readReservationPolicySnapshot(policyCase.reservationId)).toMatchObject({
+        lessonDate: policyCase.lessonDate,
+        startTime: policyCase.startTime,
+        freeChangeUsed: false,
+        changeLogCount: 0,
+      })
+    } else if (fixture.todayIsWeekend) {
+      await target.click()
       await expect(page.getByRole('alert')).toContainText('변경 정책상 처리할 수 없습니다')
       expect(readReservationPolicySnapshot(policyCase.reservationId)).toMatchObject({
         lessonDate: policyCase.lessonDate,
@@ -83,6 +94,7 @@ test.describe('MVP 2 예약 변경·취소 정책 행렬', () => {
         changeLogCount: 0,
       })
     } else {
+      await target.click()
       await expect(page.getByText('변경 마감 후', { exact: true })).toBeVisible()
       await expect(page.getByText('처리 없음', { exact: true })).toBeVisible()
       await expect(page.getByText('사용 안 함', { exact: true })).toBeVisible()
@@ -119,7 +131,7 @@ test.describe('MVP 2 예약 변경·취소 정책 행렬', () => {
   test('관리자는_책임별_권장안을_확인하고_허용된_쿠폰_처리로_재정의한다', async ({ browser }) => {
     const policyCase = fixture.adminCancel
     const page = await createAuthenticatedPage(browser, 'e2e-m2-11-admin', 'ADMIN')
-    await page.goto('/admin/reservations')
+    await navigateWithinApp(page, '/admin/reservations')
     const card = page.locator('article').filter({ hasText: policyCase.name })
     await expect(card).toBeVisible()
     await card.getByRole('button', { name: '예약 취소' }).click()
@@ -154,14 +166,22 @@ test.describe('MVP 2 예약 변경·취소 정책 행렬', () => {
 })
 
 async function openChangePreview(page: Page, policyCase: ReservationPolicyFixture) {
-  await page.goto(`/my/reservations/${policyCase.reservationId}/change`)
-  await expect(page.getByRole('heading', { name: '예약 변경' })).toBeVisible()
-  await page.getByLabel('날짜').fill(policyCase.targetLessonDate as string)
-  const target = page.locator('.reservation-change-times label').filter({
-    hasText: (policyCase.targetStartTime as string).slice(0, 5),
-  })
+  await openChangePage(page, policyCase)
+  const target = changeTarget(page, policyCase)
   await expect(target).toBeVisible()
   await target.click()
+}
+
+async function openChangePage(page: Page, policyCase: ReservationPolicyFixture) {
+  await navigateWithinApp(page, `/my/reservations/${policyCase.reservationId}/change`)
+  await expect(page.getByRole('heading', { name: '예약 변경' })).toBeVisible()
+  await page.getByLabel('날짜').fill(policyCase.targetLessonDate as string)
+}
+
+function changeTarget(page: Page, policyCase: ReservationPolicyFixture) {
+  return page.locator('.reservation-change-times label').filter({
+    hasText: (policyCase.targetStartTime as string).slice(0, 5),
+  })
 }
 
 async function executeMemberChange(page: Page, policyCase: ReservationPolicyFixture) {
@@ -184,7 +204,7 @@ async function cancelByMember(
   timing: string,
   couponAction: string,
 ) {
-  await page.goto(`/my/reservations/${policyCase.reservationId}/cancel`)
+  await navigateWithinApp(page, `/my/reservations/${policyCase.reservationId}/cancel`)
   await expect(page.getByRole('heading', { name: '예약 취소' })).toBeVisible()
   await expect(page.getByText(timing, { exact: true })).toBeVisible()
   await expect(page.getByText(couponAction, { exact: true })).toBeVisible()

@@ -9,7 +9,7 @@
     "lint": "oxlint",
     "typecheck": "tsc -b --pretty false",
     "test": "vitest run --exclude 'tests/e2e/**'",
-    "test:e2e": "playwright test",
+    "test:e2e": "node ../../../scripts/run-playwright.mjs",
     "test:watch": "vitest --exclude 'tests/e2e/**'",
     "preview": "vite preview"
   },

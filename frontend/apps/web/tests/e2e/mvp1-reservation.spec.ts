@@ -2,7 +2,10 @@ import { expect, test, type Page } from '@playwright/test'
 import {
   cleanupFixture,
   createAuthenticatedPage,
+  makeMvpOneCouponReservationAttendable,
+  navigateWithinApp,
   prepareMvpOneFixture,
+  refreshWithinApp,
   type MemberFixture,
   type MvpOneFixture,
 } from './e2e-support'
@@ -31,12 +34,13 @@ test.describe('MVP 1 예약 핵심 흐름', () => {
 
     await confirmReservation(adminPage, member.name, '쿠폰 예약 확정')
 
-    await memberPage.goto('/my/reservations')
+    await navigateWithinApp(memberPage, '/my/reservations')
     const confirmedReservation = reservationCard(memberPage, '원형초보')
     await expect(confirmedReservation.getByText('예약 확정', { exact: true })).toBeVisible()
     await expect(confirmedReservation.getByText(`사용 예정 쿠폰 #${member.couponId}`)).toBeVisible()
 
-    await adminPage.goto('/admin/attendance')
+    makeMvpOneCouponReservationAttendable(fixture)
+    await navigateWithinApp(adminPage, '/admin/attendance')
     const attendanceCard = adminPage.locator('article').filter({ hasText: member.name })
     await attendanceCard.getByRole('button', { name: '수업 완료' }).click()
     const completionResponse = adminPage.waitForResponse((response) =>
@@ -47,16 +51,17 @@ test.describe('MVP 1 예약 핵심 흐름', () => {
     await expect(adminPage.getByText('수업 완료 반영')).toBeVisible()
     await expect(adminPage.getByText('일반 2회')).toBeVisible()
 
-    await memberPage.goto('/my/reservations')
+    await navigateWithinApp(memberPage, '/my/reservations')
+    await memberPage.getByRole('tab', { name: /지난 예약/ }).click()
     const completedReservation = reservationCard(memberPage, '원형초보')
     await expect(completedReservation.getByText('수업 완료', { exact: true })).toBeVisible()
 
-    await memberPage.goto('/my/coupons')
+    await navigateWithinApp(memberPage, '/my/coupons')
     const couponCard = memberPage.locator('article').filter({ hasText: `COUPON #${member.couponId}` })
     await expect(couponCard.getByText('잔여').locator('..')).toContainText('9')
     await expect(memberPage.getByText('수업 완료 사용')).toHaveCount(1)
 
-    await adminPage.goto('/admin/members')
+    await navigateWithinApp(adminPage, '/admin/members')
     await adminPage.getByRole('button', { name: new RegExp(member.name) }).click()
     const memberDetail = adminPage.getByRole('region', { name: '회원 상세' })
     await expect(memberDetail.getByText('일반 기승').locator('..')).toContainText('2회')
@@ -74,12 +79,12 @@ test.describe('MVP 1 예약 핵심 흐름', () => {
     await expect(memberPage.getByText(/상태 pending_payment/)).toBeVisible()
     await expect(memberPage.getByText('2시간 이내 입금해 주세요')).toBeVisible()
 
-    await memberPage.goto('/my/reservations')
+    await navigateWithinApp(memberPage, '/my/reservations')
     await expect(reservationCard(memberPage, '원형초보').getByText('입금 확인 대기')).toBeVisible()
 
     await confirmReservation(adminPage, member.name, '입금 확인 및 확정')
 
-    await memberPage.reload()
+    await refreshWithinApp(memberPage)
     await expect(reservationCard(memberPage, '원형초보').getByText('예약 확정', { exact: true })).toBeVisible()
 
     await memberPage.context().close()
@@ -93,14 +98,14 @@ async function applyForReservation(page: Page, member: MemberFixture) {
     classType: 'ROUND_BEGINNER',
     date: member.lessonDate,
   })
-  await page.goto(`/reservations/new?${query}`)
+  await navigateWithinApp(page, `/reservations/new?${query}`)
   await expect(page.getByRole('heading', { name: '예약 신청 확인' })).toBeVisible()
   await page.getByRole('button', { name: '예약 신청' }).click()
   await expect(page.getByText('신청 완료')).toBeVisible()
 }
 
 async function confirmReservation(page: Page, memberName: string, actionName: string) {
-  await page.goto('/admin/reservations')
+  await navigateWithinApp(page, '/admin/reservations')
   const card = page.locator('article').filter({ hasText: memberName })
   await expect(card).toBeVisible()
   await card.getByRole('button', { name: actionName }).click()

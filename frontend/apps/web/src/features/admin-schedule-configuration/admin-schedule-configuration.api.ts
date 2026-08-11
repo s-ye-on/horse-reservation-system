@@ -17,7 +17,7 @@ import {
   type ScheduleTemplateRequest,
   type ScheduleTemplateResponse,
 } from '@horse/api-client'
-import { apiConfiguration } from '../../config/api-configuration'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface AdminScheduleConfigurationApi {
   getTemplates(): Promise<ScheduleTemplateResponse[]>
@@ -73,9 +73,9 @@ export async function readScheduleApiError(error: unknown): Promise<ScheduleApiE
   }
 }
 
-const templateApi = new AdminScheduleTemplateControllerApi(apiConfiguration)
-const holidayApi = new AdminRecurringHolidayControllerApi(apiConfiguration)
-const synchronizationApi = new AdminScheduleSynchronizationControllerApi(apiConfiguration)
+const templateApi = new AdminScheduleTemplateControllerApi(bearerApiConfiguration)
+const holidayApi = new AdminRecurringHolidayControllerApi(bearerApiConfiguration)
+const synchronizationApi = new AdminScheduleSynchronizationControllerApi(bearerApiConfiguration)
 
 export const adminScheduleConfigurationApi: AdminScheduleConfigurationApi = {
   getTemplates: () => templateApi.getTemplates(),

@@ -1,0 +1,7 @@
+security:
+  jwt:
+    secret: ${JWT_SECRET:}
+  web-auth:
+    refresh-cookie:
+      secure: true
+    allowed-origins: ${WEB_ALLOWED_ORIGINS:}

@@ -1,18 +1,23 @@
 import { expect, test } from '@playwright/test'
+import { createAuthenticatedPage, navigateWithinApp } from './e2e-support'
 
-const API_ORIGIN = 'http://localhost:8080'
+const WEB_ORIGIN = process.env.HORSE_E2E_WEB_BASE_URL ?? 'http://localhost:5173'
 const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': 'http://127.0.0.1:5173',
+  'Access-Control-Allow-Origin': WEB_ORIGIN,
   'Access-Control-Allow-Headers': '*',
   'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
   'Content-Type': 'application/json',
 }
 
 test('날짜_휴무와_개별_휴강은_320px에서_가로_넘침_없이_조작할_수_있다', async ({ browser }) => {
-  const context = await browser.newContext({ viewport: { width: 320, height: 800 } })
-  const page = await context.newPage()
+  const page = await createAuthenticatedPage(
+    browser,
+    'e2e-m31-r13-responsive-admin',
+    'ADMIN',
+    { viewport: { width: 320, height: 800 } },
+  )
 
-  await page.route(`${API_ORIGIN}/**`, async (route) => {
+  await page.route(`${WEB_ORIGIN}/api/**`, async (route) => {
     if (route.request().method() === 'OPTIONS') {
       await route.fulfill({ status: 204, headers: CORS_HEADERS })
       return
@@ -29,7 +34,7 @@ test('날짜_휴무와_개별_휴강은_320px에서_가로_넘침_없이_조작�
     await route.fulfill({ status: 200, headers: CORS_HEADERS, body: JSON.stringify(body) })
   })
 
-  await page.goto('/admin/schedule-closures')
+  await navigateWithinApp(page, '/admin/schedule-closures')
   await expect(page.getByRole('heading', { name: '날짜 전체 휴무' })).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
@@ -64,7 +69,7 @@ test('날짜_휴무와_개별_휴강은_320px에서_가로_넘침_없이_조작�
   await expect(page.getByLabel('대상 TimeSlot')).toBeVisible()
   await expectNoHorizontalOverflow(page)
 
-  await context.close()
+  await page.context().close()
 })
 
 async function expectNoHorizontalOverflow(page: import('@playwright/test').Page) {

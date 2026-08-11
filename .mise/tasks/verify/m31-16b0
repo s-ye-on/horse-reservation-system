@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-16B0 web HttpOnly refresh cookie and stateless CSRF"
+# Task name: verify:m31-16b0
+
+set -euo pipefail
+
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*AuthApiIntegrationTest' \
+  --tests '*AuthConcurrencyIntegrationTest' \
+  --tests '*RefreshTokenFamilyRevocationIntegrationTest' \
+  --tests '*WebRefreshTokenCookieManagerTest' \
+  --tests '*WebAuthApiIntegrationTest' \
+  --tests '*AuthOpenApiContractTest' \
+  --tests '*SecurityBoundaryTest' \
+  --tests '*ProdJwtSecretConfigurationTest' \
+  --tests '*ProdProfileStartupIntegrationTest' \
+  --tests '*ErrorResponseContractApiTest'
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web typecheck
+pnpm --dir frontend/apps/mobile typecheck
+
+if rg -n 'localStorage|sessionStorage' backend/src/main/java/com/horse/auth; then
+  echo 'Backend web authentication must not introduce browser token storage.' >&2
+  exit 1
+fi
+
+if rg -n 'allowed-origins:.*\*' backend/src/main/resources; then
+  echo 'Credential CORS must not use a wildcard origin.' >&2
+  exit 1
+fi

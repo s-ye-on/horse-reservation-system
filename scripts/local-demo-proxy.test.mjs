@@ -52,6 +52,19 @@ test('개발_프록시는_회원과_관리자_권한_JWT를_주입한다', async
   assert.deepEqual(payload.roles, ['MEMBER', 'ADMIN'])
 })
 
+test('개발_프록시는_브라우저가_보낸_Authorization을_덮어쓰지_않는다', async () => {
+  const response = await fetch(`${proxyBaseUrl}/api/auth/me`, {
+    headers: {
+      origin: 'http://localhost:5173',
+      authorization: 'Bearer browser-access-token',
+    },
+  })
+  const { authorization } = await response.json()
+
+  assert.equal(response.status, 200)
+  assert.equal(authorization, 'Bearer browser-access-token')
+})
+
 function listen(server) {
   return new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
 }

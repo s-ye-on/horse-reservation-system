@@ -32,6 +32,14 @@ server:
 security:
   jwt:
     secret: ${JWT_SECRET:local-development-jwt-secret-change-me-32-bytes}
+    issuer: ${JWT_ISSUER:horse-api}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:PT15M}
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:P30D}
+  web-auth:
+    refresh-cookie:
+      name: HORSE_REFRESH_TOKEN
+      secure: false
+    allowed-origins: ${WEB_ALLOWED_ORIGINS:http://localhost:5173}
 
 springdoc:
   api-docs:

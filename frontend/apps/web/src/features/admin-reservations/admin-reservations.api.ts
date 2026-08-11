@@ -11,7 +11,7 @@ import {
   type ReservationCancellationPreviewResponse,
   type TimeSlotResponse,
 } from '@horse/api-client'
-import { apiConfiguration } from '../../config/api-configuration'
+import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface AdminReservationsApi {
   getReservations(status: string, page: number, size: number): Promise<AdminReservationPageResponse>
@@ -34,13 +34,13 @@ export function getAdminReservationErrorKind(error: unknown): AdminReservationEr
   return 'unknown'
 }
 
-const queryApi = new AdminReservationQueryControllerApi(apiConfiguration)
-const confirmApi = new AdminReservationConfirmControllerApi(apiConfiguration)
-const rejectApi = new AdminReservationRejectControllerApi(apiConfiguration)
-const restoreApi = new AdminPendingPaymentRestoreControllerApi(apiConfiguration)
-const timeSlotApi = new AdminTimeSlotControllerApi(apiConfiguration)
-const changeApi = new AdminReservationChangeControllerApi(apiConfiguration)
-const cancelApi = new AdminReservationCancelControllerApi(apiConfiguration)
+const queryApi = new AdminReservationQueryControllerApi(bearerApiConfiguration)
+const confirmApi = new AdminReservationConfirmControllerApi(bearerApiConfiguration)
+const rejectApi = new AdminReservationRejectControllerApi(bearerApiConfiguration)
+const restoreApi = new AdminPendingPaymentRestoreControllerApi(bearerApiConfiguration)
+const timeSlotApi = new AdminTimeSlotControllerApi(bearerApiConfiguration)
+const changeApi = new AdminReservationChangeControllerApi(bearerApiConfiguration)
+const cancelApi = new AdminReservationCancelControllerApi(bearerApiConfiguration)
 
 export const adminReservationsApi: AdminReservationsApi = {
   getReservations: (status, page, size) => queryApi.getReservations({ status, page, size }),

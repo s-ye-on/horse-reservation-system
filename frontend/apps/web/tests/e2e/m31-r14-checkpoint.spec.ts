@@ -4,9 +4,11 @@ import {
   cleanupM31R14ScheduleConfigurationFixture,
   createAuthenticatedPage,
   markM31R14ScheduleSynchronizationFailed,
+  navigateWithinApp,
   prepareM31R14ClosureFixture,
   prepareM31R14ScheduleConfigurationFixture,
   readM31R14ScheduleSynchronizationSnapshot,
+  refreshWithinApp,
   type M31R14ClosureFixture,
 } from './e2e-support'
 
@@ -26,7 +28,7 @@ test.describe('M31-R14 Checkpoint 1 핵심 운영 흐름', () => {
 
     const page = await createAuthenticatedPage(browser, CONFIG_ADMIN_SUBJECT, 'ADMIN', DEVICE_CONTEXT)
     try {
-      await page.goto('/admin/schedule-configuration')
+      await navigateWithinApp(page, '/admin/schedule-configuration')
       await expect(page.getByRole('heading', { name: '정규 시간표 및 정기 휴일' })).toBeVisible()
       await expect(page.getByText('시간표 최신 상태')).toBeVisible()
 
@@ -50,7 +52,7 @@ test.describe('M31-R14 Checkpoint 1 핵심 운영 흐름', () => {
       expect(pending.pendingVersion).toBeGreaterThan(pending.activeVersion)
       fixture.appliedVersion = pending.pendingVersion
       markM31R14ScheduleSynchronizationFailed()
-      await page.reload()
+      await refreshWithinApp(page)
       await expect(page.getByText(/E2E_FORCED_FAILURE/)).toBeVisible()
       const retryResponsePromise = page.waitForResponse((response) =>
         response.url().endsWith('/api/admin/jobs/sync-schedule-occurrences/retry')
@@ -89,7 +91,7 @@ test.describe('M31-R14 Checkpoint 1 핵심 운영 흐름', () => {
     const page = await createAuthenticatedPage(browser, CLOSURE_ADMIN_SUBJECT, 'ADMIN', DEVICE_CONTEXT)
 
     try {
-      await page.goto('/admin/schedule-closures')
+      await navigateWithinApp(page, '/admin/schedule-closures')
       await closeDateWithReservation(page, fixture)
       await closeDateWithoutReservation(page, fixture.emptyClosureDate)
       await completeAndReopenTimeSlotClosure(page, fixture)

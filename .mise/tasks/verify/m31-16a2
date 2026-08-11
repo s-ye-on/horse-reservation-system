@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-16A2 refresh token family revocation"
+# Task name: verify:m31-16a2
+
+set -euo pipefail
+
+mise run db:up
+./backend/gradlew -p backend test \
+  --tests '*AuthDomainTest' \
+  --tests '*AuthApiIntegrationTest' \
+  --tests '*AuthConcurrencyIntegrationTest' \
+  --tests '*RefreshTokenFamilyRevocationIntegrationTest'

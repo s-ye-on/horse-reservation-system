@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#MISE description="Verify M31-16 OpenAPI E2E and parallel build harness isolation"
+# Task name: verify:m31-16
+
+set -euo pipefail
+
+bash -n \
+  scripts/generate-api-client.sh \
+  scripts/check-api-client.sh \
+  scripts/run-isolated-gradle.sh \
+  scripts/run-e2e-backend.sh \
+  scripts/tests/m31-16-harness-isolation-test.sh
+node --check scripts/run-playwright.mjs
+
+! rg -n 'playwright test' mise.toml frontend/apps/web/package.json
+! rg -n 'kill -9|pkill' \
+  scripts/run-playwright.mjs \
+  scripts/run-e2e-backend.sh \
+  scripts/run-isolated-gradle.sh \
+  scripts/tests/m31-16-harness-isolation-test.sh
+rg -Fq 'mise run quality:m31-critical' mise.toml
+rg -Fq 'pnpm --dir frontend/apps/web test:e2e --' mise.toml
+rg -Fq 'HORSE_E2E_BACKEND_PORT' frontend/apps/web/playwright.config.ts
+rg -Fq 'PisolatedBuildDir' backend/build.gradle scripts/generate-api-client.sh scripts/run-e2e-backend.sh
+
+./scripts/tests/m31-16-harness-isolation-test.sh
+mise run docs:check
