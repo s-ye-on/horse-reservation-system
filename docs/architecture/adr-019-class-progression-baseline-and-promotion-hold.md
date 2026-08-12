@@ -11,8 +11,8 @@
 표현하려고 실제로 타지 않은 횟수를 추가하면 사실 기록이 훼손된다. 반대로 안전상 클래스를 낮게
 유지하는 판단은 경력 인정과 다른 책임이다.
 
-MVP 3.2는 실제 횟수, 기존 경력 인정과 안전 상한을 각각 분리하되 별도 progression 누적
-counter는 만들지 않는다.
+MVP 3.2는 실제 횟수, 기존 경력 인정, 특수 승인 시점의 최소 progression 인정과 안전 상한을
+각각 분리하되 기승마다 독립 누적하는 별도 progression counter는 만들지 않는다.
 
 ## 검토한 대안
 
@@ -31,11 +31,25 @@ override가 자동 승급을 영구적으로 가리고 경력 인정과 안전 �
 두 counter를 별도로 저장한다. correction과 완료 처리마다 동기화 책임과 감사 복잡도가 커지므로
 선택하지 않는다.
 
+### Special Approval 최소 인정 모델
+
+특수 승인 때 baseline을 대마장 속보로 다시 설정하는 방식은 시스템 도입 이전 경력이라는 baseline
+의미를 깨고 승인 전에 Horse에서 완료한 횟수를 다시 더할 수 있어 선택하지 않는다. 매 조회에서
+`max(progressionValue, LARGE_ARENA_TROT threshold)`만 적용하는 방식은 threshold 아래에서 승인된
+뒤 다음 일반 기승 1회가 progression을 1 높이지 못하므로 선택하지 않는다.
+
+승인 직전 progression과 threshold의 차이만 `specialApprovalProgressionCredit`에 한 번 더하는
+방식을 선택한다. 이 값은 관리자 실력 인정의 영속 결과이지 실제 기승 횟수나 기승마다 증가하는
+별도 progression counter가 아니다.
+
 ## 용어
 
 - `actualCompletedRideCount`: 실제 완료 일반 기승과 사실 기반 조정을 반영한 횟수다.
 - `progression baseline`: 관리자가 인정한 시작 클래스의 최소 threshold를 Anchor로 삼는 기존 경력 인정이다.
-- `progressionValue`: 실제 횟수와 baseline의 파생 인정분으로 계산하는 threshold 판정 값이다.
+- `specialApprovalProgressionCredit`: 특수 승인 시 대마장 속보 threshold에 미달한 progression
+  부족분만 영속하는 관리자 인정 값이다.
+- `progressionValue`: 실제 횟수, baseline 파생 인정분과 특수 승인 progression 인정분으로
+  계산하는 threshold 판정 값이다.
 - `progressionClass`: progressionValue가 도달한 가장 높은 일반 클래스다. 기존
   `calculatedClass`보다 baseline 포함 의미가 명확한 이름이다.
 - `promotionHoldClass`: 안전·실력 판단으로 설정하는 일반 클래스 상한이다.
@@ -66,10 +80,11 @@ baseline의 파생 인정분 `C`와 현재 progression 값 `P`는 다음 의미�
 
 ```text
 C = max(0, T - B)
-P = currentActualCompletedRideCount + C
+P = currentActualCompletedRideCount + C + specialApprovalProgressionCredit
 ```
 
-`C`는 baseline과 Anchor에서 계산되는 값이며 별도 누적 counter가 아니다. 예를 들어 실제 횟수
+`C`는 baseline과 Anchor에서 계산되는 값이며 별도 누적 counter가 아니다. 특수 승인 인정분이
+없을 때는 0이다. 예를 들어 실제 횟수
 0에서 threshold 26인 대마장 속보 baseline을 설정하면 `C=26`, `P=26`이다. 이후 실제 완료가
 10회 늘면 `P=36`이 되고 70에 도달하면 자동으로 구보초보로 승급한다.
 
@@ -126,18 +141,35 @@ threshold 정책을 사용한다.
   effectiveClass의 안전 상한을 제한한다.
 - 별도 downgrade override는 만들지 않는다.
 
-## Special Approval과 일반 클래스 자격
+## Special Approval과 일반 progression 인정
 
-마장마술·장애물 승인은 progressionClass를 바꾸지 않는 별도 예약 자격이다. 승인 하나라도
-활성화되면 기존 정책에 따라 일반 클래스 자격을 최소 대마장 속보까지 확장하고, 마장마술 승인은
-마장마술, 장애물 승인은 장애물 클래스를 각각 추가한다.
+마장마술·장애물 승인은 해당 특수 클래스 예약 자격과 함께 일반 progression의 최소 대마장 속보
+수준을 인정하는 관리자 판단이다. 대마장 속보 threshold를 `S`, 승인 직전 progressionValue를
+`P_beforeApproval`, 이번 승인에서 추가할 인정분을 `D`라고 한다. `S`는 승인 Command가 현재의
+명시적 일반 클래스 catalog에서 조회하며 숫자를 별도 하드코딩하지 않는다.
 
 ```text
-specialApprovedGeneralCeiling = higherOf(progressionClass, LARGE_ARENA_TROT)
+D = max(0, S - P_beforeApproval)
+specialApprovalProgressionCreditAfter = specialApprovalProgressionCreditBefore + D
+P_afterApproval = P_beforeApproval + D = max(P_beforeApproval, S)
 ```
 
-따라서 특수 승인만으로 구보초보·구보가 열리지는 않지만 회원이 일반 progression으로 이미 해당
-threshold에 도달한 자격을 낮추지도 않는다. `higherOf` 역시 명시적인 클래스 순서를 사용한다.
+threshold `S` 자체를 기존 progression에 더하지 않는다. 예를 들어 `P_beforeApproval=20`, `S=26`
+이면 `D=6`, 승인 직후 progression은 26이다. 이후 Horse에서 일반 기승 1회를 완료하면 27이 된다.
+승인 전 Horse 완료 20회를 `26+20`으로 다시 계산하지 않는다. 실제 완료 횟수와 baseline은 이
+Command로 변경하지 않는다.
+
+- 이미 progression이 `S` 이상이면 `D=0`이며 구보초보·구보 자격을 낮추지 않는다.
+- 두 번째 종류의 특수 승인이나 해제 후 재승인도 현재 progression으로 `D`를 계산하므로 부족분이
+  없으면 인정분을 중복 누적하지 않는다.
+- 승인 후 완료된 일반 기승만 progression을 1회씩 높인다. 마장마술·장애물 완료 횟수는 일반
+  progression에 들어가지 않는다.
+- 구보초보·구보는 각각 70·100의 정상 일반 progression threshold에 도달해야 열린다.
+- 특수 승인 해제는 특수 클래스 예약 자격만 제거하고 이미 기록한 인정분은 자동 회수하지 않는다.
+- 잘못된 실력 인정은 실제 완료 횟수, baseline과 Horse progression 관리 시작 경계를 바꾸지 않는
+  별도 관리자 progression 인정 교정 Command로 변경하며 전후 값과 사유를 감사한다. 하향 교정은
+  모든 특수 승인을 먼저 명시적으로 해제한 뒤 수행한다. M32-07의 기승 횟수 보정을 이 목적으로
+  사용하지 않는다.
 
 Promotion Hold와 Special Approval은 상호 배타다.
 
@@ -162,11 +194,14 @@ Promotion Hold와 Special Approval은 상호 배타다.
 
 ## 감사와 불변식
 
-baseline 설정·변경·해제, promotion hold 설정·변경·해제, 특수 승인 변경과 기승 횟수 보정은
-관리자, 시각, 전후 상태와 필수 사유를 append-only로 남긴다.
+baseline 설정·변경·해제, promotion hold 설정·변경·해제, 특수 승인과 progression 인정분 변경,
+기승 횟수 보정은 관리자, 시각, 전후 상태와 필수 사유를 append-only로 남긴다.
 
 - actualCompletedRideCount는 사실 기록이며 baseline이 이를 거짓으로 바꾸지 않는다.
 - baseline 인정분은 Anchor에서 파생하며 별도 누적하지 않는다.
+- specialApprovalProgressionCredit은 승인 직전 부족분만 반영하고 일반·특수 기승 완료로 직접
+  증가하지 않는다. 실제 횟수와 baseline을 바꾸거나 중복 반영하지 않는다.
+- 특수 승인 해제만으로 specialApprovalProgressionCredit을 낮추지 않는다.
 - 시스템 도입 이전 경력은 baseline으로만 표현하고 조정 원장에 다시 넣지 않는다.
 - Horse progression 관리 시작 경계는 최초 설정 후 baseline 변경·해제로 다시 쓰지 않는다.
 - promotionHoldClass는 설정 시 progressionClass보다 높을 수 없다.
@@ -179,8 +214,9 @@ baseline 설정·변경·해제, promotion hold 설정·변경·해제, 특수 �
 
 ## 결과와 후속
 
-- M32-06은 일반 클래스 catalog 전체 전파, Anchor, progressionClass, promotion hold,
-  Special Approval 상호 배타와 effectiveClass를 구현한다.
+- M32-06은 일반 클래스 catalog 전체 전파, Anchor, progressionClass, 특수 승인 progression
+  인정분과 교정, promotion hold, Special Approval 상호 배타와 effectiveClass를 구현한다.
 - M32-07은 Horse progression 관리 시작 이후 완료 집계 오류의 조정 원장과 동시 보정을 구현한다.
-- M32-08은 baseline·hold·특수 승인 상호 배타 안내, 조정 및 변경 전후 예상 결과와 감사를 제공한다.
+- M32-08은 baseline·hold·특수 승인 상호 배타 안내, 특수 승인 progression 인정분 교정,
+  조정 및 변경 전후 예상 결과와 감사를 제공한다.
 - 기존 `manualClassOverride` 요구는 progression baseline과 promotion hold로 대체한다.

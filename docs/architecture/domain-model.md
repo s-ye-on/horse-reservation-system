@@ -20,21 +20,24 @@ updated_at
 ```
 
 현재 일반 클래스 등급은 `general_ride_count`로 계산한다. Phase B에서는 이 사실 횟수에
-progression baseline의 파생 인정분을 더해 `progressionClass`를 계산하고 promotion hold를
-안전 상한으로 적용한다. 별도 progression 누적 counter와 영구 manual override는 두지 않는다.
+progression baseline의 파생 인정분과 특수 승인 시 부족분만 고정한
+`specialApprovalProgressionCredit`을 더해 `progressionClass`를 계산하고 promotion hold를
+안전 상한으로 적용한다. 기승마다 독립 누적하는 별도 progression counter와 영구 manual
+override는 두지 않는다.
 상세 계약은 ADR-019를 따른다. 특수 클래스 횟수는 일반 등급에 영향을 주지 않는다.
 JWT `sub`는 변경 가능한 회원 상태를 담지 않고 `auth_subject`와 일치시켜 회원을 조회한다.
 대마장 이용 가능 여부는 저장하지 않는다. 일반 기승 완료 21회 이상이거나 마장마술 또는 장애물 승인을 받은 회원이면 `Member.canUseLargeArena()`가 계산한다.
 M32-06 이후 일반 클래스 예약 자격은 실제 횟수만 직접 보지 않고 ADR-019의
-`effectiveClass`를 사용한다. 마장마술·장애물 승인은 progression과 별개로 일반 자격을 최소
-대마장 속보까지 확장하고 해당 특수 클래스를 추가한다. 특수 승인과 promotion hold는 동시에
-활성화할 수 없다.
+`effectiveClass`를 사용한다. 마장마술·장애물 승인은 승인 직전 progression과 대마장 속보
+threshold의 부족분만 영속 인정하고 해당 특수 클래스를 추가한다. 인정분은 실제 횟수와 baseline을
+바꾸지 않고 승인 해제로 자동 회수되지 않는다. 특수 승인과 promotion hold는 동시에 활성화할 수 없다.
 
-Phase B의 클래스 progression 상태는 시작 클래스 threshold, baseline 설정 당시 실제 횟수와
-회원별 Horse progression 관리 시작 경계를 소유한다. 관리 시작 경계는 write-once이며 현재
-baseline에서 역산하거나 baseline 교정·해제로 변경하지 않는다. 구체적인 Entity·column은
-M32-06에서 정한다. 기존 회원의 최초 baseline 승인 또는 신규 회원의 progression 초기화가
-경계를 설정하고 최초 설정 감사를 남기며 M32-07은 이 경계를 수정할 수 없다.
+Phase B의 클래스 progression 상태는 시작 클래스 threshold, baseline 설정 당시 실제 횟수,
+특수 승인 progression 인정 credit와 회원별 Horse progression 관리 시작 경계를 소유한다.
+관리 시작 경계는 write-once이며 현재 baseline이나 특수 승인 인정분에서 역산하거나 baseline
+교정·해제로 변경하지 않는다. 구체적인 Entity·column은 M32-06에서 정한다. 기존 회원의 최초
+baseline 승인 또는 신규 회원의 progression 초기화가 경계를 설정하고 최초 설정 감사를 남기며
+M32-07은 이 경계나 특수 승인 인정분을 수정할 수 없다.
 
 Phase B의 FamilyGroup은 안정적인 Group ID와 중복 가능한 필수 이름을 갖고 대표 회원을 두지
 않는다. membership은 회원별 최대 하나만 active일 수 있으며 빈 ACTIVE 그룹을 허용한다.

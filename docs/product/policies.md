@@ -289,13 +289,19 @@ Command는 트랜잭션 실행 시점에 같은 정책을 다시 검증한다. �
 
 ## 클래스와 탑승 이력
 
-일반 기승 완료 횟수만 일반 클래스 등급에 반영한다. 마장마술과 장애물 완료 횟수는 별도 이력으로 집계한다.
+기승 횟수 중에는 일반 기승 완료만 일반 클래스 progression에 반영한다. 마장마술과 장애물 완료
+횟수는 별도 이력으로 집계한다. 관리자 baseline과 특수 승인 progression 인정분은 기승 횟수가
+아닌 별도 감사 가능한 progression 입력이다.
 
 - 실제 완료 일반 기승 횟수는 사실 기록이다. 회원의 실력을 인정하기 위해 타지 않은 횟수를 이 값에 추가하지 않는다.
 - `progression baseline`은 기존 경력의 최소 시작점을 인정하는 Anchor다. 영구 class override가 아니며 이후 완료 기승에 따라 자동 승급한다.
 - baseline 설정 시 지정 시작 클래스, 그 클래스의 최소 threshold와 설정 당시 실제 일반 기승 횟수를 의미적으로 고정한다.
 - baseline 인정분은 `max(0, baselineThreshold - baselineActualRideCount)`로 파생한다. 별도 progression 누적 counter는 두지 않는다.
-- baseline이 있으면 progression 값은 현재 실제 일반 기승 횟수에 파생 인정분을 더하고, 없으면 실제 일반 기승 횟수만 사용한다. 명시적인 threshold 순서로 `progressionClass`를 계산한다.
+- `specialApprovalProgressionCredit`은 특수 승인 시점에 현재 progression이 대마장 속보 threshold에
+  미달한 만큼만 인정하는 영속 값이다. 실제 기승 횟수나 baseline이 아니며 일반 기승 완료에 따라
+  자체 누적되는 별도 progression counter도 아니다.
+- progression 값은 현재 실제 일반 기승 횟수, baseline 파생 인정분과
+  `specialApprovalProgressionCredit`의 합이다. 명시적인 threshold 순서로 `progressionClass`를 계산한다.
 - baseline은 설정·변경·해제할 수 있다. 하향 변경과 해제는 일반 강등이 아니라 잘못된 경력 인정의 교정이며 결과 클래스가 낮아질 수 있다.
 - 시스템 도입 이전 경력은 시작 클래스 baseline으로 종결한다. 과거 횟수·날짜·기간을 복원하거나 이후 기승 횟수 보정으로 progression에 다시 넣지 않는다.
 - 회원별 Horse progression 관리 시작 이후에는 Horse가 기록한 일반 기승 완료와 그 집계 오류 보정만 progression에 반영한다. 기존 회원의 최초 baseline 승인은 이 관리 시작 경계를 함께 확정한다.
@@ -304,10 +310,23 @@ Command는 트랜잭션 실행 시점에 같은 정책을 다시 검증한다. �
 - 일반 클래스 예약 가능 범위와 등급 표시는 실제 횟수나 JWT가 아니라 `effectiveClass`를 기준으로 판정한다.
 - promotion hold는 자동 만료하지 않는다. 변경·해제하면 즉시 현재 누적 progression에 다시 적용하며 중간 클래스를 강제로 거치지 않는다.
 - baseline과 promotion hold는 동시에 존재할 수 있다. baseline은 progression 시작점을, hold는 실제 예약 판단에 사용하는 클래스 상한을 담당한다.
-- 마장마술 또는 장애물 특수 승인은 progression을 바꾸지 않는 별도 예약 자격이다. 승인 하나라도 있으면 일반 클래스는 `progressionClass`와 대마장 속보 중 높은 범위까지 가능하고 해당 승인 특수 클래스를 추가한다. 특수 승인만으로 구보초보·구보는 열리지 않는다.
+- 마장마술 또는 장애물 특수 승인 시 대마장 속보 threshold를 `S`, 승인 직전 progression을 `P`로
+  두고 `D = max(0, S - P)`만 인정한다. `specialApprovalProgressionCredit`에 `D`를 더한 승인 직후
+  progression은 `P + D = max(P, S)`다. threshold `S`를 기존 progression에 통째로 더하지 않으므로
+  Horse 완료 횟수를 이중 계산하지 않는다.
+- 승인 당시 이미 대마장 속보 이상이면 `D=0`이다. 다른 특수 승인 추가나 해제 후 재승인도 현재
+  progression으로 다시 계산하므로 부족분이 없으면 인정분을 중복 누적하지 않는다.
+- 승인 후 완료된 일반 기승만 progression을 정상 증가시킨다. 마장마술·장애물 기승은 일반
+  progression에 더하지 않으며, 구보초보·구보는 각각의 일반 threshold에 도달해야 열린다.
+- 특수 승인 해제는 특수 클래스 예약 자격만 제거한다. 이미 고정된
+  `specialApprovalProgressionCredit`은 자동 회수하지 않으며 잘못된 실력 인정은 실제 횟수나
+  baseline을 바꾸지 않는 별도 관리자 progression 인정 교정으로 처리한다. 하향 교정은 모든
+  특수 승인을 명시적으로 해제한 뒤 수행하며 변경 전후 progression·effective class와 필수 사유를 남긴다.
 - 특수 승인과 promotion hold는 동시에 활성화할 수 없다. hold가 있으면 승인 전에 명시적으로 해제하고, 승인이 있으면 모두 해제한 뒤 hold를 설정한다. 시스템이 어느 쪽도 자동 해제하지 않는다.
 - 기승 횟수 보정은 회원별 Horse progression 관리 시작 이후 집계한 완료의 누락·중복 같은 사실 오류만 담당한다. 양수·음수 delta, before, after, 관리자, 시각과 필수 사유를 남기며 결과는 0 이상이다.
-- baseline 설정·변경·해제, promotion hold 설정·변경·해제, 특수 승인 변경과 기승 횟수 보정은 전후 상태를 추가 전용 감사 이력으로 남긴다. 기존 완료 수업·예약·Coupon 이력은 다시 쓰지 않는다.
+- baseline 설정·변경·해제, promotion hold 설정·변경·해제, 특수 승인과 progression 인정분 변경,
+  기승 횟수 보정은 전후 상태를 추가 전용 감사 이력으로 남긴다. 기존 완료 수업·예약·Coupon
+  이력은 다시 쓰지 않는다.
 
 ## 타임별 일괄 출석 처리
 

@@ -8,9 +8,9 @@
 | M32-03 | 가족 쿠폰 후보와 사용 이력 | M32-02 | NULL 만료 마지막·결정 정렬·선택 Coupon 1행 잠금 성공 | Coupon 물리 병합 | `mise run verify:m32-03` |
 | M32-04 | 가족 쿠폰 교차 동시성 | M32-03 | 동시 예약·제거·반환·만료 경쟁에서 수치와 이력 일치 | 부하 시험 | `mise run verify:m32-04` |
 | M32-05 | 관리자 가족 그룹 웹 | M32-02 | 검색·구성원 변경·감사·320px UX 성공 | 모바일 관리자 화면 | `mise run verify:m32-05` |
-| M32-06 | 일반 클래스 catalog·baseline·promotion hold | M32-00 | 전체 클래스 경계 전파·progression·특수 승인 상호 배타·effective와 감사 성공 | 기승 횟수 보정 | `mise run verify:m32-06` |
+| M32-06 | 일반 클래스 catalog·baseline·promotion hold | M32-00 | 전체 클래스 경계 전파·progression·특수 승인 부족분 인정·상호 배타·effective와 감사 성공 | 기승 횟수 보정 | `mise run verify:m32-06` |
 | M32-07 | Horse 기승 횟수 집계 오류 조정 원장 | M32-06 | Horse 관리 시작 이후 delta·전후 값·관리자·사유와 동시 보정 성공 | 시스템 도입 이전 이력 복원 | `mise run verify:m32-07` |
-| M32-08 | 관리자 baseline·hold·횟수 보정 웹 | M32-06, M32-07 | 변경 전후 예상 class·상호 배타 안내·설정·해제·보정·감사 UX 성공 | 회원 수정 기능 | `mise run verify:m32-08` |
+| M32-08 | 관리자 baseline·hold·횟수 보정 웹 | M32-06, M32-07 | 변경 전후 예상 class·특수 승인 인정분 교정·상호 배타 안내·설정·해제·보정·감사 UX 성공 | 회원 수정 기능 | `mise run verify:m32-08` |
 | M32-09 | Phase B OpenAPI와 생성 Client | M32-04, M32-08 | 가족·클래스·쿠폰 계약과 웹 타입 동기화 성공 | 모바일 화면 | `mise run verify:m32-09` |
 | M32-10 | Phase B 전체 품질 Gate | M32-05, M32-09 | 가족 교차 경쟁·전체 회귀·OpenAPI diff 승인 | MVP-4 구현 | `mise run verify:m32-10` |
 
@@ -22,10 +22,18 @@
 클래스 catalog와 순서를 GeneralRidingGrade, 회원 예약 자격, 관리자 수업 구성, 정원 정책,
 시간표·수업 생성, 관련 API, 관리자·회원 UI와 테스트에 일관되게 전파해야 완료된다.
 
-Special Approval은 일반 progression과 별도다. 마장마술 또는 장애물 승인 하나라도 활성화된
-회원은 promotion hold 대상이 아니며, 승인과 hold의 동시 활성 상태를 Command와 저장 불변식에서
-거부한다. 기존 특수 승인은 일반 클래스 자격을 최소 대마장 속보까지 확장하고 해당 특수 클래스를
-추가하지만, 그 자체로 구보초보·구보를 열지는 않는다.
+Special Approval은 실제 완료 횟수나 baseline을 바꾸지 않는다. 승인 시점 progression이 대마장
+속보 threshold보다 낮으면 부족분 `D`만 `specialApprovalProgressionCredit`으로 고정하여 승인
+직후 progression을 두 값 중 높은 값으로 만든다. 기존 progression에 threshold를 통째로 더하지
+않고, 승인 후 일반 기승은 1회씩 정상 누적하며 특수 기승은 일반 progression에 더하지 않는다.
+승인 해제는 이 인정분을 자동 회수하지 않고 특수 클래스 예약 자격만 제거한다. 잘못된 인정은
+모든 특수 승인을 먼저 해제한 뒤 M32-07 횟수 보정이 아닌 M32-06의 명시적 관리자 progression
+인정 교정으로 처리한다.
+
+마장마술 또는 장애물 승인 하나라도 활성화된 회원은 promotion hold 대상이 아니며, 승인과 hold의
+동시 활성 상태를 Command와 저장 불변식에서 거부한다. 특수 승인만으로 구보초보·구보를 열지는
+않으며 이미 더 높은 일반 progression을 낮추지도 않는다. 재승인이나 두 번째 특수 승인은 현재
+progression의 부족분만 다시 계산하여 인정분을 중복 누적하지 않는다.
 
 ## M32-07 보정 경계
 

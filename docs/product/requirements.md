@@ -29,9 +29,12 @@
 | 마장마술 | 횟수 무관 | 관리자 승인 필요 |
 | 장애물 | 횟수 무관 | 관리자 승인 필요 |
 
-회원은 `effectiveClass` 이하의 일반 클래스도 예약할 수 있다. 마장마술 또는 장애물 승인 회원은
-일반 progression을 바꾸지 않는 별도 자격으로 대마장 속보까지 예약할 수 있다. 특수 승인만으로
-구보초보·구보가 열리지는 않으며, 일반 progression으로 이미 얻은 구보초보·구보 자격을 낮추지도 않는다.
+회원은 `effectiveClass` 이하의 일반 클래스도 예약할 수 있다. 마장마술 또는 장애물 승인 시점의
+일반 progression이 대마장 속보 threshold보다 낮으면 그 차이만 progression 인정분으로 고정해
+대마장 속보 수준까지 충족한 것으로 본다. 기존 progression에 threshold를 통째로 더하거나 실제
+완료 횟수를 바꾸지 않는다. 이후 완료된 일반 기승만 정상 progression에 더하며 특수 클래스 기승은
+더하지 않는다. 특수 승인만으로 구보초보·구보가 열리지는 않고 이미 얻은 상위 일반 자격도 낮추지
+않는다. 승인을 해제해도 이미 고정한 progression 인정분은 자동 회수하지 않는다.
 
 ## 회원 기능
 
@@ -84,8 +87,11 @@
 다음 변경은 MVP-3.2에서 구현한다.
 
 - 일반 클래스에 구보초보(일반 기승 완료 70회 이상)와 구보(100회 이상)를 추가한다.
-- 실제 일반 기승 횟수와 관리자 progression baseline을 함께 반영해 `progressionClass`를 계산한다.
+- 실제 일반 기승 횟수, 관리자 progression baseline과 특수 승인 progression 인정분을 함께
+  반영해 `progressionClass`를 계산한다.
 - progression baseline은 기존 경력의 최소 시작점을 인정하며 이후 자동 승급을 막지 않는다.
+- 특수 승인 시 현재 progression과 대마장 속보 threshold의 부족분만 별도 인정분으로 고정하며,
+  실제 완료 횟수나 baseline을 바꾸지 않는다.
 - 특수 승인이 없는 회원에게만 `progressionClass` 이하의 promotion hold 상한을 지정할 수 있다.
 - `effectiveClass`는 promotion hold가 없으면 `progressionClass`, 있으면 두 클래스 중 낮은 값이다.
 - 특수 승인과 promotion hold는 동시에 활성화할 수 없고 어느 한쪽도 자동 해제하지 않는다.
