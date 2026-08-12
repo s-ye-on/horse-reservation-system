@@ -2,6 +2,9 @@ package com.horse.reservations.application;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Clock;
+import java.time.LocalDate;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.Test;
@@ -13,14 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.horse.TestcontainersConfiguration;
 
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest(properties = "spring.jpa.properties.hibernate.generate_statistics=true")
 @Transactional
 class M31PageQueryCountIntegrationTest {
-
-	private static final int EXPECTED_BATCHED_QUERY_COUNT = 4;
 
 	@Autowired
 	AdminReservationQueryService adminReservationQueryService;
@@ -32,70 +34,112 @@ class M31PageQueryCountIntegrationTest {
 	EntityManagerFactory entityManagerFactory;
 
 	@Autowired
+	EntityManager entityManager;
+
+	@Autowired
 	JdbcTemplate jdbcTemplate;
+
+	@Autowired
+	Clock clock;
 
 	@Test
 	void 관리자_예약_페이지는_항목_수와_무관하게_회원과_쿠폰을_일괄_조회한다() {
+		final LocalDate firstLessonDate = LocalDate.now(clock).plusDays(1);
 		insertReservationWithDistinctReferences(
-			"admin-query-count-member-a", "2026-08-10", "09:00:00");
+			"admin-query-count-member-a", firstLessonDate, "09:00:00");
 		insertReservationWithDistinctReferences(
-			"admin-query-count-member-b", "2026-08-11", "10:00:00");
+			"admin-query-count-member-b", firstLessonDate.plusDays(1), "10:00:00");
 		insertReservationWithDistinctReferences(
-			"admin-query-count-member-c", "2026-08-12", "11:00:00");
+			"admin-query-count-member-c", firstLessonDate.plusDays(2), "11:00:00");
+		insertReservationWithDistinctReferences(
+			"admin-query-count-member-d", firstLessonDate.plusDays(3), "13:30:00");
 		final Statistics statistics = statistics();
 
-		statistics.clear();
-		adminReservationQueryService.getReservations(
+		final QueryMeasurement<AdminReservationPageResult> singleItem = measureQueries(() ->
+			adminReservationQueryService.getReservations(
 			null,
-			null,
-			null,
+			firstLessonDate,
+			firstLessonDate.plusDays(3),
 			null,
 			null,
 			null,
 			0,
-			3);
+			1), statistics);
+		final QueryMeasurement<AdminReservationPageResult> threeItems = measureQueries(() ->
+			adminReservationQueryService.getReservations(
+			null,
+			firstLessonDate,
+			firstLessonDate.plusDays(3),
+			null,
+			null,
+			null,
+			0,
+			3), statistics);
 
-		assertThat(statistics.getPrepareStatementCount())
-			.isEqualTo(EXPECTED_BATCHED_QUERY_COUNT);
-
+		assertThat(singleItem.result().content()).hasSize(1);
+		assertThat(threeItems.result().content())
+			.hasSize(3)
+			.allSatisfy(reservation -> {
+				assertThat(reservation.memberName()).isEqualTo("쿼리 수 회원");
+				assertThat(reservation.coupon()).isNotNull();
+			});
+		assertThat(threeItems.result().content())
+			.extracting(reservation -> reservation.coupon().couponId())
+			.doesNotHaveDuplicates();
+		assertThat(threeItems.result().totalElements()).isEqualTo(4);
+		assertThat(threeItems.queryCount()).isEqualTo(singleItem.queryCount());
 	}
 
 	@Test
 	void 회원_예약_페이지는_항목_수와_무관하게_쿠폰을_일괄_조회한다() {
 		final String authSubject = "member-query-count-member";
 		final Long memberId = insertMember(authSubject);
-		insertReservation(memberId, insertCoupon(memberId), "2026-08-10", "09:00:00");
-		insertReservation(memberId, insertCoupon(memberId), "2026-08-11", "10:00:00");
-		insertReservation(memberId, insertCoupon(memberId), "2026-08-12", "11:00:00");
+		final LocalDate firstLessonDate = LocalDate.now(clock).plusDays(1);
+		insertReservation(memberId, insertCoupon(memberId), firstLessonDate, "09:00:00");
+		insertReservation(memberId, insertCoupon(memberId), firstLessonDate.plusDays(1), "10:00:00");
+		insertReservation(memberId, insertCoupon(memberId), firstLessonDate.plusDays(2), "11:00:00");
+		insertReservation(memberId, insertCoupon(memberId), firstLessonDate.plusDays(3), "13:30:00");
 		final Statistics statistics = statistics();
 
+		assertMemberPageQueryCountDoesNotGrow(authSubject, null, null, statistics);
+		assertMemberPageQueryCountDoesNotGrow(
+			authSubject, "UPCOMING", "pending_admin_approval", statistics);
+		assertMemberPageQueryCountDoesNotGrow(
+			authSubject, null, "pending_admin_approval", statistics);
+	}
+
+	private void assertMemberPageQueryCountDoesNotGrow(
+		String authSubject,
+		String displayGroup,
+		String status,
+		Statistics statistics
+	) {
+		final QueryMeasurement<MemberReservationPageResult> singleItem = measureQueries(() ->
+			memberReservationQueryService.getMyReservations(
+				authSubject, displayGroup, status, 0, 1), statistics);
+		final QueryMeasurement<MemberReservationPageResult> threeItems = measureQueries(() ->
+			memberReservationQueryService.getMyReservations(
+				authSubject, displayGroup, status, 0, 3), statistics);
+
+		assertThat(singleItem.result().content()).hasSize(1);
+		assertThat(threeItems.result().content())
+			.hasSize(3)
+			.allSatisfy(reservation -> assertThat(reservation.coupon()).isNotNull());
+		assertThat(threeItems.result().content())
+			.extracting(reservation -> reservation.coupon().couponId())
+			.doesNotHaveDuplicates();
+		assertThat(threeItems.result().totalElements()).isEqualTo(4);
+		assertThat(threeItems.queryCount()).isEqualTo(singleItem.queryCount());
+	}
+
+	private <T> QueryMeasurement<T> measureQueries(
+		java.util.function.Supplier<T> query,
+		Statistics statistics
+	) {
+		entityManager.clear();
 		statistics.clear();
-		memberReservationQueryService.getMyReservations(authSubject, 0, 3);
-
-		assertThat(statistics.getPrepareStatementCount())
-			.isEqualTo(EXPECTED_BATCHED_QUERY_COUNT);
-
-		statistics.clear();
-		memberReservationQueryService.getMyReservations(
-			authSubject,
-			"UPCOMING",
-			"pending_admin_approval",
-			0,
-			3);
-
-		assertThat(statistics.getPrepareStatementCount())
-			.isEqualTo(EXPECTED_BATCHED_QUERY_COUNT);
-
-		statistics.clear();
-		memberReservationQueryService.getMyReservations(
-			authSubject,
-			null,
-			"pending_admin_approval",
-			0,
-			3);
-
-		assertThat(statistics.getPrepareStatementCount())
-			.isEqualTo(EXPECTED_BATCHED_QUERY_COUNT);
+		final T result = query.get();
+		return new QueryMeasurement<>(result, statistics.getPrepareStatementCount());
 	}
 
 	private Statistics statistics() {
@@ -121,7 +165,7 @@ class M31PageQueryCountIntegrationTest {
 
 	private void insertReservationWithDistinctReferences(
 		String authSubject,
-		String lessonDate,
+		LocalDate lessonDate,
 		String startTime
 	) {
 		final Long memberId = insertMember(authSubject);
@@ -131,7 +175,7 @@ class M31PageQueryCountIntegrationTest {
 	private void insertReservation(
 		Long memberId,
 		Long couponId,
-		String lessonDate,
+		LocalDate lessonDate,
 		String startTime
 	) {
 		jdbcTemplate.update("""
@@ -141,5 +185,8 @@ class M31PageQueryCountIntegrationTest {
 			) VALUES (?, 'FIRST_RIDE', ?, ?, 'pending_admin_approval', 'coupon', ?,
 				'2026-07-29 09:00:00')
 			""", memberId, lessonDate, startTime, couponId);
+	}
+
+	private record QueryMeasurement<T>(T result, long queryCount) {
 	}
 }
