@@ -175,7 +175,8 @@ Phase B와 모바일 진행 가능 여부를 판정한다.
 - Page와 RFC3339 변경은 저장 데이터를 재해석하지 않는다. 기존 날짜·시각 컬럼을
   `Asia/Seoul`의 수업 시각으로 조합하고 외부 DTO 경계에서 offset을 부여한다.
 - Phase B의 가족·클래스 컬럼과 원장은 nullable 또는 빈 상태로 추가한다. 기존 Coupon
-  소유권과 기승 횟수는 유지하고 가족 snapshot이나 관리자 override를 추정해 채우지 않는다.
+  소유권과 기승 횟수는 유지하고 가족 snapshot, progression baseline이나 promotion hold를
+  추정해 채우지 않는다.
 
 ## ADR 계획
 
@@ -184,7 +185,7 @@ Phase B와 모바일 진행 가능 여부를 판정한다.
 - ADR-016: 회원·날짜 guard와 활성 예약 구간 overlap
 - ADR-017: Horse `Idempotency-Key` 원장, 원자성, TTL과 정리 Job
 - ADR-018: Coupon 소유권 유지형 가족 공유와 snapshot 감사
-- ADR-019: calculated/manual/effective class와 기승 횟수 조정 원장
+- ADR-019: progression baseline, promotion hold, effective class와 기승 횟수 조정 원장
 - ADR-020: Page 응답과 RFC3339 외부 API 시간 계약
 
 M31-00은 위 ADR의 입력과 결정 범위만 고정한다. 실제 스키마와 클래스 배치는 각 구현

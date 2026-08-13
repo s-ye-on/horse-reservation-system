@@ -640,6 +640,37 @@ rg -Fq 'ORDER BY (expires_at IS NULL) ASC' docs/architecture/mvp-3-1-stabilizati
 rg -Fq '`America/Los_Angeles`' docs/architecture/mvp-3-1-stabilization-plan.md
 '''
 
+[tasks."verify:m32-00"]
+description = "Verify family coupon and class progression policy contracts"
+run = '''
+mise run docs:check
+rg -Fq 'MVP 3.2는 전용 가족 이관 기능을 제공하지 않는다.' docs/product/policies.md
+rg -Fq 'ORDER BY (expires_at IS NULL) ASC' docs/architecture/adr-018-family-coupon-ownership-and-snapshot.md
+rg -Fq '빈 ACTIVE 그룹을 허용한다.' docs/architecture/adr-018-family-coupon-ownership-and-snapshot.md
+rg -Fq 'C = max(0, T - B)' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq 'effectiveClass = lowerOf(progressionClass, promotionHoldClass)' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq 'Special Approval ACTIVE + Promotion Hold ACTIVE' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq 'D = max(0, S - P_beforeApproval)' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq 'P_afterApproval = P_beforeApproval + D = max(P_beforeApproval, S)' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq 'specialApprovalProgressionCreditAfter = specialApprovalProgressionCreditBefore + D' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Uq '승인 전 Horse 완료 20회를\s+`26\+20`으로 다시 계산하지 않는다\.' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq '특수 승인 해제는 특수 클래스 예약 자격만 제거하고 이미 기록한 인정분은 자동 회수하지 않는다.' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Uq '마장마술·장애물 완료 횟수는 일반\s+progression에 들어가지 않는다\.' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq '구보초보·구보는 각각 70·100의 정상 일반 progression threshold에 도달해야 열린다.' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq '별도 관리자 progression 인정 교정 Command' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq 'Horse progression 관리 시작 경계는 최초 설정 후 baseline 변경·해제로 다시 쓰지 않는다.' docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+rg -Fq 'PRE_ANCHOR·POST_ANCHOR 입력과 Anchor 재기준화는 구현하지 않는다.' docs/tasks/mvp-3.2.md
+rg -Fq 'M32-06 일반 클래스 전파 계약' docs/tasks/mvp-3.2.md
+rg -Fq '기존 회원의 최초 baseline 승인 또는 신규 회원의 progression 초기화가 이 관리 시작 경계를' docs/tasks/mvp-3.2.md
+rg -Fq 'M32-06은 경계를 클래스 progression 상태의 write-once 단일 원천으로 영속하고 최초' docs/tasks/mvp-3.2.md
+rg -Fq '`class_capacity_json`' docs/architecture/domain-model.md
+rg -Fq 'Template 정원 입력과 materialized TimeSlot 생성도 구보초보·구보 capacity를' docs/architecture/domain-model.md
+! rg -n 'progression을 바꾸지 않는 별도 예약 자격|Special Approval은 일반 progression과 별도다' \
+  docs/product docs/tasks/mvp-3.2.md docs/architecture/adr-019-class-progression-baseline-and-promotion-hold.md
+! rg -n 'manualClassOverride|일반 클래스 수동 override|calculated·manual·effective' \
+  docs/product docs/tasks/mvp-3.2.md docs/architecture/mvp-3-1-stabilization-plan.md
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

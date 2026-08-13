@@ -2,7 +2,7 @@
 
 ## 상태
 
-Accepted
+`SUPERSEDED BY ADR-019`
 
 ## 배경
 
@@ -26,3 +26,7 @@ Accepted
 - MVP-3 운영 효율화 범위에 대규모 도메인 마이그레이션이 섞이지 않는다.
 - 현재 예약 정책과 테스트는 MVP-3 동안 유지된다.
 - 후속 구현 전에는 데이터 이관과 관리자 승인 기본값을 추측해서 추가하지 않는다.
+
+M32-00에서 후속 정책을 확정했다. 단일 관리자 승인·manual override 대신 progression
+baseline으로 기존 경력을 인정하고 promotion hold로 안전 상한을 적용한다. 상세 결정은
+[ADR-019](adr-019-class-progression-baseline-and-promotion-hold.md)를 따른다.

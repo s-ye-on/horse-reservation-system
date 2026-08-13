@@ -19,9 +19,30 @@ created_at
 updated_at
 ```
 
-일반 클래스 등급은 `general_ride_count`로 계산한다. 특수 클래스 횟수는 일반 등급에 영향을 주지 않는다.
+현재 일반 클래스 등급은 `general_ride_count`로 계산한다. Phase B에서는 이 사실 횟수에
+progression baseline의 파생 인정분과 특수 승인 시 부족분만 고정한
+`specialApprovalProgressionCredit`을 더해 `progressionClass`를 계산하고 promotion hold를
+안전 상한으로 적용한다. 기승마다 독립 누적하는 별도 progression counter와 영구 manual
+override는 두지 않는다.
+상세 계약은 ADR-019를 따른다. 특수 클래스 횟수는 일반 등급에 영향을 주지 않는다.
 JWT `sub`는 변경 가능한 회원 상태를 담지 않고 `auth_subject`와 일치시켜 회원을 조회한다.
 대마장 이용 가능 여부는 저장하지 않는다. 일반 기승 완료 21회 이상이거나 마장마술 또는 장애물 승인을 받은 회원이면 `Member.canUseLargeArena()`가 계산한다.
+M32-06 이후 일반 클래스 예약 자격은 실제 횟수만 직접 보지 않고 ADR-019의
+`effectiveClass`를 사용한다. 마장마술·장애물 승인은 승인 직전 progression과 대마장 속보
+threshold의 부족분만 영속 인정하고 해당 특수 클래스를 추가한다. 인정분은 실제 횟수와 baseline을
+바꾸지 않고 승인 해제로 자동 회수되지 않는다. 특수 승인과 promotion hold는 동시에 활성화할 수 없다.
+
+Phase B의 클래스 progression 상태는 시작 클래스 threshold, baseline 설정 당시 실제 횟수,
+특수 승인 progression 인정 credit와 회원별 Horse progression 관리 시작 경계를 소유한다.
+관리 시작 경계는 write-once이며 현재 baseline이나 특수 승인 인정분에서 역산하거나 baseline
+교정·해제로 변경하지 않는다. 구체적인 Entity·column은 M32-06에서 정한다. 기존 회원의 최초
+baseline 승인 또는 신규 회원의 progression 초기화가 경계를 설정하고 최초 설정 감사를 남기며
+M32-07은 이 경계나 특수 승인 인정분을 수정할 수 없다.
+
+Phase B의 FamilyGroup은 안정적인 Group ID와 중복 가능한 필수 이름을 갖고 대표 회원을 두지
+않는다. membership은 회원별 최대 하나만 active일 수 있으며 빈 ACTIVE 그룹을 허용한다.
+전용 이관은 없고 제거와 추가를 독립적으로 수행한다. 구체적인 저장 모델은 M32-01의 책임이며
+소유권과 snapshot 계약은 ADR-018을 따른다.
 
 ## Coupon
 
@@ -98,6 +119,10 @@ updated_at
 수는 Reservation에서 파생한다. `is_closed`는 세 마감 원인의 OR과 일치해야 하며 자동
 occurrence는 물리 삭제하지 않는다.
 
+M32-06은 구보초보·구보를 명시적인 일반 클래스 catalog에 추가하고 `class_capacity_json`,
+예약 자격, 관리자 수업 구성과 수업 생성이 같은 catalog를 사용하도록 전파한다. 기존 클래스
+목록을 하드코딩한 경계가 신규 일반 클래스를 누락한 채 배포되어서는 안 된다.
+
 개별 휴강의 운영 상태와 예약 정리 workflow는 분리한다. `adminClosed`는 신규 유입 차단
 상태이고 `TimeSlotClosure`는 `IN_PROGRESS`, `COMPLETED`, `WITHDRAWN` 이력을 보존한다.
 `TimeSlotClosureImpact`는 시작 당시 활성 Reservation의 고정 membership이며 현재
@@ -128,6 +153,9 @@ updated_at
 
 요일과 시작 시각별 행을 사용한다. 월요일 정기 휴일과 독립적으로 월요일 Template도
 존재하므로 날짜 OPEN 시 정규 시간표 전체를 생성할 수 있다.
+
+M32-06 이후 Template 정원 입력과 materialized TimeSlot 생성도 구보초보·구보 capacity를
+손실 없이 전달해야 한다. 관련 API, 관리자·회원 UI와 계약 테스트는 같은 class catalog를 따른다.
 
 ## RecurringHolidayRule
 
@@ -229,6 +257,10 @@ actor_type: system | member | admin
 memo nullable
 created_at
 ```
+
+현재 `member_id`만으로는 가족 Coupon의 예약 회원과 원소유자를 구분할 수 없다. Phase B 사용
+이력은 예약 회원, Coupon 원소유자, 실제 Coupon, 사용 당시 FamilyGroup, Reservation, 행위,
+시각과 actor를 snapshot으로 구분한다. 구체적인 확장 필드는 M32-03에서 결정한다.
 
 ## ReservationChangeLog
 
