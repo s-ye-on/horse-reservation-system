@@ -694,6 +694,16 @@ run = '''
   --tests '*ReservationChangeApiTest'
 '''
 
+[tasks."verify:m32-04"]
+description = "Verify family coupon reservation, membership, release, and expiry races"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*FamilyCouponCrossConcurrencyIntegrationTest' \
+  --tests '*FamilyCouponLockingIntegrationTest' \
+  --tests '*CouponHoldConcurrencyIntegrationTest' \
+  --tests '*CouponExpiryJobIntegrationTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

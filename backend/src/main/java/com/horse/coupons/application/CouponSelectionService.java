@@ -10,6 +10,7 @@ import com.horse.coupons.domain.Coupon;
 import com.horse.coupons.domain.CouponType;
 import com.horse.coupons.domain.exception.CouponException;
 import com.horse.coupons.infrastructure.CouponRepository;
+import com.horse.families.infrastructure.FamilyGroupRepository;
 import com.horse.families.infrastructure.FamilyMembershipRepository;
 import com.horse.global.exception.ExceptionCode;
 import com.horse.members.domain.RidingClass;
@@ -18,13 +19,16 @@ import com.horse.members.domain.RidingClass;
 public class CouponSelectionService {
 
 	private final CouponRepository couponRepository;
+	private final FamilyGroupRepository familyGroupRepository;
 	private final FamilyMembershipRepository membershipRepository;
 
 	public CouponSelectionService(
 		CouponRepository couponRepository,
+		FamilyGroupRepository familyGroupRepository,
 		FamilyMembershipRepository membershipRepository
 	) {
 		this.couponRepository = couponRepository;
+		this.familyGroupRepository = familyGroupRepository;
 		this.membershipRepository = membershipRepository;
 	}
 
@@ -47,12 +51,22 @@ public class CouponSelectionService {
 		LocalDate lessonDate
 	) {
 		final CouponType couponType = CouponType.fromRidingClass(ridingClass);
+		final Optional<Long> familyGroupId = lockActiveFamilyContext(memberId);
 		return couponRepository.findFirstSelectableIdForUpdate(
 			memberId,
+			familyGroupId.orElse(null),
 			couponType.value(),
 			lessonDate)
 			.map(couponRepository::getReferenceById)
-			.map(coupon -> result(memberId, coupon));
+			.map(coupon -> result(memberId, coupon, familyGroupId.orElse(null)));
+	}
+
+	private Optional<Long> lockActiveFamilyContext(Long memberId) {
+		return membershipRepository.findActiveGroupIdByMemberId(memberId)
+			.flatMap(groupId -> familyGroupRepository.findActiveByIdForUpdate(groupId)
+				.flatMap(group -> membershipRepository
+					.findActiveIdByGroupIdAndMemberIdForUpdate(groupId, memberId)
+					.map(membershipId -> groupId)));
 	}
 
 	private CouponSelectionResult result(Long reservationMemberId, Coupon coupon) {
@@ -63,5 +77,19 @@ public class CouponSelectionService {
 				coupon.getMemberId())
 				.orElseThrow(() -> new CouponException(ExceptionCode.COUPON_HOLD_NOT_AVAILABLE));
 		return CouponSelectionResult.from(coupon, familyGroupId);
+	}
+
+	private CouponSelectionResult result(
+		Long reservationMemberId,
+		Coupon coupon,
+		Long lockedFamilyGroupId
+	) {
+		if (coupon.getMemberId().equals(reservationMemberId)) {
+			return CouponSelectionResult.from(coupon, null);
+		}
+		if (lockedFamilyGroupId == null) {
+			throw new CouponException(ExceptionCode.COUPON_HOLD_NOT_AVAILABLE);
+		}
+		return CouponSelectionResult.from(coupon, lockedFamilyGroupId);
 	}
 }

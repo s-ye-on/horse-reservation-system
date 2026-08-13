@@ -16,4 +16,13 @@ public interface FamilyGroupRepository extends JpaRepository<FamilyGroup, Long> 
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT familyGroup FROM FamilyGroup familyGroup WHERE familyGroup.id = :groupId")
 	Optional<FamilyGroup> findByIdForUpdate(@Param("groupId") Long groupId);
+
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+		SELECT familyGroup
+		FROM FamilyGroup familyGroup
+		WHERE familyGroup.id = :groupId
+		  AND familyGroup.status = com.horse.families.domain.FamilyGroupStatus.ACTIVE
+		""")
+	Optional<FamilyGroup> findActiveByIdForUpdate(@Param("groupId") Long groupId);
 }

@@ -97,6 +97,67 @@ class FamilyCouponLockingIntegrationTest {
 		}
 	}
 
+	@Test
+	void 가족_선택은_접근할_수_없는_선행_Coupon과_후순위_Coupon을_잠그지_않는다() throws Exception {
+		final long requesterId = insertMember("family-lock-requester");
+		final long selectedOwnerId = insertMember("family-lock-selected-owner");
+		final long laterOwnerId = insertMember("family-lock-later-owner");
+		final long outsiderId = insertMember("family-lock-outsider");
+		final long groupId = insertGroup();
+		insertMembership(groupId, requesterId);
+		insertMembership(groupId, selectedOwnerId);
+		insertMembership(groupId, laterOwnerId);
+		final long inaccessibleCouponId = insertCoupon(
+			outsiderId,
+			LocalDateTime.of(2026, 8, 25, 9, 0),
+			LocalDateTime.of(2026, 7, 1, 9, 0));
+		final long selectedCouponId = insertCoupon(
+			selectedOwnerId,
+			LocalDateTime.of(2026, 9, 1, 9, 0),
+			LocalDateTime.of(2026, 7, 2, 9, 0));
+		final long laterCouponId = insertCoupon(
+			laterOwnerId,
+			LocalDateTime.of(2026, 10, 1, 9, 0),
+			LocalDateTime.of(2026, 7, 3, 9, 0));
+		final CountDownLatch selected = new CountDownLatch(1);
+		final CountDownLatch release = new CountDownLatch(1);
+		final ExecutorService executor = Executors.newFixedThreadPool(4);
+
+		try {
+			final Future<Long> holder = executor.submit(() -> transaction().execute(status -> {
+				final long couponId = selectionService.selectForUpdate(
+					requesterId,
+					RidingClass.FIRST_RIDE,
+					LESSON_DATE).orElseThrow().couponId();
+				selected.countDown();
+				await(release);
+				return couponId;
+			}));
+			assertThat(selected.await(5, TimeUnit.SECONDS)).isTrue();
+
+			final Future<Integer> inaccessibleUpdate = executor.submit(() -> transaction().execute(
+				status -> touchCoupon(inaccessibleCouponId)));
+			final Future<Integer> laterUpdate = executor.submit(() -> transaction().execute(
+				status -> touchCoupon(laterCouponId)));
+			assertThat(inaccessibleUpdate.get(2, TimeUnit.SECONDS)).isOne();
+			assertThat(laterUpdate.get(2, TimeUnit.SECONDS)).isOne();
+
+			final Future<Integer> selectedUpdate = executor.submit(() -> transaction().execute(
+				status -> touchCoupon(selectedCouponId)));
+			assertThatThrownBy(() -> selectedUpdate.get(300, TimeUnit.MILLISECONDS))
+				.isInstanceOf(TimeoutException.class);
+
+			release.countDown();
+			assertThat(holder.get(5, TimeUnit.SECONDS)).isEqualTo(selectedCouponId);
+			assertThat(selectedUpdate.get(5, TimeUnit.SECONDS)).isOne();
+		}
+		finally {
+			release.countDown();
+			executor.shutdownNow();
+			assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+		}
+	}
+
 	private TransactionTemplate transaction() {
 		return new TransactionTemplate(transactionManager);
 	}
@@ -122,11 +183,27 @@ class FamilyCouponLockingIntegrationTest {
 	}
 
 	private long insertMember() {
+		return insertMember("family-lock-member");
+	}
+
+	private long insertMember(String authSubject) {
 		jdbcTemplate.update("""
 			INSERT INTO members (auth_subject, name, phone)
-			VALUES ('family-lock-member', '잠금 회원', '010-0000-0000')
-			""");
+			VALUES (?, '잠금 회원', '010-0000-0000')
+			""", authSubject);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
+	private long insertGroup() {
+		jdbcTemplate.update("INSERT INTO family_groups (name) VALUES ('잠금 가족')");
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
+	private void insertMembership(long groupId, long memberId) {
+		jdbcTemplate.update("""
+			INSERT INTO family_memberships (family_group_id, member_id)
+			VALUES (?, ?)
+			""", groupId, memberId);
 	}
 
 	private long insertCoupon(long memberId, LocalDateTime expiresAt, LocalDateTime createdAt) {
@@ -147,6 +224,6 @@ class FamilyCouponLockingIntegrationTest {
 		jdbcTemplate.update("DELETE FROM family_group_audit_logs");
 		jdbcTemplate.update("DELETE FROM family_memberships");
 		jdbcTemplate.update("DELETE FROM family_groups");
-		jdbcTemplate.update("DELETE FROM members WHERE auth_subject = 'family-lock-member'");
+		jdbcTemplate.update("DELETE FROM members WHERE auth_subject LIKE 'family-lock-%'");
 	}
 }

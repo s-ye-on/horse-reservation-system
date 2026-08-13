@@ -71,6 +71,23 @@ ORDER BY (expires_at IS NULL) ASC,
 MySQL의 기본 NULL 정렬에 의존하지 않으며 무기한 Coupon은 마지막이다. FamilyGroup과 Coupon의
 실제 잠금 쿼리·인덱스·트랜잭션은 M32-03과 M32-04에서 확정한다.
 
+신규 가족 Coupon 예약은 기존 예약 잠금 문맥을 획득한 뒤, 예약 회원의 active FamilyGroup을
+현재 읽기로 확인하고 해당 FamilyGroup 행을 `FOR UPDATE`로 잠근 다음 결정된 Coupon 한 행을
+잠근다. M32-02의 구성원 추가·제거와 그룹 해제도 같은 FamilyGroup 행을 가장 먼저 잠그므로
+가족 후보 판정과 membership 변경은 한쪽이 먼저 완료되는 순서로 직렬화된다. 잠금 대기 뒤
+그룹이 이미 해제되었거나 membership이 종료되었다면 해당 가족 Coupon은 신규 후보가 아니다.
+예약 트랜잭션이 가족 없음 상태를 먼저 관찰한 뒤 `addMember`와 겹친 경우 해당 예약은 가입 전
+권리로 진행하며, 새 membership은 다음 예약부터 후보 범위를 확장한다. 이미 진행 중인 예약의
+Coupon 선택을 가입 완료 뒤 소급해서 다시 시작하지 않는다.
+
+Coupon 후보 ID 계산은 정렬된 `LIMIT 1` derived 결과로 분리하고, 외부 locking read가 그 PK의
+현재 상태를 다시 확인해 한 Coupon 행만 잠근다. 후보 탐색 중 접근할 수 없는 선행 Coupon이나
+정렬상 후순위 Coupon에는 행 잠금을 남기지 않는다.
+
+기존 hold의 반환·확정·사용과 Coupon 만료는 현재 membership을 다시 잠그지 않고 Reservation에
+snapshot된 원 Coupon 행을 잠근다. 따라서 membership 변경은 과거 권리를 다시 판정하지 않으며,
+반환과 만료가 겹쳐도 Coupon 행 잠금으로 `remainingCount`와 `heldCount` 전이를 직렬화한다.
+
 ### 기존 Reservation과 역사적 snapshot
 
 membership 제거와 그룹 해제는 이후 신규 예약의 후보 권한만 바꾼다.

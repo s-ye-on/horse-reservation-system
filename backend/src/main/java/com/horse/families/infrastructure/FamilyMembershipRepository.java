@@ -14,6 +14,29 @@ import com.horse.families.domain.FamilyMembership;
 
 public interface FamilyMembershipRepository extends JpaRepository<FamilyMembership, Long> {
 
+	@Query(value = """
+		SELECT membership.family_group_id
+		FROM family_memberships membership
+		JOIN family_groups family_group
+		  ON family_group.id = membership.family_group_id
+		 AND family_group.status = 'ACTIVE'
+		WHERE membership.active_member_guard = :memberId
+		LIMIT 1
+		""", nativeQuery = true)
+	Optional<Long> findActiveGroupIdByMemberId(@Param("memberId") Long memberId);
+
+	@Query(value = """
+		SELECT membership.id
+		FROM family_memberships membership
+		WHERE membership.family_group_id = :groupId
+		  AND membership.active_member_guard = :memberId
+		FOR UPDATE
+		""", nativeQuery = true)
+	Optional<Long> findActiveIdByGroupIdAndMemberIdForUpdate(
+		@Param("groupId") Long groupId,
+		@Param("memberId") Long memberId
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("""
 		SELECT membership
