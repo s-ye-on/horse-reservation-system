@@ -675,6 +675,10 @@ rg -Fq 'Template 정원 입력과 materialized TimeSlot 생성도 구보초보·
 description = "Verify family group, membership, and audit schema invariants"
 run = "./backend/gradlew -p backend test --tests '*FamilyGroupMigrationIntegrationTest'"
 
+[tasks."verify:m32-02"]
+description = "Verify admin family group commands and required audit history"
+run = "./backend/gradlew -p backend test --tests '*AdminFamilyGroupCommandApiTest'"
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

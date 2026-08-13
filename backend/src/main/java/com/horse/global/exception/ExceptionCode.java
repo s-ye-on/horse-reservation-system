@@ -32,6 +32,15 @@ public enum ExceptionCode {
 	MEMBER_INVALID_GENERAL_RIDE_COUNT(HttpStatus.BAD_REQUEST, "일반 기승 횟수는 음수일 수 없습니다."),
 	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
 
+	FAMILY_INVALID_GROUP_NAME(HttpStatus.BAD_REQUEST, "가족 그룹 이름이 올바르지 않습니다."),
+	FAMILY_INVALID_REASON(HttpStatus.BAD_REQUEST, "가족 그룹 변경 사유가 올바르지 않습니다."),
+	FAMILY_INVALID_ACTOR(HttpStatus.BAD_REQUEST, "가족 그룹 처리 관리자 정보가 올바르지 않습니다."),
+	FAMILY_INVALID_MEMBER_ID(HttpStatus.BAD_REQUEST, "가족 구성원 식별자가 올바르지 않습니다."),
+	FAMILY_GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "가족 그룹을 찾을 수 없습니다."),
+	FAMILY_GROUP_NOT_ACTIVE(HttpStatus.CONFLICT, "해제된 가족 그룹은 변경할 수 없습니다."),
+	FAMILY_MEMBER_ALREADY_ASSIGNED(HttpStatus.CONFLICT, "회원은 이미 활성 가족 그룹에 속해 있습니다."),
+	FAMILY_MEMBERSHIP_NOT_FOUND(HttpStatus.NOT_FOUND, "활성 가족 구성원 관계를 찾을 수 없습니다."),
+
 	RESERVATION_INVALID_MEMBER_ID(HttpStatus.BAD_REQUEST, "예약 회원 식별자는 필수입니다."),
 	RESERVATION_INVALID_RIDING_CLASS(HttpStatus.BAD_REQUEST, "예약 클래스는 필수입니다."),
 	RESERVATION_INVALID_LESSON_DATE(HttpStatus.BAD_REQUEST, "예약 수업 날짜는 필수입니다."),
