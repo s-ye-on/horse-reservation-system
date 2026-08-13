@@ -43,7 +43,14 @@ services:
       DB_USERNAME: "${MYSQL_USER:-horse}"
       DB_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set in .env}"
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set in .env}"
+
+      SPRING_PROFILES_ACTIVE: "${SPRING_PROFILES_ACTIVE:-prod}"
+      WEB_ALLOWED_ORIGINS: "${WEB_ALLOWED_ORIGINS:-}"
+      BOOTSTRAP_ADMIN_EMAIL: "${BOOTSTRAP_ADMIN_EMAIL:-}"
+      BOOTSTRAP_ADMIN_PASSWORD: "${BOOTSTRAP_ADMIN_PASSWORD:-}"
+
       TZ: "${TZ:-Asia/Seoul}"
+
     # 내부 네트워크에서만 접근한다. host 포트는 publish 하지 않는다.
     expose:
       - "8080"
@@ -67,6 +74,8 @@ services:
     # 외부에 공개하는 유일한 포트.
     ports:
       - "80:80"
+    volumes:
+      - /var/www/certbot:/var/www/certbot:ro
     networks:
       - horse
 
