@@ -110,6 +110,14 @@ export class AdminTimeSlotClosureControllerApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/timeslots/{timeSlotId}/reservations/{reservationId}/cancel-for-closure`;
         urlPath = urlPath.replace('{timeSlotId}', encodeURIComponent(String(requestParameters['timeSlotId'])));
@@ -164,6 +172,14 @@ export class AdminTimeSlotClosureControllerApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/timeslots/{timeSlotId}/closure/complete`;
         urlPath = urlPath.replace('{timeSlotId}', encodeURIComponent(String(requestParameters['timeSlotId'])));
@@ -208,6 +224,14 @@ export class AdminTimeSlotClosureControllerApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/timeslots/{timeSlotId}/closure-impact`;
         urlPath = urlPath.replace('{timeSlotId}', encodeURIComponent(String(requestParameters['timeSlotId'])));
@@ -260,6 +284,14 @@ export class AdminTimeSlotClosureControllerApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/timeslots/{timeSlotId}/closure/reopen`;
         urlPath = urlPath.replace('{timeSlotId}', encodeURIComponent(String(requestParameters['timeSlotId'])));
@@ -313,6 +345,14 @@ export class AdminTimeSlotClosureControllerApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/timeslots/{timeSlotId}/closure`;
         urlPath = urlPath.replace('{timeSlotId}', encodeURIComponent(String(requestParameters['timeSlotId'])));
@@ -366,6 +406,14 @@ export class AdminTimeSlotClosureControllerApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/timeslots/{timeSlotId}/closure/withdraw`;
         urlPath = urlPath.replace('{timeSlotId}', encodeURIComponent(String(requestParameters['timeSlotId'])));

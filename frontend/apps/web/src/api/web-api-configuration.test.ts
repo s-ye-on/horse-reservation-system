@@ -1,4 +1,8 @@
-import { AuthControllerApi } from '@horse/api-client'
+import {
+  AdminMemberQueryControllerApi,
+  AuthControllerApi,
+  MemberAvailableRidingClassesControllerApi,
+} from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { clearWebAccessToken, setWebAccessToken } from './web-access-token-memory'
 import { bearerApiConfiguration } from './web-api-configuration'
@@ -39,5 +43,17 @@ describe('bearerApiConfiguration', () => {
     expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get('Authorization')).toBe('Bearer access-token-a1')
     expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get('Authorization')).toBe('Bearer access-token-a2')
     expect(new Headers(fetchMock.mock.calls[2][1]?.headers).get('Authorization')).toBeNull()
+  })
+
+  it('관리자와_회원_보호_API가_메모리_Access_Token을_Bearer로_전달한다', async () => {
+    const adminMembersClient = new AdminMemberQueryControllerApi(bearerApiConfiguration)
+    const eligibleClassesClient = new MemberAvailableRidingClassesControllerApi(bearerApiConfiguration)
+    setWebAccessToken('protected-access-token')
+
+    const adminRequest = await adminMembersClient.getMembersRequestOpts({})
+    const memberRequest = await eligibleClassesClient.getAvailableRidingClassesRequestOpts()
+
+    expect(new Headers(adminRequest.headers).get('Authorization')).toBe('Bearer protected-access-token')
+    expect(new Headers(memberRequest.headers).get('Authorization')).toBe('Bearer protected-access-token')
   })
 })

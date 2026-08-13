@@ -58,6 +58,14 @@ export class AdminReservationRejectControllerApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/reservations/{reservationId}/reject`;
         urlPath = urlPath.replace('{reservationId}', encodeURIComponent(String(requestParameters['reservationId'])));

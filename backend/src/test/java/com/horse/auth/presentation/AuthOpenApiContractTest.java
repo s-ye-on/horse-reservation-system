@@ -53,8 +53,18 @@ class AuthOpenApiContractTest {
 			.isEqualTo("refreshWebAccessToken");
 		assertThat(document.at("/paths/~1api~1auth~1web~1logout/post/operationId").asText())
 			.isEqualTo("webLogout");
-		assertThat(document.at("/paths/~1api~1auth~1me/get/security/0/bearerAuth").isArray()).isTrue();
-		assertThat(document.at("/paths/~1api~1auth~1login/post/security").isMissingNode()).isTrue();
+		assertThat(document.at("/security/0/bearerAuth").isArray()).isTrue();
+		assertBearerProtected(document, "/paths/~1api~1auth~1me/get");
+		assertBearerProtected(document, "/paths/~1api~1admin~1members/get");
+		assertBearerProtected(document, "/paths/~1api~1me~1eligible-classes/get");
+		assertPublic(document, "/paths/~1api~1auth~1signup/post");
+		assertPublic(document, "/paths/~1api~1auth~1login/post");
+		assertPublic(document, "/paths/~1api~1auth~1refresh/post");
+		assertPublic(document, "/paths/~1api~1auth~1logout/post");
+		assertPublic(document, "/paths/~1api~1auth~1web~1csrf/get");
+		assertPublic(document, "/paths/~1api~1auth~1web~1login/post");
+		assertPublic(document, "/paths/~1api~1auth~1web~1refresh/post");
+		assertPublic(document, "/paths/~1api~1auth~1web~1logout/post");
 
 		assertRequired(document, "AuthSignupRequest", "email", "password", "name", "phone");
 		assertRequired(document, "AuthLoginRequest", "email", "password");
@@ -99,6 +109,20 @@ class AuthOpenApiContractTest {
 		assertThat(document.at(
 			"/paths/~1api~1auth~1signup/post/responses/409/content/application~1json/schema/$ref").asText())
 			.isEqualTo("#/components/schemas/ErrorResponse");
+	}
+
+	private static void assertBearerProtected(JsonNode document, String operationPath) {
+		final JsonNode operationSecurity = document.at(operationPath + "/security");
+		final JsonNode effectiveSecurity = operationSecurity.isMissingNode()
+			? document.at("/security")
+			: operationSecurity;
+		assertThat(effectiveSecurity.at("/0/bearerAuth").isArray()).isTrue();
+	}
+
+	private static void assertPublic(JsonNode document, String operationPath) {
+		final JsonNode security = document.at(operationPath + "/security");
+		assertThat(security.isArray()).isTrue();
+		assertThat(security.isEmpty()).isTrue();
 	}
 
 	private void assertRequired(JsonNode document, String schemaName, String... fields) {

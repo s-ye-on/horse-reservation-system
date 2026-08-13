@@ -27,6 +27,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 
 @RestController
@@ -49,6 +50,7 @@ public class AuthController {
 	}
 
 	@PostMapping("/signup")
+	@SecurityRequirements
 	@Operation(operationId = "signup")
 	@ApiResponses({
 		@ApiResponse(responseCode = "201", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -69,6 +71,7 @@ public class AuthController {
 	}
 
 	@PostMapping("/login")
+	@SecurityRequirements
 	@Operation(operationId = "login")
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -83,6 +86,7 @@ public class AuthController {
 	}
 
 	@PostMapping("/refresh")
+	@SecurityRequirements
 	@Operation(operationId = "refreshAccessToken")
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -97,6 +101,7 @@ public class AuthController {
 	}
 
 	@PostMapping("/logout")
+	@SecurityRequirements
 	@Operation(operationId = "logout")
 	@ApiResponses({
 		@ApiResponse(responseCode = "200", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
