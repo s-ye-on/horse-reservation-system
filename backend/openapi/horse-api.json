@@ -11,6 +11,11 @@
       "description": "Generated server url"
     }
   ],
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
   "paths": {
     "/api/admin/timeslots/{timeSlotId}/capacity": {
       "put": {
@@ -427,7 +432,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/auth/web/logout": {
@@ -462,7 +468,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/auth/web/login": {
@@ -534,7 +541,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/auth/signup": {
@@ -584,7 +592,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/auth/refresh": {
@@ -634,7 +643,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/auth/logout": {
@@ -684,7 +694,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/auth/login": {
@@ -734,7 +745,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/admin/timeslots": {
@@ -3570,7 +3582,8 @@
               }
             }
           }
-        }
+        },
+        "security": []
       }
     },
     "/api/auth/me": {

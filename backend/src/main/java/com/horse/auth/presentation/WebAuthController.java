@@ -25,12 +25,14 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth/web")
+@SecurityRequirements
 public class WebAuthController {
 	private static final String ERROR_SCHEMA = "#/components/schemas/ErrorResponse";
 	private static final String CSRF_HEADER = "X-XSRF-TOKEN";

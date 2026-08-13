@@ -68,6 +68,14 @@ export class AdminReservationCancelControllerApi extends runtime.BaseAPI {
 
         headerParameters['Content-Type'] = 'application/json';
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/reservations/{reservationId}/cancel`;
         urlPath = urlPath.replace('{reservationId}', encodeURIComponent(String(requestParameters['reservationId'])));
@@ -123,6 +131,14 @@ export class AdminReservationCancelControllerApi extends runtime.BaseAPI {
 
         const headerParameters: runtime.HTTPHeaders = {};
 
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
 
         let urlPath = `/api/admin/reservations/{reservationId}/cancellation-preview`;
         urlPath = urlPath.replace('{reservationId}', encodeURIComponent(String(requestParameters['reservationId'])));
