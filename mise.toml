@@ -679,6 +679,21 @@ run = "./backend/gradlew -p backend test --tests '*FamilyGroupMigrationIntegrati
 description = "Verify admin family group commands and required audit history"
 run = "./backend/gradlew -p backend test --tests '*AdminFamilyGroupCommandApiTest'"
 
+[tasks."verify:m32-03"]
+description = "Verify family coupon selection, row locking, and usage snapshots"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*FamilyCouponMigrationIntegrationTest' \
+  --tests '*FamilyCouponSelectionIntegrationTest' \
+  --tests '*FamilyCouponLockingIntegrationTest' \
+  --tests '*CouponSelectionPolicyTest' \
+  --tests '*CouponHoldConcurrencyIntegrationTest' \
+  --tests '*CouponRepositoryIntegrationTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*AdminManualReservationApiTest' \
+  --tests '*ReservationChangeApiTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

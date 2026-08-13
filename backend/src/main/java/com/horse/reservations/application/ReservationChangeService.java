@@ -285,6 +285,11 @@ public class ReservationChangeService {
 		}
 
 		coupon.useFreeChange();
+		final CouponUsageLog holdLog = couponUsageLogRepository
+			.findFirstByReservationIdAndActionOrderByIdAsc(
+				reservation.getId(),
+				CouponUsageAction.HELD)
+			.orElseThrow(() -> new ReservationException(ExceptionCode.RESERVATION_INVALID_COUPON_ID));
 		final LocalDate sourceLessonDate = reservation.getLessonDate();
 		final LocalTime sourceStartTime = reservation.getStartTime();
 		reservation.changeSchedule(
@@ -296,6 +301,8 @@ public class ReservationChangeService {
 			coupon.getId(),
 			reservation.getId(),
 			reservation.getMemberId(),
+			holdLog.getCouponOwnerMemberId(),
+			holdLog.getFamilyGroupId(),
 			changedAt.atZone(clock.getZone()).toLocalDateTime(),
 			toCouponActorType(actorType)));
 		changeLogRepository.save(ReservationChangeLog.reservationChanged(

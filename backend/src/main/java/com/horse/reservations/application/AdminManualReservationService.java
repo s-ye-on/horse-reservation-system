@@ -128,6 +128,8 @@ public class AdminManualReservationService {
 			selection.couponId(),
 			reservation.getId(),
 			memberId,
+			selection.couponOwnerMemberId(),
+			selection.familyGroupId(),
 			timeSlot.getLessonDate(),
 			requestedAt,
 			CouponActorType.ADMIN);

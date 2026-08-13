@@ -243,9 +243,10 @@ class MemberCouponQueryApiTest {
 	) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
-			) VALUES (?, ?, ?, ?, ?, '2026-07-14 10:00:00', ?, ?)
-			""", couponId, reservationId, memberId, action, countDelta, actorType, memo);
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type, memo
+			) VALUES (?, ?, ?, ?, ?, ?, '2026-07-14 10:00:00', ?, ?)
+			""", couponId, reservationId, memberId, memberId, action, countDelta, actorType, memo);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 

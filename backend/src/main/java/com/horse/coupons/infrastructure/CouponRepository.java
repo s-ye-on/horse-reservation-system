@@ -35,41 +35,71 @@ public interface CouponRepository extends JpaRepository<Coupon, Long> {
 	List<Coupon> findDueForExpiryForUpdate(@Param("todayStart") LocalDateTime todayStart);
 
 	@Query(value = """
-		SELECT c.*
+		SELECT c.id
 		FROM coupons c
-		WHERE c.member_id = :memberId
-			AND c.coupon_type = :couponType
+		WHERE c.coupon_type = :couponType
 			AND c.status = 'active'
 			AND c.remaining_count > c.held_count
 			AND (c.expires_at IS NULL OR DATE(c.expires_at) >= :lessonDate)
-		ORDER BY (c.expires_at IS NULL) ASC,
+			AND (
+				c.member_id = :memberId
+				OR EXISTS (
+					SELECT 1
+					FROM family_memberships requester
+					JOIN family_groups family_group
+					  ON family_group.id = requester.family_group_id
+					 AND family_group.status = 'ACTIVE'
+					JOIN family_memberships coupon_owner
+					  ON coupon_owner.family_group_id = requester.family_group_id
+					 AND coupon_owner.member_id = c.member_id
+					 AND coupon_owner.ended_at IS NULL
+					WHERE requester.member_id = :memberId
+					  AND requester.ended_at IS NULL
+				)
+			)
+		ORDER BY c.expiry_null_rank ASC,
 			c.expires_at ASC,
 			c.created_at ASC,
 			c.id ASC
 		LIMIT 1
 		""", nativeQuery = true)
-	Optional<Coupon> findFirstSelectable(
+	Optional<Long> findFirstSelectableId(
 		@Param("memberId") Long memberId,
 		@Param("couponType") String couponType,
 		@Param("lessonDate") LocalDate lessonDate
 	);
 
 	@Query(value = """
-		SELECT c.*
+		SELECT c.id
 		FROM coupons c
-		WHERE c.member_id = :memberId
-			AND c.coupon_type = :couponType
+		WHERE c.coupon_type = :couponType
 			AND c.status = 'active'
 			AND c.remaining_count > c.held_count
 			AND (c.expires_at IS NULL OR DATE(c.expires_at) >= :lessonDate)
-		ORDER BY (c.expires_at IS NULL) ASC,
+			AND (
+				c.member_id = :memberId
+				OR EXISTS (
+					SELECT 1
+					FROM family_memberships requester
+					JOIN family_groups family_group
+					  ON family_group.id = requester.family_group_id
+					 AND family_group.status = 'ACTIVE'
+					JOIN family_memberships coupon_owner
+					  ON coupon_owner.family_group_id = requester.family_group_id
+					 AND coupon_owner.member_id = c.member_id
+					 AND coupon_owner.ended_at IS NULL
+					WHERE requester.member_id = :memberId
+					  AND requester.ended_at IS NULL
+				)
+			)
+		ORDER BY c.expiry_null_rank ASC,
 			c.expires_at ASC,
 			c.created_at ASC,
 			c.id ASC
 		LIMIT 1
 		FOR UPDATE
 		""", nativeQuery = true)
-	Optional<Coupon> findFirstSelectableForUpdate(
+	Optional<Long> findFirstSelectableIdForUpdate(
 		@Param("memberId") Long memberId,
 		@Param("couponType") String couponType,
 		@Param("lessonDate") LocalDate lessonDate

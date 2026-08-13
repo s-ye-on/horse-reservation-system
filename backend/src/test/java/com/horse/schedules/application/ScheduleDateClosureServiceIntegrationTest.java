@@ -530,9 +530,10 @@ class ScheduleDateClosureServiceIntegrationTest {
 	private void insertHeldLog(Long memberId, Long couponId, Long reservationId) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type
-			) VALUES (?, ?, ?, 'held', 0, '2026-07-24 09:00:00', 'member')
-			""", couponId, reservationId, memberId);
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type
+			) VALUES (?, ?, ?, ?, 'held', 0, '2026-07-24 09:00:00', 'member')
+			""", couponId, reservationId, memberId, memberId);
 	}
 
 	private List<String> reservationCancellation(Long reservationId) {

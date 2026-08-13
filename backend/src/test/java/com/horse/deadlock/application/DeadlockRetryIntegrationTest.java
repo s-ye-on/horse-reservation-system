@@ -351,10 +351,10 @@ class DeadlockRetryIntegrationTest {
 				""", fixture.memberId());
 			jdbcTemplate.update("""
 				INSERT INTO coupon_usage_logs (
-					coupon_id, reservation_id, member_id, action, count_delta,
+					coupon_id, reservation_id, member_id, coupon_owner_member_id, action, count_delta,
 					occurred_at, actor_type, memo
-				) VALUES (?, ?, ?, 'used', -1, CURRENT_TIMESTAMP(6), 'admin', 'm31-07 retry')
-				""", fixture.couponId(), fixture.reservationId(), fixture.memberId());
+				) VALUES (?, ?, ?, ?, 'used', -1, CURRENT_TIMESTAMP(6), 'admin', 'm31-07 retry')
+				""", fixture.couponId(), fixture.reservationId(), fixture.memberId(), fixture.memberId());
 
 			lockMember(secondMemberId);
 		}

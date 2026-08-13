@@ -2,6 +2,7 @@ package com.horse.coupons.application;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -40,20 +41,49 @@ public class CouponHoldService {
 		LocalDateTime occurredAt,
 		CouponActorType actorType
 	) {
+		return hold(
+			couponId,
+			reservationId,
+			memberId,
+			memberId,
+			null,
+			lessonDate,
+			occurredAt,
+			actorType);
+	}
+
+	@Transactional
+	public CouponHoldResult hold(
+		Long couponId,
+		Long reservationId,
+		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId,
+		LocalDate lessonDate,
+		LocalDateTime occurredAt,
+		CouponActorType actorType
+	) {
 		final Coupon coupon = findCouponForUpdate(couponId);
 		final Optional<CouponUsageLog> existingHold = usageLogRepository
 			.findFirstByReservationIdAndActionOrderByIdAsc(reservationId, CouponUsageAction.HELD);
 		if (existingHold.isPresent()) {
-			ensureSameHold(existingHold.get(), couponId, memberId);
+			ensureSameHold(
+				existingHold.get(),
+				couponId,
+				memberId,
+				couponOwnerMemberId,
+				familyGroupId);
 			return CouponHoldResult.from(coupon, reservationId, false);
 		}
 
-		ensureCouponMember(coupon, memberId);
+		ensureCouponOwner(coupon, couponOwnerMemberId);
 		coupon.hold(lessonDate);
 		usageLogRepository.save(CouponUsageLog.held(
 			couponId,
 			reservationId,
 			memberId,
+			couponOwnerMemberId,
+			familyGroupId,
 			occurredAt,
 			actorType));
 		return CouponHoldResult.from(coupon, reservationId, true);
@@ -76,12 +106,14 @@ public class CouponHoldService {
 			return false;
 		}
 
-		ensureCouponMember(coupon, holdLog.getMemberId());
+		ensureCouponOwner(coupon, holdLog.getCouponOwnerMemberId());
 		coupon.releaseHold();
 		usageLogRepository.save(CouponUsageLog.released(
 			coupon.getId(),
 			reservationId,
-			coupon.getMemberId(),
+			holdLog.getMemberId(),
+			holdLog.getCouponOwnerMemberId(),
+			holdLog.getFamilyGroupId(),
 			occurredAt,
 			actorType));
 		return true;
@@ -106,11 +138,13 @@ public class CouponHoldService {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
 		}
 
-		ensureCouponMember(coupon, holdLog.getMemberId());
+		ensureCouponOwner(coupon, holdLog.getCouponOwnerMemberId());
 		usageLogRepository.save(CouponUsageLog.confirmed(
 			coupon.getId(),
 			reservationId,
-			coupon.getMemberId(),
+			holdLog.getMemberId(),
+			holdLog.getCouponOwnerMemberId(),
+			holdLog.getFamilyGroupId(),
 			occurredAt,
 			actorType));
 		return true;
@@ -138,7 +172,7 @@ public class CouponHoldService {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
 		}
 
-		ensureCouponMember(coupon, holdLog.getMemberId());
+		ensureCouponOwner(coupon, holdLog.getCouponOwnerMemberId());
 		if (coupon.getType() != expectedType) {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
 		}
@@ -146,7 +180,9 @@ public class CouponHoldService {
 		usageLogRepository.save(CouponUsageLog.used(
 			coupon.getId(),
 			reservationId,
-			coupon.getMemberId(),
+			holdLog.getMemberId(),
+			holdLog.getCouponOwnerMemberId(),
+			holdLog.getFamilyGroupId(),
 			occurredAt,
 			actorType));
 		return true;
@@ -170,12 +206,14 @@ public class CouponHoldService {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
 		}
 
-		ensureCouponMember(coupon, holdLog.getMemberId());
+		ensureCouponOwner(coupon, holdLog.getCouponOwnerMemberId());
 		coupon.deductHeld();
 		usageLogRepository.save(CouponUsageLog.deducted(
 			coupon.getId(),
 			reservationId,
-			coupon.getMemberId(),
+			holdLog.getMemberId(),
+			holdLog.getCouponOwnerMemberId(),
+			holdLog.getFamilyGroupId(),
 			occurredAt,
 			actorType));
 		return true;
@@ -186,14 +224,23 @@ public class CouponHoldService {
 			.orElseThrow(() -> new CouponException(ExceptionCode.COUPON_NOT_FOUND));
 	}
 
-	private void ensureCouponMember(Coupon coupon, Long memberId) {
-		if (!coupon.getMemberId().equals(memberId)) {
+	private void ensureCouponOwner(Coupon coupon, Long couponOwnerMemberId) {
+		if (!coupon.getMemberId().equals(couponOwnerMemberId)) {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
 		}
 	}
 
-	private void ensureSameHold(CouponUsageLog holdLog, Long couponId, Long memberId) {
-		if (!holdLog.getCouponId().equals(couponId) || !holdLog.getMemberId().equals(memberId)) {
+	private void ensureSameHold(
+		CouponUsageLog holdLog,
+		Long couponId,
+		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId
+	) {
+		if (!holdLog.getCouponId().equals(couponId)
+			|| !holdLog.getMemberId().equals(memberId)
+			|| !holdLog.getCouponOwnerMemberId().equals(couponOwnerMemberId)
+			|| !Objects.equals(holdLog.getFamilyGroupId(), familyGroupId)) {
 			throw new CouponException(ExceptionCode.COUPON_HOLD_STATE_CONFLICT);
 		}
 	}

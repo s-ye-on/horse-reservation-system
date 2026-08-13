@@ -145,15 +145,17 @@ class ReservationRepositoryIntegrationTest {
 	}
 
 	@Test
-	void 회원과_쿠폰과_사용_로그의_참조를_검증한다() {
+	void 예약자와_Coupon_원소유자를_분리하고_사용_로그의_참조를_검증한다() {
 		final Long memberId = insertMember("reservation-reference-member");
 		final Long anotherMemberId = insertMember("reservation-reference-another");
 		final Long couponId = insertCoupon(memberId);
 		final Long reservationId = insertReservation(
 			memberId, couponId, "pending_admin_approval", "coupon", null, null, null, null);
 
-		assertThatThrownBy(() -> insertReservation(
-			anotherMemberId, couponId, "pending_admin_approval", "coupon", null, null, null, null))
+		final Long familyCouponReservationId = insertReservation(
+			anotherMemberId, couponId, "pending_admin_approval", "coupon", null, null, null, null);
+		assertThat(familyCouponReservationId).isPositive();
+		assertThatThrownBy(() -> insertUsageLog(couponId, familyCouponReservationId, anotherMemberId))
 			.isInstanceOf(DataAccessException.class);
 		assertThatThrownBy(() -> insertUsageLog(couponId, reservationId + 1000, memberId))
 			.isInstanceOf(DataAccessException.class);
@@ -302,12 +304,13 @@ class ReservationRepositoryIntegrationTest {
 				coupon_id,
 				reservation_id,
 				member_id,
+				coupon_owner_member_id,
 				action,
 				count_delta,
 				occurred_at,
 				actor_type
-			) VALUES (?, ?, ?, 'held', 1, '2026-07-14 10:00:00', 'system')
-			""", couponId, reservationId, memberId);
+			) VALUES (?, ?, ?, ?, 'held', 1, '2026-07-14 10:00:00', 'system')
+			""", couponId, reservationId, memberId, memberId);
 	}
 
 	private String createDatabase(String databaseName) throws Exception {

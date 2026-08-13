@@ -45,4 +45,23 @@ public interface FamilyMembershipRepository extends JpaRepository<FamilyMembersh
 		ORDER BY membership.member.id, membership.id
 		""")
 	List<FamilyMembership> findAllActiveByGroupIdForUpdate(@Param("groupId") Long groupId);
+
+	@Query(value = """
+		SELECT requester.family_group_id
+		FROM family_memberships requester
+		JOIN family_groups family_group
+		  ON family_group.id = requester.family_group_id
+		 AND family_group.status = 'ACTIVE'
+		JOIN family_memberships coupon_owner
+		  ON coupon_owner.family_group_id = requester.family_group_id
+		 AND coupon_owner.member_id = :couponOwnerMemberId
+		 AND coupon_owner.ended_at IS NULL
+		WHERE requester.member_id = :reservationMemberId
+		  AND requester.ended_at IS NULL
+		LIMIT 1
+		""", nativeQuery = true)
+	Optional<Long> findSharedActiveGroupId(
+		@Param("reservationMemberId") Long reservationMemberId,
+		@Param("couponOwnerMemberId") Long couponOwnerMemberId
+	);
 }

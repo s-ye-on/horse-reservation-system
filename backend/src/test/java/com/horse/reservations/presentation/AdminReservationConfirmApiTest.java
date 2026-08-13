@@ -255,9 +255,10 @@ class AdminReservationConfirmApiTest {
 	private void insertHeldLog(Long memberId, Long couponId, Long reservationId) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type
-			) VALUES (?, ?, ?, 'held', 1, '2026-07-14 09:00:00', 'member')
-			""", couponId, reservationId, memberId);
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type
+			) VALUES (?, ?, ?, ?, 'held', 1, '2026-07-14 09:00:00', 'member')
+			""", couponId, reservationId, memberId, memberId);
 	}
 
 	private String endpoint(Long reservationId) {

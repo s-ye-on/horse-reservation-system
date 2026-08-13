@@ -217,9 +217,10 @@ class AdminAuditExportApiTest {
 	) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
-			) VALUES (?, ?, ?, ?, ?, ?, 'admin', ?)
-			""", couponId, reservationId, memberId, action, countDelta, occurredAt, memo);
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type, memo
+			) VALUES (?, ?, ?, ?, ?, ?, ?, 'admin', ?)
+			""", couponId, reservationId, memberId, memberId, action, countDelta, occurredAt, memo);
 	}
 
 	private List<Integer> databaseCounts() {
