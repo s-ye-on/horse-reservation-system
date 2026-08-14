@@ -1,0 +1,460 @@
+.admin-family-page {
+  --family-ink: #241f20;
+  --family-muted: #6c6264;
+  --family-line: #ded8d9;
+  --family-surface: #ffffff;
+  --family-soft: #f7f4f5;
+  --family-accent: #7a1f35;
+  --family-accent-soft: #f6e9ed;
+  --family-success: #2f6b4f;
+  min-height: 100vh;
+  color: var(--family-ink);
+  background: #f3f2f2;
+}
+
+.admin-family-shell {
+  width: min(100% - 32px, 1240px);
+  margin: 0 auto;
+  padding: 32px 0 56px;
+}
+
+.admin-family-header,
+.admin-family-section-heading,
+.admin-family-detail-header,
+.admin-family-member-list > li,
+.admin-family-candidate-list > li,
+.admin-family-audit-list > li > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-family-header {
+  align-items: end;
+  margin-bottom: 18px;
+}
+
+.admin-family-header h1,
+.admin-family-detail-header h2,
+.admin-family-section h3 {
+  margin: 0;
+}
+
+.admin-family-header > p,
+.admin-family-eyebrow,
+.admin-family-detail-header p,
+.admin-family-detail-meta {
+  margin: 0;
+  color: var(--family-muted);
+}
+
+.admin-family-eyebrow {
+  margin-bottom: 6px;
+  color: var(--family-accent);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.admin-family-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.45fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-family-search,
+.admin-family-create,
+.admin-family-panel {
+  border: 1px solid var(--family-line);
+  border-radius: 8px;
+  background: var(--family-surface);
+}
+
+.admin-family-search {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, 0.4fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 14px;
+}
+
+.admin-family-create {
+  padding: 14px;
+}
+
+.admin-family-create summary {
+  color: var(--family-accent);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-family-create form {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.admin-family-page label {
+  display: grid;
+  gap: 5px;
+  color: var(--family-muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.admin-family-page input,
+.admin-family-page select,
+.admin-family-page textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--family-line);
+  border-radius: 6px;
+  padding: 9px 10px;
+  color: var(--family-ink);
+  background: #fff;
+  font: inherit;
+}
+
+.admin-family-page textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.admin-family-page button {
+  min-height: 38px;
+  border: 1px solid var(--family-accent);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: #fff;
+  background: var(--family-accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-family-page button:hover:not(:disabled),
+.admin-family-page button:focus-visible {
+  filter: brightness(0.94);
+}
+
+.admin-family-page button:focus-visible,
+.admin-family-page input:focus-visible,
+.admin-family-page select:focus-visible,
+.admin-family-page textarea:focus-visible,
+.admin-family-create summary:focus-visible {
+  outline: 3px solid rgba(122, 31, 53, 0.24);
+  outline-offset: 2px;
+}
+
+.admin-family-page button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.admin-family-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.62fr) minmax(0, 1.38fr);
+  gap: 16px;
+}
+
+.admin-family-groups {
+  align-self: start;
+  overflow: hidden;
+}
+
+.admin-family-groups > ul,
+.admin-family-member-list,
+.admin-family-candidate-list,
+.admin-family-audit-list {
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+}
+
+.admin-family-group-select {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  border: 0 !important;
+  padding: 12px !important;
+  color: inherit !important;
+  background: transparent !important;
+  text-align: left;
+}
+
+.admin-family-group-select[aria-current='true'] {
+  color: var(--family-accent) !important;
+  background: var(--family-accent-soft) !important;
+}
+
+.admin-family-group-select > span,
+.admin-family-group-select strong,
+.admin-family-group-select small {
+  display: block;
+}
+
+.admin-family-group-select > span:last-child {
+  text-align: right;
+}
+
+.admin-family-group-select small,
+.admin-family-member-list span,
+.admin-family-candidate-list small,
+.admin-family-audit-list small,
+.admin-family-audit-list time {
+  color: var(--family-muted);
+  font-size: 0.78rem;
+}
+
+.admin-family-detail {
+  min-width: 0;
+  padding: 20px;
+}
+
+.admin-family-detail-header {
+  align-items: start;
+}
+
+.admin-family-detail-header p {
+  margin-bottom: 4px;
+  font-size: 0.76rem;
+}
+
+.admin-family-status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.admin-family-status-active {
+  color: var(--family-success);
+  background: #e7f3ec;
+}
+
+.admin-family-status-dissolved {
+  color: var(--family-muted);
+  background: var(--family-soft);
+}
+
+.admin-family-detail-meta {
+  margin-top: 6px;
+  font-size: 0.82rem;
+}
+
+.admin-family-section,
+.admin-family-dissolve {
+  padding: 20px 0;
+  border-top: 1px solid var(--family-line);
+}
+
+.admin-family-section:first-of-type {
+  margin-top: 18px;
+}
+
+.admin-family-section-heading > span {
+  color: var(--family-muted);
+  font-size: 0.82rem;
+}
+
+.admin-family-member-list,
+.admin-family-candidate-list,
+.admin-family-audit-list {
+  padding: 8px 0 0;
+}
+
+.admin-family-member-list > li,
+.admin-family-candidate-list > li,
+.admin-family-audit-list > li {
+  border-top: 1px solid var(--family-line);
+  padding: 12px 0;
+}
+
+.admin-family-member-list span,
+.admin-family-candidate-list small {
+  display: block;
+  margin-top: 3px;
+}
+
+.admin-family-member-list button,
+.admin-family-candidate-list button,
+.admin-family-inline-form button,
+.admin-family-query-error button,
+.admin-family-inline-error button,
+.admin-family-pagination button {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.admin-family-inline-form {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) auto auto;
+  align-items: end;
+  gap: 6px;
+}
+
+.admin-family-candidate-search {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.admin-family-reason {
+  margin-top: 10px;
+}
+
+.admin-family-audit-list p {
+  margin: 6px 0;
+}
+
+.admin-family-audit-state {
+  margin-top: 8px;
+  color: var(--family-muted);
+  font-size: 0.78rem;
+}
+
+.admin-family-audit-state summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.admin-family-audit-state dl {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+}
+
+.admin-family-audit-state dl > div {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 6px;
+}
+
+.admin-family-audit-state dt,
+.admin-family-audit-state dd {
+  margin: 0;
+}
+
+.admin-family-audit-state dd {
+  overflow-wrap: anywhere;
+}
+
+.admin-family-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-top: 1px solid var(--family-line);
+  padding: 10px;
+}
+
+.admin-family-pagination span {
+  min-width: 88px;
+  color: var(--family-muted);
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.admin-family-empty {
+  margin: 0;
+  padding: 20px 12px;
+  color: var(--family-muted);
+  text-align: center;
+}
+
+.admin-family-inline-error,
+.admin-family-query-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #dcb5bf;
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: #731b31;
+  background: #fff5f7;
+}
+
+.admin-family-query-error {
+  margin-top: 10px;
+}
+
+.admin-family-mutation-error {
+  margin: 8px 0 0;
+  color: #731b31;
+  font-size: 0.84rem;
+}
+
+.admin-family-dissolve p {
+  margin: 6px 0 12px;
+  color: var(--family-muted);
+  font-size: 0.84rem;
+}
+
+.admin-family-dissolve button {
+  margin-top: 10px;
+}
+
+.admin-family-page-state {
+  display: grid;
+  min-height: 60vh;
+  place-content: center;
+  gap: 10px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .admin-family-toolbar,
+  .admin-family-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-family-groups {
+    max-height: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-family-shell {
+    width: min(100% - 20px, 1240px);
+    padding-top: 20px;
+  }
+
+  .admin-family-header,
+  .admin-family-search,
+  .admin-family-member-list > li,
+  .admin-family-candidate-list > li,
+  .admin-family-inline-error,
+  .admin-family-query-error {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .admin-family-search,
+  .admin-family-candidate-search,
+  .admin-family-inline-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-family-detail {
+    padding: 16px 12px;
+  }
+
+  .admin-family-pagination {
+    justify-content: space-between;
+    gap: 6px;
+    padding-inline: 6px;
+  }
+
+  .admin-family-pagination button {
+    min-width: 68px;
+  }
+}

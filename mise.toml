@@ -704,6 +704,24 @@ run = '''
   --tests '*CouponExpiryJobIntegrationTest'
 '''
 
+[tasks."verify:m32-05"]
+description = "Verify admin family group search, membership commands, audit history, and responsive UX"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*AdminFamilyGroupQueryApiTest' \
+  --tests '*AdminFamilyGroupCommandApiTest'
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-family-groups/AdminFamilyGroupsPage.test.tsx \
+  src/features/admin-family-groups/admin-family-groups.api.test.ts \
+  src/app.test.tsx
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m32-05-family-groups-responsive.spec.ts
+rg -q '@media \(max-width: 520px\)' \
+  frontend/apps/web/src/features/admin-family-groups/admin-family-groups-page.css
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

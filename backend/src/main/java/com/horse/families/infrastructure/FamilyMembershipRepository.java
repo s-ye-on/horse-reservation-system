@@ -5,14 +5,81 @@ import java.util.Optional;
 
 import jakarta.persistence.LockModeType;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.horse.families.domain.FamilyMembership;
+import com.horse.members.domain.Member;
 
 public interface FamilyMembershipRepository extends JpaRepository<FamilyMembership, Long> {
+
+	@Query("""
+		SELECT membership.familyGroup.id AS groupId, COUNT(membership.id) AS memberCount
+		FROM FamilyMembership membership
+		WHERE membership.endedAt IS NULL
+		  AND membership.familyGroup.id IN (:groupIds)
+		GROUP BY membership.familyGroup.id
+		""")
+	List<FamilyGroupMemberCountProjection> countActiveMembersByGroupIds(
+		@Param("groupIds") List<Long> groupIds
+	);
+
+	@Query(value = """
+		SELECT membership
+		FROM FamilyMembership membership
+		JOIN FETCH membership.member
+		WHERE membership.familyGroup.id = :groupId
+		  AND membership.endedAt IS NULL
+		ORDER BY membership.joinedAt, membership.id
+		""", countQuery = """
+		SELECT COUNT(membership)
+		FROM FamilyMembership membership
+		WHERE membership.familyGroup.id = :groupId
+		  AND membership.endedAt IS NULL
+		""")
+	Page<FamilyMembership> findActiveMembers(
+		@Param("groupId") long groupId,
+		Pageable pageable
+	);
+
+	@Query(value = """
+		SELECT member
+		FROM Member member
+		WHERE NOT EXISTS (
+			SELECT membership.id
+			FROM FamilyMembership membership
+			WHERE membership.member = member
+			  AND membership.endedAt IS NULL
+		)
+		  AND (
+			:query = ''
+			OR LOWER(member.name) LIKE LOWER(CONCAT('%', :query, '%'))
+			OR member.phone LIKE CONCAT('%', :query, '%')
+		  )
+		ORDER BY member.name, member.id
+		""", countQuery = """
+		SELECT COUNT(member)
+		FROM Member member
+		WHERE NOT EXISTS (
+			SELECT membership.id
+			FROM FamilyMembership membership
+			WHERE membership.member = member
+			  AND membership.endedAt IS NULL
+		)
+		  AND (
+			:query = ''
+			OR LOWER(member.name) LIKE LOWER(CONCAT('%', :query, '%'))
+			OR member.phone LIKE CONCAT('%', :query, '%')
+		  )
+		""")
+	Page<Member> findAvailableMemberCandidates(
+		@Param("query") String query,
+		Pageable pageable
+	);
 
 	@Query(value = """
 		SELECT membership.family_group_id

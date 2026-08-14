@@ -4,6 +4,9 @@ import java.util.List;
 
 import jakarta.persistence.EntityManager;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,5 +37,27 @@ public class FamilyGroupAuditLogRepository {
 			""", FamilyGroupAuditLog.class)
 			.setParameter("groupId", groupId)
 			.getResultList();
+	}
+
+	public Page<FamilyGroupAuditLog> findPageByGroupId(long groupId, Pageable pageable) {
+		final List<FamilyGroupAuditLog> content = entityManager.createQuery("""
+			SELECT auditLog
+			FROM FamilyGroupAuditLog auditLog
+			LEFT JOIN FETCH auditLog.member
+			WHERE auditLog.familyGroup.id = :groupId
+			ORDER BY auditLog.createdAt DESC, auditLog.id DESC
+			""", FamilyGroupAuditLog.class)
+			.setParameter("groupId", groupId)
+			.setFirstResult((int)pageable.getOffset())
+			.setMaxResults(pageable.getPageSize())
+			.getResultList();
+		final long total = entityManager.createQuery("""
+			SELECT COUNT(auditLog)
+			FROM FamilyGroupAuditLog auditLog
+			WHERE auditLog.familyGroup.id = :groupId
+			""", Long.class)
+			.setParameter("groupId", groupId)
+			.getSingleResult();
+		return new PageImpl<>(content, pageable, total);
 	}
 }

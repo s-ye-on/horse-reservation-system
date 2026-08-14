@@ -8,6 +8,7 @@ import { AdminDashboardPage } from './features/admin-dashboard/admin-dashboard-p
 import { AdminAuditPage } from './features/admin-audit/admin-audit-page'
 import { AdminScheduleConfigurationPage } from './features/admin-schedule-configuration/admin-schedule-configuration-page'
 import { AdminScheduleClosuresPage } from './features/admin-schedule-closures/admin-schedule-closures-page'
+import { AdminFamilyGroupsPage } from './features/admin-family-groups/admin-family-groups-page'
 import { ReservationCalendarPage } from './features/reservation-calendar/reservation-calendar-page'
 import { ReservationApplicationPage } from './features/reservation-application/reservation-application-page'
 import { MyReservationsPage } from './features/my-reservations/my-reservations-page'
@@ -52,6 +53,7 @@ function AdminHomePage() {
       <nav aria-label="관리자 메뉴">
         <Link to="/admin/dashboard">운영 대시보드</Link>
         <Link to="/admin/members">회원 및 기승 승인</Link>
+        <Link to="/admin/family-groups">가족 그룹 관리</Link>
         <Link to="/admin/coupons/new">10회권 쿠폰 등록</Link>
         <Link to="/admin/timeslots">시간대 및 정원</Link>
         <Link to="/admin/schedule-configuration">정규 시간표 및 정기 휴일</Link>
@@ -87,6 +89,7 @@ export default function App() {
           <Route path="/admin" element={<AdminHomePage />} />
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/members" element={<AdminMembersPage />} />
+          <Route path="/admin/family-groups" element={<AdminFamilyGroupsPage />} />
           <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
           <Route path="/admin/timeslots" element={<AdminTimeSlotsPage />} />
           <Route path="/admin/schedule-configuration" element={<AdminScheduleConfigurationPage />} />
