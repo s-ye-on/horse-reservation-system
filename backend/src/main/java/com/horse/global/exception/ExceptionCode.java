@@ -33,6 +33,7 @@ public enum ExceptionCode {
 	MEMBER_PROGRESSION_NOT_INITIALIZED(HttpStatus.CONFLICT, "회원 클래스 progression이 초기화되지 않았습니다."),
 	MEMBER_INVALID_PROGRESSION_BASELINE(HttpStatus.BAD_REQUEST, "회원 시작 클래스 baseline이 올바르지 않습니다."),
 	MEMBER_INVALID_PROGRESSION_CREDIT(HttpStatus.BAD_REQUEST, "특수 승인 progression 인정분이 올바르지 않습니다."),
+	MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT(HttpStatus.BAD_REQUEST, "일반 기승 횟수 보정 값이 올바르지 않습니다."),
 	MEMBER_INVALID_PROMOTION_HOLD(HttpStatus.CONFLICT, "승급 보류 클래스를 적용할 수 없습니다."),
 	MEMBER_CLASS_POLICY_CONFLICT(HttpStatus.CONFLICT, "특수 승인과 승급 보류를 동시에 적용할 수 없습니다."),
 	MEMBER_SPECIAL_APPROVAL_PROGRESSION_CONFLICT(

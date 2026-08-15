@@ -145,6 +145,27 @@ public class AdminMemberClassProgressionService {
 		return AdminMemberQueryResult.from(member);
 	}
 
+	@Transactional
+	public AdminMemberQueryResult adjustActualCompletedRideCount(
+		long memberId,
+		int delta,
+		String actorAuthSubject,
+		String reason
+	) {
+		final Member member = findMemberForUpdate(memberId);
+		final MemberClassProgressionSnapshot before = snapshot(member);
+		member.adjustGeneralRideCount(delta);
+		final MemberClassProgressionSnapshot after = snapshot(member);
+		auditLogRepository.append(MemberClassProgressionAuditLog.create(
+			member,
+			MemberClassProgressionAuditAction.RIDE_COUNT_ADJUSTED,
+			before.toAuditState(),
+			after.toRideCountAdjustmentAuditState(delta),
+			actorAuthSubject,
+			reason));
+		return AdminMemberQueryResult.from(member);
+	}
+
 	private Member findMemberForUpdate(long memberId) {
 		return memberRepository.findByIdForUpdate(memberId)
 			.orElseThrow(() -> new MemberException(ExceptionCode.MEMBER_NOT_FOUND));

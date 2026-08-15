@@ -756,6 +756,20 @@ mise run web:typecheck
 mise run web:build
 '''
 
+[tasks."verify:m32-07"]
+description = "Verify actual general ride count adjustment ledger and concurrent corrections"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MemberRideCountAdjustmentTest' \
+  --tests '*MemberRideCountAdjustmentMigrationIntegrationTest' \
+  --tests '*AdminMemberRideCountAdjustmentApiTest' \
+  --tests '*MemberRideCountAdjustmentConcurrencyIntegrationTest' \
+  --tests '*MemberClassProgressionTest' \
+  --tests '*AdminMemberClassProgressionApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

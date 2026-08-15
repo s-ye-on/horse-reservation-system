@@ -144,6 +144,25 @@ public class Member {
 		generalRideCount++;
 	}
 
+	public void adjustGeneralRideCount(int delta) {
+		if (!classProgression.isInitialized() || delta == 0) {
+			throw new MemberException(delta == 0
+				? ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT
+				: ExceptionCode.MEMBER_PROGRESSION_NOT_INITIALIZED);
+		}
+		final int adjustedCount;
+		try {
+			adjustedCount = Math.addExact(generalRideCount, delta);
+		}
+		catch (ArithmeticException exception) {
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT);
+		}
+		if (adjustedCount < 0) {
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT);
+		}
+		generalRideCount = adjustedCount;
+	}
+
 	public void increaseDressageRideCount() {
 		dressageRideCount++;
 	}

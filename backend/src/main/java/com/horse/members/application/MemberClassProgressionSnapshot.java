@@ -55,6 +55,12 @@ public record MemberClassProgressionSnapshot(
 		return Map.copyOf(state);
 	}
 
+	public Map<String, Object> toRideCountAdjustmentAuditState(int delta) {
+		final Map<String, Object> state = new LinkedHashMap<>(toAuditState());
+		state.put("rideCountDelta", delta);
+		return Map.copyOf(state);
+	}
+
 	private static void putIfNotNull(Map<String, Object> state, String key, Object value) {
 		if (value instanceof Enum<?> enumValue) {
 			state.put(key, enumValue.name());
