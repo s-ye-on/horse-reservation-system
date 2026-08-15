@@ -1,6 +1,7 @@
 package com.horse.members.domain;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 
 import com.horse.global.exception.ExceptionCode;
@@ -11,7 +12,9 @@ public enum GeneralRidingGrade {
 	ROUND_BEGINNER(1, RidingClass.ROUND_BEGINNER),
 	ROUND_TROT(6, RidingClass.ROUND_TROT),
 	LARGE_ARENA_BEGINNER(21, RidingClass.LARGE_ARENA_BEGINNER),
-	LARGE_ARENA_TROT(26, RidingClass.LARGE_ARENA_TROT);
+	LARGE_ARENA_TROT(26, RidingClass.LARGE_ARENA_TROT),
+	CANTER_BEGINNER(70, RidingClass.CANTER_BEGINNER),
+	CANTER(100, RidingClass.CANTER);
 
 	private final int minimumRideCount;
 	private final RidingClass ridingClass;
@@ -26,27 +29,36 @@ public enum GeneralRidingGrade {
 			throw new MemberException(ExceptionCode.MEMBER_INVALID_GENERAL_RIDE_COUNT);
 		}
 
-		GeneralRidingGrade matchedGrade = FIRST_RIDE;
-		for (GeneralRidingGrade grade : values()) {
-			if (rideCount >= grade.minimumRideCount) {
-				matchedGrade = grade;
-			}
-		}
-		return matchedGrade;
+		return Arrays.stream(values())
+			.filter(grade -> rideCount >= grade.minimumRideCount)
+			.max(Comparator.comparingInt(GeneralRidingGrade::minimumRideCount))
+			.orElse(FIRST_RIDE);
 	}
 
 	public RidingClass ridingClass() {
 		return ridingClass;
 	}
 
+	public int minimumRideCount() {
+		return minimumRideCount;
+	}
+
+	public boolean isHigherThan(GeneralRidingGrade other) {
+		return minimumRideCount > other.minimumRideCount;
+	}
+
+	public static GeneralRidingGrade lowerOf(
+		GeneralRidingGrade first,
+		GeneralRidingGrade second
+	) {
+		return first.minimumRideCount <= second.minimumRideCount ? first : second;
+	}
+
 	public List<RidingClass> availableGeneralRidingClasses() {
-		final List<RidingClass> availableClasses = new ArrayList<>();
-		for (GeneralRidingGrade grade : values()) {
-			availableClasses.add(grade.ridingClass);
-			if (grade == this) {
-				break;
-			}
-		}
-		return List.copyOf(availableClasses);
+		return Arrays.stream(values())
+			.filter(grade -> grade.minimumRideCount <= minimumRideCount)
+			.sorted(Comparator.comparingInt(GeneralRidingGrade::minimumRideCount))
+			.map(GeneralRidingGrade::ridingClass)
+			.toList();
 	}
 }

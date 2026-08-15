@@ -222,6 +222,7 @@ class M31G02TimeSlotClosureRepairMigrationIntegrationTest {
 				JSON_OBJECT(
 					'FIRST_RIDE', 2, 'ROUND_BEGINNER', 2, 'ROUND_TROT', 2,
 					'LARGE_ARENA_BEGINNER', 3, 'LARGE_ARENA_TROT', 3,
+					'CANTER_BEGINNER', 3, 'CANTER', 3,
 					'DRESSAGE', 1, 'JUMPING', 1
 				), TRUE
 			)

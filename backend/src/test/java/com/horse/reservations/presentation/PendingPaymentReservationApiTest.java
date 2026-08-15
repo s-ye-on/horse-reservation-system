@@ -52,6 +52,8 @@ class PendingPaymentReservationApiTest {
 		  "ROUND_TROT": 4,
 		  "LARGE_ARENA_BEGINNER": 8,
 		  "LARGE_ARENA_TROT": 8,
+		  "CANTER_BEGINNER": 8,
+		  "CANTER": 8,
 		  "DRESSAGE": 8,
 		  "JUMPING": 8
 		}
@@ -180,6 +182,30 @@ class PendingPaymentReservationApiTest {
 	}
 
 	@Test
+	void 구보초보는_70회_threshold에서만_회원_예약을_허용한다() throws Exception {
+		final String ineligibleSubject = "canter-ineligible-member";
+		final String eligibleSubject = "canter-eligible-member";
+		insertMember(ineligibleSubject, 69);
+		insertMember(eligibleSubject, 70);
+		final Long timeSlotId = insertTimeSlot("15:00:00", 8, 4);
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(ineligibleSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "CANTER_BEGINNER")))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("RESERVATION_INVALID_RIDING_CLASS"));
+
+		mockMvc.perform(post(ENDPOINT)
+				.with(memberJwt(eligibleSubject))
+				.header("Idempotency-Key", nextIdempotencyKey())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(request(timeSlotId, "CANTER_BEGINNER")))
+			.andExpect(status().isCreated());
+	}
+
+	@Test
 	void 정확히_수업_시작_3시간_전에는_회원_예약을_허용한다() throws Exception {
 		final String authSubject = "same-day-booking-member";
 		insertMember(authSubject);
@@ -301,10 +327,17 @@ class PendingPaymentReservationApiTest {
 	}
 
 	private Long insertMember(String authSubject) {
+		return insertMember(authSubject, 0);
+	}
+
+	private Long insertMember(String authSubject, int generalRideCount) {
 		jdbcTemplate.update("""
-			INSERT INTO members (auth_subject, name, phone, large_arena_allowed)
-			VALUES (?, '입금대기 회원', '010-0000-0000', FALSE)
-			""", authSubject);
+			INSERT INTO members (
+				auth_subject, name, phone, general_ride_count, large_arena_allowed,
+				progression_management_started_at
+			)
+			VALUES (?, '입금대기 회원', '010-0000-0000', ?, FALSE, CURRENT_TIMESTAMP(6))
+			""", authSubject, generalRideCount);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 

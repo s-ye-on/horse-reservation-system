@@ -69,11 +69,15 @@ describe('AdminMembersPage', () => {
     renderPage(createApi({ changeRidingPermissions }))
 
     const dressageSwitch = await screen.findByRole('switch', { name: '마장마술 승인' })
+    fireEvent.change(screen.getByRole('textbox', { name: '승인 변경 사유' }), {
+      target: { value: '실력 확인 완료' },
+    })
     fireEvent.click(dressageSwitch)
 
     await waitFor(() => expect(changeRidingPermissions).toHaveBeenCalledWith(7, {
       dressageApproved: true,
       jumpingApproved: true,
+      reason: '실력 확인 완료',
     }))
     await waitFor(() => expect(dressageSwitch).toHaveAttribute('aria-checked', 'true'))
   })
@@ -87,6 +91,9 @@ describe('AdminMembersPage', () => {
     renderPage(createApi({ changeRidingPermissions }))
 
     const dressageSwitch = await screen.findByRole('switch', { name: '마장마술 승인' })
+    fireEvent.change(screen.getByRole('textbox', { name: '승인 변경 사유' }), {
+      target: { value: '실력 확인 완료' },
+    })
     fireEvent.click(dressageSwitch)
 
     await waitFor(() => {

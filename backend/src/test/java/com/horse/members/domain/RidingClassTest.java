@@ -17,7 +17,9 @@ class RidingClassTest {
 				RidingClass.ROUND_BEGINNER,
 				RidingClass.ROUND_TROT,
 				RidingClass.LARGE_ARENA_BEGINNER,
-				RidingClass.LARGE_ARENA_TROT);
+				RidingClass.LARGE_ARENA_TROT,
+				RidingClass.CANTER_BEGINNER,
+				RidingClass.CANTER);
 		assertThat(EnumSet.allOf(RidingClass.class))
 			.filteredOn(ridingClass -> !ridingClass.isGeneral())
 			.containsExactly(RidingClass.DRESSAGE, RidingClass.JUMPING);

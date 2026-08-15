@@ -163,6 +163,30 @@
   font-size: 0.86rem;
 }
 
+.admin-member-permission-reason {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-member-permission-reason input {
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--admin-line);
+  border-radius: 6px;
+  color: var(--admin-ink);
+  background: var(--admin-surface);
+  font: inherit;
+}
+
+.admin-member-permission-reason input:focus-visible {
+  border-color: var(--admin-accent);
+  outline: 3px solid rgba(122, 31, 53, 0.18);
+}
+
 .admin-member-toggle-row {
   display: flex;
   align-items: center;

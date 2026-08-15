@@ -52,6 +52,8 @@ class GeneralRideCompletionApiTest {
 		  "ROUND_TROT": 4,
 		  "LARGE_ARENA_BEGINNER": 8,
 		  "LARGE_ARENA_TROT": 8,
+		  "CANTER_BEGINNER": 8,
+		  "CANTER": 8,
 		  "DRESSAGE": 8,
 		  "JUMPING": 8
 		}
@@ -156,6 +158,19 @@ class GeneralRideCompletionApiTest {
 
 		assertThat(totalUsageLogCount()).isZero();
 		assertThat(memberGeneralRideCount(memberId)).isEqualTo(1);
+	}
+
+	@Test
+	void 구보_클래스_완료는_일반_progression을_정확히_한_번_증가시킨다() throws Exception {
+		final Long memberId = insertMember("canter-completion-member", 69);
+		final Long reservationId = insertConfirmedReservation(
+			memberId, null, "CANTER_BEGINNER", "single_payment", LocalDate.of(2026, 8, 2));
+
+		mockMvc.perform(post(completionEndpoint(reservationId)).with(adminJwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.generalRideCount").value(70));
+
+		assertThat(memberGeneralRideCount(memberId)).isEqualTo(70);
 	}
 
 	@Test

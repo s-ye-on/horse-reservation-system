@@ -101,9 +101,16 @@ class MemberRepositoryIntegrationTest {
 				jumping_ride_count,
 				dressage_approved,
 				jumping_approved,
-				large_arena_allowed
-			) VALUES (?, '테스트 회원', '010-0000-0000', ?, 0, 0, ?, ?, ?)
-			""", authSubject, generalRideCount, dressageApproved, jumpingApproved, storedLargeArenaAllowed);
+				large_arena_allowed,
+				progression_management_started_at,
+				special_approval_progression_credit
+			) VALUES (
+				?, '테스트 회원', '010-0000-0000', ?, 0, 0, ?, ?, ?,
+				CURRENT_TIMESTAMP(6), ?
+			)
+			""", authSubject, generalRideCount, dressageApproved, jumpingApproved,
+			storedLargeArenaAllowed,
+			dressageApproved || jumpingApproved ? Math.max(0, 26 - generalRideCount) : 0);
 	}
 
 }

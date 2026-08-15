@@ -42,6 +42,8 @@ class MemberAvailableTimeSlotsApiTest {
 		  "ROUND_TROT": 2,
 		  "LARGE_ARENA_BEGINNER": 2,
 		  "LARGE_ARENA_TROT": 2,
+		  "CANTER_BEGINNER": 2,
+		  "CANTER": 2,
 		  "DRESSAGE": 2,
 		  "JUMPING": 2
 		}

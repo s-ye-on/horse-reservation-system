@@ -722,6 +722,40 @@ rg -q '@media \(max-width: 520px\)' \
   frontend/apps/web/src/features/admin-family-groups/admin-family-groups-page.css
 '''
 
+[tasks."verify:m32-06"]
+description = "Verify riding class catalog, progression baseline, special approval credit, and promotion hold"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MemberClassProgressionTest' \
+  --tests '*GeneralRidingGradeTest' \
+  --tests '*RidingClassTest' \
+  --tests '*MemberClassProgressionMigrationIntegrationTest' \
+  --tests '*AdminMemberClassProgressionApiTest' \
+  --tests '*AdminMemberRidingPermissionApiTest' \
+  --tests '*AdminMemberQueryApiTest' \
+  --tests '*MemberAvailableRidingClassesApiTest' \
+  --tests '*MemberRepositoryIntegrationTest' \
+  --tests '*PendingPaymentReservationApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest' \
+  --tests '*AdminManualReservationApiTest' \
+  --tests '*TimeSlotCapacityTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*ScheduleDomainTest' \
+  --tests '*RegularScheduleTemplateServiceIntegrationTest' \
+  --tests '*ScheduleOccurrenceSynchronizationServiceIntegrationTest' \
+  --tests '*AdminScheduleConfigurationApiTest'
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-members/AdminMembersPage.test.tsx \
+  src/features/admin-members/admin-members.api.test.ts \
+  src/features/admin-timeslots/AdminTimeSlotsPage.test.tsx \
+  src/features/admin-schedule-configuration/AdminScheduleConfigurationPage.test.tsx \
+  src/features/reservation-calendar/ReservationCalendarPage.test.tsx
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

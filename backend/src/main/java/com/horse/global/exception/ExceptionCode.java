@@ -30,6 +30,16 @@ public enum ExceptionCode {
 	MEMBER_INVALID_NAME(HttpStatus.BAD_REQUEST, "회원 이름은 필수입니다."),
 	MEMBER_INVALID_PHONE(HttpStatus.BAD_REQUEST, "회원 전화번호는 필수입니다."),
 	MEMBER_INVALID_GENERAL_RIDE_COUNT(HttpStatus.BAD_REQUEST, "일반 기승 횟수는 음수일 수 없습니다."),
+	MEMBER_PROGRESSION_NOT_INITIALIZED(HttpStatus.CONFLICT, "회원 클래스 progression이 초기화되지 않았습니다."),
+	MEMBER_INVALID_PROGRESSION_BASELINE(HttpStatus.BAD_REQUEST, "회원 시작 클래스 baseline이 올바르지 않습니다."),
+	MEMBER_INVALID_PROGRESSION_CREDIT(HttpStatus.BAD_REQUEST, "특수 승인 progression 인정분이 올바르지 않습니다."),
+	MEMBER_INVALID_PROMOTION_HOLD(HttpStatus.CONFLICT, "승급 보류 클래스를 적용할 수 없습니다."),
+	MEMBER_CLASS_POLICY_CONFLICT(HttpStatus.CONFLICT, "특수 승인과 승급 보류를 동시에 적용할 수 없습니다."),
+	MEMBER_SPECIAL_APPROVAL_PROGRESSION_CONFLICT(
+		HttpStatus.CONFLICT,
+		"특수 승인 중에는 일반 progression을 대마장 속보보다 낮게 교정할 수 없습니다."),
+	MEMBER_INVALID_CLASS_CHANGE_ACTOR(HttpStatus.BAD_REQUEST, "클래스 변경 관리자 정보가 올바르지 않습니다."),
+	MEMBER_INVALID_CLASS_CHANGE_REASON(HttpStatus.BAD_REQUEST, "클래스 변경 사유가 올바르지 않습니다."),
 	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),
 
 	FAMILY_INVALID_GROUP_NAME(HttpStatus.BAD_REQUEST, "가족 그룹 이름이 올바르지 않습니다."),

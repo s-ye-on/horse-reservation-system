@@ -20,7 +20,11 @@ class GeneralRidingGradeTest {
 		"20, ROUND_TROT",
 		"21, LARGE_ARENA_BEGINNER",
 		"25, LARGE_ARENA_BEGINNER",
-		"26, LARGE_ARENA_TROT"
+		"26, LARGE_ARENA_TROT",
+		"69, LARGE_ARENA_TROT",
+		"70, CANTER_BEGINNER",
+		"99, CANTER_BEGINNER",
+		"100, CANTER"
 	})
 	void 일반_기승_횟수의_경계에_따라_등급을_판정한다(int rideCount, GeneralRidingGrade expected) {
 		assertThat(GeneralRidingGrade.fromRideCount(rideCount)).isEqualTo(expected);
@@ -37,5 +41,6 @@ class GeneralRidingGradeTest {
 	void 등급은_예약할_수_있는_최상위_일반_클래스를_가진다() {
 		assertThat(GeneralRidingGrade.LARGE_ARENA_BEGINNER.ridingClass())
 			.isEqualTo(RidingClass.LARGE_ARENA_BEGINNER);
+		assertThat(GeneralRidingGrade.CANTER.minimumRideCount()).isEqualTo(100);
 	}
 }

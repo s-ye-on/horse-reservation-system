@@ -6,6 +6,7 @@ import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -46,6 +47,9 @@ public class Member {
 	@Column(name = "jumping_approved", nullable = false)
 	private boolean jumpingApproved;
 
+	@Embedded
+	private MemberClassProgression classProgression = MemberClassProgression.uninitialized();
+
 	@Column(name = "created_at", nullable = false, insertable = false, updatable = false)
 	private LocalDateTime createdAt;
 
@@ -61,8 +65,22 @@ public class Member {
 		this.phone = requireText(phone, ExceptionCode.MEMBER_INVALID_PHONE);
 	}
 
+	private Member(String authSubject, String name, String phone, LocalDateTime progressionStartedAt) {
+		this(authSubject, name, phone);
+		classProgression.initialize(progressionStartedAt);
+	}
+
 	public static Member create(String authSubject, String name, String phone) {
 		return new Member(authSubject, name, phone);
+	}
+
+	public static Member createManaged(
+		String authSubject,
+		String name,
+		String phone,
+		LocalDateTime progressionStartedAt
+	) {
+		return new Member(authSubject, name, phone, progressionStartedAt);
 	}
 
 	private static String requireText(String value, ExceptionCode exceptionCode) {
@@ -108,12 +126,18 @@ public class Member {
 		return jumpingApproved;
 	}
 
-	public void changeDressageApproval(boolean approved) {
-		this.dressageApproved = approved;
-	}
-
-	public void changeJumpingApproval(boolean approved) {
-		this.jumpingApproved = approved;
+	public int changeSpecialApprovals(boolean dressageApproved, boolean jumpingApproved) {
+		final boolean activatesApproval = (!this.dressageApproved && dressageApproved)
+			|| (!this.jumpingApproved && jumpingApproved);
+		if (activatesApproval && classProgression.getPromotionHoldClass() != null) {
+			throw new MemberException(ExceptionCode.MEMBER_CLASS_POLICY_CONFLICT);
+		}
+		final int recognizedCredit = activatesApproval
+			? classProgression.recognizeSpecialApproval(generalRideCount)
+			: 0;
+		this.dressageApproved = dressageApproved;
+		this.jumpingApproved = jumpingApproved;
+		return recognizedCredit;
 	}
 
 	public void increaseGeneralRideCount() {
@@ -129,23 +153,31 @@ public class Member {
 	}
 
 	public boolean canUseLargeArena() {
-		final GeneralRidingGrade grade = currentGeneralRidingGrade();
-		return grade == GeneralRidingGrade.LARGE_ARENA_BEGINNER
-			|| grade == GeneralRidingGrade.LARGE_ARENA_TROT
+		final GeneralRidingGrade grade = effectiveGeneralRidingGrade();
+		return !GeneralRidingGrade.LARGE_ARENA_BEGINNER.isHigherThan(grade)
 			|| dressageApproved
 			|| jumpingApproved;
 	}
 
 	public GeneralRidingGrade currentGeneralRidingGrade() {
-		return GeneralRidingGrade.fromRideCount(generalRideCount);
+		return effectiveGeneralRidingGrade();
+	}
+
+	public int progressionValue() {
+		return classProgression.progressionValue(generalRideCount);
+	}
+
+	public GeneralRidingGrade progressionGeneralRidingGrade() {
+		return classProgression.progressionClass(generalRideCount);
+	}
+
+	public GeneralRidingGrade effectiveGeneralRidingGrade() {
+		return classProgression.effectiveClass(generalRideCount);
 	}
 
 	public List<RidingClass> availableRidingClasses() {
-		final GeneralRidingGrade maximumGeneralGrade = canUseLargeArena()
-			? GeneralRidingGrade.LARGE_ARENA_TROT
-			: currentGeneralRidingGrade();
 		final List<RidingClass> availableClasses = new ArrayList<>(
-			maximumGeneralGrade.availableGeneralRidingClasses());
+			effectiveGeneralRidingGrade().availableGeneralRidingClasses());
 		if (dressageApproved) {
 			availableClasses.add(RidingClass.DRESSAGE);
 		}
@@ -153,6 +185,78 @@ public class Member {
 			availableClasses.add(RidingClass.JUMPING);
 		}
 		return List.copyOf(availableClasses);
+	}
+
+	public void changeProgressionBaseline(
+		GeneralRidingGrade startingClass,
+		LocalDateTime progressionStartedAt
+	) {
+		ensureSpecialApprovalProgressionFloor(
+			classProgression.progressionValueWithBaseline(startingClass, generalRideCount));
+		classProgression.setBaseline(startingClass, generalRideCount, progressionStartedAt);
+	}
+
+	public void initializeProgression(LocalDateTime progressionStartedAt) {
+		classProgression.initialize(progressionStartedAt);
+	}
+
+	public void removeProgressionBaseline() {
+		ensureSpecialApprovalProgressionFloor(
+			classProgression.progressionValueWithoutBaseline(generalRideCount));
+		classProgression.removeBaseline();
+	}
+
+	public void changePromotionHold(GeneralRidingGrade holdClass) {
+		if (dressageApproved || jumpingApproved) {
+			throw new MemberException(ExceptionCode.MEMBER_CLASS_POLICY_CONFLICT);
+		}
+		classProgression.setPromotionHold(holdClass, generalRideCount);
+	}
+
+	public void removePromotionHold() {
+		classProgression.removePromotionHold();
+	}
+
+	public void correctSpecialApprovalProgressionCredit(int correctedCredit) {
+		if (dressageApproved || jumpingApproved) {
+			throw new MemberException(ExceptionCode.MEMBER_CLASS_POLICY_CONFLICT);
+		}
+		classProgression.correctSpecialApprovalProgressionCredit(correctedCredit);
+	}
+
+	public boolean isProgressionInitialized() {
+		return classProgression.isInitialized();
+	}
+
+	public LocalDateTime getProgressionManagementStartedAt() {
+		return classProgression.getManagementStartedAt();
+	}
+
+	public GeneralRidingGrade getProgressionBaselineClass() {
+		return classProgression.getBaselineClass();
+	}
+
+	public Integer getProgressionBaselineThreshold() {
+		return classProgression.getBaselineThreshold();
+	}
+
+	public Integer getProgressionBaselineActualRideCount() {
+		return classProgression.getBaselineActualRideCount();
+	}
+
+	public int getSpecialApprovalProgressionCredit() {
+		return classProgression.getSpecialApprovalProgressionCredit();
+	}
+
+	public GeneralRidingGrade getPromotionHoldClass() {
+		return classProgression.getPromotionHoldClass();
+	}
+
+	private void ensureSpecialApprovalProgressionFloor(int candidateProgressionValue) {
+		if ((dressageApproved || jumpingApproved)
+			&& candidateProgressionValue < GeneralRidingGrade.LARGE_ARENA_TROT.minimumRideCount()) {
+			throw new MemberException(ExceptionCode.MEMBER_SPECIAL_APPROVAL_PROGRESSION_CONFLICT);
+		}
 	}
 
 	public LocalDateTime getCreatedAt() {

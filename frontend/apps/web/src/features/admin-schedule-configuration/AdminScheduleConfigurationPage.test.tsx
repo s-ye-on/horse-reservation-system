@@ -12,6 +12,8 @@ const CLASS_CAPACITIES = {
   ROUND_TROT: 2,
   LARGE_ARENA_BEGINNER: 3,
   LARGE_ARENA_TROT: 3,
+  CANTER_BEGINNER: 3,
+  CANTER: 3,
   DRESSAGE: 1,
   JUMPING: 1,
 }
@@ -91,6 +93,8 @@ describe('AdminScheduleConfigurationPage', () => {
     expect(screen.getByText('기본 정기 휴일은 월요일입니다.')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '화요일 09:00~09:45' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '월요일 · 정기 휴무' })).toBeInTheDocument()
+    expect(screen.getByLabelText('구보초보 정원')).toBeInTheDocument()
+    expect(screen.getByLabelText('구보 정원')).toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('검색'), { target: { value: '없는 설정' } })
     expect(screen.getAllByText(/조건에 맞는 .* 없습니다/)).toHaveLength(2)
   })

@@ -10,6 +10,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import com.horse.global.exception.ExceptionCode;
+import com.horse.members.domain.RidingClass;
 import com.horse.schedules.domain.exception.ScheduleException;
 
 import jakarta.persistence.Column;
@@ -29,14 +30,7 @@ public class RegularScheduleTemplate {
 	private static final int LESSON_DURATION_SECONDS = 45 * 60;
 	private static final int MAX_TOTAL_CAPACITY = 8;
 	private static final int MAX_ROUND_ARENA_CAPACITY = 4;
-	private static final Set<String> REQUIRED_CLASS_NAMES = Set.of(
-		"FIRST_RIDE",
-		"ROUND_BEGINNER",
-		"ROUND_TROT",
-		"LARGE_ARENA_BEGINNER",
-		"LARGE_ARENA_TROT",
-		"DRESSAGE",
-		"JUMPING");
+	private static final Set<String> REQUIRED_CLASS_NAMES = RidingClass.catalogNames();
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
