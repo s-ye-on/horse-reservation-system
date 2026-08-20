@@ -39,6 +39,7 @@ public enum ExceptionCode {
 	MEMBER_SPECIAL_APPROVAL_PROGRESSION_CONFLICT(
 		HttpStatus.CONFLICT,
 		"특수 승인 중에는 일반 progression을 대마장 속보보다 낮게 교정할 수 없습니다."),
+	MEMBER_CLASS_STATE_CONFLICT(HttpStatus.CONFLICT, "회원 클래스 상태가 변경되었습니다. 예상 결과를 다시 확인해 주세요."),
 	MEMBER_INVALID_CLASS_CHANGE_ACTOR(HttpStatus.BAD_REQUEST, "클래스 변경 관리자 정보가 올바르지 않습니다."),
 	MEMBER_INVALID_CLASS_CHANGE_REASON(HttpStatus.BAD_REQUEST, "클래스 변경 사유가 올바르지 않습니다."),
 	MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "회원을 찾을 수 없습니다."),

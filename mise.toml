@@ -770,6 +770,27 @@ run = '''
   --tests '*SpecialRideCompletionApiTest'
 '''
 
+[tasks."verify:m32-08"]
+description = "Verify admin class progression preview, commands, audit history, and responsive UX"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MemberClassProgressionPreviewTest' \
+  --tests '*AdminMemberClassProgressionWebApiTest' \
+  --tests '*MemberClassProgressionTest' \
+  --tests '*AdminMemberClassProgressionApiTest' \
+  --tests '*AdminMemberRideCountAdjustmentApiTest' \
+  --tests '*AdminMemberRidingPermissionApiTest'
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-members/AdminMembersPage.test.tsx \
+  src/features/admin-members/admin-members.api.test.ts
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m32-08-admin-class-progression-responsive.spec.ts
+rg -q '@media \(max-width: 520px\)' \
+  frontend/apps/web/src/features/admin-members/admin-members-page.css
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

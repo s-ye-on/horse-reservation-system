@@ -1,5 +1,6 @@
 package com.horse.members.presentation;
 
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -7,6 +8,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.horse.members.application.AdminMemberClassProgressionService;
@@ -33,75 +35,87 @@ public class AdminMemberClassProgressionController {
 	public AdminMemberResponse setBaseline(
 		@PathVariable long memberId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
+		@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String expectedStateToken,
 		@Valid @RequestBody MemberProgressionBaselineRequest request
 	) {
 		return AdminMemberResponse.from(service.setBaseline(
 			memberId,
 			request.baselineClass(),
 			adminSubject,
-			request.reason()));
+			request.reason(),
+			expectedStateToken));
 	}
 
 	@DeleteMapping("/baseline")
 	public AdminMemberResponse removeBaseline(
 		@PathVariable long memberId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
+		@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String expectedStateToken,
 		@Valid @RequestBody MemberClassChangeReasonRequest request
 	) {
 		return AdminMemberResponse.from(service.removeBaseline(
 			memberId,
 			adminSubject,
-			request.reason()));
+			request.reason(),
+			expectedStateToken));
 	}
 
 	@PutMapping("/promotion-hold")
 	public AdminMemberResponse setPromotionHold(
 		@PathVariable long memberId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
+		@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String expectedStateToken,
 		@Valid @RequestBody MemberPromotionHoldRequest request
 	) {
 		return AdminMemberResponse.from(service.setPromotionHold(
 			memberId,
 			request.promotionHoldClass(),
 			adminSubject,
-			request.reason()));
+			request.reason(),
+			expectedStateToken));
 	}
 
 	@DeleteMapping("/promotion-hold")
 	public AdminMemberResponse removePromotionHold(
 		@PathVariable long memberId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
+		@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String expectedStateToken,
 		@Valid @RequestBody MemberClassChangeReasonRequest request
 	) {
 		return AdminMemberResponse.from(service.removePromotionHold(
 			memberId,
 			adminSubject,
-			request.reason()));
+			request.reason(),
+			expectedStateToken));
 	}
 
 	@PutMapping("/special-approval-credit")
 	public AdminMemberResponse correctSpecialApprovalCredit(
 		@PathVariable long memberId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
+		@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String expectedStateToken,
 		@Valid @RequestBody MemberProgressionCreditCorrectionRequest request
 	) {
 		return AdminMemberResponse.from(service.correctSpecialApprovalProgressionCredit(
 			memberId,
 			request.specialApprovalProgressionCredit(),
 			adminSubject,
-			request.reason()));
+			request.reason(),
+			expectedStateToken));
 	}
 
 	@PostMapping("/ride-count-adjustments")
 	public AdminMemberResponse adjustActualCompletedRideCount(
 		@PathVariable long memberId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
+		@RequestHeader(name = HttpHeaders.IF_MATCH, required = false) String expectedStateToken,
 		@Valid @RequestBody MemberRideCountAdjustmentRequest request
 	) {
 		return AdminMemberResponse.from(service.adjustActualCompletedRideCount(
 			memberId,
 			request.delta(),
 			adminSubject,
-			request.reason()));
+			request.reason(),
+			expectedStateToken));
 	}
 }

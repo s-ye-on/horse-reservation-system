@@ -39,7 +39,19 @@ public class AdminMemberClassProgressionService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return setBaseline(memberId, baselineClass, actorAuthSubject, reason, null);
+	}
+
+	@Transactional
+	public AdminMemberQueryResult setBaseline(
+		long memberId,
+		GeneralRidingGrade baselineClass,
+		String actorAuthSubject,
+		String reason,
+		String expectedStateToken
+	) {
 		final Member member = findMemberForUpdate(memberId);
+		validateExpectedState(member, expectedStateToken);
 		final LocalDateTime now = LocalDateTime.now(clock);
 		if (!member.isProgressionInitialized()) {
 			member.initializeProgression(now);
@@ -71,7 +83,18 @@ public class AdminMemberClassProgressionService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return removeBaseline(memberId, actorAuthSubject, reason, null);
+	}
+
+	@Transactional
+	public AdminMemberQueryResult removeBaseline(
+		long memberId,
+		String actorAuthSubject,
+		String reason,
+		String expectedStateToken
+	) {
 		final Member member = findMemberForUpdate(memberId);
+		validateExpectedState(member, expectedStateToken);
 		final MemberClassProgressionSnapshot before = snapshot(member);
 		member.removeProgressionBaseline();
 		appendAudit(
@@ -91,7 +114,19 @@ public class AdminMemberClassProgressionService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return setPromotionHold(memberId, holdClass, actorAuthSubject, reason, null);
+	}
+
+	@Transactional
+	public AdminMemberQueryResult setPromotionHold(
+		long memberId,
+		GeneralRidingGrade holdClass,
+		String actorAuthSubject,
+		String reason,
+		String expectedStateToken
+	) {
 		final Member member = findMemberForUpdate(memberId);
+		validateExpectedState(member, expectedStateToken);
 		final MemberClassProgressionSnapshot before = snapshot(member);
 		member.changePromotionHold(holdClass);
 		appendAudit(
@@ -112,7 +147,18 @@ public class AdminMemberClassProgressionService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return removePromotionHold(memberId, actorAuthSubject, reason, null);
+	}
+
+	@Transactional
+	public AdminMemberQueryResult removePromotionHold(
+		long memberId,
+		String actorAuthSubject,
+		String reason,
+		String expectedStateToken
+	) {
 		final Member member = findMemberForUpdate(memberId);
+		validateExpectedState(member, expectedStateToken);
 		final MemberClassProgressionSnapshot before = snapshot(member);
 		member.removePromotionHold();
 		appendAudit(
@@ -132,7 +178,24 @@ public class AdminMemberClassProgressionService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return correctSpecialApprovalProgressionCredit(
+			memberId,
+			correctedCredit,
+			actorAuthSubject,
+			reason,
+			null);
+	}
+
+	@Transactional
+	public AdminMemberQueryResult correctSpecialApprovalProgressionCredit(
+		long memberId,
+		int correctedCredit,
+		String actorAuthSubject,
+		String reason,
+		String expectedStateToken
+	) {
 		final Member member = findMemberForUpdate(memberId);
+		validateExpectedState(member, expectedStateToken);
 		final MemberClassProgressionSnapshot before = snapshot(member);
 		member.correctSpecialApprovalProgressionCredit(correctedCredit);
 		appendAudit(
@@ -152,7 +215,19 @@ public class AdminMemberClassProgressionService {
 		String actorAuthSubject,
 		String reason
 	) {
+		return adjustActualCompletedRideCount(memberId, delta, actorAuthSubject, reason, null);
+	}
+
+	@Transactional
+	public AdminMemberQueryResult adjustActualCompletedRideCount(
+		long memberId,
+		int delta,
+		String actorAuthSubject,
+		String reason,
+		String expectedStateToken
+	) {
 		final Member member = findMemberForUpdate(memberId);
+		validateExpectedState(member, expectedStateToken);
 		final MemberClassProgressionSnapshot before = snapshot(member);
 		member.adjustGeneralRideCount(delta);
 		final MemberClassProgressionSnapshot after = snapshot(member);
@@ -173,6 +248,20 @@ public class AdminMemberClassProgressionService {
 
 	private MemberClassProgressionSnapshot snapshot(Member member) {
 		return MemberClassProgressionSnapshot.from(member);
+	}
+
+	private void validateExpectedState(Member member, String expectedStateToken) {
+		if (expectedStateToken == null) {
+			return;
+		}
+		final String normalizedToken = expectedStateToken.length() >= 2
+			&& expectedStateToken.startsWith("\"")
+			&& expectedStateToken.endsWith("\"")
+			? expectedStateToken.substring(1, expectedStateToken.length() - 1)
+			: expectedStateToken;
+		if (!snapshot(member).stateToken().equals(normalizedToken)) {
+			throw new MemberException(ExceptionCode.MEMBER_CLASS_STATE_CONFLICT);
+		}
 	}
 
 	private void appendAudit(

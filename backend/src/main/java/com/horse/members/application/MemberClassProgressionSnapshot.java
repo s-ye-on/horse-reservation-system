@@ -1,6 +1,10 @@
 package com.horse.members.application;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -59,6 +63,26 @@ public record MemberClassProgressionSnapshot(
 		final Map<String, Object> state = new LinkedHashMap<>(toAuditState());
 		state.put("rideCountDelta", delta);
 		return Map.copyOf(state);
+	}
+
+	public String stateToken() {
+		final String canonicalState = String.join("|",
+			String.valueOf(actualCompletedRideCount),
+			String.valueOf(managementStartedAt),
+			String.valueOf(baselineClass),
+			String.valueOf(baselineThreshold),
+			String.valueOf(baselineActualRideCount),
+			String.valueOf(specialApprovalProgressionCredit),
+			String.valueOf(promotionHoldClass),
+			String.valueOf(dressageApproved),
+			String.valueOf(jumpingApproved));
+		try {
+			return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+				.digest(canonicalState.getBytes(StandardCharsets.UTF_8)));
+		}
+		catch (NoSuchAlgorithmException exception) {
+			throw new IllegalStateException("SHA-256 is unavailable", exception);
+		}
 	}
 
 	private static void putIfNotNull(Map<String, Object> state, String key, Object value) {

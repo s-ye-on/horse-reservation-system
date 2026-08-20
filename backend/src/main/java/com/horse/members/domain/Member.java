@@ -145,22 +145,7 @@ public class Member {
 	}
 
 	public void adjustGeneralRideCount(int delta) {
-		if (!classProgression.isInitialized() || delta == 0) {
-			throw new MemberException(delta == 0
-				? ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT
-				: ExceptionCode.MEMBER_PROGRESSION_NOT_INITIALIZED);
-		}
-		final int adjustedCount;
-		try {
-			adjustedCount = Math.addExact(generalRideCount, delta);
-		}
-		catch (ArithmeticException exception) {
-			throw new MemberException(ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT);
-		}
-		if (adjustedCount < 0) {
-			throw new MemberException(ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT);
-		}
-		generalRideCount = adjustedCount;
+		generalRideCount = adjustedGeneralRideCount(delta);
 	}
 
 	public void increaseDressageRideCount() {
@@ -210,8 +195,7 @@ public class Member {
 		GeneralRidingGrade startingClass,
 		LocalDateTime progressionStartedAt
 	) {
-		ensureSpecialApprovalProgressionFloor(
-			classProgression.progressionValueWithBaseline(startingClass, generalRideCount));
+		previewProgressionBaseline(startingClass);
 		classProgression.setBaseline(startingClass, generalRideCount, progressionStartedAt);
 	}
 
@@ -220,27 +204,59 @@ public class Member {
 	}
 
 	public void removeProgressionBaseline() {
-		ensureSpecialApprovalProgressionFloor(
-			classProgression.progressionValueWithoutBaseline(generalRideCount));
+		previewWithoutProgressionBaseline();
 		classProgression.removeBaseline();
 	}
 
 	public void changePromotionHold(GeneralRidingGrade holdClass) {
-		if (dressageApproved || jumpingApproved) {
-			throw new MemberException(ExceptionCode.MEMBER_CLASS_POLICY_CONFLICT);
-		}
+		previewPromotionHold(holdClass);
 		classProgression.setPromotionHold(holdClass, generalRideCount);
 	}
 
 	public void removePromotionHold() {
+		previewWithoutPromotionHold();
 		classProgression.removePromotionHold();
 	}
 
 	public void correctSpecialApprovalProgressionCredit(int correctedCredit) {
-		if (dressageApproved || jumpingApproved) {
-			throw new MemberException(ExceptionCode.MEMBER_CLASS_POLICY_CONFLICT);
-		}
+		previewSpecialApprovalProgressionCredit(correctedCredit);
 		classProgression.correctSpecialApprovalProgressionCredit(correctedCredit);
+	}
+
+	public MemberClassProgressionProjection currentClassProgressionProjection() {
+		return classProgression.currentProjection(generalRideCount);
+	}
+
+	public MemberClassProgressionProjection previewProgressionBaseline(GeneralRidingGrade startingClass) {
+		final MemberClassProgressionProjection projection = classProgression.previewBaseline(
+			startingClass,
+			generalRideCount);
+		ensureSpecialApprovalProgressionFloor(projection.progressionValue());
+		return projection;
+	}
+
+	public MemberClassProgressionProjection previewWithoutProgressionBaseline() {
+		final MemberClassProgressionProjection projection = classProgression.previewWithoutBaseline(generalRideCount);
+		ensureSpecialApprovalProgressionFloor(projection.progressionValue());
+		return projection;
+	}
+
+	public MemberClassProgressionProjection previewPromotionHold(GeneralRidingGrade holdClass) {
+		ensureNoSpecialApprovalPolicyConflict();
+		return classProgression.previewPromotionHold(holdClass, generalRideCount);
+	}
+
+	public MemberClassProgressionProjection previewWithoutPromotionHold() {
+		return classProgression.previewWithoutPromotionHold(generalRideCount);
+	}
+
+	public MemberClassProgressionProjection previewSpecialApprovalProgressionCredit(int correctedCredit) {
+		ensureNoSpecialApprovalPolicyConflict();
+		return classProgression.previewSpecialApprovalProgressionCredit(correctedCredit, generalRideCount);
+	}
+
+	public MemberClassProgressionProjection previewGeneralRideCountAdjustment(int delta) {
+		return classProgression.previewActualCompletedRideCount(adjustedGeneralRideCount(delta));
 	}
 
 	public boolean isProgressionInitialized() {
@@ -276,6 +292,31 @@ public class Member {
 			&& candidateProgressionValue < GeneralRidingGrade.LARGE_ARENA_TROT.minimumRideCount()) {
 			throw new MemberException(ExceptionCode.MEMBER_SPECIAL_APPROVAL_PROGRESSION_CONFLICT);
 		}
+	}
+
+	private void ensureNoSpecialApprovalPolicyConflict() {
+		if (dressageApproved || jumpingApproved) {
+			throw new MemberException(ExceptionCode.MEMBER_CLASS_POLICY_CONFLICT);
+		}
+	}
+
+	private int adjustedGeneralRideCount(int delta) {
+		if (!classProgression.isInitialized() || delta == 0) {
+			throw new MemberException(delta == 0
+				? ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT
+				: ExceptionCode.MEMBER_PROGRESSION_NOT_INITIALIZED);
+		}
+		final int adjustedCount;
+		try {
+			adjustedCount = Math.addExact(generalRideCount, delta);
+		}
+		catch (ArithmeticException exception) {
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT);
+		}
+		if (adjustedCount < 0) {
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_RIDE_COUNT_ADJUSTMENT);
+		}
+		return adjustedCount;
 	}
 
 	public LocalDateTime getCreatedAt() {

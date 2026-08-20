@@ -55,9 +55,7 @@ public class MemberClassProgression {
 		int actualCompletedRideCount,
 		LocalDateTime startedAt
 	) {
-		if (startingClass == null || actualCompletedRideCount < 0) {
-			throw new MemberException(ExceptionCode.MEMBER_INVALID_PROGRESSION_BASELINE);
-		}
+		previewBaseline(startingClass, actualCompletedRideCount);
 		initialize(startedAt);
 		baselineClass = startingClass;
 		baselineThreshold = startingClass.minimumRideCount();
@@ -82,10 +80,7 @@ public class MemberClassProgression {
 	}
 
 	public void correctSpecialApprovalProgressionCredit(int correctedCredit) {
-		ensureInitialized();
-		if (correctedCredit < 0 || correctedCredit > specialApprovalProgressionCredit) {
-			throw new MemberException(ExceptionCode.MEMBER_INVALID_PROGRESSION_CREDIT);
-		}
+		validateSpecialApprovalProgressionCredit(correctedCredit);
 		specialApprovalProgressionCredit = correctedCredit;
 	}
 
@@ -93,16 +88,97 @@ public class MemberClassProgression {
 		GeneralRidingGrade holdClass,
 		int actualCompletedRideCount
 	) {
-		ensureInitialized();
-		if (holdClass == null || holdClass.isHigherThan(progressionClass(actualCompletedRideCount))) {
-			throw new MemberException(ExceptionCode.MEMBER_INVALID_PROMOTION_HOLD);
-		}
+		previewPromotionHold(holdClass, actualCompletedRideCount);
 		promotionHoldClass = holdClass;
 	}
 
 	public void removePromotionHold() {
 		ensureInitialized();
 		promotionHoldClass = null;
+	}
+
+	public MemberClassProgressionProjection currentProjection(int actualCompletedRideCount) {
+		return projection(
+			actualCompletedRideCount,
+			baselineClass,
+			baselineThreshold,
+			baselineActualRideCount,
+			specialApprovalProgressionCredit,
+			promotionHoldClass);
+	}
+
+	MemberClassProgressionProjection previewBaseline(
+		GeneralRidingGrade startingClass,
+		int actualCompletedRideCount
+	) {
+		if (startingClass == null || actualCompletedRideCount < 0) {
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_PROGRESSION_BASELINE);
+		}
+		return projection(
+			actualCompletedRideCount,
+			startingClass,
+			startingClass.minimumRideCount(),
+			actualCompletedRideCount,
+			specialApprovalProgressionCredit,
+			promotionHoldClass);
+	}
+
+	MemberClassProgressionProjection previewWithoutBaseline(int actualCompletedRideCount) {
+		ensureInitialized();
+		return projection(
+			actualCompletedRideCount,
+			null,
+			null,
+			null,
+			specialApprovalProgressionCredit,
+			promotionHoldClass);
+	}
+
+	MemberClassProgressionProjection previewPromotionHold(
+		GeneralRidingGrade holdClass,
+		int actualCompletedRideCount
+	) {
+		ensureInitialized();
+		if (holdClass == null || holdClass.isHigherThan(progressionClass(actualCompletedRideCount))) {
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_PROMOTION_HOLD);
+		}
+		return projection(
+			actualCompletedRideCount,
+			baselineClass,
+			baselineThreshold,
+			baselineActualRideCount,
+			specialApprovalProgressionCredit,
+			holdClass);
+	}
+
+	MemberClassProgressionProjection previewWithoutPromotionHold(int actualCompletedRideCount) {
+		ensureInitialized();
+		return projection(
+			actualCompletedRideCount,
+			baselineClass,
+			baselineThreshold,
+			baselineActualRideCount,
+			specialApprovalProgressionCredit,
+			null);
+	}
+
+	MemberClassProgressionProjection previewSpecialApprovalProgressionCredit(
+		int correctedCredit,
+		int actualCompletedRideCount
+	) {
+		ensureInitialized();
+		validateSpecialApprovalProgressionCredit(correctedCredit);
+		return projection(
+			actualCompletedRideCount,
+			baselineClass,
+			baselineThreshold,
+			baselineActualRideCount,
+			correctedCredit,
+			promotionHoldClass);
+	}
+
+	MemberClassProgressionProjection previewActualCompletedRideCount(int actualCompletedRideCount) {
+		return currentProjection(actualCompletedRideCount);
 	}
 
 	public int progressionValue(int actualCompletedRideCount) {
@@ -112,25 +188,6 @@ public class MemberClassProgression {
 		return actualCompletedRideCount
 			+ baselineProgressionCredit()
 			+ specialApprovalProgressionCredit;
-	}
-
-	int progressionValueWithBaseline(
-		GeneralRidingGrade startingClass,
-		int actualCompletedRideCount
-	) {
-		if (startingClass == null || actualCompletedRideCount < 0) {
-			throw new MemberException(ExceptionCode.MEMBER_INVALID_PROGRESSION_BASELINE);
-		}
-		return actualCompletedRideCount
-			+ Math.max(0, startingClass.minimumRideCount() - actualCompletedRideCount)
-			+ specialApprovalProgressionCredit;
-	}
-
-	int progressionValueWithoutBaseline(int actualCompletedRideCount) {
-		if (actualCompletedRideCount < 0) {
-			throw new MemberException(ExceptionCode.MEMBER_INVALID_GENERAL_RIDE_COUNT);
-		}
-		return actualCompletedRideCount + specialApprovalProgressionCredit;
 	}
 
 	public GeneralRidingGrade progressionClass(int actualCompletedRideCount) {
@@ -149,6 +206,46 @@ public class MemberClassProgression {
 			return 0;
 		}
 		return Math.max(0, baselineThreshold - baselineActualRideCount);
+	}
+
+	private void validateSpecialApprovalProgressionCredit(int correctedCredit) {
+		if (correctedCredit < 0 || correctedCredit > specialApprovalProgressionCredit) {
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_PROGRESSION_CREDIT);
+		}
+	}
+
+	private MemberClassProgressionProjection projection(
+		int actualCompletedRideCount,
+		GeneralRidingGrade candidateBaselineClass,
+		Integer candidateBaselineThreshold,
+		Integer candidateBaselineActualRideCount,
+		int candidateSpecialApprovalProgressionCredit,
+		GeneralRidingGrade candidatePromotionHoldClass
+	) {
+		if (actualCompletedRideCount < 0) {
+			throw new MemberException(ExceptionCode.MEMBER_INVALID_GENERAL_RIDE_COUNT);
+		}
+		final int baselineCredit = candidateBaselineThreshold == null
+			? 0
+			: Math.max(0, candidateBaselineThreshold - candidateBaselineActualRideCount);
+		final int candidateProgressionValue = actualCompletedRideCount
+			+ baselineCredit
+			+ candidateSpecialApprovalProgressionCredit;
+		final GeneralRidingGrade candidateProgressionClass = GeneralRidingGrade.fromRideCount(
+			candidateProgressionValue);
+		final GeneralRidingGrade candidateEffectiveClass = candidatePromotionHoldClass == null
+			? candidateProgressionClass
+			: GeneralRidingGrade.lowerOf(candidateProgressionClass, candidatePromotionHoldClass);
+		return new MemberClassProgressionProjection(
+			actualCompletedRideCount,
+			candidateProgressionValue,
+			candidateProgressionClass,
+			candidateEffectiveClass,
+			candidateBaselineClass,
+			candidateBaselineThreshold,
+			candidateBaselineActualRideCount,
+			candidateSpecialApprovalProgressionCredit,
+			candidatePromotionHoldClass);
 	}
 
 	private void ensureInitialized() {
