@@ -25,7 +25,9 @@ describe('adminFamilyGroupsApi', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1)
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe('/api/admin/family-groups?page=2&size=10&query=%EA%B9%80+%EA%B0%80%EC%A1%B1&status=ACTIVE')
+    expectRequest(url, '/api/admin/family-groups', {
+      query: '김 가족', status: 'ACTIVE', page: '2', size: '10',
+    })
     expect(new Headers(init.headers).get('Authorization')).toBe('Bearer family-access-token')
   })
 
@@ -57,11 +59,9 @@ describe('adminFamilyGroupsApi', () => {
       '/api/admin/family-groups/11/members?page=1&size=8',
       expect.any(Object),
     )
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      '/api/admin/family-groups/member-candidates?page=2&size=6&query=%EA%B9%80+%ED%9A%8C%EC%9B%90',
-      expect.any(Object),
-    )
+    expectRequest(fetchMock.mock.calls[1]?.[0] as string, '/api/admin/family-groups/member-candidates', {
+      query: '김 회원', page: '2', size: '6',
+    })
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
       '/api/admin/family-groups/11/audit-logs?page=3&size=8',
@@ -99,6 +99,12 @@ function jsonResponse(body: unknown) {
 
 function jsonFetchMock(body: unknown) {
   return vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(body)))
+}
+
+function expectRequest(url: string, pathname: string, query: Record<string, string>) {
+  const requestUrl = new URL(url, 'http://localhost')
+  expect(requestUrl.pathname).toBe(pathname)
+  expect(Object.fromEntries(requestUrl.searchParams)).toEqual(query)
 }
 
 function responseError(status: number) {

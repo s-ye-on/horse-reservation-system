@@ -18,6 +18,8 @@ import com.horse.families.presentation.dto.FamilyGroupQueryRequest;
 import com.horse.families.presentation.dto.FamilyMemberCandidatePageResponse;
 import com.horse.families.presentation.dto.FamilyMemberCandidateQueryRequest;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 @RestController
 @RequestMapping("/api/admin/family-groups")
 public class AdminFamilyGroupQueryController {
@@ -29,6 +31,7 @@ public class AdminFamilyGroupQueryController {
 	}
 
 	@GetMapping
+	@Operation(operationId = "getFamilyGroups")
 	public FamilyGroupPageResponse getGroups(
 		@Valid @ParameterObject @ModelAttribute FamilyGroupQueryRequest request
 	) {
@@ -40,6 +43,7 @@ public class AdminFamilyGroupQueryController {
 	}
 
 	@GetMapping("/member-candidates")
+	@Operation(operationId = "getFamilyMemberCandidates")
 	public FamilyMemberCandidatePageResponse getMemberCandidates(
 		@Valid @ParameterObject @ModelAttribute FamilyMemberCandidateQueryRequest request
 	) {
@@ -50,6 +54,7 @@ public class AdminFamilyGroupQueryController {
 	}
 
 	@GetMapping("/{groupId}/members")
+	@Operation(operationId = "getFamilyGroupMembers")
 	public FamilyGroupMemberPageResponse getMembers(
 		@PathVariable long groupId,
 		@Valid @ParameterObject @ModelAttribute FamilyGroupPageRequest request
@@ -61,6 +66,7 @@ public class AdminFamilyGroupQueryController {
 	}
 
 	@GetMapping("/{groupId}/audit-logs")
+	@Operation(operationId = "getFamilyGroupAuditLogs")
 	public FamilyGroupAuditPageResponse getAuditLogs(
 		@PathVariable long groupId,
 		@Valid @ParameterObject @ModelAttribute FamilyGroupPageRequest request

@@ -18,7 +18,7 @@ const GROUP: FamilyGroupSummary = {
   name: '김 가족',
   status: 'ACTIVE',
   activeMemberCount: 1,
-  createdAt: '2026-08-15T10:00:00+09:00',
+  createdAt: new Date('2026-08-15T10:00:00+09:00'),
   dissolvedAt: null,
 }
 const MEMBER: FamilyGroupMember = {
@@ -26,7 +26,7 @@ const MEMBER: FamilyGroupMember = {
   memberId: 31,
   name: '김승마',
   phone: '010-1234-5678',
-  joinedAt: '2026-08-15T10:00:00+09:00',
+  joinedAt: new Date('2026-08-15T10:00:00+09:00'),
 }
 const CANDIDATE: FamilyMemberCandidate = {
   memberId: 32,
@@ -38,11 +38,31 @@ const AUDIT: FamilyGroupAuditLog = {
   action: 'MEMBER_ADDED',
   memberId: MEMBER.memberId,
   memberName: MEMBER.name,
-  fromState: { status: 'NONE' },
-  toState: { status: 'ACTIVE' },
+  fromState: {
+    groupId: GROUP.groupId,
+    name: null,
+    status: 'NONE',
+    activeMemberIds: null,
+    dissolvedAt: null,
+    membershipId: null,
+    memberId: MEMBER.memberId,
+    joinedAt: null,
+    endedAt: null,
+  },
+  toState: {
+    groupId: GROUP.groupId,
+    name: null,
+    status: 'ACTIVE',
+    activeMemberIds: null,
+    dissolvedAt: null,
+    membershipId: MEMBER.membershipId,
+    memberId: MEMBER.memberId,
+    joinedAt: MEMBER.joinedAt.toISOString(),
+    endedAt: null,
+  },
   actorAuthSubject: 'admin-family',
   reason: '가족 확인 완료',
-  occurredAt: '2026-08-15T10:00:00+09:00',
+  occurredAt: new Date('2026-08-15T10:00:00+09:00'),
 }
 
 afterEach(cleanup)

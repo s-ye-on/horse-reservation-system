@@ -1,16 +1,19 @@
 package com.horse.members.presentation.dto;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 import com.horse.members.application.MemberClassProgressionAuditResult;
 import com.horse.members.domain.MemberClassProgressionAuditAction;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record MemberClassProgressionAuditResponse(
 	long auditId,
 	MemberClassProgressionAuditAction action,
-	Map<String, Object> fromState,
-	Map<String, Object> toState,
+	@Schema(nullable = true)
+	MemberClassProgressionAuditStateResponse fromState,
+	@Schema(nullable = true)
+	MemberClassProgressionAuditStateResponse toState,
 	String actorAuthSubject,
 	String reason,
 	LocalDateTime occurredAt
@@ -20,8 +23,8 @@ public record MemberClassProgressionAuditResponse(
 		return new MemberClassProgressionAuditResponse(
 			result.auditId(),
 			result.action(),
-			result.fromState(),
-			result.toState(),
+			MemberClassProgressionAuditStateResponse.from(result.fromState()),
+			MemberClassProgressionAuditStateResponse.from(result.toState()),
 			result.actorAuthSubject(),
 			result.reason(),
 			result.occurredAt());

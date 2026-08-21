@@ -1,6 +1,7 @@
 package com.horse.members.presentation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -48,7 +49,7 @@ class AdminMemberClassProgressionWebApiTest {
 					{"action":"SET_BASELINE","baselineClass":"CANTER_BEGINNER"}
 					"""))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.stateToken").isNotEmpty())
+			.andExpect(jsonPath("$.stateToken").value(matchesPattern("\"[0-9a-f]{64}\"")))
 			.andExpect(jsonPath("$.current.progressionValue").value(10))
 			.andExpect(jsonPath("$.current.progressionClass").value("ROUND_TROT"))
 			.andExpect(jsonPath("$.expected.progressionValue").value(70))

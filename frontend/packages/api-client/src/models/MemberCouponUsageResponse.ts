@@ -39,6 +39,24 @@ export interface MemberCouponUsageResponse {
     reservationId: number | null;
     /**
      *
+     * @type {number}
+     * @memberof MemberCouponUsageResponse
+     */
+    memberId: number;
+    /**
+     *
+     * @type {number}
+     * @memberof MemberCouponUsageResponse
+     */
+    couponOwnerMemberId: number;
+    /**
+     *
+     * @type {number}
+     * @memberof MemberCouponUsageResponse
+     */
+    familyGroupId: number | null;
+    /**
+     *
      * @type {string}
      * @memberof MemberCouponUsageResponse
      */
@@ -70,6 +88,9 @@ export function instanceOfMemberCouponUsageResponse(value: object): value is Mem
     if (!('usageLogId' in value) || value['usageLogId'] === undefined) return false;
     if (!('couponId' in value) || value['couponId'] === undefined) return false;
     if (!('reservationId' in value) || value['reservationId'] === undefined) return false;
+    if (!('memberId' in value) || value['memberId'] === undefined) return false;
+    if (!('couponOwnerMemberId' in value) || value['couponOwnerMemberId'] === undefined) return false;
+    if (!('familyGroupId' in value) || value['familyGroupId'] === undefined) return false;
     if (!('action' in value) || value['action'] === undefined) return false;
     if (!('countDelta' in value) || value['countDelta'] === undefined) return false;
     if (!('occurredAt' in value) || value['occurredAt'] === undefined) return false;
@@ -90,6 +111,9 @@ export function MemberCouponUsageResponseFromJSONTyped(json: any, ignoreDiscrimi
         'usageLogId': json['usageLogId'],
         'couponId': json['couponId'],
         'reservationId': json['reservationId'],
+        'memberId': json['memberId'],
+        'couponOwnerMemberId': json['couponOwnerMemberId'],
+        'familyGroupId': json['familyGroupId'],
         'action': json['action'],
         'countDelta': json['countDelta'],
         'occurredAt': (new Date(json['occurredAt'])),
@@ -111,6 +135,9 @@ export function MemberCouponUsageResponseToJSONTyped(value?: MemberCouponUsageRe
         'usageLogId': value['usageLogId'],
         'couponId': value['couponId'],
         'reservationId': value['reservationId'],
+        'memberId': value['memberId'],
+        'couponOwnerMemberId': value['couponOwnerMemberId'],
+        'familyGroupId': value['familyGroupId'],
         'action': value['action'],
         'countDelta': value['countDelta'],
         'occurredAt': value['occurredAt'].toISOString(),

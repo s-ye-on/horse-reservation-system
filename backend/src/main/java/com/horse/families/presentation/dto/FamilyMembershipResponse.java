@@ -12,6 +12,7 @@ public record FamilyMembershipResponse(
 	long groupId,
 	long memberId,
 	OffsetDateTime joinedAt,
+	@Schema(nullable = true)
 	OffsetDateTime endedAt
 ) {
 

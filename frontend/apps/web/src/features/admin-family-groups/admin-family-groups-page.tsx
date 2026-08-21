@@ -399,7 +399,7 @@ function GroupAudit({ page, query, onPageChange }: {
         <ol className="admin-family-audit-list">
           {auditLogs.map((audit) => (
             <li key={audit.auditId}>
-              <div><strong>{auditLabel(audit.action)}</strong><time dateTime={audit.occurredAt}>{formatDateTime(audit.occurredAt)}</time></div>
+              <div><strong>{auditLabel(audit.action)}</strong><time dateTime={audit.occurredAt.toISOString()}>{formatDateTime(audit.occurredAt)}</time></div>
               <p>{audit.memberName ? `${audit.memberName} · ` : ''}{audit.reason}</p>
               <small>처리자 {audit.actorAuthSubject}</small>
               <details className="admin-family-audit-state">
@@ -449,15 +449,15 @@ function auditLabel(action: FamilyGroupAuditAction) {
   return ({ GROUP_CREATED: '그룹 생성', MEMBER_ADDED: '구성원 추가', MEMBER_REMOVED: '구성원 제거', GROUP_DISSOLVED: '그룹 해제' })[action]
 }
 
-function formatDateTime(value: string) {
+function formatDateTime(value: string | Date) {
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
+  if (Number.isNaN(date.getTime())) return String(value)
   return new Intl.DateTimeFormat('ko-KR', {
     timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit',
   }).format(date)
 }
 
-function formatAuditState(value: Record<string, unknown> | null) {
+function formatAuditState(value: object | null) {
   return value === null ? '없음' : JSON.stringify(value)
 }
 

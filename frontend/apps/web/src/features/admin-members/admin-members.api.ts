@@ -1,96 +1,29 @@
 import {
+  AdminMemberClassProgressionControllerApi,
+  AdminMemberClassProgressionQueryControllerApi,
   AdminMemberQueryControllerApi,
+  AdminMemberRidingPermissionControllerApi,
   ResponseError,
   type AdminMemberPageResponse,
   type AdminMemberResponse,
+  type MemberClassProgressionAuditPageResponse,
+  type MemberClassProgressionAuditResponse,
+  type MemberClassProgressionPreviewRequest,
+  type MemberClassProgressionPreviewResponse,
   type MemberRidingPermissionUpdateRequest,
 } from '@horse/api-client'
 import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
-export type GeneralRidingGrade =
-  | 'FIRST_RIDE'
-  | 'ROUND_BEGINNER'
-  | 'ROUND_TROT'
-  | 'LARGE_ARENA_BEGINNER'
-  | 'LARGE_ARENA_TROT'
-  | 'CANTER_BEGINNER'
-  | 'CANTER'
+export type GeneralRidingGrade = AdminMemberResponse['progressionClass']
+export type AdminMemberProgressionResponse = AdminMemberResponse
+export type MemberClassProgressionPreviewAction = MemberClassProgressionPreviewRequest['action']
+export type MemberClassProgressionAuditAction = MemberClassProgressionAuditResponse['action']
 
-export interface AdminMemberProgressionResponse extends AdminMemberResponse {
-  progressionValue: number
-  progressionClass: GeneralRidingGrade
-  effectiveClass: GeneralRidingGrade
-  progressionManagementStartedAt: string | null
-  progressionBaselineClass: GeneralRidingGrade | null
-  progressionBaselineThreshold: number | null
-  progressionBaselineActualRideCount: number | null
-  specialApprovalProgressionCredit: number
-  promotionHoldClass: GeneralRidingGrade | null
-}
-
-export interface MemberClassProgressionProjection {
-  actualCompletedRideCount: number
-  progressionValue: number
-  progressionClass: GeneralRidingGrade
-  effectiveClass: GeneralRidingGrade
-  baselineClass: GeneralRidingGrade | null
-  baselineThreshold: number | null
-  baselineActualRideCount: number | null
-  specialApprovalProgressionCredit: number
-  promotionHoldClass: GeneralRidingGrade | null
-}
-
-export type MemberClassProgressionPreviewAction =
-  | 'SET_BASELINE'
-  | 'REMOVE_BASELINE'
-  | 'SET_PROMOTION_HOLD'
-  | 'REMOVE_PROMOTION_HOLD'
-  | 'CORRECT_SPECIAL_APPROVAL_CREDIT'
-  | 'ADJUST_RIDE_COUNT'
-
-export interface MemberClassProgressionPreviewRequest {
-  action: MemberClassProgressionPreviewAction
-  baselineClass?: GeneralRidingGrade
-  promotionHoldClass?: GeneralRidingGrade
-  specialApprovalProgressionCredit?: number
-  rideCountDelta?: number
-}
-
-export interface MemberClassProgressionPreviewResponse {
-  stateToken: string
-  current: MemberClassProgressionProjection
-  expected: MemberClassProgressionProjection
-}
-
-export type MemberClassProgressionAuditAction =
-  | 'PROGRESSION_INITIALIZED'
-  | 'BASELINE_SET'
-  | 'BASELINE_CHANGED'
-  | 'BASELINE_REMOVED'
-  | 'SPECIAL_APPROVAL_CHANGED'
-  | 'SPECIAL_APPROVAL_CREDIT_CORRECTED'
-  | 'RIDE_COUNT_ADJUSTED'
-  | 'PROMOTION_HOLD_SET'
-  | 'PROMOTION_HOLD_CHANGED'
-  | 'PROMOTION_HOLD_REMOVED'
-
-export interface MemberClassProgressionAuditResponse {
-  auditId: number
-  action: MemberClassProgressionAuditAction
-  fromState: Record<string, unknown> | null
-  toState: Record<string, unknown>
-  actorAuthSubject: string
-  reason: string
-  occurredAt: string
-}
-
-export interface MemberClassProgressionAuditPageResponse {
-  content: MemberClassProgressionAuditResponse[]
-  page: number
-  size: number
-  totalElements: number
-  totalPages: number
-  hasNext: boolean
+export type {
+  MemberClassProgressionAuditPageResponse,
+  MemberClassProgressionAuditResponse,
+  MemberClassProgressionPreviewRequest,
+  MemberClassProgressionPreviewResponse,
 }
 
 export interface AdminMembersApi {
@@ -141,9 +74,7 @@ export interface AdminMembersApi {
   ): Promise<MemberClassProgressionAuditPageResponse>
 }
 
-export type MemberRidingPermissionChangeRequest = MemberRidingPermissionUpdateRequest & {
-  reason: string
-}
+export type MemberRidingPermissionChangeRequest = MemberRidingPermissionUpdateRequest
 
 export type AdminMembersErrorKind = 'forbidden' | 'not-found' | 'conflict' | 'validation' | 'unknown'
 
@@ -167,68 +98,67 @@ export async function getAdminMembersErrorCode(error: unknown): Promise<string |
 }
 
 const queryApi = new AdminMemberQueryControllerApi(bearerApiConfiguration)
-
-// M32-09 replaces this Phase B boundary with the regenerated OpenAPI client.
-async function adminMemberRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const accessToken = await bearerApiConfiguration.accessToken?.()
-  const headers = new Headers({ Accept: 'application/json', ...init.headers })
-  if (init.body !== undefined) headers.set('Content-Type', 'application/json')
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
-  const fetchApi = bearerApiConfiguration.fetchApi ?? globalThis.fetch
-  const response = await fetchApi(`${bearerApiConfiguration.basePath}${path}`, { ...init, headers })
-  if (!response.ok) throw new ResponseError(response, 'Admin member progression request failed')
-  return response.json() as Promise<T>
-}
-
-function progressionPath(memberId: number, suffix = '') {
-  return `/api/admin/members/${memberId}/class-progression${suffix}`
-}
+const ridingPermissionApi = new AdminMemberRidingPermissionControllerApi(bearerApiConfiguration)
+const progressionCommandApi = new AdminMemberClassProgressionControllerApi(bearerApiConfiguration)
+const progressionQueryApi = new AdminMemberClassProgressionQueryControllerApi(bearerApiConfiguration)
 
 export const adminMembersApi: AdminMembersApi = {
   getMembers: (page, size) => queryApi.getMembers({ page, size }),
-  getMember: (memberId) => adminMemberRequest(`/api/admin/members/${memberId}`),
-  changeRidingPermissions: (memberId, permissions) => adminMemberRequest(
-    `/api/admin/members/${memberId}/riding-permissions`,
-    { method: 'PATCH', body: JSON.stringify(permissions) },
+  getMember: (memberId) => queryApi.getMember({ memberId }),
+  changeRidingPermissions: (memberId, permissions) => ridingPermissionApi.changeRidingPermissions({
+    memberId,
+    memberRidingPermissionUpdateRequest: permissions,
+  }),
+  previewProgression: (memberId, request) => progressionQueryApi.previewMemberClassProgression({
+    memberId,
+    memberClassProgressionPreviewRequest: request,
+  }),
+  setProgressionBaseline: (memberId, baselineClass, reason, stateToken) => (
+    progressionCommandApi.setMemberProgressionBaseline({
+      memberId,
+      memberProgressionBaselineRequest: { baselineClass, reason },
+      ifMatch: stateToken,
+    })
   ),
-  previewProgression: (memberId, request) => adminMemberRequest(
-    progressionPath(memberId, '/preview'),
-    { method: 'POST', body: JSON.stringify(request) },
+  removeProgressionBaseline: (memberId, reason, stateToken) => (
+    progressionCommandApi.removeMemberProgressionBaseline({
+      memberId,
+      memberClassChangeReasonRequest: { reason },
+      ifMatch: stateToken,
+    })
   ),
-  setProgressionBaseline: (memberId, baselineClass, reason, stateToken) => adminMemberRequest(
-    progressionPath(memberId, '/baseline'),
-    { method: 'PUT', headers: { 'If-Match': stateToken }, body: JSON.stringify({ baselineClass, reason }) },
+  setPromotionHold: (memberId, promotionHoldClass, reason, stateToken) => (
+    progressionCommandApi.setMemberPromotionHold({
+      memberId,
+      memberPromotionHoldRequest: { promotionHoldClass, reason },
+      ifMatch: stateToken,
+    })
   ),
-  removeProgressionBaseline: (memberId, reason, stateToken) => adminMemberRequest(
-    progressionPath(memberId, '/baseline'),
-    { method: 'DELETE', headers: { 'If-Match': stateToken }, body: JSON.stringify({ reason }) },
-  ),
-  setPromotionHold: (memberId, promotionHoldClass, reason, stateToken) => adminMemberRequest(
-    progressionPath(memberId, '/promotion-hold'),
-    { method: 'PUT', headers: { 'If-Match': stateToken }, body: JSON.stringify({ promotionHoldClass, reason }) },
-  ),
-  removePromotionHold: (memberId, reason, stateToken) => adminMemberRequest(
-    progressionPath(memberId, '/promotion-hold'),
-    { method: 'DELETE', headers: { 'If-Match': stateToken }, body: JSON.stringify({ reason }) },
+  removePromotionHold: (memberId, reason, stateToken) => (
+    progressionCommandApi.removeMemberPromotionHold({
+      memberId,
+      memberClassChangeReasonRequest: { reason },
+      ifMatch: stateToken,
+    })
   ),
   correctSpecialApprovalCredit: (
     memberId,
     specialApprovalProgressionCredit,
     reason,
     stateToken,
-  ) => adminMemberRequest(
-    progressionPath(memberId, '/special-approval-credit'),
-    {
-      method: 'PUT',
-      headers: { 'If-Match': stateToken },
-      body: JSON.stringify({ specialApprovalProgressionCredit, reason }),
-    },
+  ) => progressionCommandApi.correctMemberSpecialApprovalCredit({
+    memberId,
+    memberProgressionCreditCorrectionRequest: { specialApprovalProgressionCredit, reason },
+    ifMatch: stateToken,
+  }),
+  adjustRideCount: (memberId, delta, reason, stateToken) => (
+    progressionCommandApi.adjustMemberActualCompletedRideCount({
+      memberId,
+      memberRideCountAdjustmentRequest: { delta, reason },
+      ifMatch: stateToken,
+    })
   ),
-  adjustRideCount: (memberId, delta, reason, stateToken) => adminMemberRequest(
-    progressionPath(memberId, '/ride-count-adjustments'),
-    { method: 'POST', headers: { 'If-Match': stateToken }, body: JSON.stringify({ delta, reason }) },
-  ),
-  getProgressionAuditLogs: (memberId, page, size) => adminMemberRequest(
-    `${progressionPath(memberId, '/audit-logs')}?page=${page}&size=${size}`,
+  getProgressionAuditLogs: (memberId, page, size) => (
+    progressionQueryApi.getMemberClassProgressionAuditLogs({ memberId, page, size })
   ),
 }

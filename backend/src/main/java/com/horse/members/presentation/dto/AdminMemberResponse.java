@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import com.horse.members.application.AdminMemberQueryResult;
 import com.horse.members.domain.GeneralRidingGrade;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public record AdminMemberResponse(
 	Long id,
 	String name,
@@ -15,11 +17,16 @@ public record AdminMemberResponse(
 	int progressionValue,
 	GeneralRidingGrade progressionClass,
 	GeneralRidingGrade effectiveClass,
+	@Schema(nullable = true)
 	LocalDateTime progressionManagementStartedAt,
+	@Schema(nullable = true)
 	GeneralRidingGrade progressionBaselineClass,
+	@Schema(nullable = true)
 	Integer progressionBaselineThreshold,
+	@Schema(nullable = true)
 	Integer progressionBaselineActualRideCount,
 	int specialApprovalProgressionCredit,
+	@Schema(nullable = true)
 	GeneralRidingGrade promotionHoldClass,
 	boolean dressageApproved,
 	boolean jumpingApproved,

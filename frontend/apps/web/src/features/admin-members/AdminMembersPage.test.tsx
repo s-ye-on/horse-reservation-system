@@ -23,7 +23,7 @@ const MEMBER: AdminMemberProgressionResponse = {
   progressionValue: 26,
   progressionClass: 'LARGE_ARENA_TROT',
   effectiveClass: 'LARGE_ARENA_TROT',
-  progressionManagementStartedAt: '2026-08-01T09:00:00',
+  progressionManagementStartedAt: new Date('2026-08-01T09:00:00'),
   progressionBaselineClass: null,
   progressionBaselineThreshold: null,
   progressionBaselineActualRideCount: null,
@@ -83,7 +83,7 @@ function previewResult(
     specialApprovalProgressionCredit: member.specialApprovalProgressionCredit,
     promotionHoldClass: member.promotionHoldClass,
   }
-  return { stateToken: 'state-v1', current, expected: { ...current, ...expectedOverrides } }
+  return { stateToken: '"state-v1"', current, expected: { ...current, ...expectedOverrides } }
 }
 
 function renderPage(api: AdminMembersApi) {
@@ -206,7 +206,21 @@ describe('AdminMembersPage', () => {
       content: [{
         auditId: 11,
         action: 'RIDE_COUNT_ADJUSTED' as const,
-        fromState: { actualCompletedRideCount: 20, progressionClass: 'LARGE_ARENA_TROT', effectiveClass: 'LARGE_ARENA_TROT' },
+        fromState: {
+          actualCompletedRideCount: 20,
+          progressionValue: 25,
+          progressionClass: 'LARGE_ARENA_TROT',
+          effectiveClass: 'LARGE_ARENA_TROT',
+          managementStartedAt: null,
+          baselineClass: null,
+          baselineThreshold: null,
+          baselineActualRideCount: null,
+          specialApprovalProgressionCredit: 5,
+          promotionHoldClass: 'ROUND_TROT',
+          dressageApproved: false,
+          jumpingApproved: false,
+          rideCountDelta: null,
+        },
         toState: {
           actualCompletedRideCount: 21,
           rideCountDelta: 1,
@@ -215,10 +229,16 @@ describe('AdminMembersPage', () => {
           effectiveClass: 'LARGE_ARENA_TROT',
           specialApprovalProgressionCredit: 5,
           promotionHoldClass: 'ROUND_TROT',
+          managementStartedAt: null,
+          baselineClass: null,
+          baselineThreshold: null,
+          baselineActualRideCount: null,
+          dressageApproved: false,
+          jumpingApproved: false,
         },
         actorAuthSubject: 'admin-1',
         reason: '누락 집계 정정',
-        occurredAt: '2026-08-20T10:00:00',
+        occurredAt: new Date('2026-08-20T10:00:00'),
       }],
       page: 0,
       size: 5,
@@ -278,7 +298,7 @@ describe('AdminMembersPage', () => {
       7,
       'CANTER_BEGINNER',
       '기존 경력 확인',
-      'state-v1',
+      '"state-v1"',
     ))
     await waitFor(() => expect(screen.getByText('progression 값').nextElementSibling).toHaveTextContent('70'))
   })
@@ -329,7 +349,7 @@ describe('AdminMembersPage', () => {
     }))
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: '누락 2회 정정' } })
     fireEvent.click(await screen.findByRole('button', { name: '확인 후 적용' }))
-    await waitFor(() => expect(adjustRideCount).toHaveBeenCalledWith(7, 2, '누락 2회 정정', 'state-v1'))
+    await waitFor(() => expect(adjustRideCount).toHaveBeenCalledWith(7, 2, '누락 2회 정정', '"state-v1"'))
   })
 
   it('hold_설정과_특수_승인_인정분_교정을_preview_토큰으로_적용한다', async () => {
@@ -365,7 +385,7 @@ describe('AdminMembersPage', () => {
       7,
       'ROUND_TROT',
       '안전 확인',
-      'state-v1',
+      '"state-v1"',
     ))
 
     fireEvent.change(screen.getByLabelText('관리 작업'), {
@@ -380,7 +400,7 @@ describe('AdminMembersPage', () => {
       7,
       3,
       '인정분 재검토',
-      'state-v1',
+      '"state-v1"',
     ))
   })
 
@@ -409,14 +429,14 @@ describe('AdminMembersPage', () => {
     await screen.findByRole('region', { name: '변경 전후 예상 클래스' })
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: 'baseline 교정' } })
     fireEvent.click(screen.getByRole('button', { name: '확인 후 적용' }))
-    await waitFor(() => expect(removeProgressionBaseline).toHaveBeenCalledWith(7, 'baseline 교정', 'state-v1'))
+    await waitFor(() => expect(removeProgressionBaseline).toHaveBeenCalledWith(7, 'baseline 교정', '"state-v1"'))
 
     fireEvent.change(screen.getByLabelText('관리 작업'), { target: { value: 'REMOVE_PROMOTION_HOLD' } })
     fireEvent.click(screen.getByRole('button', { name: '예상 결과 확인' }))
     await screen.findByRole('region', { name: '변경 전후 예상 클래스' })
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: '안전 재평가 완료' } })
     fireEvent.click(screen.getByRole('button', { name: '확인 후 적용' }))
-    await waitFor(() => expect(removePromotionHold).toHaveBeenCalledWith(7, '안전 재평가 완료', 'state-v1'))
+    await waitFor(() => expect(removePromotionHold).toHaveBeenCalledWith(7, '안전 재평가 완료', '"state-v1"'))
   })
 
   it('promotion_hold와_특수_승인의_상호_배타_해제_순서를_안내한다', async () => {

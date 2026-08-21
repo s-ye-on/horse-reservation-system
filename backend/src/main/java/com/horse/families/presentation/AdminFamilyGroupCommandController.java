@@ -17,6 +17,7 @@ import com.horse.families.presentation.dto.FamilyMemberAddRequest;
 import com.horse.families.presentation.dto.FamilyMembershipResponse;
 import com.horse.families.presentation.dto.FamilyReasonRequest;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -41,6 +42,7 @@ public class AdminFamilyGroupCommandController {
 	}
 
 	@PostMapping
+	@Operation(operationId = "createFamilyGroup")
 	@ResponseStatus(HttpStatus.CREATED)
 	@ApiResponse(responseCode = "201", content = @Content(
 		mediaType = "application/json",
@@ -56,6 +58,7 @@ public class AdminFamilyGroupCommandController {
 	}
 
 	@PostMapping("/{groupId}/members")
+	@Operation(operationId = "addFamilyGroupMember")
 	@ResponseStatus(HttpStatus.CREATED)
 	@ApiResponse(responseCode = "201", content = @Content(
 		mediaType = "application/json",
@@ -73,6 +76,7 @@ public class AdminFamilyGroupCommandController {
 	}
 
 	@DeleteMapping("/{groupId}/members/{memberId}")
+	@Operation(operationId = "removeFamilyGroupMember")
 	@ApiResponse(responseCode = "200", content = @Content(
 		mediaType = "application/json",
 		schema = @Schema(implementation = FamilyMembershipResponse.class)))
@@ -90,6 +94,7 @@ public class AdminFamilyGroupCommandController {
 	}
 
 	@PostMapping("/{groupId}/dissolution")
+	@Operation(operationId = "dissolveFamilyGroup")
 	@ApiResponse(responseCode = "200", content = @Content(
 		mediaType = "application/json",
 		schema = @Schema(implementation = FamilyGroupResponse.class)))

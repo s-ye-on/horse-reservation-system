@@ -85,6 +85,10 @@ public record MemberClassProgressionSnapshot(
 		}
 	}
 
+	public String strongEntityTag() {
+		return "\"" + stateToken() + "\"";
+	}
+
 	private static void putIfNotNull(Map<String, Object> state, String key, Object value) {
 		if (value instanceof Enum<?> enumValue) {
 			state.put(key, enumValue.name());

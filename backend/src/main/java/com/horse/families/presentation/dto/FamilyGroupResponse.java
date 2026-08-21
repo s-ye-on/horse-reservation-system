@@ -13,6 +13,7 @@ public record FamilyGroupResponse(
 	String name,
 	FamilyGroupStatus status,
 	OffsetDateTime createdAt,
+	@Schema(nullable = true)
 	OffsetDateTime dissolvedAt
 ) {
 

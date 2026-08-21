@@ -272,7 +272,7 @@ export function AdminMemberClassProgressionPanel({
           <ol className="admin-member-progression-audit-list">
             {auditQuery.data?.content.map((audit) => (
               <li key={audit.auditId}>
-                <div><strong>{AUDIT_LABELS[audit.action]}</strong><time dateTime={audit.occurredAt}>{formatDateTime(audit.occurredAt)}</time></div>
+                <div><strong>{AUDIT_LABELS[audit.action]}</strong><time dateTime={audit.occurredAt.toISOString()}>{formatDateTime(audit.occurredAt)}</time></div>
                 <p>{audit.reason}</p>
                 <small>처리자 {audit.actorAuthSubject}</small>
                 <details>
@@ -454,16 +454,16 @@ function gradeLabel(grade: GeneralRidingGrade | null | undefined) {
   return GENERAL_GRADES.find((candidate) => candidate.value === grade)?.label ?? '없음'
 }
 
-function formatDateTime(value: string | null | undefined) {
+function formatDateTime(value: string | Date | null | undefined) {
   if (!value) return '미설정'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? value : new Intl.DateTimeFormat('ko-KR', {
+  return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ko-KR', {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(date)
 }
 
-function AuditState({ state }: { state: Record<string, unknown> | null }) {
+function AuditState({ state }: { state: object | null }) {
   if (!state) return <span>없음</span>
   return (
     <ul>
@@ -474,18 +474,19 @@ function AuditState({ state }: { state: Record<string, unknown> | null }) {
   )
 }
 
-function auditStateEntries(state: Record<string, unknown>): Array<[string, string]> {
+function auditStateEntries(state: object): Array<[string, string]> {
+  const values = state as Record<string, unknown>
   const entries: Array<[string, string]> = []
-  addNumber(entries, state, 'actualCompletedRideCount', '실제 일반 기승', '회')
-  addNumber(entries, state, 'rideCountDelta', '보정 delta')
-  addNumber(entries, state, 'progressionValue', 'progression 값')
-  addGrade(entries, state, 'progressionClass', 'progression 클래스')
-  addGrade(entries, state, 'effectiveClass', '유효 클래스')
-  addGrade(entries, state, 'baselineClass', '시작 클래스')
-  addNumber(entries, state, 'baselineThreshold', '시작 threshold')
-  addNumber(entries, state, 'baselineActualRideCount', '시작 시 실제 기승', '회')
-  addNumber(entries, state, 'specialApprovalProgressionCredit', '특수 승인 인정분')
-  addGrade(entries, state, 'promotionHoldClass', '승급 보류 상한')
+  addNumber(entries, values, 'actualCompletedRideCount', '실제 일반 기승', '회')
+  addNumber(entries, values, 'rideCountDelta', '보정 delta')
+  addNumber(entries, values, 'progressionValue', 'progression 값')
+  addGrade(entries, values, 'progressionClass', 'progression 클래스')
+  addGrade(entries, values, 'effectiveClass', '유효 클래스')
+  addGrade(entries, values, 'baselineClass', '시작 클래스')
+  addNumber(entries, values, 'baselineThreshold', '시작 threshold')
+  addNumber(entries, values, 'baselineActualRideCount', '시작 시 실제 기승', '회')
+  addNumber(entries, values, 'specialApprovalProgressionCredit', '특수 승인 인정분')
+  addGrade(entries, values, 'promotionHoldClass', '승급 보류 상한')
   return entries
 }
 

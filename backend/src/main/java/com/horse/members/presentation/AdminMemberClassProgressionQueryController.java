@@ -15,6 +15,8 @@ import com.horse.members.presentation.dto.MemberClassProgressionAuditPageRespons
 import com.horse.members.presentation.dto.MemberClassProgressionPreviewRequest;
 import com.horse.members.presentation.dto.MemberClassProgressionPreviewResponse;
 
+import io.swagger.v3.oas.annotations.Operation;
+
 import jakarta.validation.Valid;
 
 @RestController
@@ -28,6 +30,7 @@ public class AdminMemberClassProgressionQueryController {
 	}
 
 	@PostMapping("/preview")
+	@Operation(operationId = "previewMemberClassProgression")
 	public MemberClassProgressionPreviewResponse preview(
 		@PathVariable long memberId,
 		@Valid @RequestBody MemberClassProgressionPreviewRequest request
@@ -42,6 +45,7 @@ public class AdminMemberClassProgressionQueryController {
 	}
 
 	@GetMapping("/audit-logs")
+	@Operation(operationId = "getMemberClassProgressionAuditLogs")
 	public MemberClassProgressionAuditPageResponse getAuditLogs(
 		@PathVariable long memberId,
 		@Valid @ParameterObject @ModelAttribute MemberClassProgressionAuditPageRequest request

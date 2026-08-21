@@ -791,6 +791,35 @@ rg -q '@media \(max-width: 520px\)' \
   frontend/apps/web/src/features/admin-members/admin-members-page.css
 '''
 
+[tasks."verify:m32-09"]
+description = "Verify Phase B OpenAPI, generated client, and Web contract synchronization"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*M32PhaseBOpenApiContractTest' \
+  --tests '*AdminFamilyGroupQueryApiTest' \
+  --tests '*AdminFamilyGroupCommandApiTest' \
+  --tests '*MemberCouponQueryApiTest' \
+  --tests '*AdminMemberClassProgressionWebApiTest' \
+  --tests '*AdminMemberClassProgressionApiTest' \
+  --tests '*AdminMemberRideCountAdjustmentApiTest' \
+  --tests '*AdminMemberRidingPermissionApiTest'
+mise run api:check
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-family-groups/AdminFamilyGroupsPage.test.tsx \
+  src/features/admin-family-groups/admin-family-groups.api.test.ts \
+  src/features/admin-members/AdminMembersPage.test.tsx \
+  src/features/admin-members/admin-members.api.test.ts \
+  src/features/my-coupons/MyCouponsPage.test.tsx \
+  src/api/web-api-configuration.test.ts
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- \
+  tests/e2e/m32-05-family-groups-responsive.spec.ts \
+  tests/e2e/m32-08-admin-class-progression-responsive.spec.ts
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

@@ -31,12 +31,19 @@ export interface MemberRidingPermissionUpdateRequest {
      * @memberof MemberRidingPermissionUpdateRequest
      */
     jumpingApproved?: boolean;
+    /**
+     *
+     * @type {string}
+     * @memberof MemberRidingPermissionUpdateRequest
+     */
+    reason: string;
 }
 
 /**
  * Check if a given object implements the MemberRidingPermissionUpdateRequest interface.
  */
 export function instanceOfMemberRidingPermissionUpdateRequest(value: object): value is MemberRidingPermissionUpdateRequest {
+    if (!('reason' in value) || value['reason'] === undefined) return false;
     return true;
 }
 
@@ -52,6 +59,7 @@ export function MemberRidingPermissionUpdateRequestFromJSONTyped(json: any, igno
 
         'dressageApproved': json['dressageApproved'] == null ? undefined : json['dressageApproved'],
         'jumpingApproved': json['jumpingApproved'] == null ? undefined : json['jumpingApproved'],
+        'reason': json['reason'],
     };
 }
 
@@ -68,6 +76,7 @@ export function MemberRidingPermissionUpdateRequestToJSONTyped(value?: MemberRid
 
         'dressageApproved': value['dressageApproved'],
         'jumpingApproved': value['jumpingApproved'],
+        'reason': value['reason'],
     };
 }
 

@@ -41,7 +41,7 @@ public class AdminMemberClassProgressionQueryService {
 		Integer rideCountDelta
 	) {
 		final Member member = findMember(memberId);
-		final String stateToken = MemberClassProgressionSnapshot.from(member).stateToken();
+		final String stateToken = MemberClassProgressionSnapshot.from(member).strongEntityTag();
 		final MemberClassProgressionProjection current = member.currentClassProgressionProjection();
 		final MemberClassProgressionProjection expected = switch (required(action)) {
 			case SET_BASELINE -> member.previewProgressionBaseline(required(baselineClass));

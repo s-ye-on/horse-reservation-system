@@ -49,7 +49,7 @@ describe('adminMembersApi', () => {
   it('preview와_감사_Page는_Bearer를_사용해_전용_조회_Endpoint를_호출한다', async () => {
     const fetchMock = vi.fn()
       .mockImplementationOnce(() => Promise.resolve(jsonResponse({
-        stateToken: 'state-v1',
+        stateToken: '"state-v1"',
         current: progressionProjection(20),
         expected: progressionProjection(70),
       })))
@@ -81,12 +81,13 @@ describe('adminMembersApi', () => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(memberResponse()))
     vi.stubGlobal('fetch', fetchMock)
 
-    await adminMembersApi.setProgressionBaseline(7, 'LARGE_ARENA_TROT', '경력 확인', 'state-v1')
-    await adminMembersApi.removeProgressionBaseline(7, '잘못된 baseline 교정', 'state-v1')
-    await adminMembersApi.setPromotionHold(7, 'ROUND_TROT', '안전 확인', 'state-v1')
-    await adminMembersApi.removePromotionHold(7, '재평가 완료', 'state-v1')
-    await adminMembersApi.correctSpecialApprovalCredit(7, 3, '승인 인정분 교정', 'state-v1')
-    await adminMembersApi.adjustRideCount(7, -1, '중복 집계 정정', 'state-v1')
+    const stateToken = '"state-v1"'
+    await adminMembersApi.setProgressionBaseline(7, 'LARGE_ARENA_TROT', '경력 확인', stateToken)
+    await adminMembersApi.removeProgressionBaseline(7, '잘못된 baseline 교정', stateToken)
+    await adminMembersApi.setPromotionHold(7, 'ROUND_TROT', '안전 확인', stateToken)
+    await adminMembersApi.removePromotionHold(7, '재평가 완료', stateToken)
+    await adminMembersApi.correctSpecialApprovalCredit(7, 3, '승인 인정분 교정', stateToken)
+    await adminMembersApi.adjustRideCount(7, -1, '중복 집계 정정', stateToken)
 
     expect(requestSummary(fetchMock, 0)).toEqual({
       path: '/api/admin/members/7/class-progression/baseline',
@@ -120,7 +121,7 @@ describe('adminMembersApi', () => {
     })
     for (const call of fetchMock.mock.calls) {
       const init = call[1] as RequestInit
-      expect(new Headers(init.headers).get('If-Match')).toBe('state-v1')
+      expect(new Headers(init.headers).get('If-Match')).toBe(stateToken)
     }
   })
 })

@@ -57,6 +57,60 @@ export interface AdminMemberResponse {
     jumpingRideCount: number;
     /**
      *
+     * @type {number}
+     * @memberof AdminMemberResponse
+     */
+    progressionValue: number;
+    /**
+     *
+     * @type {AdminMemberResponseProgressionClassEnum}
+     * @memberof AdminMemberResponse
+     */
+    progressionClass: AdminMemberResponseProgressionClassEnum;
+    /**
+     *
+     * @type {AdminMemberResponseEffectiveClassEnum}
+     * @memberof AdminMemberResponse
+     */
+    effectiveClass: AdminMemberResponseEffectiveClassEnum;
+    /**
+     *
+     * @type {Date}
+     * @memberof AdminMemberResponse
+     */
+    progressionManagementStartedAt: Date | null;
+    /**
+     *
+     * @type {AdminMemberResponseProgressionBaselineClassEnum}
+     * @memberof AdminMemberResponse
+     */
+    progressionBaselineClass: AdminMemberResponseProgressionBaselineClassEnum | null;
+    /**
+     *
+     * @type {number}
+     * @memberof AdminMemberResponse
+     */
+    progressionBaselineThreshold: number | null;
+    /**
+     *
+     * @type {number}
+     * @memberof AdminMemberResponse
+     */
+    progressionBaselineActualRideCount: number | null;
+    /**
+     *
+     * @type {number}
+     * @memberof AdminMemberResponse
+     */
+    specialApprovalProgressionCredit: number;
+    /**
+     *
+     * @type {AdminMemberResponsePromotionHoldClassEnum}
+     * @memberof AdminMemberResponse
+     */
+    promotionHoldClass: AdminMemberResponsePromotionHoldClassEnum | null;
+    /**
+     *
      * @type {boolean}
      * @memberof AdminMemberResponse
      */
@@ -75,6 +129,64 @@ export interface AdminMemberResponse {
     canUseLargeArena: boolean;
 }
 
+
+/**
+ * @export
+ */
+export const AdminMemberResponseProgressionClassEnum = {
+    FirstRide: 'FIRST_RIDE',
+    RoundBeginner: 'ROUND_BEGINNER',
+    RoundTrot: 'ROUND_TROT',
+    LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
+    LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER'
+} as const;
+export type AdminMemberResponseProgressionClassEnum = typeof AdminMemberResponseProgressionClassEnum[keyof typeof AdminMemberResponseProgressionClassEnum];
+
+/**
+ * @export
+ */
+export const AdminMemberResponseEffectiveClassEnum = {
+    FirstRide: 'FIRST_RIDE',
+    RoundBeginner: 'ROUND_BEGINNER',
+    RoundTrot: 'ROUND_TROT',
+    LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
+    LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER'
+} as const;
+export type AdminMemberResponseEffectiveClassEnum = typeof AdminMemberResponseEffectiveClassEnum[keyof typeof AdminMemberResponseEffectiveClassEnum];
+
+/**
+ * @export
+ */
+export const AdminMemberResponseProgressionBaselineClassEnum = {
+    FirstRide: 'FIRST_RIDE',
+    RoundBeginner: 'ROUND_BEGINNER',
+    RoundTrot: 'ROUND_TROT',
+    LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
+    LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER'
+} as const;
+export type AdminMemberResponseProgressionBaselineClassEnum = typeof AdminMemberResponseProgressionBaselineClassEnum[keyof typeof AdminMemberResponseProgressionBaselineClassEnum];
+
+/**
+ * @export
+ */
+export const AdminMemberResponsePromotionHoldClassEnum = {
+    FirstRide: 'FIRST_RIDE',
+    RoundBeginner: 'ROUND_BEGINNER',
+    RoundTrot: 'ROUND_TROT',
+    LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
+    LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER'
+} as const;
+export type AdminMemberResponsePromotionHoldClassEnum = typeof AdminMemberResponsePromotionHoldClassEnum[keyof typeof AdminMemberResponsePromotionHoldClassEnum];
+
+
 /**
  * Check if a given object implements the AdminMemberResponse interface.
  */
@@ -85,6 +197,15 @@ export function instanceOfAdminMemberResponse(value: object): value is AdminMemb
     if (!('generalRideCount' in value) || value['generalRideCount'] === undefined) return false;
     if (!('dressageRideCount' in value) || value['dressageRideCount'] === undefined) return false;
     if (!('jumpingRideCount' in value) || value['jumpingRideCount'] === undefined) return false;
+    if (!('progressionValue' in value) || value['progressionValue'] === undefined) return false;
+    if (!('progressionClass' in value) || value['progressionClass'] === undefined) return false;
+    if (!('effectiveClass' in value) || value['effectiveClass'] === undefined) return false;
+    if (!('progressionManagementStartedAt' in value) || value['progressionManagementStartedAt'] === undefined) return false;
+    if (!('progressionBaselineClass' in value) || value['progressionBaselineClass'] === undefined) return false;
+    if (!('progressionBaselineThreshold' in value) || value['progressionBaselineThreshold'] === undefined) return false;
+    if (!('progressionBaselineActualRideCount' in value) || value['progressionBaselineActualRideCount'] === undefined) return false;
+    if (!('specialApprovalProgressionCredit' in value) || value['specialApprovalProgressionCredit'] === undefined) return false;
+    if (!('promotionHoldClass' in value) || value['promotionHoldClass'] === undefined) return false;
     if (!('dressageApproved' in value) || value['dressageApproved'] === undefined) return false;
     if (!('jumpingApproved' in value) || value['jumpingApproved'] === undefined) return false;
     if (!('canUseLargeArena' in value) || value['canUseLargeArena'] === undefined) return false;
@@ -107,6 +228,15 @@ export function AdminMemberResponseFromJSONTyped(json: any, ignoreDiscriminator:
         'generalRideCount': json['generalRideCount'],
         'dressageRideCount': json['dressageRideCount'],
         'jumpingRideCount': json['jumpingRideCount'],
+        'progressionValue': json['progressionValue'],
+        'progressionClass': json['progressionClass'],
+        'effectiveClass': json['effectiveClass'],
+        'progressionManagementStartedAt': (json['progressionManagementStartedAt'] == null ? null : new Date(json['progressionManagementStartedAt'])),
+        'progressionBaselineClass': json['progressionBaselineClass'],
+        'progressionBaselineThreshold': json['progressionBaselineThreshold'],
+        'progressionBaselineActualRideCount': json['progressionBaselineActualRideCount'],
+        'specialApprovalProgressionCredit': json['specialApprovalProgressionCredit'],
+        'promotionHoldClass': json['promotionHoldClass'],
         'dressageApproved': json['dressageApproved'],
         'jumpingApproved': json['jumpingApproved'],
         'canUseLargeArena': json['canUseLargeArena'],
@@ -130,6 +260,15 @@ export function AdminMemberResponseToJSONTyped(value?: AdminMemberResponse | nul
         'generalRideCount': value['generalRideCount'],
         'dressageRideCount': value['dressageRideCount'],
         'jumpingRideCount': value['jumpingRideCount'],
+        'progressionValue': value['progressionValue'],
+        'progressionClass': value['progressionClass'],
+        'effectiveClass': value['effectiveClass'],
+        'progressionManagementStartedAt': value['progressionManagementStartedAt'] == null ? value['progressionManagementStartedAt'] : value['progressionManagementStartedAt'].toISOString(),
+        'progressionBaselineClass': value['progressionBaselineClass'],
+        'progressionBaselineThreshold': value['progressionBaselineThreshold'],
+        'progressionBaselineActualRideCount': value['progressionBaselineActualRideCount'],
+        'specialApprovalProgressionCredit': value['specialApprovalProgressionCredit'],
+        'promotionHoldClass': value['promotionHoldClass'],
         'dressageApproved': value['dressageApproved'],
         'jumpingApproved': value['jumpingApproved'],
         'canUseLargeArena': value['canUseLargeArena'],

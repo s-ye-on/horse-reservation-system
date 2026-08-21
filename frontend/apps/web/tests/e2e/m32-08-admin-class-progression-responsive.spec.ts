@@ -23,7 +23,7 @@ test('회원_class_progression_관리는_320px에서_preview와_감사를_확인
         status: 200,
         headers: JSON_HEADERS,
         body: JSON.stringify({
-          stateToken: 'e2e-state-v1',
+          stateToken: '"e2e-state-v1"',
           current: progressionProjection(26, 'LARGE_ARENA_TROT'),
           expected: {
             ...progressionProjection(70, 'CANTER_BEGINNER'),
@@ -62,7 +62,7 @@ test('회원_class_progression_관리는_320px에서_preview와_감사를_확인
     }
 
     if (request.method() !== 'GET') {
-      expect(request.headers()['if-match']).toBe('e2e-state-v1')
+      expect(request.headers()['if-match']).toBe('"e2e-state-v1"')
       await route.fulfill({ status: 200, headers: JSON_HEADERS, body: JSON.stringify(member()) })
       return
     }
