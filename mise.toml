@@ -820,6 +820,17 @@ pnpm --dir frontend/apps/web test:e2e -- \
   tests/e2e/m32-08-admin-class-progression-responsive.spec.ts
 '''
 
+[tasks."verify:m32-10"]
+description = "Run the Phase B final quality gate"
+run = '''
+mise run verify:all
+pnpm --dir frontend/apps/web test:e2e -- \
+  tests/e2e/m31-16b2-web-auth.spec.ts \
+  tests/e2e/m32-05-family-groups-responsive.spec.ts \
+  tests/e2e/m32-08-admin-class-progression-responsive.spec.ts
+git diff --check
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

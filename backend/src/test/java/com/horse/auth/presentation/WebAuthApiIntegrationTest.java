@@ -8,8 +8,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +25,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.horse.TestcontainersConfiguration;
 import com.horse.auth.domain.RefreshTokenSessionStatus;
 import com.horse.auth.infrastructure.RefreshTokenSessionRepository;
+import com.horse.auth.support.AuthIntegrationTestDataCleaner;
 
 import jakarta.servlet.http.Cookie;
 import tools.jackson.databind.JsonNode;
@@ -59,14 +58,7 @@ class WebAuthApiIntegrationTest {
 	@BeforeEach
 	@AfterEach
 	void 웹_인증_테스트_데이터를_초기화한다() {
-		final List<Long> memberIds = jdbcTemplate.queryForList(
-			"SELECT member_id FROM auth_accounts WHERE member_id IS NOT NULL",
-			Long.class
-		);
-		jdbcTemplate.update("UPDATE refresh_token_sessions SET parent_session_id = NULL");
-		jdbcTemplate.update("DELETE FROM refresh_token_sessions");
-		jdbcTemplate.update("DELETE FROM auth_accounts");
-		memberIds.forEach(memberId -> jdbcTemplate.update("DELETE FROM members WHERE id = ?", memberId));
+		AuthIntegrationTestDataCleaner.clean(jdbcTemplate);
 	}
 
 	@Test

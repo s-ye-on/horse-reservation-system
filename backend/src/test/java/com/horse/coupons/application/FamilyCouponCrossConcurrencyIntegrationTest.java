@@ -471,9 +471,9 @@ class FamilyCouponCrossConcurrencyIntegrationTest {
 
 	private void insertMembership(long groupId, long memberId) {
 		jdbcTemplate.update("""
-			INSERT INTO family_memberships (family_group_id, member_id)
-			VALUES (?, ?)
-			""", groupId, memberId);
+			INSERT INTO family_memberships (family_group_id, member_id, joined_at)
+			VALUES (?, ?, ?)
+			""", groupId, memberId, OCCURRED_AT);
 	}
 
 	private long insertCoupon(

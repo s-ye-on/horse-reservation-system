@@ -401,9 +401,11 @@ export function prepareMvpTwoFixture(): MvpTwoFixture {
     WHERE member.auth_subject = '${subjects.adminCancel}';
 
     INSERT INTO coupon_usage_logs (
-      coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
+      coupon_id, reservation_id, member_id, coupon_owner_member_id,
+      action, count_delta, occurred_at, actor_type, memo
     )
-    SELECT coupon.id, reservation.id, member.id, 'held', 1, NOW(6), 'member', 'M2-11 fixture'
+    SELECT coupon.id, reservation.id, member.id, member.id,
+      'held', 1, NOW(6), 'member', 'M2-11 fixture'
     FROM members member
     JOIN coupons coupon ON coupon.member_id = member.id
     JOIN reservations reservation ON reservation.member_id = member.id
@@ -563,18 +565,22 @@ export function prepareMvpThreeFixture(): MvpThreeFixture {
     WHERE member.auth_subject = '${completedSubject}';
 
     INSERT INTO coupon_usage_logs (
-      coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
+      coupon_id, reservation_id, member_id, coupon_owner_member_id,
+      action, count_delta, occurred_at, actor_type, memo
     )
-    SELECT coupon.id, reservation.id, member.id, 'held', 1, NOW(6), 'member', 'M3-11 fixture'
+    SELECT coupon.id, reservation.id, member.id, member.id,
+      'held', 1, NOW(6), 'member', 'M3-11 fixture'
     FROM members member
     JOIN coupons coupon ON coupon.member_id = member.id
     JOIN reservations reservation ON reservation.member_id = member.id
     WHERE member.auth_subject IN ('${pendingSubject}', '${completedSubject}');
 
     INSERT INTO coupon_usage_logs (
-      coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
+      coupon_id, reservation_id, member_id, coupon_owner_member_id,
+      action, count_delta, occurred_at, actor_type, memo
     )
-    SELECT coupon.id, reservation.id, member.id, 'confirmed', 0, NOW(6), 'admin', 'M3-11 fixture'
+    SELECT coupon.id, reservation.id, member.id, member.id,
+      'confirmed', 0, NOW(6), 'admin', 'M3-11 fixture'
     FROM members member
     JOIN coupons coupon ON coupon.member_id = member.id
     JOIN reservations reservation ON reservation.member_id = member.id
@@ -735,9 +741,11 @@ export function prepareReservationLifecycleFixture(): ReservationLifecycleFixtur
     WHERE member.auth_subject = '${upcomingSubject}';
 
     INSERT INTO coupon_usage_logs (
-      coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
+      coupon_id, reservation_id, member_id, coupon_owner_member_id,
+      action, count_delta, occurred_at, actor_type, memo
     )
-    SELECT coupon.id, reservation.id, member.id, 'held', 1, NOW(6), 'member', 'M3-18 fixture'
+    SELECT coupon.id, reservation.id, member.id, member.id,
+      'held', 1, NOW(6), 'member', 'M3-18 fixture'
     FROM members member
     JOIN coupons coupon ON coupon.member_id = member.id
     JOIN reservations reservation ON reservation.member_id = member.id
@@ -1290,6 +1298,8 @@ function classCapacityJson() {
     ROUND_TROT: 4,
     LARGE_ARENA_BEGINNER: 5,
     LARGE_ARENA_TROT: 5,
+    CANTER_BEGINNER: 5,
+    CANTER: 5,
     DRESSAGE: 5,
     JUMPING: 5,
   })
