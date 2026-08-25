@@ -48,9 +48,21 @@ M32-07 correction과 Horse 운영 이전 경력은 월간 운영 실적에 포�
 사용한다. 예약 존재 여부로 TimeSlot을 필터링하지 않으므로 0건인 슬롯도 반환한다.
 
 각 TimeSlot에는 기존 식별자와 시간을 제공하고 같은 `lessonDate`와 `startTime`을 가진
-Reservation을 묶는다. Reservation 행에는 회원 식별·표시 이름, RidingClass와 현재
-ReservationStatus를 제공한다. 모든 기존 상태를 그대로 표시하고 새 운영 상태나 상태 전이를
-추가하지 않는다. 예약 행이 없을 때만 `예약 없음`으로 표현한다.
+캘린더 표시 대상 Reservation을 묶는다. 표시 대상은 다음 의미 규칙으로 결정한다.
+
+`calendar-visible reservation = capacity-occupying reservation OR COMPLETED reservation`
+
+정원 점유는 `occupiesCapacity()`와 `occupyingStatuses()`로 노출되는 `ReservationStatus`의 기존 점유
+계약에서 파생한다. 현재 결과는 `PENDING_ADMIN_APPROVAL`, `PENDING_PAYMENT`, `CONFIRMED`이며 실제
+수업이 진행된 `COMPLETED`를 추가한다. 별도의 캘린더 상태 목록이나 영속 상태를 만들지 않는다.
+
+Reservation 행에는 회원 식별·표시 이름, RidingClass와 원래 ReservationStatus를 제공한다.
+승인대기·입금대기를 확정으로 합치거나 새 운영 상태를 만들지 않는다. `PAYMENT_EXPIRED`,
+`APPROVAL_EXPIRED`, `REJECTED`, `CANCELLED`, `NO_SHOW`는 현재 정원을 점유하지 않고 완료 수업도
+아니므로 기본 주간 캘린더에서 제외한다. 이력 탐색은 기존 관리자 예약 조회와 해당 전이에 대해
+존재하는 감사 조회의 책임으로 남긴다.
+
+표시 대상 예약 행이 없을 때는 제외 상태의 과거 Reservation이 존재해도 `예약 없음`으로 표현한다.
 
 빈 TimeSlot은 특정 RidingClass 수업으로 단정하지 않고 RidingClass는 Reservation별로만 표시한다.
 
@@ -84,6 +96,16 @@ progression 목적과 운영 실적 목적이 다르다.
 
 거부한다. 최대 Page 크기, 날짜·슬롯별 다중 요청, 빈 TimeSlot 누락과 Frontend 도메인 규칙 복제가
 발생한다.
+
+### 확정 및 완료 Reservation만 표시
+
+거부한다. `PENDING_ADMIN_APPROVAL`과 `PENDING_PAYMENT`도 현재 정원을 점유하므로 숨기면 관리자가
+추가 예약 가능 좌석을 잘못 판단할 수 있다.
+
+### 모든 ReservationStatus를 표시
+
+거부한다. 취소·반려·만료·노쇼처럼 현재 정원을 점유하지 않고 완료 수업도 아닌 terminal 이력까지
+표시하면 운영 가용성 화면이 전체 예약 이력 화면으로 확장되고 `예약 없음` 의미가 흐려진다.
 
 ### 범용 analytics 또는 calendar framework 도입
 

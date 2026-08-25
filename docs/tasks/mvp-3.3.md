@@ -4,10 +4,10 @@
 |---|---|---|---|---|---|
 | M33-00 | 관리자 운영 통계·주간 캘린더 SSOT와 ADR | M32-10 | 완료 예약 통계와 materialized TimeSlot 조회 계약 확정 | 제품 코드·migration·MVP 4 | `mise run verify:m33-00` |
 | M33-01 | 관리자 월간 완료 기승 통계 Query API | M33-00 | 월·종류별 총 횟수와 공동 1위 집계·쿼리 비용 테스트 성공 | Web·mutable 통계·M32-07 변경 | `mise run verify:m33-01` |
-| M33-02 | 관리자 주간 운영 캘린더 Query API | M33-00 | 7일 TimeSlot·빈 슬롯·회원·RidingClass·기존 상태 일괄 조회 성공 | 일정·예약 Command·Web | `mise run verify:m33-02` |
+| M33-02 | 관리자 주간 운영 캘린더 Query API | M33-00 | 7일 빈 TimeSlot·점유/완료 예약·회원·클래스 일괄 조회 성공 | 일정·예약 Command·전체 예약 이력·Web | `mise run verify:m33-02` |
 | M33-03 | Phase C OpenAPI와 generated client | M33-01, M33-02 | 통계·캘린더 schema와 Web 타입 재생성 diff 승인 | 제품 정책·화면 | `mise run verify:m33-03` |
 | M33-04 | 관리자 월간 기승 통계 Web | M33-03 | 월·종류 이동, 0건과 공동 1위 반응형 화면 테스트 성공 | 주간 캘린더·통계 export | `mise run verify:m33-04` |
-| M33-05 | 관리자 주간 운영 캘린더 Web | M33-03 | 주 이동·오늘·빈 TimeSlot·다중 회원·예약 상태 반응형 E2E 성공 | 일정 편집·범용 Dashboard | `mise run verify:m33-05` |
+| M33-05 | 관리자 주간 운영 캘린더 Web | M33-03 | 주 이동·오늘·빈 슬롯·다중 회원·점유/완료 표시·비점유 미완료 제외 E2E 성공 | 일정 편집·전체 예약 이력·범용 Dashboard | `mise run verify:m33-05` |
 | M33-06 | Phase C 전체 품질 Gate | M33-04, M33-05 | Backend 집계·OpenAPI diff·Web 회귀·E2E 승인 | MVP 4 구현 | `mise run verify:m33-06` |
 
 모든 항목은 [실행 작업 템플릿](TEMPLATE.md)의 작업 크기 상한과 공통 중단 조건을 상속한다.
@@ -33,10 +33,15 @@ M33-01과 M33-02는 M33-00 이후 병렬로 진행할 수 있고 M33-04와 M33-0
 - 조회 범위는 선택 기준일이 속한 월요일부터 일요일까지 7일이며 기본값은 현재 주다.
 - 이전·다음 주와 `오늘`을 제공하고 `오늘`은 일간 화면이 아니라 현재 주로 복귀한다.
 - 실제 `TimeSlotCapacity`에서 조회를 시작해 예약이 없는 materialized TimeSlot도 반환한다.
-- 같은 날짜와 시작 시각의 Reservation을 TimeSlot 하나 아래에 묶고 회원, 예약 RidingClass와
-  현재 `ReservationStatus`를 반환한다. 모든 기존 상태를 그대로 표현하며 새 상태를 만들지 않는다.
-- TimeSlot은 여러 RidingClass capacity를 가진다. 빈 TimeSlot에 임의의 단일 수업 클래스를 붙이지
-  않고 `예약 없음`으로 표시하며 클래스는 실제 Reservation별로 표시한다.
+- `calendar-visible reservation = capacity-occupying reservation OR COMPLETED reservation`이다. 점유 상태는
+  별도 목록을 만들지 않고 `ReservationStatus.occupyingStatuses()`에서 파생하며 현재 결과는
+  `PENDING_ADMIN_APPROVAL`, `PENDING_PAYMENT`, `CONFIRMED`이고 `COMPLETED`를 추가한다.
+- 같은 날짜와 시작 시각의 표시 대상 Reservation을 TimeSlot 하나 아래에 묶고 회원, 예약 RidingClass와
+  원래 `ReservationStatus`를 반환한다. 대기 상태를 확정으로 바꾸거나 새 표시 상태를 만들지 않는다.
+- `PAYMENT_EXPIRED`, `APPROVAL_EXPIRED`, `REJECTED`, `CANCELLED`, `NO_SHOW`는 기본 주간 캘린더에서
+  제외한다. 이 화면은 전체 예약 이력이나 감사 조회를 대체하지 않는다.
+- TimeSlot은 여러 RidingClass capacity를 가진다. 표시 대상 Reservation이 없으면 제외 상태의 과거
+  Reservation이 있어도 `예약 없음`으로 표시하고 클래스는 실제 표시 대상 Reservation별로만 제공한다.
 - 기존 upcoming/history 목록을 일곱 번 호출하지 않는다. 한 번의 주간 API가 bounded query로
   TimeSlot, Reservation과 Member를 일괄 조회한다.
 
@@ -45,7 +50,8 @@ M33-01과 M33-02는 M33-00 이후 병렬로 진행할 수 있고 M33-04와 M33-0
 - M33-01은 Reservation DB aggregation을 사용한다. 기존 `(lesson_date, status)` index를 먼저
   검증하고 실제 `EXPLAIN` 또는 통합 테스트 근거가 있을 때만 필요한 최소 index migration을 추가한다.
 - M33-02는 7일 범위의 TimeSlot과 Reservation을 각각 bounded query로 읽어 조립하거나 동등한
-  projection을 사용한다. 슬롯별·회원별 반복 query를 금지한다.
+  projection을 사용한다. 캘린더 표시 상태는 `occupyingStatuses()`와 `COMPLETED`에서 파생하고 별도
+  mutable 상태 목록을 소유하지 않으며 슬롯별·회원별 반복 query를 금지한다.
 - 통계를 위한 mutable counter, snapshot table, event sourcing과 범용 analytics/calendar framework는
   현재 요구를 위해 도입하지 않는다.
 - M33-03이 Backend runtime 계약을 OpenAPI와 generated TypeScript client에 동기화한 뒤 Web Task가

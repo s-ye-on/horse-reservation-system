@@ -12,7 +12,8 @@ Horse가 이미 보존하는 예약 완료와 materialized TimeSlot을 관리자
 - 현재 월 기본 조회, 이전·다음 월 이동과 현재 월 복귀
 - materialized TimeSlot을 기준으로 한 월요일부터 일요일까지의 관리자 주간 운영 캘린더
 - 이전·다음 주 이동과 현재 주 복귀
-- 예약이 없는 TimeSlot, 같은 TimeSlot의 여러 회원, RidingClass와 현재 Reservation 상태 표시
+- 예약이 없는 TimeSlot과 같은 TimeSlot의 여러 회원 표시, 정원 점유 Reservation 또는 `COMPLETED`
+  Reservation의 RidingClass와 원래 상태 표시
 - 전용 Backend read model, OpenAPI/generated client와 관리자 Web 동기화
 
 ## 제외 범위
@@ -30,7 +31,8 @@ Horse가 이미 보존하는 예약 완료와 materialized TimeSlot을 관리자
 - 월간 통계가 `lessonDate`가 선택 월이고 상태가 `COMPLETED`인 Reservation만 집계한다.
 - `ALL`, `GENERAL`, `DRESSAGE`, `JUMPING` 선택에 따라 총 횟수와 공동 최다 회원이 함께 바뀐다.
 - 주간 캘린더가 선택한 월요일~일요일의 실제 TimeSlot을 예약 0건인 경우까지 표시한다.
-- 주간 조회가 TimeSlot별 반복 HTTP 요청이나 회원·예약 N+1 없이 회원, RidingClass와 상태를 제공한다.
+- 주간 조회가 TimeSlot별 반복 HTTP 요청이나 회원·예약 N+1 없이 정원 점유 Reservation과
+  `COMPLETED` Reservation의 회원, RidingClass와 원래 상태를 제공한다.
 - Backend runtime, OpenAPI, generated client와 관리자 Web 계약이 일치하고 전용 Gate가 성공한다.
 
 ## 선행 Gate

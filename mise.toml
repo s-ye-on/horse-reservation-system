@@ -840,10 +840,19 @@ rg -Fq '월간 기승 현황은 Horse 예약 시스템 운영 이후, 해당 월
 rg -Fq '`ALL`은 모든 완료 Reservation, `GENERAL`은 `RidingClass.isGeneral()`인 완료 Reservation' docs/product/policies.md
 rg -Fq 'M32-07 ride count correction은 월간 운영 실적에 포함하지 않는다.' docs/product/policies.md
 rg -Fq '예약이 0건인 TimeSlot도 표시한다.' docs/product/policies.md
-rg -Fq '빈 TimeSlot에 임의의 단일 수업 클래스를 붙이지 않는다.' docs/product/policies.md
-rg -Fq '회원·RidingClass·기존 상태 일괄 조회 성공' docs/tasks/mvp-3.3.md
+rg -Fq '표시 대상 Reservation이 하나도 없는 TimeSlot은' docs/product/policies.md
+rg -Fq 'calendar-visible reservation = capacity-occupying reservation OR COMPLETED reservation' docs/product/policies.md
+rg -Fq '`PENDING_ADMIN_APPROVAL`, `PENDING_PAYMENT`, `CONFIRMED`' docs/product/policies.md
+rg -Fq '`PAYMENT_EXPIRED`, `APPROVAL_EXPIRED`, `REJECTED`, `CANCELLED`, `NO_SHOW`' docs/product/policies.md
+rg -Fq '점유/완료 예약·회원·클래스 일괄 조회 성공' docs/tasks/mvp-3.3.md
+rg -Fq '현재 정원을 점유하는 Reservation과 `COMPLETED` Reservation만' docs/product/requirements.md
 rg -Fq '실제 materialized TimeSlot을 root로' docs/architecture/adr-023-admin-operational-visibility-read-models.md
 rg -Fq '동률 회원을 임의의 ID 정렬로 한 명만 숨기지 않는다.' docs/architecture/adr-023-admin-operational-visibility-read-models.md
+rg -Fq '점유 여부는 `ReservationStatus`의 기존 점유 SSOT에서 파생한다.' docs/architecture/domain-model.md
+rg -Fq '해당 상태 전이에 대해 존재하는 감사 조회의 책임으로 유지한다.' docs/tasks/completed/M33-00.md
+! rg -n '모든 기존 상태를 그대로' docs/product/mvp-3.3.md docs/product/policies.md docs/tasks/mvp-3.3.md \
+  docs/product/requirements.md docs/architecture/adr-023-admin-operational-visibility-read-models.md \
+  docs/architecture/domain-model.md docs/tasks/completed/M33-00.md
 rg -Fq '| M4-00 | Expo TypeScript 앱 골격 | M33-06 |' docs/tasks/mvp-4.md
 ! rg -n 'effectiveLessonDate|PRE_ANCHOR|POST_ANCHOR|monthly_general_ride_count|monthly_dressage_ride_count|monthly_jumping_ride_count' \
   docs/product/mvp-3.3.md docs/tasks/mvp-3.3.md docs/architecture/adr-023-admin-operational-visibility-read-models.md

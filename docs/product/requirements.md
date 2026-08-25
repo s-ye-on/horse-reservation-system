@@ -113,8 +113,9 @@
 - 조회 종류 `ALL`, `GENERAL`, `DRESSAGE`, `JUMPING`은 기존 RidingClass 분류를 사용하며 종류를
   바꾸면 총 횟수와 공동 최다 기승 회원 전체를 함께 다시 계산한다.
 - progression baseline·인정분·hold, Member 누적 횟수와 M32-07 보정은 월간 운영 실적에 포함하지 않는다.
-- 주간 운영 캘린더는 선택 주의 materialized TimeSlot 전체를 예약 0건인 경우까지 표시하고 같은
-  TimeSlot의 회원, RidingClass와 Reservation 상태를 함께 제공한다.
+- 주간 운영 캘린더는 선택 주의 materialized TimeSlot 전체를 예약 0건인 경우까지 표시한다. 같은
+  TimeSlot에서는 현재 정원을 점유하는 Reservation과 `COMPLETED` Reservation만 회원, RidingClass,
+  원래 상태와 함께 제공한다.
 - 이전·다음 월과 주를 탐색할 수 있으며 월간 화면은 현재 월, 주간 화면은 현재 주로 복귀할 수 있다.
 
 상세 조회 SSOT, 성능 경계와 구현 순서는 ADR-023과 MVP-3.3 Task를 따른다.
