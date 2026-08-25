@@ -831,6 +831,24 @@ pnpm --dir frontend/apps/web test:e2e -- \
 git diff --check
 '''
 
+[tasks."verify:m33-00"]
+description = "Verify monthly ride statistics and weekly operations calendar policy contracts"
+run = '''
+mise run docs:check
+test "$(rg -c '^\| M33-' docs/tasks/mvp-3.3.md)" -eq 7
+rg -Fq '월간 기승 현황은 Horse 예약 시스템 운영 이후, 해당 월의 `COMPLETED` Reservation을 기준으로' docs/product/policies.md
+rg -Fq '`ALL`은 모든 완료 Reservation, `GENERAL`은 `RidingClass.isGeneral()`인 완료 Reservation' docs/product/policies.md
+rg -Fq 'M32-07 ride count correction은 월간 운영 실적에 포함하지 않는다.' docs/product/policies.md
+rg -Fq '예약이 0건인 TimeSlot도 표시한다.' docs/product/policies.md
+rg -Fq '빈 TimeSlot에 임의의 단일 수업 클래스를 붙이지 않는다.' docs/product/policies.md
+rg -Fq '회원·RidingClass·기존 상태 일괄 조회 성공' docs/tasks/mvp-3.3.md
+rg -Fq '실제 materialized TimeSlot을 root로' docs/architecture/adr-023-admin-operational-visibility-read-models.md
+rg -Fq '동률 회원을 임의의 ID 정렬로 한 명만 숨기지 않는다.' docs/architecture/adr-023-admin-operational-visibility-read-models.md
+rg -Fq '| M4-00 | Expo TypeScript 앱 골격 | M33-06 |' docs/tasks/mvp-4.md
+! rg -n 'effectiveLessonDate|PRE_ANCHOR|POST_ANCHOR|monthly_general_ride_count|monthly_dressage_ride_count|monthly_jumping_ride_count' \
+  docs/product/mvp-3.3.md docs/tasks/mvp-3.3.md docs/architecture/adr-023-admin-operational-visibility-read-models.md
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

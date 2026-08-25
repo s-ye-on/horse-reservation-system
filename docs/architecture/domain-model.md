@@ -133,6 +133,21 @@ R01에서 `end_time`, `source`를 먼저 이관했고 R02에서 `end_time` NOT N
 `template_id`, 세 마감 원인과 generated `is_closed` 파생 제약을 추가했다. JPA는
 generated 값을 읽기 전용으로 매핑하고 도메인은 세 원인의 OR로 현재 상태를 계산한다.
 
+## 관리자 운영 조회 모델
+
+MVP 3.3의 월간 기승 현황과 주간 운영 캘린더는 별도 Entity나 mutable counter가 아닌 read model이다.
+
+- `AdminMonthlyRideStatistics`는 선택 월의 `COMPLETED` Reservation을 `lessonDate`와 기존
+  RidingClass 분류로 DB 집계해 총 횟수와 공동 최고 회원 전체를 반환한다.
+- `AdminWeeklyOperationsCalendar`는 선택한 월요일~일요일의 materialized `TimeSlotCapacity`를 root로
+  읽고 같은 날짜·시각의 Reservation과 Member를 일괄 결합한다.
+- 빈 TimeSlot에도 RidingClass 하나를 합성하지 않는다. TimeSlot은 모든 클래스 capacity를 소유하고
+  실제 RidingClass는 Reservation에 속한다.
+- 두 모델은 source 상태를 변경하지 않으며 progression 상태, 회원 누적 횟수와 M32-07 correction을
+  월간 운영 실적으로 재해석하지 않는다.
+
+상세 계약은 ADR-023을 따른다.
+
 ## RegularScheduleTemplate
 
 ```text
