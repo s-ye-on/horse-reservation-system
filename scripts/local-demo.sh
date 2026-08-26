@@ -62,9 +62,11 @@ prepare_demo_data() {
     'exec env MYSQL_PWD="$MYSQL_PASSWORD" mysql --user="$MYSQL_USER" --database="$MYSQL_DATABASE" --default-character-set=utf8mb4' <<'SQL'
 INSERT INTO members (
   auth_subject, name, phone, general_ride_count,
-  dressage_approved, jumping_approved, large_arena_allowed
+  dressage_approved, jumping_approved, large_arena_allowed,
+  progression_management_started_at
 ) VALUES (
-  'local-demo-member', '로컬 데모 회원', '010-0000-0000', 26, TRUE, TRUE, TRUE
+  'local-demo-member', '로컬 데모 회원', '010-0000-0000', 26, TRUE, TRUE, TRUE,
+  CURRENT_TIMESTAMP(6)
 )
 ON DUPLICATE KEY UPDATE
   name = VALUES(name),
@@ -72,7 +74,11 @@ ON DUPLICATE KEY UPDATE
   general_ride_count = VALUES(general_ride_count),
   dressage_approved = VALUES(dressage_approved),
   jumping_approved = VALUES(jumping_approved),
-  large_arena_allowed = VALUES(large_arena_allowed);
+  large_arena_allowed = VALUES(large_arena_allowed),
+  progression_management_started_at = COALESCE(
+    progression_management_started_at,
+    VALUES(progression_management_started_at)
+  );
 
 INSERT INTO coupons (
   member_id, coupon_type, total_count, remaining_count, held_count, status, created_by
@@ -88,9 +94,9 @@ WHERE auth_subject = 'local-demo-member'
 INSERT IGNORE INTO time_slot_capacities (
   lesson_date, start_time, total_capacity, round_arena_capacity, class_capacity_json, admin_closed
 ) VALUES
-  (DATE_ADD(CURDATE(), INTERVAL 1 DAY), '10:00:00', 8, 4, '{"FIRST_RIDE":4,"ROUND_BEGINNER":4,"ROUND_TROT":4,"LARGE_ARENA_BEGINNER":5,"LARGE_ARENA_TROT":5,"DRESSAGE":5,"JUMPING":5}', FALSE),
-  (DATE_ADD(CURDATE(), INTERVAL 2 DAY), '10:00:00', 8, 4, '{"FIRST_RIDE":4,"ROUND_BEGINNER":4,"ROUND_TROT":4,"LARGE_ARENA_BEGINNER":5,"LARGE_ARENA_TROT":5,"DRESSAGE":5,"JUMPING":5}', FALSE),
-  (DATE_ADD(CURDATE(), INTERVAL 3 DAY), '10:00:00', 8, 4, '{"FIRST_RIDE":4,"ROUND_BEGINNER":4,"ROUND_TROT":4,"LARGE_ARENA_BEGINNER":5,"LARGE_ARENA_TROT":5,"DRESSAGE":5,"JUMPING":5}', FALSE);
+  (DATE_ADD(CURDATE(), INTERVAL 1 DAY), '10:00:00', 8, 4, '{"FIRST_RIDE":4,"ROUND_BEGINNER":4,"ROUND_TROT":4,"LARGE_ARENA_BEGINNER":5,"LARGE_ARENA_TROT":5,"CANTER_BEGINNER":5,"CANTER":5,"DRESSAGE":5,"JUMPING":5}', FALSE),
+  (DATE_ADD(CURDATE(), INTERVAL 2 DAY), '10:00:00', 8, 4, '{"FIRST_RIDE":4,"ROUND_BEGINNER":4,"ROUND_TROT":4,"LARGE_ARENA_BEGINNER":5,"LARGE_ARENA_TROT":5,"CANTER_BEGINNER":5,"CANTER":5,"DRESSAGE":5,"JUMPING":5}', FALSE),
+  (DATE_ADD(CURDATE(), INTERVAL 3 DAY), '10:00:00', 8, 4, '{"FIRST_RIDE":4,"ROUND_BEGINNER":4,"ROUND_TROT":4,"LARGE_ARENA_BEGINNER":5,"LARGE_ARENA_TROT":5,"CANTER_BEGINNER":5,"CANTER":5,"DRESSAGE":5,"JUMPING":5}', FALSE);
 SQL
 }
 

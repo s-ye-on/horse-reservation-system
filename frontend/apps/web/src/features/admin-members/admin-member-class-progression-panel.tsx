@@ -24,25 +24,25 @@ const GENERAL_GRADES: ReadonlyArray<{ value: GeneralRidingGrade; label: string }
 ]
 
 const ACTION_LABELS: Record<MemberClassProgressionPreviewAction, string> = {
-  SET_BASELINE: '시작 클래스 설정·변경',
-  REMOVE_BASELINE: '시작 클래스 해제',
-  SET_PROMOTION_HOLD: '승급 보류 설정·변경',
-  REMOVE_PROMOTION_HOLD: '승급 보류 해제',
-  CORRECT_SPECIAL_APPROVAL_CREDIT: '특수 승인 인정분 교정',
-  ADJUST_RIDE_COUNT: '일반 기승 횟수 보정',
+  SET_BASELINE: '인정 시작 클래스 설정·변경',
+  REMOVE_BASELINE: '인정 시작 클래스 해제',
+  SET_PROMOTION_HOLD: '자동 승급 보류 설정·변경',
+  REMOVE_PROMOTION_HOLD: '자동 승급 보류 해제',
+  CORRECT_SPECIAL_APPROVAL_CREDIT: '특수 승인 추가 인정 횟수 교정',
+  ADJUST_RIDE_COUNT: '실제 일반 기승 횟수 보정',
 }
 
 const AUDIT_LABELS: Record<MemberClassProgressionAuditAction, string> = {
-  PROGRESSION_INITIALIZED: 'progression 관리 시작',
-  BASELINE_SET: '시작 클래스 설정',
-  BASELINE_CHANGED: '시작 클래스 변경',
-  BASELINE_REMOVED: '시작 클래스 해제',
+  PROGRESSION_INITIALIZED: '클래스 승급 관리 시작',
+  BASELINE_SET: '인정 시작 클래스 설정',
+  BASELINE_CHANGED: '인정 시작 클래스 변경',
+  BASELINE_REMOVED: '인정 시작 클래스 해제',
   SPECIAL_APPROVAL_CHANGED: '특수 승인 변경',
-  SPECIAL_APPROVAL_CREDIT_CORRECTED: '특수 승인 인정분 교정',
-  RIDE_COUNT_ADJUSTED: '일반 기승 횟수 보정',
-  PROMOTION_HOLD_SET: '승급 보류 설정',
-  PROMOTION_HOLD_CHANGED: '승급 보류 변경',
-  PROMOTION_HOLD_REMOVED: '승급 보류 해제',
+  SPECIAL_APPROVAL_CREDIT_CORRECTED: '특수 승인 추가 인정 횟수 교정',
+  RIDE_COUNT_ADJUSTED: '실제 일반 기승 횟수 보정',
+  PROMOTION_HOLD_SET: '자동 승급 보류 설정',
+  PROMOTION_HOLD_CHANGED: '자동 승급 보류 변경',
+  PROMOTION_HOLD_REMOVED: '자동 승급 보류 해제',
 }
 
 interface AdminMemberClassProgressionPanelProps {
@@ -58,7 +58,7 @@ export function AdminMemberClassProgressionPanel({
 }: AdminMemberClassProgressionPanelProps) {
   const queryClient = useQueryClient()
   const [action, setAction] = useState<MemberClassProgressionPreviewAction>('SET_BASELINE')
-  const [grade, setGrade] = useState<GeneralRidingGrade>(member.progressionClass)
+  const [grade, setGrade] = useState<GeneralRidingGrade>(member.progressionClass ?? 'FIRST_RIDE')
   const [numericValue, setNumericValue] = useState('1')
   const [reason, setReason] = useState('')
   const [preview, setPreview] = useState<MemberClassProgressionPreviewResponse>()
@@ -139,49 +139,54 @@ export function AdminMemberClassProgressionPanel({
     }
   }
 
-  const actionDisabled = isActionDisabled(action, member, hasSpecialApproval)
+  const progressionDataAvailable = hasProgressionSnapshot(member)
+  const actionDisabled = !progressionDataAvailable || isActionDisabled(action, member, hasSpecialApproval)
   const busy = previewMutation.isPending || commandMutation.isPending
 
   return (
     <section className="admin-member-progression" aria-labelledby="member-progression-title">
       <div className="admin-member-section-heading">
         <div>
-          <h3 id="member-progression-title">일반 클래스 progression</h3>
-          <p>계산은 서버 정책을 사용하며, 적용 전에 예상 결과를 확인합니다.</p>
+          <h3 id="member-progression-title">일반 클래스 승급 관리</h3>
+          <p>실제 일반 기승 기록과 관리자 인정 정보를 기준으로 현재 클래스를 계산합니다.</p>
         </div>
         <span>{gradeLabel(member.effectiveClass)}</span>
       </div>
 
       <dl className="admin-member-progression-grid">
-        <ProgressionStat label="실제 일반 기승" value={`${member.generalRideCount}회`} />
-        <ProgressionStat label="progression 값" value={`${member.progressionValue}`} />
-        <ProgressionStat label="progression 클래스" value={gradeLabel(member.progressionClass)} />
-        <ProgressionStat label="유효 클래스" value={gradeLabel(member.effectiveClass)} />
-        <ProgressionStat label="시작 클래스" value={gradeLabel(member.progressionBaselineClass)} />
-        <ProgressionStat label="특수 승인 인정분" value={`${member.specialApprovalProgressionCredit}`} />
-        <ProgressionStat label="승급 보류 상한" value={gradeLabel(member.promotionHoldClass)} />
-        <ProgressionStat label="관리 시작" value={formatDateTime(member.progressionManagementStartedAt)} />
+        <ProgressionStat label="실제 일반 기승 횟수" value={formatCount(member.generalRideCount)} />
+        <ProgressionStat label="승급 산정 횟수" value={formatCount(member.progressionValue)} />
+        <ProgressionStat label="자동 산정 클래스" value={gradeLabel(member.progressionClass)} />
+        <ProgressionStat label="현재 적용 클래스" value={gradeLabel(member.effectiveClass)} />
+        <ProgressionStat label="인정 시작 클래스" value={gradeLabel(member.progressionBaselineClass)} />
+        <ProgressionStat label="특수 승인 추가 인정 횟수" value={formatCount(member.specialApprovalProgressionCredit)} />
+        <ProgressionStat label="자동 승급 보류 클래스" value={gradeLabel(member.promotionHoldClass)} />
+        <ProgressionStat label="승급 관리 시작 시각" value={formatDateTime(member.progressionManagementStartedAt)} />
       </dl>
 
       <p className="admin-member-policy-note">
-        특수 승인과 승급 보류는 동시에 활성화할 수 없습니다. 횟수 보정은 실제 일반 기승 집계만 바꾸며
-        시작 클래스, 관리 시작 시각, 특수 승인 인정분을 변경하지 않습니다.
+        특수 클래스 승인이 있는 회원은 자동 승급 보류를 함께 사용할 수 없습니다. 실제 기승 횟수 보정은
+        Horse에서 누락되거나 중복 집계된 일반 기승 기록만 바로잡습니다.
       </p>
 
       <form className="admin-member-progression-form" onSubmit={previewChange}>
         <label>
-          관리 작업
+          변경 항목
           <select
-            aria-label="관리 작업"
+            aria-label="변경 항목"
             value={action}
-            disabled={busy}
+            disabled={busy || !progressionDataAvailable}
             onChange={(event) => {
               setAction(event.target.value as MemberClassProgressionPreviewAction)
               resetPreview()
             }}
           >
             {(Object.keys(ACTION_LABELS) as MemberClassProgressionPreviewAction[]).map((candidate) => (
-              <option key={candidate} value={candidate} disabled={isActionDisabled(candidate, member, hasSpecialApproval)}>
+              <option
+                key={candidate}
+                value={candidate}
+                disabled={!progressionDataAvailable || isActionDisabled(candidate, member, hasSpecialApproval)}
+              >
                 {ACTION_LABELS[candidate]}
               </option>
             ))}
@@ -190,11 +195,11 @@ export function AdminMemberClassProgressionPanel({
 
         {action === 'SET_BASELINE' || action === 'SET_PROMOTION_HOLD' ? (
           <label>
-            {action === 'SET_BASELINE' ? '시작 클래스' : '보류 상한 클래스'}
+            {action === 'SET_BASELINE' ? '인정 시작 클래스' : '보류할 최고 클래스'}
             <select
-              aria-label={action === 'SET_BASELINE' ? '시작 클래스' : '보류 상한 클래스'}
+              aria-label={action === 'SET_BASELINE' ? '인정 시작 클래스' : '보류할 최고 클래스'}
               value={grade}
-              disabled={busy}
+              disabled={busy || !progressionDataAvailable}
               onChange={(event) => {
                 setGrade(event.target.value as GeneralRidingGrade)
                 resetPreview()
@@ -209,12 +214,12 @@ export function AdminMemberClassProgressionPanel({
 
         {action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' || action === 'ADJUST_RIDE_COUNT' ? (
           <label>
-            {action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' ? '교정 후 인정분' : '보정 delta'}
+            {action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' ? '교정 후 추가 인정 횟수' : '기승 횟수 증감'}
             <input
               type="number"
               step="1"
               value={numericValue}
-              disabled={busy}
+              disabled={busy || !progressionDataAvailable}
               onChange={(event) => {
                 setNumericValue(event.target.value)
                 resetPreview()
@@ -229,26 +234,39 @@ export function AdminMemberClassProgressionPanel({
             type="text"
             maxLength={500}
             value={reason}
-            disabled={busy}
+            disabled={busy || !progressionDataAvailable}
             onChange={(event) => setReason(event.target.value)}
           />
         </label>
 
         {actionDisabled ? (
-          <p className="admin-member-progression-guidance" role="status">
-            {disabledActionGuidance(member, hasSpecialApproval)}
+          <p
+            className="admin-member-progression-guidance"
+            id="member-progression-apply-guidance"
+            role="status"
+          >
+            {disabledActionGuidance(member, hasSpecialApproval, progressionDataAvailable)}
           </p>
-        ) : null}
+        ) : (
+          <p className="admin-member-progression-guidance" id="member-progression-apply-guidance">
+            {preview
+              ? reason.trim()
+                ? '예상 결과를 확인했습니다. 이제 변경을 적용할 수 있습니다.'
+                : '예상 결과를 확인했습니다. 관리자 사유를 입력하면 변경을 적용할 수 있습니다.'
+              : '먼저 변경 결과를 미리 본 뒤 적용할 수 있습니다.'}
+          </p>
+        )}
 
         <div className="admin-member-progression-actions">
-          <button type="submit" disabled={busy || actionDisabled}>예상 결과 확인</button>
+          <button type="submit" disabled={busy || actionDisabled}>변경 결과 미리보기</button>
           <button
             type="button"
             className="admin-member-primary-action"
+            aria-describedby="member-progression-apply-guidance"
             disabled={busy || actionDisabled || preview === undefined || !reason.trim()}
             onClick={() => commandMutation.mutate()}
           >
-            {commandMutation.isPending ? '적용 중' : '확인 후 적용'}
+            {commandMutation.isPending ? '적용 중' : '변경 적용'}
           </button>
         </div>
       </form>
@@ -324,10 +342,10 @@ function ProgressionProjection({
 }) {
   return (
     <dl>
-      <div><dt>{title}</dt><dd>{gradeLabel(projection.effectiveClass)}</dd></div>
-      <div><dt>progression</dt><dd>{projection.progressionValue} · {gradeLabel(projection.progressionClass)}</dd></div>
-      <div><dt>실제 일반 기승</dt><dd>{projection.actualCompletedRideCount}회</dd></div>
-      <div><dt>특수 승인 인정분</dt><dd>{projection.specialApprovalProgressionCredit}</dd></div>
+      <div><dt>{title} 적용 클래스</dt><dd>{gradeLabel(projection.effectiveClass)}</dd></div>
+      <div><dt>승급 산정</dt><dd>{formatCount(projection.progressionValue)} · {gradeLabel(projection.progressionClass)}</dd></div>
+      <div><dt>실제 일반 기승 횟수</dt><dd>{formatCount(projection.actualCompletedRideCount)}</dd></div>
+      <div><dt>특수 승인 추가 인정 횟수</dt><dd>{formatCount(projection.specialApprovalProgressionCredit)}</dd></div>
     </dl>
   )
 }
@@ -344,7 +362,7 @@ function buildPreviewRequest(
   }
   if (action === 'ADJUST_RIDE_COUNT') {
     const rideCountDelta = integerValue(numericValue)
-    if (rideCountDelta === 0) throw new Error('보정 delta는 0이 아닌 정수여야 합니다.')
+    if (rideCountDelta === 0) throw new Error('기승 횟수 증감은 0이 아닌 정수여야 합니다.')
     return { action, rideCountDelta }
   }
   return { action }
@@ -408,9 +426,13 @@ function isActionDisabled(
 function disabledActionGuidance(
   member: AdminMemberProgressionResponse,
   hasSpecialApproval: boolean,
+  progressionDataAvailable: boolean,
 ) {
+  if (!progressionDataAvailable) {
+    return '회원 클래스 관리 정보를 불러오지 못해 변경할 수 없습니다. 잠시 후 화면을 새로고침해 주세요.'
+  }
   if (member.progressionManagementStartedAt === null) {
-    return '최초 시작 클래스 baseline을 먼저 설정해야 다른 progression 작업을 수행할 수 있습니다.'
+    return '처음에는 인정 시작 클래스를 먼저 설정해야 다른 승급 관리 작업을 할 수 있습니다.'
   }
   if (hasSpecialApproval) {
     return '특수 승인을 먼저 명시적으로 해제해야 이 작업을 수행할 수 있습니다.'
@@ -437,7 +459,7 @@ async function progressionErrorMessage(error: unknown, target: 'preview' | 'comm
   if (staleState) {
     message = '다른 변경이 반영됐습니다. 현재 상태에서 예상 결과를 다시 확인해 주세요.'
   } else if (kind === 'conflict') {
-    message = '특수 승인과 승급 보류 상태 또는 progression 조건을 먼저 확인해 주세요.'
+    message = '특수 승인, 자동 승급 보류 상태 또는 클래스 승급 조건을 먼저 확인해 주세요.'
   } else if (kind === 'validation') {
     message = '입력한 클래스나 보정 값을 다시 확인해 주세요.'
   } else if (kind === 'forbidden') {
@@ -451,16 +473,31 @@ async function progressionErrorMessage(error: unknown, target: 'preview' | 'comm
 }
 
 function gradeLabel(grade: GeneralRidingGrade | null | undefined) {
-  return GENERAL_GRADES.find((candidate) => candidate.value === grade)?.label ?? '없음'
+  if (grade === undefined) return '확인 불가'
+  if (grade === null) return '미설정'
+  return GENERAL_GRADES.find((candidate) => candidate.value === grade)?.label ?? '확인 불가'
 }
 
 function formatDateTime(value: string | Date | null | undefined) {
-  if (!value) return '미설정'
+  if (value === undefined) return '확인 불가'
+  if (value === null) return '미설정'
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ko-KR', {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(date)
+}
+
+function formatCount(value: number | null | undefined) {
+  return typeof value === 'number' && Number.isFinite(value) ? `${value}회` : '확인 불가'
+}
+
+function hasProgressionSnapshot(member: AdminMemberProgressionResponse) {
+  return Number.isFinite(member.generalRideCount)
+    && Number.isFinite(member.progressionValue)
+    && Number.isFinite(member.specialApprovalProgressionCredit)
+    && member.progressionClass !== undefined
+    && member.effectiveClass !== undefined
 }
 
 function AuditState({ state }: { state: object | null }) {
@@ -477,16 +514,16 @@ function AuditState({ state }: { state: object | null }) {
 function auditStateEntries(state: object): Array<[string, string]> {
   const values = state as Record<string, unknown>
   const entries: Array<[string, string]> = []
-  addNumber(entries, values, 'actualCompletedRideCount', '실제 일반 기승', '회')
-  addNumber(entries, values, 'rideCountDelta', '보정 delta')
-  addNumber(entries, values, 'progressionValue', 'progression 값')
-  addGrade(entries, values, 'progressionClass', 'progression 클래스')
-  addGrade(entries, values, 'effectiveClass', '유효 클래스')
-  addGrade(entries, values, 'baselineClass', '시작 클래스')
-  addNumber(entries, values, 'baselineThreshold', '시작 threshold')
-  addNumber(entries, values, 'baselineActualRideCount', '시작 시 실제 기승', '회')
-  addNumber(entries, values, 'specialApprovalProgressionCredit', '특수 승인 인정분')
-  addGrade(entries, values, 'promotionHoldClass', '승급 보류 상한')
+  addNumber(entries, values, 'actualCompletedRideCount', '실제 일반 기승 횟수', '회')
+  addNumber(entries, values, 'rideCountDelta', '기승 횟수 증감', '회')
+  addNumber(entries, values, 'progressionValue', '승급 산정 횟수', '회')
+  addGrade(entries, values, 'progressionClass', '자동 산정 클래스')
+  addGrade(entries, values, 'effectiveClass', '현재 적용 클래스')
+  addGrade(entries, values, 'baselineClass', '인정 시작 클래스')
+  addNumber(entries, values, 'baselineThreshold', '인정 시작 기준 횟수', '회')
+  addNumber(entries, values, 'baselineActualRideCount', '인정 시점 실제 기승', '회')
+  addNumber(entries, values, 'specialApprovalProgressionCredit', '특수 승인 추가 인정 횟수', '회')
+  addGrade(entries, values, 'promotionHoldClass', '자동 승급 보류 클래스')
   return entries
 }
 
