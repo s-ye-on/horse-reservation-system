@@ -8,11 +8,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.springdoc.core.annotations.ParameterObject;
 
+import com.horse.reservations.application.AdminMonthlyRideStatisticsResult;
+import com.horse.reservations.application.AdminMonthlyRideStatisticsService;
 import com.horse.reservations.application.AdminReservationPageResult;
 import com.horse.reservations.application.AdminReservationQueryService;
 import com.horse.reservations.application.AdminReservationResult;
 import com.horse.reservations.application.AdminReservationSummaryResult;
 import com.horse.reservations.application.AdminReservationSummaryService;
+import com.horse.reservations.presentation.dto.AdminMonthlyRideStatisticsRequest;
+import com.horse.reservations.presentation.dto.AdminMonthlyRideStatisticsResponse;
 import com.horse.reservations.presentation.dto.AdminReservationPageResponse;
 import com.horse.reservations.presentation.dto.AdminReservationQueryRequest;
 import com.horse.reservations.presentation.dto.AdminReservationResponse;
@@ -27,13 +31,26 @@ public class AdminReservationQueryController {
 
 	private final AdminReservationQueryService service;
 	private final AdminReservationSummaryService summaryService;
+	private final AdminMonthlyRideStatisticsService monthlyRideStatisticsService;
 
 	public AdminReservationQueryController(
 		AdminReservationQueryService service,
-		AdminReservationSummaryService summaryService
+		AdminReservationSummaryService summaryService,
+		AdminMonthlyRideStatisticsService monthlyRideStatisticsService
 	) {
 		this.service = service;
 		this.summaryService = summaryService;
+		this.monthlyRideStatisticsService = monthlyRideStatisticsService;
+	}
+
+	@GetMapping("/monthly-ride-statistics")
+	public AdminMonthlyRideStatisticsResponse getMonthlyRideStatistics(
+		@ParameterObject @ModelAttribute AdminMonthlyRideStatisticsRequest request
+	) {
+		final AdminMonthlyRideStatisticsResult result = monthlyRideStatisticsService.getStatistics(
+			request.month(),
+			request.rideType());
+		return AdminMonthlyRideStatisticsResponse.from(result);
 	}
 
 	@GetMapping("/summary")

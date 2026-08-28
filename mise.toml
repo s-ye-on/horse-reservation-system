@@ -858,6 +858,21 @@ rg -Fq '| M4-00 | Expo TypeScript 앱 골격 | M33-06 |' docs/tasks/mvp-4.md
   docs/product/mvp-3.3.md docs/tasks/mvp-3.3.md docs/architecture/adr-023-admin-operational-visibility-read-models.md
 '''
 
+[tasks."verify:m33-01"]
+description = "Verify admin monthly completed ride statistics query API"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MonthlyRideTypeTest' \
+  --tests '*AdminMonthlyRideStatisticsApiTest' \
+  --tests '*AdminMonthlyRideStatisticsQueryCountIntegrationTest' \
+  --tests '*AdminMonthlyRideStatisticsQueryPlanIntegrationTest' \
+  --tests '*ReservationSummaryRepositoryIntegrationTest' \
+  --tests '*AdminReservationSummaryApiTest' \
+  --tests '*AdminReservationQueryApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

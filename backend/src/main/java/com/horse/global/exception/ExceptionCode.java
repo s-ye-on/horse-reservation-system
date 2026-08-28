@@ -98,6 +98,7 @@ public enum ExceptionCode {
 	RESERVATION_INVALID_QUERY_DISPLAY_GROUP(HttpStatus.BAD_REQUEST, "조회할 예약 표시 그룹이 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_STATUS(HttpStatus.BAD_REQUEST, "조회할 예약 상태가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_CLASS_TYPE(HttpStatus.BAD_REQUEST, "조회할 예약 클래스가 올바르지 않습니다."),
+	RESERVATION_INVALID_MONTHLY_RIDE_TYPE(HttpStatus.BAD_REQUEST, "조회할 월간 기승 종류가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_DATE_RANGE(HttpStatus.BAD_REQUEST, "예약 조회 날짜 범위가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_PAGE(HttpStatus.BAD_REQUEST, "예약 조회 페이지가 올바르지 않습니다."),
 	RESERVATION_INVALID_QUERY_SORT(HttpStatus.BAD_REQUEST, "예약 조회 정렬 조건이 올바르지 않습니다."),
