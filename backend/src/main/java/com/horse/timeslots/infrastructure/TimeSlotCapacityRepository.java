@@ -52,6 +52,11 @@ public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapaci
 
 	List<TimeSlotCapacity> findAllByLessonDateOrderByStartTimeAsc(LocalDate lessonDate);
 
+	List<TimeSlotCapacity> findAllByLessonDateBetweenOrderByLessonDateAscStartTimeAscIdAsc(
+		LocalDate lessonDateFrom,
+		LocalDate lessonDateTo
+	);
+
 	@Query(value = """
 		SELECT *
 		FROM time_slot_capacities

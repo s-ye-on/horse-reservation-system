@@ -267,6 +267,26 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		@Param("ridingClasses") Collection<RidingClass> ridingClasses
 	);
 
+	@Query("""
+		select reservation.id as reservationId,
+			reservation.lessonDate as lessonDate,
+			reservation.startTime as startTime,
+			member.id as memberId,
+			member.name as memberName,
+			reservation.ridingClass as ridingClass,
+			reservation.status as status
+		from Reservation reservation, Member member
+		where member.id = reservation.memberId
+		  and reservation.lessonDate between :lessonDateFrom and :lessonDateTo
+		  and reservation.status in :statuses
+		order by reservation.lessonDate, reservation.startTime, reservation.id
+		""")
+	List<WeeklyOperationsReservationProjection> findWeeklyOperationsReservations(
+		@Param("lessonDateFrom") LocalDate lessonDateFrom,
+		@Param("lessonDateTo") LocalDate lessonDateTo,
+		@Param("statuses") Collection<ReservationStatus> statuses
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT reservation FROM Reservation reservation WHERE reservation.id = :reservationId")
 	Optional<Reservation> findByIdForUpdate(@Param("reservationId") Long reservationId);

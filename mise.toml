@@ -873,6 +873,17 @@ run = '''
   --tests '*SpecialRideCompletionApiTest'
 '''
 
+[tasks."verify:m33-02"]
+description = "Verify admin weekly operations calendar query API"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*AdminWeeklyOperationsCalendarApiTest' \
+  --tests '*AdminWeeklyOperationsCalendarQueryCountIntegrationTest' \
+  --tests '*AdminReservationQueryApiTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*MemberAvailableTimeSlotsApiTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

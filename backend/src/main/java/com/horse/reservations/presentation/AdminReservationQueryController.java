@@ -15,6 +15,8 @@ import com.horse.reservations.application.AdminReservationQueryService;
 import com.horse.reservations.application.AdminReservationResult;
 import com.horse.reservations.application.AdminReservationSummaryResult;
 import com.horse.reservations.application.AdminReservationSummaryService;
+import com.horse.reservations.application.AdminWeeklyOperationsCalendarResult;
+import com.horse.reservations.application.AdminWeeklyOperationsCalendarService;
 import com.horse.reservations.presentation.dto.AdminMonthlyRideStatisticsRequest;
 import com.horse.reservations.presentation.dto.AdminMonthlyRideStatisticsResponse;
 import com.horse.reservations.presentation.dto.AdminReservationPageResponse;
@@ -22,6 +24,8 @@ import com.horse.reservations.presentation.dto.AdminReservationQueryRequest;
 import com.horse.reservations.presentation.dto.AdminReservationResponse;
 import com.horse.reservations.presentation.dto.AdminReservationSummaryRequest;
 import com.horse.reservations.presentation.dto.AdminReservationSummaryResponse;
+import com.horse.reservations.presentation.dto.AdminWeeklyOperationsCalendarRequest;
+import com.horse.reservations.presentation.dto.AdminWeeklyOperationsCalendarResponse;
 
 import jakarta.validation.Valid;
 
@@ -32,15 +36,27 @@ public class AdminReservationQueryController {
 	private final AdminReservationQueryService service;
 	private final AdminReservationSummaryService summaryService;
 	private final AdminMonthlyRideStatisticsService monthlyRideStatisticsService;
+	private final AdminWeeklyOperationsCalendarService weeklyOperationsCalendarService;
 
 	public AdminReservationQueryController(
 		AdminReservationQueryService service,
 		AdminReservationSummaryService summaryService,
-		AdminMonthlyRideStatisticsService monthlyRideStatisticsService
+		AdminMonthlyRideStatisticsService monthlyRideStatisticsService,
+		AdminWeeklyOperationsCalendarService weeklyOperationsCalendarService
 	) {
 		this.service = service;
 		this.summaryService = summaryService;
 		this.monthlyRideStatisticsService = monthlyRideStatisticsService;
+		this.weeklyOperationsCalendarService = weeklyOperationsCalendarService;
+	}
+
+	@GetMapping("/weekly-operations-calendar")
+	public AdminWeeklyOperationsCalendarResponse getWeeklyOperationsCalendar(
+		@ParameterObject @ModelAttribute AdminWeeklyOperationsCalendarRequest request
+	) {
+		final AdminWeeklyOperationsCalendarResult result = weeklyOperationsCalendarService.getCalendar(
+			request.referenceDate());
+		return AdminWeeklyOperationsCalendarResponse.from(result);
 	}
 
 	@GetMapping("/monthly-ride-statistics")
