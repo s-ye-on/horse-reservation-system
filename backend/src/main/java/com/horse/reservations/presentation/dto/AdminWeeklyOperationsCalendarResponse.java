@@ -26,6 +26,7 @@ public record AdminWeeklyOperationsCalendarResponse(
 			result.timeSlots().stream().map(TimeSlotResponse::from).toList());
 	}
 
+	@Schema(name = "AdminWeeklyOperationsTimeSlotResponse")
 	public record TimeSlotResponse(
 		Long timeSlotId,
 		LocalDate lessonDate,
@@ -52,11 +53,19 @@ public record AdminWeeklyOperationsCalendarResponse(
 		}
 	}
 
+	@Schema(name = "AdminWeeklyOperationsReservationResponse")
 	public record ReservationResponse(
 		Long reservationId,
 		Long memberId,
 		String memberName,
+		@Schema(allowableValues = {
+			"FIRST_RIDE", "ROUND_BEGINNER", "ROUND_TROT", "LARGE_ARENA_BEGINNER",
+			"LARGE_ARENA_TROT", "CANTER_BEGINNER", "CANTER", "DRESSAGE", "JUMPING"
+		})
 		String ridingClass,
+		@Schema(allowableValues = {
+			"pending_admin_approval", "pending_payment", "confirmed", "completed"
+		})
 		String status
 	) {
 

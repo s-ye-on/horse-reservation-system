@@ -1,5 +1,6 @@
 package com.horse.reservations.presentation;
 
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -7,6 +8,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.springdoc.core.annotations.ParameterObject;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
 import com.horse.reservations.application.AdminMonthlyRideStatisticsResult;
 import com.horse.reservations.application.AdminMonthlyRideStatisticsService;
@@ -51,6 +57,10 @@ public class AdminReservationQueryController {
 	}
 
 	@GetMapping("/weekly-operations-calendar")
+	@Operation(operationId = "getWeeklyOperationsCalendar")
+	@ApiResponse(responseCode = "200", content = @Content(
+		mediaType = MediaType.APPLICATION_JSON_VALUE,
+		schema = @Schema(implementation = AdminWeeklyOperationsCalendarResponse.class)))
 	public AdminWeeklyOperationsCalendarResponse getWeeklyOperationsCalendar(
 		@ParameterObject @ModelAttribute AdminWeeklyOperationsCalendarRequest request
 	) {
@@ -60,6 +70,10 @@ public class AdminReservationQueryController {
 	}
 
 	@GetMapping("/monthly-ride-statistics")
+	@Operation(operationId = "getMonthlyRideStatistics")
+	@ApiResponse(responseCode = "200", content = @Content(
+		mediaType = MediaType.APPLICATION_JSON_VALUE,
+		schema = @Schema(implementation = AdminMonthlyRideStatisticsResponse.class)))
 	public AdminMonthlyRideStatisticsResponse getMonthlyRideStatistics(
 		@ParameterObject @ModelAttribute AdminMonthlyRideStatisticsRequest request
 	) {

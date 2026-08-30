@@ -884,6 +884,20 @@ run = '''
   --tests '*MemberAvailableTimeSlotsApiTest'
 '''
 
+[tasks."verify:m33-03"]
+description = "Verify Phase C OpenAPI and generated TypeScript client synchronization"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*M33PhaseCOpenApiContractTest' \
+  --tests '*AdminMonthlyRideStatisticsApiTest' \
+  --tests '*AdminWeeklyOperationsCalendarApiTest'
+mise run api:check
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run src/test/admin-reservation-api-contract.test.ts
+mise run web:typecheck
+git diff --check
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"
