@@ -6,6 +6,7 @@ import { AdminReservationsPage } from './features/admin-reservations/admin-reser
 import { AdminAttendancePage } from './features/admin-attendance/admin-attendance-page'
 import { AdminDashboardPage } from './features/admin-dashboard/admin-dashboard-page'
 import { AdminMonthlyRideStatisticsPage } from './features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page'
+import { AdminWeeklyOperationsCalendarPage } from './features/admin-weekly-operations-calendar/admin-weekly-operations-calendar-page'
 import { AdminAuditPage } from './features/admin-audit/admin-audit-page'
 import { AdminScheduleConfigurationPage } from './features/admin-schedule-configuration/admin-schedule-configuration-page'
 import { AdminScheduleClosuresPage } from './features/admin-schedule-closures/admin-schedule-closures-page'
@@ -54,6 +55,7 @@ function AdminHomePage() {
       <nav aria-label="관리자 메뉴">
         <Link to="/admin/dashboard">운영 대시보드</Link>
         <Link to="/admin/monthly-ride-statistics">월간 기승 현황</Link>
+        <Link to="/admin/weekly-operations-calendar">주간 운영 캘린더</Link>
         <Link to="/admin/members">회원 및 기승 승인</Link>
         <Link to="/admin/family-groups">가족 그룹 관리</Link>
         <Link to="/admin/coupons/new">10회권 쿠폰 등록</Link>
@@ -91,6 +93,7 @@ export default function App() {
           <Route path="/admin" element={<AdminHomePage />} />
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
           <Route path="/admin/monthly-ride-statistics" element={<AdminMonthlyRideStatisticsPage />} />
+          <Route path="/admin/weekly-operations-calendar" element={<AdminWeeklyOperationsCalendarPage />} />
           <Route path="/admin/members" element={<AdminMembersPage />} />
           <Route path="/admin/family-groups" element={<AdminFamilyGroupsPage />} />
           <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />

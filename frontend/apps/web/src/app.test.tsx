@@ -33,6 +33,9 @@ vi.mock('./features/admin-family-groups/admin-family-groups-page', () => ({
 vi.mock('./features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page', () => ({
   AdminMonthlyRideStatisticsPage: () => <main><h1>월간 기승 현황</h1></main>,
 }))
+vi.mock('./features/admin-weekly-operations-calendar/admin-weekly-operations-calendar-page', () => ({
+  AdminWeeklyOperationsCalendarPage: () => <main><h1>주간 운영 캘린더</h1></main>,
+}))
 
 describe('App', () => {
   it('비로그인_사용자에게_로그인_진입점을_제공한다', () => {
@@ -73,6 +76,10 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: '월간 기승 현황' })).toHaveAttribute(
       'href',
       '/admin/monthly-ride-statistics',
+    )
+    expect(screen.getByRole('link', { name: '주간 운영 캘린더' })).toHaveAttribute(
+      'href',
+      '/admin/weekly-operations-calendar',
     )
   })
 
@@ -140,6 +147,19 @@ describe('App', () => {
     )
 
     expect(screen.getByRole('heading', { name: '월간 기승 현황' })).toBeInTheDocument()
+  })
+
+  it('주간_운영_캘린더_route를_렌더링한다', () => {
+    authState.account = {
+      subject: 'admin-subject', memberId: null, email: 'admin@horse.test', role: 'ADMIN', status: 'ACTIVE',
+    }
+    render(
+      <MemoryRouter initialEntries={['/admin/weekly-operations-calendar']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '주간 운영 캘린더' })).toBeInTheDocument()
   })
 
   it('MEMBER의_ADMIN_route_접근을_거부한다', () => {
