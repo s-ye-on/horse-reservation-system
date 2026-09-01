@@ -898,6 +898,46 @@ mise run web:typecheck
 git diff --check
 '''
 
+[tasks."verify:m33-04"]
+description = "Verify admin monthly ride statistics web"
+run = '''
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-monthly-ride-statistics/AdminMonthlyRideStatisticsPage.test.tsx \
+  src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics.api.test.ts \
+  src/features/admin-dashboard/AdminDashboardPage.test.tsx \
+  src/app.test.tsx
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m33-04-admin-monthly-ride-statistics-responsive.spec.ts
+rg -Fq '@media (max-width: 380px)' \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page.css
+check_untracked_file() {
+  local output status
+  if output=$(git diff --no-index --check /dev/null "$1" 2>&1); then
+    return 0
+  else
+    status=$?
+  fi
+  if [ "$status" -eq 1 ] && [ -z "$output" ]; then
+    return 0
+  fi
+  printf '%s\n' "$output"
+  return 1
+}
+for file in \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/AdminMonthlyRideStatisticsPage.test.tsx \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics.api.test.ts \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics.api.ts \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page.css \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page.tsx \
+  frontend/apps/web/tests/e2e/m33-04-admin-monthly-ride-statistics-responsive.spec.ts
+do
+  check_untracked_file "$file"
+done
+git diff --check
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"
