@@ -980,6 +980,16 @@ done
 git diff --check
 '''
 
+[tasks."verify:m33-06"]
+description = "Run the Phase C final quality gate"
+run = '''
+mise run verify:all
+pnpm --dir frontend/apps/web test:e2e -- \
+  tests/e2e/m33-04-admin-monthly-ride-statistics-responsive.spec.ts \
+  tests/e2e/m33-05-admin-weekly-operations-calendar-responsive.spec.ts
+git diff --check
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"
