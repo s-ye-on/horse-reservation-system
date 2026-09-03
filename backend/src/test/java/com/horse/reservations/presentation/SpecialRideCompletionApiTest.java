@@ -228,11 +228,14 @@ class SpecialRideCompletionApiTest {
 	private void insertHeldAndConfirmedLogs(Long memberId, Long couponId, Long reservationId) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type
 			) VALUES
-				(?, ?, ?, 'held', 1, '2026-07-01 09:00:00', 'member'),
-				(?, ?, ?, 'confirmed', 0, '2026-07-01 10:00:00', 'admin')
-			""", couponId, reservationId, memberId, couponId, reservationId, memberId);
+				(?, ?, ?, ?, 'held', 1, '2026-07-01 09:00:00', 'member'),
+				(?, ?, ?, ?, 'confirmed', 0, '2026-07-01 10:00:00', 'admin')
+			""",
+			couponId, reservationId, memberId, memberId,
+			couponId, reservationId, memberId, memberId);
 	}
 
 	private String endpoint(Long reservationId) {

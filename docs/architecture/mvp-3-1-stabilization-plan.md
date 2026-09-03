@@ -203,5 +203,5 @@ Task가 현재 코드와 실행 계획을 검증한 뒤 독립 ADR과 커밋으�
 - 운영 실행은 JWT secret을 강제하고 demo 인증 코드가 운영 경로에 없다.
 - `verify:all`이 MySQL, OpenAPI와 핵심 E2E를 포함해 깨끗한 checkout에서 연속 2회 성공한다.
 
-Phase A 후 `M4-00`, `M4-01`만 진행할 수 있다. 예약과 쿠폰을 사용하는 `M4-02~M4-06`은
-Phase B Gate까지 완료한 뒤 시작한다.
+Phase A와 Phase B 이후 확정된 관리자 운영 가시성 요구는 MVP 3.3 Phase C에서 먼저 구현한다.
+MVP 4 전체는 Phase C 최종 Gate까지 완료한 뒤 시작한다.

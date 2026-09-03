@@ -187,13 +187,14 @@ class CouponRepositoryIntegrationTest {
 				coupon_id,
 				reservation_id,
 				member_id,
+				coupon_owner_member_id,
 				action,
 				count_delta,
 				occurred_at,
 				actor_type,
 				memo
-			) VALUES (?, ?, ?, ?, ?, '2026-07-14 10:00:00', ?, ?)
-			""", couponId, reservationId, memberId, action, countDelta, actorType, memo);
+			) VALUES (?, ?, ?, ?, ?, ?, '2026-07-14 10:00:00', ?, ?)
+			""", couponId, reservationId, memberId, memberId, action, countDelta, actorType, memo);
 	}
 
 	private String createDatabase(String databaseName) throws Exception {

@@ -8,6 +8,11 @@ import { AdminCouponRegistrationPage } from './admin-coupon-registration-page'
 
 const MEMBER: AdminMemberResponse = {
   id: 3, name: '이기승', phone: '010-2222-3333', generalRideCount: 8,
+  progressionValue: 26, progressionClass: 'LARGE_ARENA_TROT', effectiveClass: 'LARGE_ARENA_TROT',
+  progressionManagementStartedAt: new Date('2026-08-01T00:00:00+09:00'),
+  progressionBaselineClass: null, progressionBaselineThreshold: null,
+  progressionBaselineActualRideCount: null, specialApprovalProgressionCredit: 18,
+  promotionHoldClass: null,
   dressageRideCount: 0, jumpingRideCount: 0, dressageApproved: true, jumpingApproved: false,
   canUseLargeArena: true,
 }

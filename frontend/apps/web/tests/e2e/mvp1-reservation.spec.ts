@@ -64,7 +64,8 @@ test.describe('MVP 1 예약 핵심 흐름', () => {
     await navigateWithinApp(adminPage, '/admin/members')
     await adminPage.getByRole('button', { name: new RegExp(member.name) }).click()
     const memberDetail = adminPage.getByRole('region', { name: '회원 상세' })
-    await expect(memberDetail.getByText('일반 기승').locator('..')).toContainText('2회')
+    await expect(memberDetail.getByText('일반 기승', { exact: true, selector: 'dt' }).locator('..'))
+      .toContainText('2회')
 
     await memberPage.context().close()
     await adminPage.context().close()

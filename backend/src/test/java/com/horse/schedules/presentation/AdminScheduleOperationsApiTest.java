@@ -318,6 +318,7 @@ class AdminScheduleOperationsApiTest {
 				JSON_OBJECT(
 					'FIRST_RIDE', 2, 'ROUND_BEGINNER', 2, 'ROUND_TROT', 2,
 					'LARGE_ARENA_BEGINNER', 3, 'LARGE_ARENA_TROT', 3,
+					'CANTER_BEGINNER', 3, 'CANTER', 3,
 					'DRESSAGE', 1, 'JUMPING', 1
 				))
 			""", LESSON_DATE, startTime, endTime);
@@ -358,9 +359,10 @@ class AdminScheduleOperationsApiTest {
 	private void insertHeldLog(Long memberId, Long couponId, Long reservationId) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type
-			) VALUES (?, ?, ?, 'held', 0, '2026-08-01 09:00:00', 'member')
-			""", couponId, reservationId, memberId);
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type
+			) VALUES (?, ?, ?, ?, 'held', 0, '2026-08-01 09:00:00', 'member')
+			""", couponId, reservationId, memberId, memberId);
 	}
 
 	private String actionRequest(String reason, long expectedVersion) {

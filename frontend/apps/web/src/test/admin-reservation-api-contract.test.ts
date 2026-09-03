@@ -1,4 +1,8 @@
-import { AdminReservationQueryControllerApi, querystring } from '@horse/api-client'
+import {
+  AdminReservationQueryControllerApi,
+  GetMonthlyRideStatisticsRideTypeEnum,
+  querystring,
+} from '@horse/api-client'
 import { describe, expect, it } from 'vitest'
 
 describe('AdminReservationQueryControllerApi contract', () => {
@@ -27,5 +31,29 @@ describe('AdminReservationQueryControllerApi contract', () => {
     const serialized = querystring(request.query ?? {})
     expect(serialized).toContain('status=pending_admin_approval')
     expect(serialized).not.toContain('request%5Bstatus%5D')
+  })
+
+  it('월간_완료_기승_통계의_월과_종류를_Query_Parameter로_직렬화한다', async () => {
+    const api = new AdminReservationQueryControllerApi()
+
+    const request = await api.getMonthlyRideStatisticsRequestOpts({
+      month: '2026-08',
+      rideType: GetMonthlyRideStatisticsRideTypeEnum.Dressage,
+    })
+
+    expect(request.query).toEqual({
+      month: '2026-08',
+      rideType: 'DRESSAGE',
+    })
+  })
+
+  it('주간_운영_캘린더의_기준일을_시간대_변환_없는_날짜로_직렬화한다', async () => {
+    const api = new AdminReservationQueryControllerApi()
+
+    const request = await api.getWeeklyOperationsCalendarRequestOpts({
+      referenceDate: '2026-08-31',
+    })
+
+    expect(request.query).toEqual({ referenceDate: '2026-08-31' })
   })
 })

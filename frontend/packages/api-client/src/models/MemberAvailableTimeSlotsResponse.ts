@@ -57,6 +57,8 @@ export const MemberAvailableTimeSlotsResponseClassTypeEnum = {
     RoundTrot: 'ROUND_TROT',
     LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
     LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER',
     Dressage: 'DRESSAGE',
     Jumping: 'JUMPING'
 } as const;

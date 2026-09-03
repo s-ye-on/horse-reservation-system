@@ -1,5 +1,8 @@
 package com.horse.members.application;
 
+import java.time.LocalDateTime;
+
+import com.horse.members.domain.GeneralRidingGrade;
 import com.horse.members.domain.Member;
 
 public record AdminMemberQueryResult(
@@ -9,6 +12,15 @@ public record AdminMemberQueryResult(
 	int generalRideCount,
 	int dressageRideCount,
 	int jumpingRideCount,
+	int progressionValue,
+	GeneralRidingGrade progressionClass,
+	GeneralRidingGrade effectiveClass,
+	LocalDateTime progressionManagementStartedAt,
+	GeneralRidingGrade progressionBaselineClass,
+	Integer progressionBaselineThreshold,
+	Integer progressionBaselineActualRideCount,
+	int specialApprovalProgressionCredit,
+	GeneralRidingGrade promotionHoldClass,
 	boolean dressageApproved,
 	boolean jumpingApproved,
 	boolean canUseLargeArena
@@ -22,6 +34,15 @@ public record AdminMemberQueryResult(
 			member.getGeneralRideCount(),
 			member.getDressageRideCount(),
 			member.getJumpingRideCount(),
+			member.progressionValue(),
+			member.progressionGeneralRidingGrade(),
+			member.effectiveGeneralRidingGrade(),
+			member.getProgressionManagementStartedAt(),
+			member.getProgressionBaselineClass(),
+			member.getProgressionBaselineThreshold(),
+			member.getProgressionBaselineActualRideCount(),
+			member.getSpecialApprovalProgressionCredit(),
+			member.getPromotionHoldClass(),
 			member.isDressageApproved(),
 			member.isJumpingApproved(),
 			member.canUseLargeArena());

@@ -49,6 +49,8 @@ class AdminPendingPaymentRestoreApiTest {
 		  "ROUND_TROT": 4,
 		  "LARGE_ARENA_BEGINNER": 8,
 		  "LARGE_ARENA_TROT": 8,
+		  "CANTER_BEGINNER": 8,
+		  "CANTER": 8,
 		  "DRESSAGE": 8,
 		  "JUMPING": 8
 		}

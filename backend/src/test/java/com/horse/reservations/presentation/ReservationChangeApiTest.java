@@ -51,6 +51,8 @@ class ReservationChangeApiTest {
 		  "ROUND_TROT": 4,
 		  "LARGE_ARENA_BEGINNER": 8,
 		  "LARGE_ARENA_TROT": 8,
+		  "CANTER_BEGINNER": 8,
+		  "CANTER": 8,
 		  "DRESSAGE": 8,
 		  "JUMPING": 8
 		}
@@ -609,7 +611,14 @@ class ReservationChangeApiTest {
 				coupon_id, approval_requested_at, admin_confirmed_at
 			) VALUES (?, 'FIRST_RIDE', ?, ?, ?, 'coupon', ?, NOW(6), NOW(6))
 			""", memberId, lessonDate, startTime, status, couponId);
-		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+		final Long reservationId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+		jdbcTemplate.update("""
+			INSERT INTO coupon_usage_logs (
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type
+			) VALUES (?, ?, ?, ?, 'held', 1, NOW(6), 'member')
+			""", couponId, reservationId, memberId, memberId);
+		return reservationId;
 	}
 
 	private Long insertSinglePaymentReservation(Long memberId, LocalDate lessonDate, String startTime) {

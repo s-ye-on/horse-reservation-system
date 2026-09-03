@@ -149,6 +149,43 @@
 
 기본 운영 목록은 오늘 이후 예약에 집중한다. 과거 예약을 중심으로 탐색하는 별도 예약 이력 화면은 후속 버전에서 검토한다.
 
+## 관리자 월간 기승 현황
+
+월간 기승 현황은 Horse 예약 시스템 운영 이후, 해당 월의 `COMPLETED` Reservation을 기준으로
+집계한 운영 실적이다.
+
+- 월 귀속은 완료 처리 시각이 아니라 실제 수업일인 `lessonDate`를 `Asia/Seoul` 달력으로 해석한다.
+- 기본 조회는 현재 월이며 이전·다음 월을 탐색하고 현재 월로 복귀할 수 있다. 미래 월에는 실제
+  완료 Reservation만 존재할 수 없으므로 결과가 0건이면 그대로 표시한다.
+- `ALL`은 모든 완료 Reservation, `GENERAL`은 `RidingClass.isGeneral()`인 완료 Reservation,
+  `DRESSAGE`와 `JUMPING`은 각각 같은 RidingClass의 완료 Reservation을 뜻한다.
+- 선택 월 또는 종류가 바뀌면 총 기승 횟수, 최고 기승 횟수와 그 횟수를 가진 모든 공동 최고 회원을
+  같은 기준으로 다시 집계한다. 0건이면 공동 최고 회원은 없다.
+- baseline, progressionValue, special approval progression credit, promotion hold, Member의 현재 누적
+  기승 횟수와 M32-07 ride count correction은 월간 운영 실적에 포함하지 않는다.
+- Horse 운영 이전 경력과 예약 완료 사실로 남지 않은 기승은 복원하지 않는다. correction 실제 수업일,
+  PRE/POST Anchor 또는 월별 mutable counter를 도입하지 않는다.
+
+## 관리자 주간 운영 캘린더
+
+- 기본 조회는 현재 날짜가 속한 월요일부터 일요일까지이며 이전·다음 주를 탐색할 수 있다.
+- `오늘`은 일간 화면을 열지 않고 현재 날짜가 속한 주간 View로 복귀한다.
+- 조회 주에 실제 존재하는 materialized TimeSlot을 기준으로 하며 예약이 0건인 TimeSlot도 표시한다.
+- 표시 대상은 `calendar-visible reservation = capacity-occupying reservation OR COMPLETED reservation`이다.
+  정원 점유 여부는 `ReservationStatus`의 기존 점유 계약에서 파생하며 현재 점유 상태는
+  `PENDING_ADMIN_APPROVAL`, `PENDING_PAYMENT`, `CONFIRMED`다. `COMPLETED`는 정원 점유가 아니라
+  해당 주에 실제 진행된 수업 기록이므로 추가로 표시한다.
+- 같은 TimeSlot의 표시 대상 Reservation을 하나의 수업 블록 안에 묶고 회원, 실제 예약 RidingClass와
+  원래 ReservationStatus를 그대로 표시한다. 승인대기·입금대기를 확정으로 합치거나 새 상태를 만들지 않는다.
+- `PAYMENT_EXPIRED`, `APPROVAL_EXPIRED`, `REJECTED`, `CANCELLED`, `NO_SHOW`는 현재 정원을 점유하지
+  않고 완료 수업도 아니므로 기본 주간 캘린더에서 제외한다. 이력 확인 책임은 기존 관리자 예약 조회와
+  해당 상태 전이에 대해 존재하는 감사 조회가 유지한다.
+- 표시 대상 Reservation이 하나도 없는 TimeSlot은 제외 상태의 과거 Reservation 존재 여부와 관계없이
+  `예약 없음`으로 표시한다. TimeSlot은 여러 RidingClass capacity를 가지므로 빈 TimeSlot에 임의의
+  단일 수업 클래스를 붙이지 않는다.
+- 주간 화면은 7일을 한 번에 조회하며 날짜·TimeSlot·회원별 반복 HTTP 요청을 사용하지 않는다.
+- 이 조회는 TimeSlot, Reservation, Member와 schedule 상태를 변경하지 않는다.
+
 ## 목록 페이지네이션
 
 - 관리자 예약·출석·회원·감사 이력, 회원 예약·쿠폰·쿠폰 사용 이력, 가족 그룹·구성원 목록은 Page 기반 Offset 페이지네이션을 사용한다.

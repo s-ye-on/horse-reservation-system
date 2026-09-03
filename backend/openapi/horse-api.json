@@ -260,6 +260,252 @@
         }
       }
     },
+    "/api/admin/members/{memberId}/class-progression/special-approval-credit": {
+      "put": {
+        "tags": [
+          "admin-member-class-progression-controller"
+        ],
+        "operationId": "correctMemberSpecialApprovalCredit",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Preview가 반환한 quoted strong entity-tag. stateToken 값 전체를 그대로 전달한다.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberProgressionCreditCorrectionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/members/{memberId}/class-progression/promotion-hold": {
+      "put": {
+        "tags": [
+          "admin-member-class-progression-controller"
+        ],
+        "operationId": "setMemberPromotionHold",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Preview가 반환한 quoted strong entity-tag. stateToken 값 전체를 그대로 전달한다.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberPromotionHoldRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin-member-class-progression-controller"
+        ],
+        "operationId": "removeMemberPromotionHold",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Preview가 반환한 quoted strong entity-tag. stateToken 값 전체를 그대로 전달한다.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberClassChangeReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/members/{memberId}/class-progression/baseline": {
+      "put": {
+        "tags": [
+          "admin-member-class-progression-controller"
+        ],
+        "operationId": "setMemberProgressionBaseline",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Preview가 반환한 quoted strong entity-tag. stateToken 값 전체를 그대로 전달한다.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberProgressionBaselineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin-member-class-progression-controller"
+        ],
+        "operationId": "removeMemberProgressionBaseline",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Preview가 반환한 quoted strong entity-tag. stateToken 값 전체를 그대로 전달한다.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberClassChangeReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/reservations": {
       "post": {
         "tags": [
@@ -2769,6 +3015,97 @@
         }
       }
     },
+    "/api/admin/members/{memberId}/class-progression/ride-count-adjustments": {
+      "post": {
+        "tags": [
+          "admin-member-class-progression-controller"
+        ],
+        "operationId": "adjustMemberActualCompletedRideCount",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Preview가 반환한 quoted strong entity-tag. stateToken 값 전체를 그대로 전달한다.",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberRideCountAdjustmentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/members/{memberId}/class-progression/preview": {
+      "post": {
+        "tags": [
+          "admin-member-class-progression-query-controller"
+        ],
+        "operationId": "previewMemberClassProgression",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberClassProgressionPreviewRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberClassProgressionPreviewResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/jobs/sync-schedule-occurrences/retry": {
       "post": {
         "tags": [
@@ -2872,6 +3209,381 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApprovalExpiryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/family-groups": {
+      "get": {
+        "tags": [
+          "admin-family-group-query-controller"
+        ],
+        "operationId": "getFamilyGroups",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 0
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "DISSOLVED"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyGroupPageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-family-group-command-controller"
+        ],
+        "operationId": "createFamilyGroup",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FamilyGroupCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyGroupResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/family-groups/{groupId}/members": {
+      "get": {
+        "tags": [
+          "admin-family-group-query-controller"
+        ],
+        "operationId": "getFamilyGroupMembers",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyGroupMemberPageResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-family-group-command-controller"
+        ],
+        "operationId": "addFamilyGroupMember",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FamilyMemberAddRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyMembershipResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/family-groups/{groupId}/dissolution": {
+      "post": {
+        "tags": [
+          "admin-family-group-command-controller"
+        ],
+        "operationId": "dissolveFamilyGroup",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FamilyReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyGroupResponse"
                 }
               }
             }
@@ -4150,6 +4862,41 @@
         }
       }
     },
+    "/api/admin/reservations/weekly-operations-calendar": {
+      "get": {
+        "tags": [
+          "admin-reservation-query-controller"
+        ],
+        "operationId": "getWeeklyOperationsCalendar",
+        "parameters": [
+          {
+            "name": "referenceDate",
+            "in": "query",
+            "description": "조회 기준일. 생략하면 Asia/Seoul 현재 날짜",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "조회 기준일. 생략하면 Asia/Seoul 현재 날짜",
+              "example": "2026-08-31",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\\d|3[01])$"
+            },
+            "example": "2026-08-31"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminWeeklyOperationsCalendarResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/admin/reservations/summary": {
       "get": {
         "tags": [
@@ -4183,6 +4930,56 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminReservationSummaryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/reservations/monthly-ride-statistics": {
+      "get": {
+        "tags": [
+          "admin-reservation-query-controller"
+        ],
+        "operationId": "getMonthlyRideStatistics",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "description": "조회 월. 생략하면 Asia/Seoul 현재 월",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "조회 월. 생략하면 Asia/Seoul 현재 월",
+              "example": "2026-08",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "example": "2026-08"
+          },
+          {
+            "name": "rideType",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "ALL",
+              "enum": [
+                "ALL",
+                "GENERAL",
+                "DRESSAGE",
+                "JUMPING"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminMonthlyRideStatisticsResponse"
                 }
               }
             }
@@ -4280,6 +5077,163 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AdminMemberResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/members/{memberId}/class-progression/audit-logs": {
+      "get": {
+        "tags": [
+          "admin-member-class-progression-query-controller"
+        ],
+        "operationId": "getMemberClassProgressionAuditLogs",
+        "parameters": [
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemberClassProgressionAuditPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/family-groups/{groupId}/audit-logs": {
+      "get": {
+        "tags": [
+          "admin-family-group-query-controller"
+        ],
+        "operationId": "getFamilyGroupAuditLogs",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyGroupAuditPageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/family-groups/member-candidates": {
+      "get": {
+        "tags": [
+          "admin-family-group-query-controller"
+        ],
+        "operationId": "getFamilyMemberCandidates",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "minLength": 0
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "minimum": 0
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyMemberCandidatePageResponse"
                 }
               }
             }
@@ -4519,6 +5473,106 @@
                 "schema": {
                   "type": "string",
                   "format": "byte"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/family-groups/{groupId}/members/{memberId}": {
+      "delete": {
+        "tags": [
+          "admin-family-group-command-controller"
+        ],
+        "operationId": "removeFamilyGroupMember",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "memberId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FamilyReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FamilyMembershipResponse"
                 }
               }
             }
@@ -5036,6 +6090,215 @@
           "holidayId",
           "reason",
           "version"
+        ]
+      },
+      "MemberProgressionCreditCorrectionRequest": {
+        "type": "object",
+        "properties": {
+          "specialApprovalProgressionCredit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "reason",
+          "specialApprovalProgressionCredit"
+        ]
+      },
+      "AdminMemberResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "generalRideCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dressageRideCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "jumpingRideCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "progressionValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "progressionClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "effectiveClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "progressionManagementStartedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "progressionBaselineClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "progressionBaselineThreshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "progressionBaselineActualRideCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "specialApprovalProgressionCredit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "promotionHoldClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "dressageApproved": {
+            "type": "boolean"
+          },
+          "jumpingApproved": {
+            "type": "boolean"
+          },
+          "canUseLargeArena": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "canUseLargeArena",
+          "dressageApproved",
+          "dressageRideCount",
+          "effectiveClass",
+          "generalRideCount",
+          "id",
+          "jumpingApproved",
+          "jumpingRideCount",
+          "name",
+          "phone",
+          "progressionBaselineActualRideCount",
+          "progressionBaselineClass",
+          "progressionBaselineThreshold",
+          "progressionClass",
+          "progressionManagementStartedAt",
+          "progressionValue",
+          "promotionHoldClass",
+          "specialApprovalProgressionCredit"
+        ]
+      },
+      "MemberPromotionHoldRequest": {
+        "type": "object",
+        "properties": {
+          "promotionHoldClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "promotionHoldClass",
+          "reason"
+        ]
+      },
+      "MemberProgressionBaselineRequest": {
+        "type": "object",
+        "properties": {
+          "baselineClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "baselineClass",
+          "reason"
         ]
       },
       "ReservationApplicationRequest": {
@@ -6304,6 +7567,193 @@
           "type"
         ]
       },
+      "MemberRideCountAdjustmentRequest": {
+        "type": "object",
+        "properties": {
+          "delta": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "delta",
+          "reason"
+        ]
+      },
+      "MemberClassProgressionPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "SET_BASELINE",
+              "REMOVE_BASELINE",
+              "SET_PROMOTION_HOLD",
+              "REMOVE_PROMOTION_HOLD",
+              "CORRECT_SPECIAL_APPROVAL_CREDIT",
+              "ADJUST_RIDE_COUNT"
+            ]
+          },
+          "baselineClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "promotionHoldClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "specialApprovalProgressionCredit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rideCountDelta": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "action"
+        ]
+      },
+      "MemberClassProgressionPreviewResponse": {
+        "type": "object",
+        "properties": {
+          "stateToken": {
+            "type": "string",
+            "description": "현재 progression 상태의 strong entity-tag. 변경 Command의 If-Match Header에 그대로 전달한다.",
+            "example": "\"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"",
+            "pattern": "^\\\"[0-9a-f]{64}\\\"$"
+          },
+          "current": {
+            "$ref": "#/components/schemas/MemberClassProgressionProjectionResponse"
+          },
+          "expected": {
+            "$ref": "#/components/schemas/MemberClassProgressionProjectionResponse"
+          }
+        },
+        "required": [
+          "current",
+          "expected",
+          "stateToken"
+        ]
+      },
+      "MemberClassProgressionProjectionResponse": {
+        "type": "object",
+        "properties": {
+          "actualCompletedRideCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "progressionValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "progressionClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "effectiveClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "baselineClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "baselineThreshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "baselineActualRideCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "specialApprovalProgressionCredit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "promotionHoldClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          }
+        },
+        "required": [
+          "actualCompletedRideCount",
+          "baselineActualRideCount",
+          "baselineClass",
+          "baselineThreshold",
+          "effectiveClass",
+          "progressionClass",
+          "progressionValue",
+          "promotionHoldClass",
+          "specialApprovalProgressionCredit"
+        ]
+      },
       "ScheduleSynchronizationRetryRequest": {
         "type": "object",
         "properties": {
@@ -6386,6 +7836,128 @@
           "expiredCount"
         ]
       },
+      "FamilyGroupCreateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "name",
+          "reason"
+        ]
+      },
+      "FamilyGroupResponse": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DISSOLVED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dissolvedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "createdAt",
+          "dissolvedAt",
+          "groupId",
+          "name",
+          "status"
+        ]
+      },
+      "FamilyMemberAddRequest": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "memberId",
+          "reason"
+        ]
+      },
+      "FamilyMembershipResponse": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "groupId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "endedAt",
+          "groupId",
+          "joinedAt",
+          "memberId",
+          "membershipId"
+        ]
+      },
+      "FamilyReasonRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
       "TimeSlotStatusUpdateRequest": {
         "type": "object",
         "properties": {
@@ -6424,54 +7996,15 @@
           },
           "jumpingApproved": {
             "type": "boolean"
-          }
-        }
-      },
-      "AdminMemberResponse": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
           },
-          "name": {
-            "type": "string"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "generalRideCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "dressageRideCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "jumpingRideCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "dressageApproved": {
-            "type": "boolean"
-          },
-          "jumpingApproved": {
-            "type": "boolean"
-          },
-          "canUseLargeArena": {
-            "type": "boolean"
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
           }
         },
         "required": [
-          "canUseLargeArena",
-          "dressageApproved",
-          "dressageRideCount",
-          "generalRideCount",
-          "id",
-          "jumpingApproved",
-          "jumpingRideCount",
-          "name",
-          "phone"
+          "reason"
         ]
       },
       "MemberAvailableTimeSlotResponse": {
@@ -6536,6 +8069,8 @@
               "ROUND_TROT",
               "LARGE_ARENA_BEGINNER",
               "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER",
               "DRESSAGE",
               "JUMPING"
             ]
@@ -6856,7 +8391,37 @@
               "ROUND_BEGINNER",
               "ROUND_TROT",
               "LARGE_ARENA_BEGINNER",
-              "LARGE_ARENA_TROT"
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "progressionValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "progressionClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "effectiveClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
             ]
           },
           "dressageApproved": {
@@ -6878,6 +8443,8 @@
                 "ROUND_TROT",
                 "LARGE_ARENA_BEGINNER",
                 "LARGE_ARENA_TROT",
+                "CANTER_BEGINNER",
+                "CANTER",
                 "DRESSAGE",
                 "JUMPING"
               ]
@@ -6889,7 +8456,10 @@
           "canUseLargeArena",
           "currentGeneralGrade",
           "dressageApproved",
-          "jumpingApproved"
+          "effectiveClass",
+          "jumpingApproved",
+          "progressionClass",
+          "progressionValue"
         ]
       },
       "MemberCouponPageResponse": {
@@ -7046,6 +8616,21 @@
             ],
             "format": "int64"
           },
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "couponOwnerMemberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "familyGroupId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
           "action": {
             "type": "string"
           },
@@ -7066,6 +8651,9 @@
           "actorType",
           "countDelta",
           "couponId",
+          "couponOwnerMemberId",
+          "familyGroupId",
+          "memberId",
           "occurredAt",
           "reservationId",
           "usageLogId"
@@ -7369,6 +8957,137 @@
           "updatedAt"
         ]
       },
+      "AdminWeeklyOperationsCalendarResponse": {
+        "type": "object",
+        "properties": {
+          "referenceDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "weekStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "weekEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeSlots": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminWeeklyOperationsTimeSlotResponse"
+            }
+          }
+        },
+        "required": [
+          "referenceDate",
+          "timeSlots",
+          "weekEndDate",
+          "weekStartDate"
+        ]
+      },
+      "AdminWeeklyOperationsReservationResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberName": {
+            "type": "string"
+          },
+          "ridingClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER",
+              "DRESSAGE",
+              "JUMPING"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_admin_approval",
+              "pending_payment",
+              "confirmed",
+              "completed"
+            ]
+          }
+        },
+        "required": [
+          "memberId",
+          "memberName",
+          "reservationId",
+          "ridingClass",
+          "status"
+        ]
+      },
+      "AdminWeeklyOperationsTimeSlotResponse": {
+        "type": "object",
+        "properties": {
+          "timeSlotId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "totalCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roundArenaCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "classCapacities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "closed": {
+            "type": "boolean"
+          },
+          "reservations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminWeeklyOperationsReservationResponse"
+            }
+          }
+        },
+        "required": [
+          "classCapacities",
+          "closed",
+          "endTime",
+          "lessonDate",
+          "reservations",
+          "roundArenaCapacity",
+          "startTime",
+          "timeSlotId",
+          "totalCapacity"
+        ]
+      },
       "AdminReservationDailySummaryResponse": {
         "type": "object",
         "properties": {
@@ -7443,6 +9162,67 @@
         "required": [
           "count",
           "status"
+        ]
+      },
+      "AdminMonthlyRideLeaderResponse": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberName": {
+            "type": "string"
+          },
+          "completedRideCount": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "completedRideCount",
+          "memberId",
+          "memberName"
+        ]
+      },
+      "AdminMonthlyRideStatisticsResponse": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "example": "2026-08",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "rideType": {
+            "type": "string",
+            "enum": [
+              "ALL",
+              "GENERAL",
+              "DRESSAGE",
+              "JUMPING"
+            ]
+          },
+          "totalCompletedRideCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "topCompletedRideCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "leaders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminMonthlyRideLeaderResponse"
+            }
+          }
+        },
+        "required": [
+          "leaders",
+          "month",
+          "rideType",
+          "topCompletedRideCount",
+          "totalCompletedRideCount"
         ]
       },
       "AdminPendingPaymentResponse": {
@@ -7538,6 +9318,640 @@
           "size",
           "totalElements",
           "totalPages"
+        ]
+      },
+      "MemberClassProgressionAuditPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MemberClassProgressionAuditResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
+      },
+      "MemberClassProgressionAuditResponse": {
+        "type": "object",
+        "properties": {
+          "auditId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "PROGRESSION_INITIALIZED",
+              "BASELINE_SET",
+              "BASELINE_CHANGED",
+              "BASELINE_REMOVED",
+              "SPECIAL_APPROVAL_CHANGED",
+              "SPECIAL_APPROVAL_CREDIT_CORRECTED",
+              "RIDE_COUNT_ADJUSTED",
+              "PROMOTION_HOLD_SET",
+              "PROMOTION_HOLD_CHANGED",
+              "PROMOTION_HOLD_REMOVED"
+            ]
+          },
+          "fromState": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberClassProgressionAuditStateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "toState": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/MemberClassProgressionAuditStateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actorAuthSubject": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "action",
+          "actorAuthSubject",
+          "auditId",
+          "fromState",
+          "occurredAt",
+          "reason",
+          "toState"
+        ]
+      },
+      "MemberClassProgressionAuditStateResponse": {
+        "type": "object",
+        "properties": {
+          "actualCompletedRideCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "progressionValue": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "progressionClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "effectiveClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "managementStartedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "baselineClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "baselineThreshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "baselineActualRideCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "specialApprovalProgressionCredit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          },
+          "promotionHoldClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER"
+            ]
+          },
+          "dressageApproved": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "jumpingApproved": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "rideCountDelta": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int32"
+          }
+        },
+        "required": [
+          "actualCompletedRideCount",
+          "baselineActualRideCount",
+          "baselineClass",
+          "baselineThreshold",
+          "dressageApproved",
+          "effectiveClass",
+          "jumpingApproved",
+          "managementStartedAt",
+          "progressionClass",
+          "progressionValue",
+          "promotionHoldClass",
+          "rideCountDelta",
+          "specialApprovalProgressionCredit"
+        ]
+      },
+      "FamilyGroupPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FamilyGroupSummaryResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
+      },
+      "FamilyGroupSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DISSOLVED"
+            ]
+          },
+          "activeMemberCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dissolvedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "activeMemberCount",
+          "createdAt",
+          "dissolvedAt",
+          "groupId",
+          "name",
+          "status"
+        ]
+      },
+      "FamilyGroupMemberPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FamilyGroupMemberResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
+      },
+      "FamilyGroupMemberResponse": {
+        "type": "object",
+        "properties": {
+          "membershipId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "joinedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "joinedAt",
+          "memberId",
+          "membershipId",
+          "name",
+          "phone"
+        ]
+      },
+      "FamilyGroupAuditPageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FamilyGroupAuditResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
+      },
+      "FamilyGroupAuditResponse": {
+        "type": "object",
+        "properties": {
+          "auditId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "GROUP_CREATED",
+              "MEMBER_ADDED",
+              "MEMBER_REMOVED",
+              "GROUP_DISSOLVED"
+            ]
+          },
+          "memberId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "memberName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "fromState": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FamilyGroupAuditStateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "toState": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/FamilyGroupAuditStateResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "actorAuthSubject": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "action",
+          "actorAuthSubject",
+          "auditId",
+          "fromState",
+          "memberId",
+          "memberName",
+          "occurredAt",
+          "reason",
+          "toState"
+        ]
+      },
+      "FamilyGroupAuditStateResponse": {
+        "type": "object",
+        "properties": {
+          "groupId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "activeMemberIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          "dissolvedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "membershipId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "memberId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64"
+          },
+          "joinedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "endedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "activeMemberIds",
+          "dissolvedAt",
+          "endedAt",
+          "groupId",
+          "joinedAt",
+          "memberId",
+          "membershipId",
+          "name",
+          "status"
+        ]
+      },
+      "FamilyMemberCandidatePageResponse": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FamilyMemberCandidateResponse"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "hasNext": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "content",
+          "hasNext",
+          "page",
+          "size",
+          "totalElements",
+          "totalPages"
+        ]
+      },
+      "FamilyMemberCandidateResponse": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "memberId",
+          "name",
+          "phone"
         ]
       },
       "AdminReservationAuditPageResponse": {
@@ -7674,6 +10088,19 @@
           "toLessonDate",
           "toStartTime",
           "toStatus"
+        ]
+      },
+      "MemberClassChangeReasonRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "reason"
         ]
       },
       "ErrorResponse": {

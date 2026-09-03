@@ -27,6 +27,24 @@ export interface MemberAvailableRidingClassesResponse {
     currentGeneralGrade: MemberAvailableRidingClassesResponseCurrentGeneralGradeEnum;
     /**
      *
+     * @type {number}
+     * @memberof MemberAvailableRidingClassesResponse
+     */
+    progressionValue: number;
+    /**
+     *
+     * @type {MemberAvailableRidingClassesResponseProgressionClassEnum}
+     * @memberof MemberAvailableRidingClassesResponse
+     */
+    progressionClass: MemberAvailableRidingClassesResponseProgressionClassEnum;
+    /**
+     *
+     * @type {MemberAvailableRidingClassesResponseEffectiveClassEnum}
+     * @memberof MemberAvailableRidingClassesResponse
+     */
+    effectiveClass: MemberAvailableRidingClassesResponseEffectiveClassEnum;
+    /**
+     *
      * @type {boolean}
      * @memberof MemberAvailableRidingClassesResponse
      */
@@ -60,9 +78,39 @@ export const MemberAvailableRidingClassesResponseCurrentGeneralGradeEnum = {
     RoundBeginner: 'ROUND_BEGINNER',
     RoundTrot: 'ROUND_TROT',
     LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
-    LargeArenaTrot: 'LARGE_ARENA_TROT'
+    LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER'
 } as const;
 export type MemberAvailableRidingClassesResponseCurrentGeneralGradeEnum = typeof MemberAvailableRidingClassesResponseCurrentGeneralGradeEnum[keyof typeof MemberAvailableRidingClassesResponseCurrentGeneralGradeEnum];
+
+/**
+ * @export
+ */
+export const MemberAvailableRidingClassesResponseProgressionClassEnum = {
+    FirstRide: 'FIRST_RIDE',
+    RoundBeginner: 'ROUND_BEGINNER',
+    RoundTrot: 'ROUND_TROT',
+    LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
+    LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER'
+} as const;
+export type MemberAvailableRidingClassesResponseProgressionClassEnum = typeof MemberAvailableRidingClassesResponseProgressionClassEnum[keyof typeof MemberAvailableRidingClassesResponseProgressionClassEnum];
+
+/**
+ * @export
+ */
+export const MemberAvailableRidingClassesResponseEffectiveClassEnum = {
+    FirstRide: 'FIRST_RIDE',
+    RoundBeginner: 'ROUND_BEGINNER',
+    RoundTrot: 'ROUND_TROT',
+    LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
+    LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER'
+} as const;
+export type MemberAvailableRidingClassesResponseEffectiveClassEnum = typeof MemberAvailableRidingClassesResponseEffectiveClassEnum[keyof typeof MemberAvailableRidingClassesResponseEffectiveClassEnum];
 
 /**
  * @export
@@ -73,6 +121,8 @@ export const MemberAvailableRidingClassesResponseAvailableRidingClassesEnum = {
     RoundTrot: 'ROUND_TROT',
     LargeArenaBeginner: 'LARGE_ARENA_BEGINNER',
     LargeArenaTrot: 'LARGE_ARENA_TROT',
+    CanterBeginner: 'CANTER_BEGINNER',
+    Canter: 'CANTER',
     Dressage: 'DRESSAGE',
     Jumping: 'JUMPING'
 } as const;
@@ -84,6 +134,9 @@ export type MemberAvailableRidingClassesResponseAvailableRidingClassesEnum = typ
  */
 export function instanceOfMemberAvailableRidingClassesResponse(value: object): value is MemberAvailableRidingClassesResponse {
     if (!('currentGeneralGrade' in value) || value['currentGeneralGrade'] === undefined) return false;
+    if (!('progressionValue' in value) || value['progressionValue'] === undefined) return false;
+    if (!('progressionClass' in value) || value['progressionClass'] === undefined) return false;
+    if (!('effectiveClass' in value) || value['effectiveClass'] === undefined) return false;
     if (!('dressageApproved' in value) || value['dressageApproved'] === undefined) return false;
     if (!('jumpingApproved' in value) || value['jumpingApproved'] === undefined) return false;
     if (!('canUseLargeArena' in value) || value['canUseLargeArena'] === undefined) return false;
@@ -102,6 +155,9 @@ export function MemberAvailableRidingClassesResponseFromJSONTyped(json: any, ign
     return {
 
         'currentGeneralGrade': json['currentGeneralGrade'],
+        'progressionValue': json['progressionValue'],
+        'progressionClass': json['progressionClass'],
+        'effectiveClass': json['effectiveClass'],
         'dressageApproved': json['dressageApproved'],
         'jumpingApproved': json['jumpingApproved'],
         'canUseLargeArena': json['canUseLargeArena'],
@@ -121,6 +177,9 @@ export function MemberAvailableRidingClassesResponseToJSONTyped(value?: MemberAv
     return {
 
         'currentGeneralGrade': value['currentGeneralGrade'],
+        'progressionValue': value['progressionValue'],
+        'progressionClass': value['progressionClass'],
+        'effectiveClass': value['effectiveClass'],
         'dressageApproved': value['dressageApproved'],
         'jumpingApproved': value['jumpingApproved'],
         'canUseLargeArena': value['canUseLargeArena'],

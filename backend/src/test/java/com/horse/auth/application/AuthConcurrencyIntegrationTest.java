@@ -25,6 +25,7 @@ import com.horse.auth.domain.RefreshTokenSessionStatus;
 import com.horse.auth.domain.exception.AuthException;
 import com.horse.auth.infrastructure.AuthAccountRepository;
 import com.horse.auth.infrastructure.RefreshTokenSessionRepository;
+import com.horse.auth.support.AuthIntegrationTestDataCleaner;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -53,14 +54,7 @@ class AuthConcurrencyIntegrationTest {
 	@BeforeEach
 	@AfterEach
 	void 인증_동시성_데이터를_초기화한다() {
-		final List<Long> memberIds = jdbcTemplate.queryForList(
-			"SELECT member_id FROM auth_accounts WHERE member_id IS NOT NULL",
-			Long.class
-		);
-		jdbcTemplate.update("UPDATE refresh_token_sessions SET parent_session_id = NULL");
-		jdbcTemplate.update("DELETE FROM refresh_token_sessions");
-		jdbcTemplate.update("DELETE FROM auth_accounts");
-		memberIds.forEach(memberId -> jdbcTemplate.update("DELETE FROM members WHERE id = ?", memberId));
+		AuthIntegrationTestDataCleaner.clean(jdbcTemplate);
 	}
 
 	@Test

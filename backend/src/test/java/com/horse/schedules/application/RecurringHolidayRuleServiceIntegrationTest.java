@@ -51,6 +51,8 @@ class RecurringHolidayRuleServiceIntegrationTest {
 			"ROUND_TROT": 2,
 			"LARGE_ARENA_BEGINNER": 3,
 			"LARGE_ARENA_TROT": 3,
+			"CANTER_BEGINNER": 3,
+			"CANTER": 3,
 			"DRESSAGE": 1,
 			"JUMPING": 1
 		}
@@ -432,6 +434,8 @@ class RecurringHolidayRuleServiceIntegrationTest {
 			"ROUND_TROT", 2,
 			"LARGE_ARENA_BEGINNER", 3,
 			"LARGE_ARENA_TROT", 3,
+			"CANTER_BEGINNER", 3,
+			"CANTER", 3,
 			"DRESSAGE", 1,
 			"JUMPING", 1);
 	}

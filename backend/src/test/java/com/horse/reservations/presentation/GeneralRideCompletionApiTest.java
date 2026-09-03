@@ -52,6 +52,8 @@ class GeneralRideCompletionApiTest {
 		  "ROUND_TROT": 4,
 		  "LARGE_ARENA_BEGINNER": 8,
 		  "LARGE_ARENA_TROT": 8,
+		  "CANTER_BEGINNER": 8,
+		  "CANTER": 8,
 		  "DRESSAGE": 8,
 		  "JUMPING": 8
 		}
@@ -156,6 +158,19 @@ class GeneralRideCompletionApiTest {
 
 		assertThat(totalUsageLogCount()).isZero();
 		assertThat(memberGeneralRideCount(memberId)).isEqualTo(1);
+	}
+
+	@Test
+	void 구보_클래스_완료는_일반_progression을_정확히_한_번_증가시킨다() throws Exception {
+		final Long memberId = insertMember("canter-completion-member", 69);
+		final Long reservationId = insertConfirmedReservation(
+			memberId, null, "CANTER_BEGINNER", "single_payment", LocalDate.of(2026, 8, 2));
+
+		mockMvc.perform(post(completionEndpoint(reservationId)).with(adminJwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.generalRideCount").value(70));
+
+		assertThat(memberGeneralRideCount(memberId)).isEqualTo(70);
 	}
 
 	@Test
@@ -446,11 +461,14 @@ class GeneralRideCompletionApiTest {
 	private void insertHeldAndConfirmedLogs(Long memberId, Long couponId, Long reservationId) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type
 			) VALUES
-				(?, ?, ?, 'held', 1, '2026-07-01 09:00:00', 'member'),
-				(?, ?, ?, 'confirmed', 0, '2026-07-01 10:00:00', 'admin')
-			""", couponId, reservationId, memberId, couponId, reservationId, memberId);
+				(?, ?, ?, ?, 'held', 1, '2026-07-01 09:00:00', 'member'),
+				(?, ?, ?, ?, 'confirmed', 0, '2026-07-01 10:00:00', 'admin')
+			""",
+			couponId, reservationId, memberId, memberId,
+			couponId, reservationId, memberId, memberId);
 	}
 
 	private Long insertTimeSlot(LocalDate lessonDate, String startTime) {

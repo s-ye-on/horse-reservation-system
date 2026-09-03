@@ -77,11 +77,33 @@ class MemberCouponQueryApiTest {
 			.andExpect(jsonPath("$.hasNext").value(false))
 			.andExpect(jsonPath("$.content[0].couponId").value(couponId))
 			.andExpect(jsonPath("$.content[0].reservationId").value(reservationId))
+			.andExpect(jsonPath("$.content[0].memberId").value(memberId))
+			.andExpect(jsonPath("$.content[0].couponOwnerMemberId").value(memberId))
+			.andExpect(jsonPath("$.content[0].familyGroupId").doesNotExist())
 			.andExpect(jsonPath("$.content[0].action").value("held"))
 			.andExpect(jsonPath("$.content[0].countDelta").value(1))
 			.andExpect(jsonPath("$.content[0].occurredAt").value("2026-07-14T10:00:00+09:00"))
 			.andExpect(jsonPath("$.content[0].actorType").value("member"))
 			.andExpect(jsonPath("$.content[0].memo").doesNotExist());
+	}
+
+	@Test
+	void 가족_쿠폰_사용_내역은_예약_회원과_원소유자와_가족_snapshot을_구분한다() throws Exception {
+		final Long memberId = insertMember("family-usage-member");
+		final Long ownerMemberId = insertMember("family-usage-owner");
+		final Long familyGroupId = insertFamilyGroup();
+		final Long couponId = insertCoupon(ownerMemberId, "general", 9, 1);
+		final Long reservationId = insertReservation(memberId, couponId);
+		insertFamilyUsageLog(couponId, reservationId, memberId, ownerMemberId, familyGroupId);
+
+		mockMvc.perform(get("/api/me/coupon-usage-logs")
+				.with(jwt().jwt(token -> token.subject("family-usage-member"))))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].couponId").value(couponId))
+			.andExpect(jsonPath("$.content[0].reservationId").value(reservationId))
+			.andExpect(jsonPath("$.content[0].memberId").value(memberId))
+			.andExpect(jsonPath("$.content[0].couponOwnerMemberId").value(ownerMemberId))
+			.andExpect(jsonPath("$.content[0].familyGroupId").value(familyGroupId));
 	}
 
 	@Test
@@ -232,6 +254,26 @@ class MemberCouponQueryApiTest {
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
+	private Long insertFamilyGroup() {
+		jdbcTemplate.update("INSERT INTO family_groups (name) VALUES ('조회 가족')");
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
+	private void insertFamilyUsageLog(
+		Long couponId,
+		Long reservationId,
+		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId
+	) {
+		jdbcTemplate.update("""
+			INSERT INTO coupon_usage_logs (
+				coupon_id, reservation_id, member_id, coupon_owner_member_id, family_group_id,
+				action, count_delta, occurred_at, actor_type
+			) VALUES (?, ?, ?, ?, ?, 'held', 1, '2026-07-14 10:00:00', 'member')
+			""", couponId, reservationId, memberId, couponOwnerMemberId, familyGroupId);
+	}
+
 	private Long insertUsageLog(
 		Long couponId,
 		Long reservationId,
@@ -243,9 +285,10 @@ class MemberCouponQueryApiTest {
 	) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type, memo
-			) VALUES (?, ?, ?, ?, ?, '2026-07-14 10:00:00', ?, ?)
-			""", couponId, reservationId, memberId, action, countDelta, actorType, memo);
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type, memo
+			) VALUES (?, ?, ?, ?, ?, ?, '2026-07-14 10:00:00', ?, ?)
+			""", couponId, reservationId, memberId, memberId, action, countDelta, actorType, memo);
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 

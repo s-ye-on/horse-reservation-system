@@ -314,14 +314,16 @@ class AdminNoShowApiTest {
 	private void insertHeldAndConfirmedLogs(Long memberId, Long couponId, Long reservationId) {
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type
-			) VALUES (?, ?, ?, 'held', 1, ?, 'member')
-			""", couponId, reservationId, memberId, "2026-07-15 09:00:00");
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type
+			) VALUES (?, ?, ?, ?, 'held', 1, ?, 'member')
+			""", couponId, reservationId, memberId, memberId, "2026-07-15 09:00:00");
 		jdbcTemplate.update("""
 			INSERT INTO coupon_usage_logs (
-				coupon_id, reservation_id, member_id, action, count_delta, occurred_at, actor_type
-			) VALUES (?, ?, ?, 'confirmed', 0, ?, 'admin')
-			""", couponId, reservationId, memberId, "2026-07-15 10:00:00");
+				coupon_id, reservation_id, member_id, coupon_owner_member_id,
+				action, count_delta, occurred_at, actor_type
+			) VALUES (?, ?, ?, ?, 'confirmed', 0, ?, 'admin')
+			""", couponId, reservationId, memberId, memberId, "2026-07-15 10:00:00");
 	}
 
 	private List<String> reservationValues(Long reservationId) {

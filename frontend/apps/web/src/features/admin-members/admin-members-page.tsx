@@ -4,8 +4,11 @@ import type { AdminMemberPageResponse, AdminMemberResponse } from '@horse/api-cl
 import {
   adminMembersApi,
   getAdminMembersErrorKind,
+  type AdminMemberProgressionResponse,
   type AdminMembersApi,
+  type MemberRidingPermissionChangeRequest,
 } from './admin-members.api'
+import { AdminMemberClassProgressionPanel } from './admin-member-class-progression-panel'
 import './admin-members-page.css'
 
 const MEMBER_LIST_QUERY_KEY = ['admin', 'member-list'] as const
@@ -45,6 +48,7 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
   const queryClient = useQueryClient()
   const [page, setPage] = useState(0)
   const [selectedMemberId, setSelectedMemberId] = useState<number>()
+  const [permissionReason, setPermissionReason] = useState('')
   const membersQuery = useQuery({
     queryKey: [...MEMBER_LIST_QUERY_KEY, page],
     queryFn: () => api.getMembers(page, PAGE_SIZE),
@@ -57,6 +61,10 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
     && members.some((member) => member.id === selectedMemberId)
     ? selectedMemberId
     : members[0]?.id
+
+  useEffect(() => {
+    setPermissionReason('')
+  }, [activeMemberId])
 
   useEffect(() => {
     if (totalPages === 0 && page !== 0) {
@@ -72,23 +80,31 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
     enabled: activeMemberId !== undefined,
   })
 
+  const updateMemberCaches = (updatedMember: AdminMemberProgressionResponse) => {
+    queryClient.setQueriesData<AdminMemberPageResponse>({ queryKey: MEMBER_LIST_QUERY_KEY }, (current) => current ? {
+      ...current,
+      content: current.content.map((member) => member.id === updatedMember.id ? updatedMember : member),
+    } : current)
+    queryClient.setQueryData(['admin', 'members', updatedMember.id], updatedMember)
+  }
+
   const permissionMutation = useMutation({
     mutationFn: ({ memberId, permissions }: {
       memberId: number
-      permissions: { dressageApproved: boolean; jumpingApproved: boolean }
+      permissions: MemberRidingPermissionChangeRequest
     }) => api.changeRidingPermissions(memberId, permissions),
     onSuccess: (updatedMember) => {
-      queryClient.setQueriesData<AdminMemberPageResponse>({ queryKey: MEMBER_LIST_QUERY_KEY }, (current) => current ? {
-        ...current,
-        content: current.content.map((member) => member.id === updatedMember.id ? updatedMember : member),
-      } : current)
-      queryClient.setQueryData(['admin', 'members', updatedMember.id], updatedMember)
+      updateMemberCaches(updatedMember)
+      setPermissionReason('')
+      void queryClient.invalidateQueries({
+        queryKey: ['admin', 'members', updatedMember.id, 'progression-audit'],
+      })
     },
   })
 
   const changePermission = (permission: 'dressageApproved' | 'jumpingApproved') => {
     const member = memberQuery.data
-    if (member?.id === undefined || permissionMutation.isPending) {
+    if (member?.id === undefined || permissionMutation.isPending || !permissionReason.trim()) {
       return
     }
 
@@ -102,6 +118,7 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
         jumpingApproved: permission === 'jumpingApproved'
           ? !member.jumpingApproved
           : Boolean(member.jumpingApproved),
+        reason: permissionReason.trim(),
       },
     })
   }
@@ -192,7 +209,11 @@ export function AdminMembersPage({ api = adminMembersApi }: AdminMembersPageProp
                   updateError={permissionMutation.isError
                     ? getErrorMessage(permissionMutation.error, 'update')
                     : undefined}
+                  permissionReason={permissionReason}
+                  api={api}
+                  onPermissionReasonChange={setPermissionReason}
                   onChangePermission={changePermission}
+                  onMemberUpdated={updateMemberCaches}
                 />
               ) : null}
             </section>
@@ -229,13 +250,28 @@ function AdminMembersState({
 }
 
 interface MemberDetailProps {
-  member: AdminMemberResponse
+  member: AdminMemberProgressionResponse
+  api: AdminMembersApi
   isUpdating: boolean
   updateError?: string
+  permissionReason: string
+  onPermissionReasonChange(value: string): void
   onChangePermission(permission: 'dressageApproved' | 'jumpingApproved'): void
+  onMemberUpdated(member: AdminMemberProgressionResponse): void
 }
 
-function MemberDetail({ member, isUpdating, updateError, onChangePermission }: MemberDetailProps) {
+function MemberDetail({
+  member,
+  api,
+  isUpdating,
+  updateError,
+  permissionReason,
+  onPermissionReasonChange,
+  onChangePermission,
+  onMemberUpdated,
+}: MemberDetailProps) {
+  const hasPromotionHold = member.promotionHoldClass !== null
+
   return (
     <div className="admin-member-detail">
       <div className="admin-member-title-row">
@@ -257,22 +293,44 @@ function MemberDetail({ member, isUpdating, updateError, onChangePermission }: M
       <section className="admin-member-permissions" aria-labelledby="special-permission-title">
         <h3 id="special-permission-title">특수 클래스 승인</h3>
         <p>상담과 안전 확인을 마친 회원만 승인합니다.</p>
+        {hasPromotionHold ? (
+          <p className="admin-member-progression-guidance" role="status">
+            특수 승인을 변경하려면 승급 보류를 먼저 명시적으로 해제해야 합니다.
+          </p>
+        ) : null}
+        <label className="admin-member-permission-reason">
+          승인 변경 사유
+          <input
+            type="text"
+            value={permissionReason}
+            maxLength={500}
+            disabled={isUpdating}
+            onChange={(event) => onPermissionReasonChange(event.target.value)}
+          />
+        </label>
         <PermissionToggle
           label="마장마술"
           description={member.dressageApproved ? '예약 가능' : '승인 필요'}
           checked={Boolean(member.dressageApproved)}
-          disabled={isUpdating}
+          disabled={isUpdating || hasPromotionHold || !permissionReason.trim()}
           onClick={() => onChangePermission('dressageApproved')}
         />
         <PermissionToggle
           label="장애물"
           description={member.jumpingApproved ? '예약 가능' : '승인 필요'}
           checked={Boolean(member.jumpingApproved)}
-          disabled={isUpdating}
+          disabled={isUpdating || hasPromotionHold || !permissionReason.trim()}
           onClick={() => onChangePermission('jumpingApproved')}
         />
         {updateError ? <p className="admin-member-inline-error" role="alert">{updateError}</p> : null}
       </section>
+
+      <AdminMemberClassProgressionPanel
+        key={member.id}
+        member={member}
+        api={api}
+        onMemberUpdated={onMemberUpdated}
+      />
     </div>
   )
 }

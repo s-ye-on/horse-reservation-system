@@ -29,14 +29,7 @@ public class TimeSlotCapacity {
 	private static final int MAX_TOTAL_CAPACITY = 8;
 	private static final int MAX_ROUND_ARENA_CAPACITY = 4;
 	private static final int LESSON_DURATION_MINUTES = 45;
-	private static final Set<String> REQUIRED_CLASS_NAMES = Set.of(
-		"FIRST_RIDE",
-		"ROUND_BEGINNER",
-		"ROUND_TROT",
-		"LARGE_ARENA_BEGINNER",
-		"LARGE_ARENA_TROT",
-		"DRESSAGE",
-		"JUMPING");
+	private static final Set<String> REQUIRED_CLASS_NAMES = RidingClass.catalogNames();
 	private static final Set<RidingClass> ROUND_ARENA_CLASSES = Set.of(
 		RidingClass.FIRST_RIDE,
 		RidingClass.ROUND_BEGINNER,

@@ -35,6 +35,7 @@ import com.horse.auth.application.InitialAdminBootstrapService;
 import com.horse.auth.domain.AuthAccount;
 import com.horse.auth.infrastructure.AuthAccountRepository;
 import com.horse.auth.infrastructure.RefreshTokenSessionRepository;
+import com.horse.auth.support.AuthIntegrationTestDataCleaner;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -77,14 +78,7 @@ class AuthApiIntegrationTest {
 	@BeforeEach
 	@AfterEach
 	void 인증_테스트_데이터를_초기화한다() {
-		final List<Long> memberIds = jdbcTemplate.queryForList(
-			"SELECT member_id FROM auth_accounts WHERE member_id IS NOT NULL",
-			Long.class
-		);
-		jdbcTemplate.update("UPDATE refresh_token_sessions SET parent_session_id = NULL");
-		jdbcTemplate.update("DELETE FROM refresh_token_sessions");
-		jdbcTemplate.update("DELETE FROM auth_accounts");
-		memberIds.forEach(memberId -> jdbcTemplate.update("DELETE FROM members WHERE id = ?", memberId));
+		AuthIntegrationTestDataCleaner.clean(jdbcTemplate);
 	}
 
 	@Test

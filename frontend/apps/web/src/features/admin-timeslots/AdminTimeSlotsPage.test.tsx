@@ -6,7 +6,17 @@ import type { ReactNode } from 'react'
 import type { AdminTimeSlotsApi } from './admin-timeslots.api'
 import { AdminTimeSlotsPage } from './admin-timeslots-page'
 
-const CLASS_CAPACITIES = { FIRST_RIDE: 2, ROUND_BEGINNER: 2, ROUND_TROT: 2, LARGE_ARENA_BEGINNER: 3, LARGE_ARENA_TROT: 3, DRESSAGE: 1, JUMPING: 1 }
+const CLASS_CAPACITIES = {
+  FIRST_RIDE: 2,
+  ROUND_BEGINNER: 2,
+  ROUND_TROT: 2,
+  LARGE_ARENA_BEGINNER: 3,
+  LARGE_ARENA_TROT: 3,
+  CANTER_BEGINNER: 3,
+  CANTER: 3,
+  DRESSAGE: 1,
+  JUMPING: 1,
+}
 const SLOT: TimeSlotResponse = {
   id: 4,
   lessonDate: new Date('2026-08-10'),
@@ -43,6 +53,8 @@ describe('AdminTimeSlotsPage', () => {
     expect(await screen.findByRole('heading', { name: /8월 10일/ })).toBeInTheDocument()
     expect(screen.getByText('전체 8명')).toBeInTheDocument()
     expect(screen.getByText('원형 4명')).toBeInTheDocument()
+    expect(screen.getByText('구보초보').nextElementSibling).toHaveTextContent('3명')
+    expect(screen.getByText('구보').nextElementSibling).toHaveTextContent('3명')
     expect(screen.getByText('마장마술').nextElementSibling).toHaveTextContent('1명')
     expect(screen.getByText('예약 가능')).toBeInTheDocument()
   })

@@ -149,10 +149,16 @@ class AdminMemberQueryApiTest {
 				jumping_ride_count,
 				dressage_approved,
 				jumping_approved,
-				large_arena_allowed
-			) VALUES (?, ?, '010-0000-0000', ?, ?, ?, ?, ?, FALSE)
+				large_arena_allowed,
+				progression_management_started_at,
+				special_approval_progression_credit
+			) VALUES (
+				?, ?, '010-0000-0000', ?, ?, ?, ?, ?, FALSE,
+				CURRENT_TIMESTAMP(6), ?
+			)
 			""", authSubject, name, generalRideCount, dressageRideCount, jumpingRideCount,
-			dressageApproved, jumpingApproved);
+			dressageApproved, jumpingApproved,
+			dressageApproved || jumpingApproved ? Math.max(0, 26 - generalRideCount) : 0);
 		return jdbcTemplate.queryForObject(
 			"SELECT id FROM members WHERE auth_subject = ?", Long.class, authSubject);
 	}

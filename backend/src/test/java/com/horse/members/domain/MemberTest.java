@@ -3,6 +3,7 @@ package com.horse.members.domain;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.time.LocalDateTime;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -37,24 +38,36 @@ class MemberTest {
 	}
 
 	@Test
-	void 특수_클래스_승인을_변경하면_대마장_이용_가능_여부도_바뀐다() {
-		final Member member = Member.create("member-1", "홍길동", "010-1234-5678");
+	void 특수_클래스_승인을_해제해도_인정_progression과_대마장_이용_자격을_유지한다() {
+		final Member member = Member.createManaged(
+			"member-1",
+			"홍길동",
+			"010-1234-5678",
+			LocalDateTime.of(2026, 8, 15, 9, 0));
 
-		member.changeDressageApproval(true);
+		final int recognizedCredit = member.changeSpecialApprovals(true, false);
 
+		assertThat(recognizedCredit).isEqualTo(26);
 		assertThat(member.isDressageApproved()).isTrue();
+		assertThat(member.getSpecialApprovalProgressionCredit()).isEqualTo(26);
+		assertThat(member.progressionValue()).isEqualTo(26);
 		assertThat(member.canUseLargeArena()).isTrue();
 
-		member.changeDressageApproval(false);
-		member.changeJumpingApproval(true);
+		final int additionalCredit = member.changeSpecialApprovals(false, true);
 
+		assertThat(additionalCredit).isZero();
 		assertThat(member.isDressageApproved()).isFalse();
 		assertThat(member.isJumpingApproved()).isTrue();
+		assertThat(member.getSpecialApprovalProgressionCredit()).isEqualTo(26);
 		assertThat(member.canUseLargeArena()).isTrue();
 
-		member.changeJumpingApproval(false);
+		member.changeSpecialApprovals(false, false);
 
-		assertThat(member.canUseLargeArena()).isFalse();
+		assertThat(member.isDressageApproved()).isFalse();
+		assertThat(member.isJumpingApproved()).isFalse();
+		assertThat(member.getSpecialApprovalProgressionCredit()).isEqualTo(26);
+		assertThat(member.progressionValue()).isEqualTo(26);
+		assertThat(member.canUseLargeArena()).isTrue();
 	}
 
 	@ParameterizedTest

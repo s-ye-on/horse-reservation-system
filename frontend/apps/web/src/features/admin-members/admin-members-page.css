@@ -163,6 +163,30 @@
   font-size: 0.86rem;
 }
 
+.admin-member-permission-reason {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.admin-member-permission-reason input {
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid var(--admin-line);
+  border-radius: 6px;
+  color: var(--admin-ink);
+  background: var(--admin-surface);
+  font: inherit;
+}
+
+.admin-member-permission-reason input:focus-visible {
+  border-color: var(--admin-accent);
+  outline: 3px solid rgba(122, 31, 53, 0.18);
+}
+
 .admin-member-toggle-row {
   display: flex;
   align-items: center;
@@ -310,6 +334,294 @@
   font-size: 0.86rem;
 }
 
+.admin-member-progression {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-member-section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-member-section-heading h3,
+.admin-member-progression-preview h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-member-section-heading p {
+  margin: 5px 0 0;
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+}
+
+.admin-member-section-heading > span {
+  flex: 0 0 auto;
+  padding: 5px 8px;
+  border: 1px solid #d8b5bf;
+  border-radius: 5px;
+  color: var(--admin-accent);
+  background: var(--admin-accent-soft);
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.admin-member-progression-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 16px 0;
+  padding: 1px;
+  background: var(--admin-line);
+}
+
+.admin-member-progression-grid > div {
+  min-width: 0;
+  padding: 10px;
+  background: var(--admin-surface);
+}
+
+.admin-member-progression-grid dt,
+.admin-member-progression-preview dt,
+.admin-member-progression-audit dt {
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+}
+
+.admin-member-progression-grid dd,
+.admin-member-progression-preview dd,
+.admin-member-progression-audit dd {
+  overflow-wrap: anywhere;
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.admin-member-policy-note,
+.admin-member-progression-guidance {
+  margin: 12px 0;
+  padding: 9px 11px;
+  border-left: 3px solid #b78a48;
+  color: #654918;
+  background: #fff9ed;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.admin-member-progression-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 15px;
+  border: 1px solid var(--admin-line);
+  border-radius: 6px;
+  background: var(--admin-soft);
+}
+
+.admin-member-progression-form label {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+  color: var(--admin-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.admin-member-progression-form input,
+.admin-member-progression-form select {
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--admin-line);
+  border-radius: 5px;
+  color: var(--admin-ink);
+  background: var(--admin-surface);
+  font: inherit;
+}
+
+.admin-member-progression-form input:focus-visible,
+.admin-member-progression-form select:focus-visible {
+  border-color: var(--admin-accent);
+  outline: 3px solid rgba(122, 31, 53, 0.18);
+}
+
+.admin-member-progression-reason,
+.admin-member-progression-guidance,
+.admin-member-progression-actions {
+  grid-column: 1 / -1;
+}
+
+.admin-member-progression-guidance {
+  margin: 0;
+}
+
+.admin-member-progression-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-member-progression-actions button,
+.admin-member-progression-pagination button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--admin-accent);
+  border-radius: 5px;
+  color: var(--admin-accent);
+  background: var(--admin-surface);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.admin-member-progression-actions .admin-member-primary-action {
+  color: #ffffff;
+  background: var(--admin-accent);
+}
+
+.admin-member-progression-actions button:disabled,
+.admin-member-progression-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.admin-member-progression-preview {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #d8b5bf;
+  border-radius: 6px;
+  background: #fff9fb;
+}
+
+.admin-member-progression-preview > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.admin-member-progression-preview dl {
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--admin-line);
+  background: var(--admin-surface);
+}
+
+.admin-member-progression-preview dl > div + div {
+  margin-top: 8px;
+}
+
+.admin-member-success {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid #2f7652;
+  color: #235e40;
+  background: #f1faf5;
+  font-size: 0.84rem;
+}
+
+.admin-member-progression-audit {
+  margin-top: 24px;
+}
+
+.admin-member-progression-audit > p {
+  color: var(--admin-muted);
+  font-size: 0.82rem;
+}
+
+.admin-member-progression-audit-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-member-progression-audit-list > li {
+  padding: 12px 0;
+  border-top: 1px solid var(--admin-line);
+}
+
+.admin-member-progression-audit-list > li > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-member-progression-audit-list time,
+.admin-member-progression-audit-list small {
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+}
+
+.admin-member-progression-audit-list p {
+  margin: 7px 0;
+  overflow-wrap: anywhere;
+  font-size: 0.84rem;
+}
+
+.admin-member-progression-audit-list summary {
+  margin-top: 8px;
+  color: var(--admin-accent);
+  cursor: pointer;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.admin-member-progression-audit-list details dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 8px 0 0;
+}
+
+.admin-member-progression-audit-list details dl > div {
+  min-width: 0;
+  padding: 8px;
+  background: var(--admin-soft);
+}
+
+.admin-member-progression-audit-list details dd ul {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-member-progression-audit-list details dd li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-member-progression-audit-list details dd li span {
+  color: var(--admin-muted);
+  font-size: 0.7rem;
+}
+
+.admin-member-progression-audit-list details dd li strong {
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.admin-member-progression-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.admin-member-progression-pagination span {
+  color: var(--admin-muted);
+  font-size: 0.76rem;
+}
+
 @media (max-width: 720px) {
   .admin-members-shell {
     width: min(100% - 24px, 1180px);
@@ -345,6 +657,52 @@
 
   .admin-member-ride-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-member-progression-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .admin-member-detail {
+    padding: 14px;
+  }
+
+  .admin-member-title-row,
+  .admin-member-section-heading,
+  .admin-member-progression-audit-list > li > div {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .admin-member-arena-badge,
+  .admin-member-section-heading > span {
+    flex: 0 1 auto;
+  }
+
+  .admin-member-progression-grid,
+  .admin-member-progression-form,
+  .admin-member-progression-audit-list details dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-member-progression-preview > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-member-progression-preview > div > span {
+    transform: rotate(90deg);
+    text-align: center;
+  }
+
+  .admin-member-progression-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-member-progression-actions button {
+    width: 100%;
   }
 }
 

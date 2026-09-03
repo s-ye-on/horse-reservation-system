@@ -12,6 +12,7 @@ import './reservation-application-page.css'
 const CLASS_LABELS: Record<string, string> = {
   FIRST_RIDE: '왕초보', ROUND_BEGINNER: '원형초보', ROUND_TROT: '원형 속보',
   LARGE_ARENA_BEGINNER: '대마장초보', LARGE_ARENA_TROT: '대마장 속보',
+  CANTER_BEGINNER: '구보초보', CANTER: '구보',
   DRESSAGE: '마장마술', JUMPING: '장애물',
 }
 

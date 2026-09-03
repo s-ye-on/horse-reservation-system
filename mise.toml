@@ -671,6 +671,325 @@ rg -Fq 'Template 정원 입력과 materialized TimeSlot 생성도 구보초보·
   docs/product docs/tasks/mvp-3.2.md docs/architecture/mvp-3-1-stabilization-plan.md
 '''
 
+[tasks."verify:m32-01"]
+description = "Verify family group, membership, and audit schema invariants"
+run = "./backend/gradlew -p backend test --tests '*FamilyGroupMigrationIntegrationTest'"
+
+[tasks."verify:m32-02"]
+description = "Verify admin family group commands and required audit history"
+run = "./backend/gradlew -p backend test --tests '*AdminFamilyGroupCommandApiTest'"
+
+[tasks."verify:m32-03"]
+description = "Verify family coupon selection, row locking, and usage snapshots"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*FamilyCouponMigrationIntegrationTest' \
+  --tests '*FamilyCouponSelectionIntegrationTest' \
+  --tests '*FamilyCouponLockingIntegrationTest' \
+  --tests '*CouponSelectionPolicyTest' \
+  --tests '*CouponHoldConcurrencyIntegrationTest' \
+  --tests '*CouponRepositoryIntegrationTest' \
+  --tests '*CouponReservationApplicationApiTest' \
+  --tests '*AdminManualReservationApiTest' \
+  --tests '*ReservationChangeApiTest'
+'''
+
+[tasks."verify:m32-04"]
+description = "Verify family coupon reservation, membership, release, and expiry races"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*FamilyCouponCrossConcurrencyIntegrationTest' \
+  --tests '*FamilyCouponLockingIntegrationTest' \
+  --tests '*CouponHoldConcurrencyIntegrationTest' \
+  --tests '*CouponExpiryJobIntegrationTest'
+'''
+
+[tasks."verify:m32-05"]
+description = "Verify admin family group search, membership commands, audit history, and responsive UX"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*AdminFamilyGroupQueryApiTest' \
+  --tests '*AdminFamilyGroupCommandApiTest'
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-family-groups/AdminFamilyGroupsPage.test.tsx \
+  src/features/admin-family-groups/admin-family-groups.api.test.ts \
+  src/app.test.tsx
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m32-05-family-groups-responsive.spec.ts
+rg -q '@media \(max-width: 520px\)' \
+  frontend/apps/web/src/features/admin-family-groups/admin-family-groups-page.css
+'''
+
+[tasks."verify:m32-06"]
+description = "Verify riding class catalog, progression baseline, special approval credit, and promotion hold"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MemberClassProgressionTest' \
+  --tests '*GeneralRidingGradeTest' \
+  --tests '*RidingClassTest' \
+  --tests '*MemberClassProgressionMigrationIntegrationTest' \
+  --tests '*AdminMemberClassProgressionApiTest' \
+  --tests '*AdminMemberRidingPermissionApiTest' \
+  --tests '*AdminMemberQueryApiTest' \
+  --tests '*MemberAvailableRidingClassesApiTest' \
+  --tests '*MemberRepositoryIntegrationTest' \
+  --tests '*PendingPaymentReservationApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest' \
+  --tests '*AdminManualReservationApiTest' \
+  --tests '*TimeSlotCapacityTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*ScheduleDomainTest' \
+  --tests '*RegularScheduleTemplateServiceIntegrationTest' \
+  --tests '*ScheduleOccurrenceSynchronizationServiceIntegrationTest' \
+  --tests '*AdminScheduleConfigurationApiTest'
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-members/AdminMembersPage.test.tsx \
+  src/features/admin-members/admin-members.api.test.ts \
+  src/features/admin-timeslots/AdminTimeSlotsPage.test.tsx \
+  src/features/admin-schedule-configuration/AdminScheduleConfigurationPage.test.tsx \
+  src/features/reservation-calendar/ReservationCalendarPage.test.tsx
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+'''
+
+[tasks."verify:m32-07"]
+description = "Verify actual general ride count adjustment ledger and concurrent corrections"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MemberRideCountAdjustmentTest' \
+  --tests '*MemberRideCountAdjustmentMigrationIntegrationTest' \
+  --tests '*AdminMemberRideCountAdjustmentApiTest' \
+  --tests '*MemberRideCountAdjustmentConcurrencyIntegrationTest' \
+  --tests '*MemberClassProgressionTest' \
+  --tests '*AdminMemberClassProgressionApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest'
+'''
+
+[tasks."verify:m32-08"]
+description = "Verify admin class progression preview, commands, audit history, and responsive UX"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MemberClassProgressionPreviewTest' \
+  --tests '*AdminMemberClassProgressionWebApiTest' \
+  --tests '*MemberClassProgressionTest' \
+  --tests '*AdminMemberClassProgressionApiTest' \
+  --tests '*AdminMemberRideCountAdjustmentApiTest' \
+  --tests '*AdminMemberRidingPermissionApiTest'
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-members/AdminMembersPage.test.tsx \
+  src/features/admin-members/admin-members.api.test.ts
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m32-08-admin-class-progression-responsive.spec.ts
+rg -q '@media \(max-width: 520px\)' \
+  frontend/apps/web/src/features/admin-members/admin-members-page.css
+'''
+
+[tasks."verify:m32-09"]
+description = "Verify Phase B OpenAPI, generated client, and Web contract synchronization"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*M32PhaseBOpenApiContractTest' \
+  --tests '*AdminFamilyGroupQueryApiTest' \
+  --tests '*AdminFamilyGroupCommandApiTest' \
+  --tests '*MemberCouponQueryApiTest' \
+  --tests '*AdminMemberClassProgressionWebApiTest' \
+  --tests '*AdminMemberClassProgressionApiTest' \
+  --tests '*AdminMemberRideCountAdjustmentApiTest' \
+  --tests '*AdminMemberRidingPermissionApiTest'
+mise run api:check
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-family-groups/AdminFamilyGroupsPage.test.tsx \
+  src/features/admin-family-groups/admin-family-groups.api.test.ts \
+  src/features/admin-members/AdminMembersPage.test.tsx \
+  src/features/admin-members/admin-members.api.test.ts \
+  src/features/my-coupons/MyCouponsPage.test.tsx \
+  src/api/web-api-configuration.test.ts
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- \
+  tests/e2e/m32-05-family-groups-responsive.spec.ts \
+  tests/e2e/m32-08-admin-class-progression-responsive.spec.ts
+'''
+
+[tasks."verify:m32-10"]
+description = "Run the Phase B final quality gate"
+run = '''
+mise run verify:all
+pnpm --dir frontend/apps/web test:e2e -- \
+  tests/e2e/m31-16b2-web-auth.spec.ts \
+  tests/e2e/m32-05-family-groups-responsive.spec.ts \
+  tests/e2e/m32-08-admin-class-progression-responsive.spec.ts
+git diff --check
+'''
+
+[tasks."verify:m33-00"]
+description = "Verify monthly ride statistics and weekly operations calendar policy contracts"
+run = '''
+mise run docs:check
+test "$(rg -c '^\| M33-' docs/tasks/mvp-3.3.md)" -eq 7
+rg -Fq '월간 기승 현황은 Horse 예약 시스템 운영 이후, 해당 월의 `COMPLETED` Reservation을 기준으로' docs/product/policies.md
+rg -Fq '`ALL`은 모든 완료 Reservation, `GENERAL`은 `RidingClass.isGeneral()`인 완료 Reservation' docs/product/policies.md
+rg -Fq 'M32-07 ride count correction은 월간 운영 실적에 포함하지 않는다.' docs/product/policies.md
+rg -Fq '예약이 0건인 TimeSlot도 표시한다.' docs/product/policies.md
+rg -Fq '표시 대상 Reservation이 하나도 없는 TimeSlot은' docs/product/policies.md
+rg -Fq 'calendar-visible reservation = capacity-occupying reservation OR COMPLETED reservation' docs/product/policies.md
+rg -Fq '`PENDING_ADMIN_APPROVAL`, `PENDING_PAYMENT`, `CONFIRMED`' docs/product/policies.md
+rg -Fq '`PAYMENT_EXPIRED`, `APPROVAL_EXPIRED`, `REJECTED`, `CANCELLED`, `NO_SHOW`' docs/product/policies.md
+rg -Fq '점유/완료 예약·회원·클래스 일괄 조회 성공' docs/tasks/mvp-3.3.md
+rg -Fq '현재 정원을 점유하는 Reservation과 `COMPLETED` Reservation만' docs/product/requirements.md
+rg -Fq '실제 materialized TimeSlot을 root로' docs/architecture/adr-023-admin-operational-visibility-read-models.md
+rg -Fq '동률 회원을 임의의 ID 정렬로 한 명만 숨기지 않는다.' docs/architecture/adr-023-admin-operational-visibility-read-models.md
+rg -Fq '점유 여부는 `ReservationStatus`의 기존 점유 SSOT에서 파생한다.' docs/architecture/domain-model.md
+rg -Fq '해당 상태 전이에 대해 존재하는 감사 조회의 책임으로 유지한다.' docs/tasks/completed/M33-00.md
+! rg -n '모든 기존 상태를 그대로' docs/product/mvp-3.3.md docs/product/policies.md docs/tasks/mvp-3.3.md \
+  docs/product/requirements.md docs/architecture/adr-023-admin-operational-visibility-read-models.md \
+  docs/architecture/domain-model.md docs/tasks/completed/M33-00.md
+rg -Fq '| M4-00 | Expo TypeScript 앱 골격 | M33-06 |' docs/tasks/mvp-4.md
+! rg -n 'effectiveLessonDate|PRE_ANCHOR|POST_ANCHOR|monthly_general_ride_count|monthly_dressage_ride_count|monthly_jumping_ride_count' \
+  docs/product/mvp-3.3.md docs/tasks/mvp-3.3.md docs/architecture/adr-023-admin-operational-visibility-read-models.md
+'''
+
+[tasks."verify:m33-01"]
+description = "Verify admin monthly completed ride statistics query API"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MonthlyRideTypeTest' \
+  --tests '*AdminMonthlyRideStatisticsApiTest' \
+  --tests '*AdminMonthlyRideStatisticsQueryCountIntegrationTest' \
+  --tests '*AdminMonthlyRideStatisticsQueryPlanIntegrationTest' \
+  --tests '*ReservationSummaryRepositoryIntegrationTest' \
+  --tests '*AdminReservationSummaryApiTest' \
+  --tests '*AdminReservationQueryApiTest' \
+  --tests '*GeneralRideCompletionApiTest' \
+  --tests '*SpecialRideCompletionApiTest'
+'''
+
+[tasks."verify:m33-02"]
+description = "Verify admin weekly operations calendar query API"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*AdminWeeklyOperationsCalendarApiTest' \
+  --tests '*AdminWeeklyOperationsCalendarQueryCountIntegrationTest' \
+  --tests '*AdminReservationQueryApiTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*MemberAvailableTimeSlotsApiTest'
+'''
+
+[tasks."verify:m33-03"]
+description = "Verify Phase C OpenAPI and generated TypeScript client synchronization"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*M33PhaseCOpenApiContractTest' \
+  --tests '*AdminMonthlyRideStatisticsApiTest' \
+  --tests '*AdminWeeklyOperationsCalendarApiTest'
+mise run api:check
+pnpm --dir frontend/packages/api-client build:types
+pnpm --dir frontend/apps/web exec vitest run src/test/admin-reservation-api-contract.test.ts
+mise run web:typecheck
+git diff --check
+'''
+
+[tasks."verify:m33-04"]
+description = "Verify admin monthly ride statistics web"
+run = '''
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-monthly-ride-statistics/AdminMonthlyRideStatisticsPage.test.tsx \
+  src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics.api.test.ts \
+  src/features/admin-dashboard/AdminDashboardPage.test.tsx \
+  src/app.test.tsx
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m33-04-admin-monthly-ride-statistics-responsive.spec.ts
+rg -Fq '@media (max-width: 380px)' \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page.css
+check_untracked_file() {
+  local output status
+  if output=$(git diff --no-index --check /dev/null "$1" 2>&1); then
+    return 0
+  else
+    status=$?
+  fi
+  if [ "$status" -eq 1 ] && [ -z "$output" ]; then
+    return 0
+  fi
+  printf '%s\n' "$output"
+  return 1
+}
+for file in \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/AdminMonthlyRideStatisticsPage.test.tsx \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics.api.test.ts \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics.api.ts \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page.css \
+  frontend/apps/web/src/features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page.tsx \
+  frontend/apps/web/tests/e2e/m33-04-admin-monthly-ride-statistics-responsive.spec.ts
+do
+  check_untracked_file "$file"
+done
+git diff --check
+'''
+
+[tasks."verify:m33-05"]
+description = "Verify admin weekly operations calendar web"
+run = '''
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-weekly-operations-calendar/AdminWeeklyOperationsCalendarPage.test.tsx \
+  src/features/admin-weekly-operations-calendar/admin-weekly-operations-calendar.api.test.ts \
+  src/features/admin-monthly-ride-statistics/AdminMonthlyRideStatisticsPage.test.tsx \
+  src/app.test.tsx
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m33-05-admin-weekly-operations-calendar-responsive.spec.ts
+rg -Fq '@media (max-width: 760px)' \
+  frontend/apps/web/src/features/admin-weekly-operations-calendar/admin-weekly-operations-calendar-page.css
+rg -Fq '@media (max-width: 380px)' \
+  frontend/apps/web/src/features/admin-weekly-operations-calendar/admin-weekly-operations-calendar-page.css
+check_untracked_file() {
+  local output status
+  if output=$(git diff --no-index --check /dev/null "$1" 2>&1); then
+    return 0
+  else
+    status=$?
+  fi
+  if [ "$status" -eq 1 ] && [ -z "$output" ]; then
+    return 0
+  fi
+  printf '%s\n' "$output"
+  return 1
+}
+for file in \
+  frontend/apps/web/src/features/admin-weekly-operations-calendar/AdminWeeklyOperationsCalendarPage.test.tsx \
+  frontend/apps/web/src/features/admin-weekly-operations-calendar/admin-weekly-operations-calendar.api.test.ts \
+  frontend/apps/web/src/features/admin-weekly-operations-calendar/admin-weekly-operations-calendar.api.ts \
+  frontend/apps/web/src/features/admin-weekly-operations-calendar/admin-weekly-operations-calendar-page.css \
+  frontend/apps/web/src/features/admin-weekly-operations-calendar/admin-weekly-operations-calendar-page.tsx \
+  frontend/apps/web/tests/e2e/m33-05-admin-weekly-operations-calendar-responsive.spec.ts
+do
+  check_untracked_file "$file"
+done
+git diff --check
+'''
+
+[tasks."verify:m33-06"]
+description = "Run the Phase C final quality gate"
+run = '''
+mise run verify:all
+pnpm --dir frontend/apps/web test:e2e -- \
+  tests/e2e/m33-04-admin-monthly-ride-statistics-responsive.spec.ts \
+  tests/e2e/m33-05-admin-weekly-operations-calendar-responsive.spec.ts
+git diff --check
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

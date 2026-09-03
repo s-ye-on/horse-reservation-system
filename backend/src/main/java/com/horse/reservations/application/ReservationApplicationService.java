@@ -127,6 +127,8 @@ public class ReservationApplicationService {
 			selection.couponId(),
 			reservation.getId(),
 			memberId,
+			selection.couponOwnerMemberId(),
+			selection.familyGroupId(),
 			timeSlot.getLessonDate(),
 			requestedAt,
 			CouponActorType.MEMBER);

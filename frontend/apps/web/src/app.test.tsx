@@ -27,6 +27,15 @@ vi.mock('./features/admin-schedule-configuration/admin-schedule-configuration-pa
 vi.mock('./features/admin-schedule-closures/admin-schedule-closures-page', () => ({
   AdminScheduleClosuresPage: () => <main><h1>날짜 휴무 및 개별 휴강</h1></main>,
 }))
+vi.mock('./features/admin-family-groups/admin-family-groups-page', () => ({
+  AdminFamilyGroupsPage: () => <main><h1>가족 그룹 관리</h1></main>,
+}))
+vi.mock('./features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page', () => ({
+  AdminMonthlyRideStatisticsPage: () => <main><h1>월간 기승 현황</h1></main>,
+}))
+vi.mock('./features/admin-weekly-operations-calendar/admin-weekly-operations-calendar-page', () => ({
+  AdminWeeklyOperationsCalendarPage: () => <main><h1>주간 운영 캘린더</h1></main>,
+}))
 
 describe('App', () => {
   it('비로그인_사용자에게_로그인_진입점을_제공한다', () => {
@@ -55,6 +64,7 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: '예약 승인 및 입금 확인' })).toHaveAttribute('href', '/admin/reservations')
     expect(screen.getByRole('link', { name: '수업 완료 및 노쇼' })).toHaveAttribute('href', '/admin/attendance')
     expect(screen.getByRole('link', { name: '예약 감사 이력' })).toHaveAttribute('href', '/admin/audit-logs')
+    expect(screen.getByRole('link', { name: '가족 그룹 관리' })).toHaveAttribute('href', '/admin/family-groups')
     expect(screen.getByRole('link', { name: '정규 시간표 및 정기 휴일' })).toHaveAttribute(
       'href',
       '/admin/schedule-configuration',
@@ -62,6 +72,14 @@ describe('App', () => {
     expect(screen.getByRole('link', { name: '날짜 휴무 및 개별 휴강' })).toHaveAttribute(
       'href',
       '/admin/schedule-closures',
+    )
+    expect(screen.getByRole('link', { name: '월간 기승 현황' })).toHaveAttribute(
+      'href',
+      '/admin/monthly-ride-statistics',
+    )
+    expect(screen.getByRole('link', { name: '주간 운영 캘린더' })).toHaveAttribute(
+      'href',
+      '/admin/weekly-operations-calendar',
     )
   })
 
@@ -103,6 +121,45 @@ describe('App', () => {
     )
 
     expect(screen.getByRole('heading', { name: '날짜 휴무 및 개별 휴강' })).toBeInTheDocument()
+  })
+
+  it('가족_그룹_관리_route를_렌더링한다', () => {
+    authState.account = {
+      subject: 'admin-subject', memberId: null, email: 'admin@horse.test', role: 'ADMIN', status: 'ACTIVE',
+    }
+    render(
+      <MemoryRouter initialEntries={['/admin/family-groups']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '가족 그룹 관리' })).toBeInTheDocument()
+  })
+
+  it('월간_기승_현황_route를_렌더링한다', () => {
+    authState.account = {
+      subject: 'admin-subject', memberId: null, email: 'admin@horse.test', role: 'ADMIN', status: 'ACTIVE',
+    }
+    render(
+      <MemoryRouter initialEntries={['/admin/monthly-ride-statistics']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '월간 기승 현황' })).toBeInTheDocument()
+  })
+
+  it('주간_운영_캘린더_route를_렌더링한다', () => {
+    authState.account = {
+      subject: 'admin-subject', memberId: null, email: 'admin@horse.test', role: 'ADMIN', status: 'ACTIVE',
+    }
+    render(
+      <MemoryRouter initialEntries={['/admin/weekly-operations-calendar']}>
+        <App />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('heading', { name: '주간 운영 캘린더' })).toBeInTheDocument()
   })
 
   it('MEMBER의_ADMIN_route_접근을_거부한다', () => {

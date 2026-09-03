@@ -39,7 +39,7 @@ class AdminMemberRidingPermissionApiTest {
 				.with(jwt().authorities(new SimpleGrantedAuthority(UserRole.MEMBER.authority())))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-					{"dressageApproved": true, "jumpingApproved": false}
+					{"dressageApproved": true, "jumpingApproved": false, "reason": "승인 변경"}
 					"""))
 			.andExpect(status().isForbidden());
 	}
@@ -52,7 +52,7 @@ class AdminMemberRidingPermissionApiTest {
 				.with(jwt().authorities(new SimpleGrantedAuthority(UserRole.ADMIN.authority())))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-					{"dressageApproved": true, "jumpingApproved": false}
+					{"dressageApproved": true, "jumpingApproved": false, "reason": "마장마술 승인"}
 					"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.dressageApproved").value(true))
@@ -63,7 +63,7 @@ class AdminMemberRidingPermissionApiTest {
 				.with(jwt().authorities(new SimpleGrantedAuthority(UserRole.ADMIN.authority())))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-					{"dressageApproved": false, "jumpingApproved": true}
+					{"dressageApproved": false, "jumpingApproved": true, "reason": "장애물 승인"}
 					"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.dressageApproved").value(false))
@@ -72,20 +72,26 @@ class AdminMemberRidingPermissionApiTest {
 	}
 
 	@Test
-	void 모든_특수_승인을_철회하면_초보_회원은_대마장을_이용할_수_없다() throws Exception {
+	void 모든_특수_승인을_철회해도_이미_인정된_일반_progression은_유지한다() throws Exception {
 		final Long memberId = insertMember("revoke-member");
-		jdbcTemplate.update("UPDATE members SET dressage_approved = TRUE WHERE id = ?", memberId);
+		jdbcTemplate.update("""
+			UPDATE members
+			SET dressage_approved = TRUE,
+				special_approval_progression_credit = 26
+			WHERE id = ?
+			""", memberId);
 
 		mockMvc.perform(patch(endpoint(memberId))
 				.with(jwt().authorities(new SimpleGrantedAuthority(UserRole.ADMIN.authority())))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-					{"dressageApproved": false, "jumpingApproved": false}
+					{"dressageApproved": false, "jumpingApproved": false, "reason": "승인 해제"}
 					"""))
 			.andExpect(status().isOk())
 			.andExpect(jsonPath("$.dressageApproved").value(false))
 			.andExpect(jsonPath("$.jumpingApproved").value(false))
-			.andExpect(jsonPath("$.canUseLargeArena").value(false));
+			.andExpect(jsonPath("$.specialApprovalProgressionCredit").value(26))
+			.andExpect(jsonPath("$.canUseLargeArena").value(true));
 	}
 
 	@Test
@@ -94,7 +100,7 @@ class AdminMemberRidingPermissionApiTest {
 				.with(jwt().authorities(new SimpleGrantedAuthority(UserRole.ADMIN.authority())))
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
-					{"dressageApproved": true, "jumpingApproved": true}
+					{"dressageApproved": true, "jumpingApproved": true, "reason": "승인 변경"}
 					"""))
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("MEMBER_NOT_FOUND"));
@@ -110,8 +116,9 @@ class AdminMemberRidingPermissionApiTest {
 				auth_subject,
 				name,
 				phone,
-				large_arena_allowed
-			) VALUES (?, '테스트 회원', '010-0000-0000', FALSE)
+				large_arena_allowed,
+				progression_management_started_at
+			) VALUES (?, '테스트 회원', '010-0000-0000', FALSE, CURRENT_TIMESTAMP(6))
 			""", authSubject);
 		return jdbcTemplate.queryForObject(
 			"SELECT id FROM members WHERE auth_subject = ?", Long.class, authSubject);

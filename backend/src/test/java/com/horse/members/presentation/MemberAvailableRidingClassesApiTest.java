@@ -63,13 +63,30 @@ class MemberAvailableRidingClassesApiTest {
 
 		mockMvc.perform(get(ENDPOINT).with(jwt().jwt(token -> token.subject("dressage-member"))))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.currentGeneralGrade").value("ROUND_BEGINNER"))
+			.andExpect(jsonPath("$.currentGeneralGrade").value("LARGE_ARENA_TROT"))
+			.andExpect(jsonPath("$.progressionValue").value(26))
+			.andExpect(jsonPath("$.progressionClass").value("LARGE_ARENA_TROT"))
+			.andExpect(jsonPath("$.effectiveClass").value("LARGE_ARENA_TROT"))
 			.andExpect(jsonPath("$.dressageApproved").value(true))
 			.andExpect(jsonPath("$.jumpingApproved").value(false))
 			.andExpect(jsonPath("$.canUseLargeArena").value(true))
 			.andExpect(jsonPath("$.availableRidingClasses.length()").value(6))
 			.andExpect(jsonPath("$.availableRidingClasses[4]").value("LARGE_ARENA_TROT"))
 			.andExpect(jsonPath("$.availableRidingClasses[5]").value("DRESSAGE"));
+	}
+
+	@Test
+	void 구보초보와_구보_threshold에_도달한_회원은_해당_일반_클래스를_조회한다() throws Exception {
+		insertMember("canter-member", 100, false, false);
+
+		mockMvc.perform(get(ENDPOINT).with(jwt().jwt(token -> token.subject("canter-member"))))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.progressionValue").value(100))
+			.andExpect(jsonPath("$.progressionClass").value("CANTER"))
+			.andExpect(jsonPath("$.effectiveClass").value("CANTER"))
+			.andExpect(jsonPath("$.availableRidingClasses.length()").value(7))
+			.andExpect(jsonPath("$.availableRidingClasses[5]").value("CANTER_BEGINNER"))
+			.andExpect(jsonPath("$.availableRidingClasses[6]").value("CANTER"));
 	}
 
 	private void insertMember(
@@ -88,9 +105,19 @@ class MemberAvailableRidingClassesApiTest {
 				jumping_ride_count,
 				dressage_approved,
 				jumping_approved,
-				large_arena_allowed
-			) VALUES (?, '테스트 회원', '010-0000-0000', ?, 0, 0, ?, ?, FALSE)
-			""", authSubject, generalRideCount, dressageApproved, jumpingApproved);
+				large_arena_allowed,
+				progression_management_started_at,
+				special_approval_progression_credit
+			) VALUES (
+				?, '테스트 회원', '010-0000-0000', ?, 0, 0, ?, ?, FALSE,
+				CURRENT_TIMESTAMP(6), ?
+			)
+			""",
+			authSubject,
+			generalRideCount,
+			dressageApproved,
+			jumpingApproved,
+			dressageApproved || jumpingApproved ? Math.max(0, 26 - generalRideCount) : 0);
 	}
 
 }

@@ -8,6 +8,9 @@ import com.horse.members.domain.RidingClass;
 
 public record MemberAvailableRidingClassesResponse(
 	GeneralRidingGrade currentGeneralGrade,
+	int progressionValue,
+	GeneralRidingGrade progressionClass,
+	GeneralRidingGrade effectiveClass,
 	boolean dressageApproved,
 	boolean jumpingApproved,
 	boolean canUseLargeArena,
@@ -17,6 +20,9 @@ public record MemberAvailableRidingClassesResponse(
 	public static MemberAvailableRidingClassesResponse from(MemberAvailableRidingClassesResult result) {
 		return new MemberAvailableRidingClassesResponse(
 			result.currentGeneralGrade(),
+			result.progressionValue(),
+			result.progressionClass(),
+			result.effectiveClass(),
 			result.dressageApproved(),
 			result.jumpingApproved(),
 			result.canUseLargeArena(),

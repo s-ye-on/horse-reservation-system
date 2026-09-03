@@ -32,6 +32,12 @@ public class CouponUsageLog {
 	@Column(name = "member_id", nullable = false, updatable = false)
 	private Long memberId;
 
+	@Column(name = "coupon_owner_member_id", nullable = false, updatable = false)
+	private Long couponOwnerMemberId;
+
+	@Column(name = "family_group_id", updatable = false)
+	private Long familyGroupId;
+
 	@Column(name = "action", nullable = false, updatable = false)
 	private CouponUsageAction action;
 
@@ -57,6 +63,8 @@ public class CouponUsageLog {
 		Long couponId,
 		Long reservationId,
 		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId,
 		CouponUsageAction action,
 		short countDelta,
 		LocalDateTime occurredAt,
@@ -65,6 +73,8 @@ public class CouponUsageLog {
 		this.couponId = requireId(couponId);
 		this.reservationId = requireReservationId(reservationId, action);
 		this.memberId = requireId(memberId);
+		this.couponOwnerMemberId = requireId(couponOwnerMemberId);
+		this.familyGroupId = requireFamilyGroupId(memberId, couponOwnerMemberId, familyGroupId);
 		this.action = action;
 		this.countDelta = countDelta;
 		this.occurredAt = requireOccurredAt(occurredAt);
@@ -75,6 +85,8 @@ public class CouponUsageLog {
 		Long couponId,
 		Long reservationId,
 		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId,
 		LocalDateTime occurredAt,
 		CouponActorType actorType
 	) {
@@ -82,6 +94,8 @@ public class CouponUsageLog {
 			couponId,
 			reservationId,
 			memberId,
+			couponOwnerMemberId,
+			familyGroupId,
 			CouponUsageAction.HELD,
 			(short) 1,
 			occurredAt,
@@ -92,6 +106,8 @@ public class CouponUsageLog {
 		Long couponId,
 		Long reservationId,
 		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId,
 		LocalDateTime occurredAt,
 		CouponActorType actorType
 	) {
@@ -99,6 +115,8 @@ public class CouponUsageLog {
 			couponId,
 			reservationId,
 			memberId,
+			couponOwnerMemberId,
+			familyGroupId,
 			CouponUsageAction.RELEASED,
 			(short) -1,
 			occurredAt,
@@ -109,6 +127,8 @@ public class CouponUsageLog {
 		Long couponId,
 		Long reservationId,
 		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId,
 		LocalDateTime occurredAt,
 		CouponActorType actorType
 	) {
@@ -116,6 +136,8 @@ public class CouponUsageLog {
 			couponId,
 			reservationId,
 			memberId,
+			couponOwnerMemberId,
+			familyGroupId,
 			CouponUsageAction.CONFIRMED,
 			(short) 0,
 			occurredAt,
@@ -126,6 +148,8 @@ public class CouponUsageLog {
 		Long couponId,
 		Long reservationId,
 		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId,
 		LocalDateTime occurredAt,
 		CouponActorType actorType
 	) {
@@ -133,6 +157,8 @@ public class CouponUsageLog {
 			couponId,
 			reservationId,
 			memberId,
+			couponOwnerMemberId,
+			familyGroupId,
 			CouponUsageAction.USED,
 			(short) -1,
 			occurredAt,
@@ -143,6 +169,8 @@ public class CouponUsageLog {
 		Long couponId,
 		Long reservationId,
 		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId,
 		LocalDateTime occurredAt,
 		CouponActorType actorType
 	) {
@@ -150,6 +178,8 @@ public class CouponUsageLog {
 			couponId,
 			reservationId,
 			memberId,
+			couponOwnerMemberId,
+			familyGroupId,
 			CouponUsageAction.DEDUCTED,
 			(short) -1,
 			occurredAt,
@@ -166,6 +196,8 @@ public class CouponUsageLog {
 			couponId,
 			null,
 			memberId,
+			memberId,
+			null,
 			CouponUsageAction.EXPIRED,
 			(short) -expiredCount,
 			occurredAt,
@@ -176,6 +208,8 @@ public class CouponUsageLog {
 		Long couponId,
 		Long reservationId,
 		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId,
 		LocalDateTime occurredAt,
 		CouponActorType actorType
 	) {
@@ -183,6 +217,8 @@ public class CouponUsageLog {
 			couponId,
 			reservationId,
 			memberId,
+			couponOwnerMemberId,
+			familyGroupId,
 			CouponUsageAction.FREE_CHANGE_USED,
 			(short) 0,
 			occurredAt,
@@ -201,6 +237,20 @@ public class CouponUsageLog {
 			return null;
 		}
 		return requireId(reservationId);
+	}
+
+	private static Long requireFamilyGroupId(
+		Long memberId,
+		Long couponOwnerMemberId,
+		Long familyGroupId
+	) {
+		if (memberId.equals(couponOwnerMemberId)) {
+			if (familyGroupId != null) {
+				throw new CouponException(ExceptionCode.COUPON_INVALID_USAGE_REFERENCE);
+			}
+			return null;
+		}
+		return requireId(familyGroupId);
 	}
 
 	private static LocalDateTime requireOccurredAt(LocalDateTime occurredAt) {
@@ -231,6 +281,14 @@ public class CouponUsageLog {
 
 	public Long getMemberId() {
 		return memberId;
+	}
+
+	public Long getCouponOwnerMemberId() {
+		return couponOwnerMemberId;
+	}
+
+	public Long getFamilyGroupId() {
+		return familyGroupId;
 	}
 
 	public CouponUsageAction getAction() {

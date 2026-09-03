@@ -14,6 +14,11 @@
 
 import * as runtime from '../runtime';
 import {
+    type AdminMonthlyRideStatisticsResponse,
+    AdminMonthlyRideStatisticsResponseFromJSON,
+    AdminMonthlyRideStatisticsResponseToJSON,
+} from '../models/AdminMonthlyRideStatisticsResponse';
+import {
     type AdminReservationPageResponse,
     AdminReservationPageResponseFromJSON,
     AdminReservationPageResponseToJSON,
@@ -28,6 +33,16 @@ import {
     AdminReservationSummaryResponseFromJSON,
     AdminReservationSummaryResponseToJSON,
 } from '../models/AdminReservationSummaryResponse';
+import {
+    type AdminWeeklyOperationsCalendarResponse,
+    AdminWeeklyOperationsCalendarResponseFromJSON,
+    AdminWeeklyOperationsCalendarResponseToJSON,
+} from '../models/AdminWeeklyOperationsCalendarResponse';
+
+export interface GetMonthlyRideStatisticsRequest {
+    month?: string;
+    rideType?: GetMonthlyRideStatisticsRideTypeEnum;
+}
 
 export interface GetReservationRequest {
     reservationId: number;
@@ -49,10 +64,65 @@ export interface GetSummaryRequest {
     lessonDateTo?: Date;
 }
 
+export interface GetWeeklyOperationsCalendarRequest {
+    referenceDate?: string;
+}
+
 /**
  *
  */
 export class AdminReservationQueryControllerApi extends runtime.BaseAPI {
+
+    /**
+     * Creates request options for getMonthlyRideStatistics without sending the request
+     */
+    async getMonthlyRideStatisticsRequestOpts(requestParameters: GetMonthlyRideStatisticsRequest): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        if (requestParameters['month'] != null) {
+            queryParameters['month'] = requestParameters['month'];
+        }
+
+        if (requestParameters['rideType'] != null) {
+            queryParameters['rideType'] = requestParameters['rideType'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/api/admin/reservations/monthly-ride-statistics`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async getMonthlyRideStatisticsRaw(requestParameters: GetMonthlyRideStatisticsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdminMonthlyRideStatisticsResponse>> {
+        const requestOptions = await this.getMonthlyRideStatisticsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => AdminMonthlyRideStatisticsResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getMonthlyRideStatistics(requestParameters: GetMonthlyRideStatisticsRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdminMonthlyRideStatisticsResponse> {
+        const response = await this.getMonthlyRideStatisticsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for getReservation without sending the request
@@ -231,4 +301,62 @@ export class AdminReservationQueryControllerApi extends runtime.BaseAPI {
         return await response.value();
     }
 
+    /**
+     * Creates request options for getWeeklyOperationsCalendar without sending the request
+     */
+    async getWeeklyOperationsCalendarRequestOpts(requestParameters: GetWeeklyOperationsCalendarRequest): Promise<runtime.RequestOpts> {
+        const queryParameters: any = {};
+
+        if (requestParameters['referenceDate'] != null) {
+            queryParameters['referenceDate'] = requestParameters['referenceDate'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/api/admin/reservations/weekly-operations-calendar`;
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     */
+    async getWeeklyOperationsCalendarRaw(requestParameters: GetWeeklyOperationsCalendarRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<AdminWeeklyOperationsCalendarResponse>> {
+        const requestOptions = await this.getWeeklyOperationsCalendarRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => AdminWeeklyOperationsCalendarResponseFromJSON(jsonValue));
+    }
+
+    /**
+     */
+    async getWeeklyOperationsCalendar(requestParameters: GetWeeklyOperationsCalendarRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<AdminWeeklyOperationsCalendarResponse> {
+        const response = await this.getWeeklyOperationsCalendarRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
 }
+
+/**
+ * @export
+ */
+export const GetMonthlyRideStatisticsRideTypeEnum = {
+    All: 'ALL',
+    General: 'GENERAL',
+    Dressage: 'DRESSAGE',
+    Jumping: 'JUMPING'
+} as const;
+export type GetMonthlyRideStatisticsRideTypeEnum = typeof GetMonthlyRideStatisticsRideTypeEnum[keyof typeof GetMonthlyRideStatisticsRideTypeEnum];
