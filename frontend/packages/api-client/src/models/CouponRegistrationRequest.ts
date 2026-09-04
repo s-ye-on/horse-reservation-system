@@ -24,19 +24,34 @@ export interface CouponRegistrationRequest {
      * @type {string}
      * @memberof CouponRegistrationRequest
      */
-    type?: string;
+    type: string;
     /**
      *
      * @type {number}
      * @memberof CouponRegistrationRequest
      */
-    totalCount?: number;
+    totalCount: number;
+    /**
+     *
+     * @type {number}
+     * @memberof CouponRegistrationRequest
+     */
+    usedCount: number;
+    /**
+     *
+     * @type {Date}
+     * @memberof CouponRegistrationRequest
+     */
+    firstUsedDate?: Date | null;
 }
 
 /**
  * Check if a given object implements the CouponRegistrationRequest interface.
  */
 export function instanceOfCouponRegistrationRequest(value: object): value is CouponRegistrationRequest {
+    if (!('type' in value) || value['type'] === undefined) return false;
+    if (!('totalCount' in value) || value['totalCount'] === undefined) return false;
+    if (!('usedCount' in value) || value['usedCount'] === undefined) return false;
     return true;
 }
 
@@ -50,8 +65,10 @@ export function CouponRegistrationRequestFromJSONTyped(json: any, ignoreDiscrimi
     }
     return {
 
-        'type': json['type'] == null ? undefined : json['type'],
-        'totalCount': json['totalCount'] == null ? undefined : json['totalCount'],
+        'type': json['type'],
+        'totalCount': json['totalCount'],
+        'usedCount': json['usedCount'],
+        'firstUsedDate': json['firstUsedDate'] == null ? undefined : (new Date(json['firstUsedDate'])),
     };
 }
 
@@ -68,6 +85,8 @@ export function CouponRegistrationRequestToJSONTyped(value?: CouponRegistrationR
 
         'type': value['type'],
         'totalCount': value['totalCount'],
+        'usedCount': value['usedCount'],
+        'firstUsedDate': value['firstUsedDate'] == null ? value['firstUsedDate'] : value['firstUsedDate'].toISOString().substring(0,10),
     };
 }
 

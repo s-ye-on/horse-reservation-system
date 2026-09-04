@@ -5,7 +5,7 @@ import type { MemberCouponResponse, MemberCouponUsageResponse } from '@horse/api
 import { isMyCouponsUnauthorized, myCouponsApi, type MyCouponsApi } from './my-coupons.api'
 import './my-coupons-page.css'
 
-const TYPE_LABELS: Record<string, string> = { general: '일반 10회권', dressage: '마장마술 10회권', jumping: '장애물 10회권' }
+const TYPE_LABELS: Record<string, string> = { general: '일반', dressage: '마장마술', jumping: '장애물' }
 const PAGE_SIZE = 20
 const STATUS_META: Record<string, { label: string; tone: string }> = {
   active: { label: '사용 가능', tone: 'active' },
@@ -170,7 +170,7 @@ function CouponCard({ coupon }: { coupon: MemberCouponResponse }) {
   const status = STATUS_META[coupon.status ?? ''] ?? { label: coupon.status ?? '-', tone: 'depleted' }
   return (
     <article className="my-coupon-card">
-      <div className="my-coupon-card-heading"><div><p>COUPON #{coupon.couponId}</p><h3>{TYPE_LABELS[coupon.type ?? ''] ?? coupon.type ?? '-'}</h3></div><span className={`my-coupon-status ${status.tone}`}>{status.label}</span></div>
+      <div className="my-coupon-card-heading"><div><p>COUPON #{coupon.couponId}</p><h3>{TYPE_LABELS[coupon.type ?? ''] ?? coupon.type ?? '-'} {coupon.totalCount ?? 0}회권</h3></div><span className={`my-coupon-status ${status.tone}`}>{status.label}</span></div>
       <div className="my-coupon-counts">
         <div><span>총 횟수</span><strong>{coupon.totalCount ?? 0}</strong></div>
         <div><span>잔여</span><strong>{coupon.remainingCount ?? 0}</strong></div>

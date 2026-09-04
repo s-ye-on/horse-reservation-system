@@ -14,7 +14,7 @@ import type { MyCouponsApi } from './my-coupons.api'
 import { MyCouponsPage } from './my-coupons-page'
 
 const COUPONS: MemberCouponResponse[] = [
-  { couponId: 1, type: 'general', totalCount: 10, remainingCount: 10, heldCount: 1, availableCount: 9, firstUsedAt: null, expiresAt: null, freeChangeUsed: false, status: 'active' },
+  { couponId: 1, type: 'general', totalCount: 20, remainingCount: 20, heldCount: 1, availableCount: 19, firstUsedAt: null, expiresAt: null, freeChangeUsed: false, status: 'active' },
   { couponId: 2, type: 'dressage', totalCount: 10, remainingCount: 6, heldCount: 2, availableCount: 4, firstUsedAt: new Date('2026-07-01'), expiresAt: new Date('2026-10-01'), freeChangeUsed: true, status: 'expired' },
   { couponId: 3, type: 'jumping', totalCount: 10, remainingCount: 0, heldCount: 0, availableCount: 0, firstUsedAt: new Date('2026-06-01'), expiresAt: new Date('2026-09-01'), freeChangeUsed: false, status: 'depleted' },
 ]
@@ -72,11 +72,11 @@ describe('MyCouponsPage', () => {
     renderPage(createApi())
     const cards = await screen.findAllByRole('article')
     const counts = cards[0].querySelector('.my-coupon-counts') as HTMLElement
-    expect(within(cards[0]).getByRole('heading', { name: '일반 10회권' })).toBeInTheDocument()
-    expect(within(counts).getByText('총 횟수').nextElementSibling).toHaveTextContent('10')
-    expect(within(counts).getByText('잔여').nextElementSibling).toHaveTextContent('10')
+    expect(within(cards[0]).getByRole('heading', { name: '일반 20회권' })).toBeInTheDocument()
+    expect(within(counts).getByText('총 횟수').nextElementSibling).toHaveTextContent('20')
+    expect(within(counts).getByText('잔여').nextElementSibling).toHaveTextContent('20')
     expect(within(counts).getByText('예약 점유').nextElementSibling).toHaveTextContent('1')
-    expect(within(counts).getByText('사용 가능').nextElementSibling).toHaveTextContent('9')
+    expect(within(counts).getByText('사용 가능').nextElementSibling).toHaveTextContent('19')
   })
 
   it('첫_사용_전과_첫_기승일_만료일을_구분한다', async () => {
@@ -158,7 +158,7 @@ describe('MyCouponsPage', () => {
   it('320px_화면에서도_쿠폰_요약과_사용_내역을_확인할_수_있다', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 320 })
     renderPage(createApi())
-    expect(await screen.findByRole('heading', { name: '일반 10회권' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '일반 20회권' })).toBeInTheDocument()
     expect(screen.getByText('무료 변경권 사용')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '수업 예약' })).toHaveAttribute('href', '/reservations')
   })

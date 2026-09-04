@@ -136,28 +136,52 @@
 
 .admin-coupon-option input:focus-visible + label,
 .admin-coupon-select:focus-visible,
+.admin-coupon-input:focus-visible,
 .admin-coupon-submit:focus-visible {
   outline: 3px solid rgba(122, 31, 53, 0.22);
   outline-offset: 2px;
 }
 
-.admin-coupon-fixed-count {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 22px;
-  padding: 12px 0;
-  border-top: 1px solid var(--coupon-line);
+.admin-coupon-mode-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.admin-coupon-fixed-count p {
-  margin: 0;
+.admin-coupon-count-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
 }
 
-.admin-coupon-fixed-count strong {
+.admin-coupon-input-label {
+  display: grid;
+  gap: 7px;
+  color: var(--coupon-muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.admin-coupon-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #bdb4b7;
+  border-radius: 6px;
+  color: var(--coupon-ink);
+  background: #fff;
+  font: inherit;
+}
+
+.admin-coupon-current-state {
+  margin: 14px 0 0;
+  padding: 11px 12px;
+  border-radius: 6px;
+  color: var(--coupon-muted);
+  background: #f7f4f5;
+}
+
+.admin-coupon-current-state strong {
   color: var(--coupon-accent);
-  font-size: 1.15rem;
 }
 
 .admin-coupon-error {
@@ -235,6 +259,7 @@
   }
 
   .admin-coupon-options,
+  .admin-coupon-count-grid,
   .admin-coupon-success dl {
     grid-template-columns: minmax(0, 1fr);
   }

@@ -21,7 +21,7 @@ import jakarta.persistence.Table;
 @Table(name = "coupons")
 public class Coupon {
 
-	public static final int COUPON_TOTAL_COUNT = 10;
+	private static final int VALIDITY_MONTHS = 3;
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,13 +34,13 @@ public class Coupon {
 	private CouponType type;
 
 	@Column(name = "total_count", nullable = false)
-	private byte totalCount;
+	private int totalCount;
 
 	@Column(name = "remaining_count", nullable = false)
-	private byte remainingCount;
+	private int remainingCount;
 
 	@Column(name = "held_count", nullable = false)
-	private byte heldCount;
+	private int heldCount;
 
 	@Column(name = "first_used_at")
 	private LocalDateTime firstUsedAt;
@@ -68,19 +68,42 @@ public class Coupon {
 	protected Coupon() {
 	}
 
-	private Coupon(Long memberId, CouponType type, Integer totalCount, String createdBy) {
+	private Coupon(
+		Long memberId,
+		CouponType type,
+		Integer totalCount,
+		Integer usedCount,
+		LocalDate firstUsedDate,
+		String createdBy
+	) {
 		this.memberId = requireMemberId(memberId);
 		this.type = requireType(type);
 		this.totalCount = requireTotalCount(totalCount);
-		this.remainingCount = totalCount.byteValue();
+		final int registeredUsedCount = requireUsedCount(usedCount, totalCount);
+		this.remainingCount = totalCount - registeredUsedCount;
 		this.heldCount = 0;
+		initializeUsageDates(registeredUsedCount, firstUsedDate);
 		this.freeChangeUsed = false;
-		this.status = CouponStatus.ACTIVE;
+		this.status = remainingCount == 0 ? CouponStatus.DEPLETED : CouponStatus.ACTIVE;
 		this.createdBy = requireCreatedBy(createdBy);
 	}
 
 	public static Coupon create(Long memberId, CouponType type, Integer totalCount, String createdBy) {
-		return new Coupon(memberId, type, totalCount, createdBy);
+		return new Coupon(memberId, type, totalCount, 0, null, createdBy);
+	}
+
+	public static Coupon register(
+		Long memberId,
+		CouponType type,
+		Integer totalCount,
+		Integer usedCount,
+		LocalDate firstUsedDate,
+		LocalDate registrationDate,
+		String createdBy
+	) {
+		final Coupon coupon = new Coupon(memberId, type, totalCount, usedCount, firstUsedDate, createdBy);
+		coupon.ensureImportableOn(registrationDate);
+		return coupon;
 	}
 
 	public void hold(LocalDate lessonDate) {
@@ -95,7 +118,7 @@ public class Coupon {
 		if (lessonDate == null) {
 			throw new CouponException(ExceptionCode.COUPON_INVALID_LESSON_DATE);
 		}
-		if (expiresAt != null && expiresAt.toLocalDate().isBefore(lessonDate)) {
+		if (isPastExpiryBoundary(lessonDate)) {
 			throw new CouponException(ExceptionCode.COUPON_EXPIRED_FOR_LESSON);
 		}
 	}
@@ -119,7 +142,7 @@ public class Coupon {
 		}
 		if (firstUsedAt == null) {
 			firstUsedAt = lessonDate.atStartOfDay();
-			expiresAt = firstUsedAt.plusMonths(3);
+			expiresAt = calculateExpiresAt(lessonDate);
 		}
 		heldCount--;
 		remainingCount--;
@@ -152,7 +175,7 @@ public class Coupon {
 		}
 		if (status != CouponStatus.ACTIVE
 			|| expiresAt == null
-			|| !expiresAt.toLocalDate().isBefore(currentDate)) {
+			|| !isPastExpiryBoundary(currentDate)) {
 			return 0;
 		}
 		final int expiredCount = remainingCount - heldCount;
@@ -175,11 +198,51 @@ public class Coupon {
 		return type;
 	}
 
-	private static byte requireTotalCount(Integer totalCount) {
-		if (totalCount == null || totalCount != COUPON_TOTAL_COUNT) {
+	private static int requireTotalCount(Integer totalCount) {
+		if (totalCount == null || totalCount <= 0) {
 			throw new CouponException(ExceptionCode.COUPON_INVALID_TOTAL_COUNT);
 		}
-		return totalCount.byteValue();
+		return totalCount;
+	}
+
+	private static int requireUsedCount(Integer usedCount, int totalCount) {
+		if (usedCount == null || usedCount < 0 || usedCount > totalCount) {
+			throw new CouponException(ExceptionCode.COUPON_INVALID_USED_COUNT);
+		}
+		return usedCount;
+	}
+
+	private void initializeUsageDates(int usedCount, LocalDate firstUsedDate) {
+		if ((usedCount == 0) != (firstUsedDate == null)) {
+			throw new CouponException(ExceptionCode.COUPON_INVALID_FIRST_USED_DATE);
+		}
+		if (firstUsedDate != null) {
+			firstUsedAt = firstUsedDate.atStartOfDay();
+			expiresAt = calculateExpiresAt(firstUsedDate);
+		}
+	}
+
+	private void ensureImportableOn(LocalDate registrationDate) {
+		if (registrationDate == null) {
+			throw new CouponException(ExceptionCode.COUPON_INVALID_EXPIRY_DATE);
+		}
+		if (firstUsedAt == null) {
+			return;
+		}
+		if (firstUsedAt.toLocalDate().isAfter(registrationDate)) {
+			throw new CouponException(ExceptionCode.COUPON_FIRST_USED_DATE_IN_FUTURE);
+		}
+		if (isPastExpiryBoundary(registrationDate)) {
+			throw new CouponException(ExceptionCode.COUPON_EXPIRED_REGISTRATION);
+		}
+	}
+
+	private boolean isPastExpiryBoundary(LocalDate date) {
+		return expiresAt != null && expiresAt.toLocalDate().isBefore(date);
+	}
+
+	private static LocalDateTime calculateExpiresAt(LocalDate firstUsedDate) {
+		return firstUsedDate.plusMonths(VALIDITY_MONTHS).atStartOfDay();
 	}
 
 	private static String requireCreatedBy(String createdBy) {

@@ -58,7 +58,7 @@ function AdminHomePage() {
         <Link to="/admin/weekly-operations-calendar">주간 운영 캘린더</Link>
         <Link to="/admin/members">회원 및 기승 승인</Link>
         <Link to="/admin/family-groups">가족 그룹 관리</Link>
-        <Link to="/admin/coupons/new">10회권 쿠폰 등록</Link>
+        <Link to="/admin/coupons/new">쿠폰 등록</Link>
         <Link to="/admin/timeslots">시간대 및 정원</Link>
         <Link to="/admin/schedule-configuration">정규 시간표 및 정기 휴일</Link>
         <Link to="/admin/schedule-closures">날짜 휴무 및 개별 휴강</Link>

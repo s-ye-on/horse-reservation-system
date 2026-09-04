@@ -489,9 +489,9 @@ function formatDateTime(date: Date) {
 }
 
 function couponLabel(type?: string) {
-  if (type === 'GENERAL') return '일반 10회권'
-  if (type === 'DRESSAGE') return '마장마술 10회권'
-  if (type === 'JUMPING') return '장애물 10회권'
+  if (type === 'GENERAL') return '일반 쿠폰'
+  if (type === 'DRESSAGE') return '마장마술 쿠폰'
+  if (type === 'JUMPING') return '장애물 쿠폰'
   return type ?? '쿠폰'
 }
 

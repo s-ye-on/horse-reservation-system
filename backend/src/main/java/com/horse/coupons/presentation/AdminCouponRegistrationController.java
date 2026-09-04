@@ -13,6 +13,8 @@ import com.horse.coupons.application.AdminCouponRegistrationService;
 import com.horse.coupons.presentation.dto.CouponRegistrationRequest;
 import com.horse.coupons.presentation.dto.CouponResponse;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/admin/members/{memberId}/coupons")
 public class AdminCouponRegistrationController {
@@ -27,13 +29,15 @@ public class AdminCouponRegistrationController {
 	@ResponseStatus(HttpStatus.CREATED)
 	public CouponResponse register(
 		@PathVariable Long memberId,
-		@RequestBody CouponRegistrationRequest request,
+		@Valid @RequestBody CouponRegistrationRequest request,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject
 	) {
 		return CouponResponse.from(service.register(
 			memberId,
 			request.type(),
 			request.totalCount(),
+			request.usedCount(),
+			request.firstUsedDate(),
 			adminSubject));
 	}
 }

@@ -189,6 +189,7 @@ describe('AdminReservationsPage', () => {
     expect(within(approvalSection).getByText('정상')).toBeInTheDocument()
     const cards = within(approvalSection).getAllByRole('article')
     expect(within(cards[0]).getByRole('heading', { name: '김긴급' })).toBeInTheDocument()
+    expect(within(cards[0]).getByText(/일반 쿠폰 #21/)).toBeInTheDocument()
     expect(within(cards[1]).getByRole('heading', { name: '이확인' })).toBeInTheDocument()
     expect(within(cards[2]).getByRole('heading', { name: '박정상' })).toBeInTheDocument()
   })

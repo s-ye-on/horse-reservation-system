@@ -11,15 +11,16 @@ import com.horse.coupons.domain.exception.CouponException;
 import com.horse.global.exception.ExceptionCode;
 
 class CouponTest {
+	private static final LocalDate REGISTRATION_DATE = LocalDate.of(2026, 9, 4);
 
 	@Test
-	void 신규_쿠폰은_10회권의_미사용_상태로_생성된다() {
-		final Coupon coupon = Coupon.create(1L, CouponType.GENERAL, 10, "admin-subject");
+	void 신규_쿠폰은_관리자가_지정한_횟수의_미사용_상태로_생성된다() {
+		final Coupon coupon = Coupon.create(1L, CouponType.GENERAL, 20, "admin-subject");
 
 		assertThat(coupon.getMemberId()).isEqualTo(1L);
 		assertThat(coupon.getType()).isEqualTo(CouponType.GENERAL);
-		assertThat(coupon.getTotalCount()).isEqualTo(10);
-		assertThat(coupon.getRemainingCount()).isEqualTo(10);
+		assertThat(coupon.getTotalCount()).isEqualTo(20);
+		assertThat(coupon.getRemainingCount()).isEqualTo(20);
 		assertThat(coupon.getHeldCount()).isZero();
 		assertThat(coupon.getFirstUsedAt()).isNull();
 		assertThat(coupon.getExpiresAt()).isNull();
@@ -29,10 +30,83 @@ class CouponTest {
 	}
 
 	@Test
-	void 열_회가_아닌_쿠폰은_생성할_수_없다() {
-		assertThatThrownBy(() -> Coupon.create(1L, CouponType.GENERAL, 9, "admin-subject"))
+	void 총_횟수가_양수가_아니면_쿠폰을_생성할_수_없다() {
+		assertThatThrownBy(() -> Coupon.create(1L, CouponType.GENERAL, 0, "admin-subject"))
 			.isInstanceOf(CouponException.class)
 			.hasMessage(ExceptionCode.COUPON_INVALID_TOTAL_COUNT.message());
+	}
+
+	@Test
+	void 기존_쿠폰은_실제_사용_횟수와_최초_사용일로_현재_상태를_초기화한다() {
+		final LocalDate firstUsedDate = LocalDate.of(2026, 7, 3);
+
+		final Coupon coupon = Coupon.register(
+			1L, CouponType.GENERAL, 10, 3, firstUsedDate, REGISTRATION_DATE, "admin-subject");
+
+		assertThat(coupon.getTotalCount()).isEqualTo(10);
+		assertThat(coupon.getRemainingCount()).isEqualTo(7);
+		assertThat(coupon.getHeldCount()).isZero();
+		assertThat(coupon.getFirstUsedAt()).isEqualTo(firstUsedDate.atStartOfDay());
+		assertThat(coupon.getExpiresAt()).isEqualTo(firstUsedDate.plusMonths(3).atStartOfDay());
+		assertThat(coupon.getStatus()).isEqualTo(CouponStatus.ACTIVE);
+	}
+
+	@Test
+	void 모두_사용한_기존_쿠폰은_사용완료_상태로_초기화한다() {
+		final Coupon coupon = Coupon.register(
+			1L, CouponType.GENERAL, 5, 5, LocalDate.of(2026, 7, 3), REGISTRATION_DATE, "admin-subject");
+
+		assertThat(coupon.getRemainingCount()).isZero();
+		assertThat(coupon.getStatus()).isEqualTo(CouponStatus.DEPLETED);
+	}
+
+	@Test
+	void 사용_횟수는_총_횟수를_넘을_수_없다() {
+		assertThatThrownBy(() -> Coupon.register(
+			1L, CouponType.GENERAL, 5, 6, LocalDate.of(2026, 7, 3), REGISTRATION_DATE, "admin-subject"))
+			.isInstanceOf(CouponException.class)
+			.hasMessage(ExceptionCode.COUPON_INVALID_USED_COUNT.message());
+	}
+
+	@Test
+	void 사용된_기존_쿠폰은_최초_사용일이_필수다() {
+		assertThatThrownBy(() -> Coupon.register(
+			1L, CouponType.GENERAL, 10, 3, null, REGISTRATION_DATE, "admin-subject"))
+			.isInstanceOf(CouponException.class)
+			.hasMessage(ExceptionCode.COUPON_INVALID_FIRST_USED_DATE.message());
+	}
+
+	@Test
+	void 미사용_쿠폰에는_최초_사용일을_등록할_수_없다() {
+		assertThatThrownBy(() -> Coupon.register(
+			1L, CouponType.GENERAL, 10, 0, LocalDate.of(2026, 7, 3), REGISTRATION_DATE, "admin-subject"))
+			.isInstanceOf(CouponException.class)
+			.hasMessage(ExceptionCode.COUPON_INVALID_FIRST_USED_DATE.message());
+	}
+
+	@Test
+	void 최초_사용일이_미래인_기존_쿠폰은_등록할_수_없다() {
+		assertThatThrownBy(() -> Coupon.register(
+			1L, CouponType.GENERAL, 10, 3, REGISTRATION_DATE.plusDays(1), REGISTRATION_DATE, "admin-subject"))
+			.isInstanceOf(CouponException.class)
+			.hasMessage(ExceptionCode.COUPON_FIRST_USED_DATE_IN_FUTURE.message());
+	}
+
+	@Test
+	void 기존_만료_경계가_지난_쿠폰은_등록할_수_없다() {
+		assertThatThrownBy(() -> Coupon.register(
+			1L, CouponType.GENERAL, 10, 3, LocalDate.of(2026, 6, 3), REGISTRATION_DATE, "admin-subject"))
+			.isInstanceOf(CouponException.class)
+			.hasMessage(ExceptionCode.COUPON_EXPIRED_REGISTRATION.message());
+	}
+
+	@Test
+	void 기존_쿠폰은_만료일_당일까지_등록할_수_있다() {
+		final Coupon coupon = Coupon.register(
+			1L, CouponType.GENERAL, 10, 3, LocalDate.of(2026, 6, 4), REGISTRATION_DATE, "admin-subject");
+
+		assertThat(coupon.getExpiresAt()).isEqualTo(REGISTRATION_DATE.atStartOfDay());
+		assertThat(coupon.getStatus()).isEqualTo(CouponStatus.ACTIVE);
 	}
 
 	@Test

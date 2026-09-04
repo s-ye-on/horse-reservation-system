@@ -123,7 +123,11 @@ public enum ExceptionCode {
 
 	COUPON_INVALID_MEMBER_ID(HttpStatus.BAD_REQUEST, "쿠폰 회원 식별자는 필수입니다."),
 	COUPON_INVALID_TYPE(HttpStatus.BAD_REQUEST, "쿠폰 종류가 올바르지 않습니다."),
-	COUPON_INVALID_TOTAL_COUNT(HttpStatus.BAD_REQUEST, "쿠폰은 10회권만 등록할 수 있습니다."),
+	COUPON_INVALID_TOTAL_COUNT(HttpStatus.BAD_REQUEST, "쿠폰 총 횟수는 1회 이상이어야 합니다."),
+	COUPON_INVALID_USED_COUNT(HttpStatus.BAD_REQUEST, "쿠폰 사용 횟수는 0회 이상이며 총 횟수를 넘을 수 없습니다."),
+	COUPON_INVALID_FIRST_USED_DATE(HttpStatus.BAD_REQUEST, "사용된 쿠폰은 실제 최초 사용일이 필요합니다."),
+	COUPON_FIRST_USED_DATE_IN_FUTURE(HttpStatus.BAD_REQUEST, "쿠폰 최초 사용일은 미래 날짜일 수 없습니다."),
+	COUPON_EXPIRED_REGISTRATION(HttpStatus.BAD_REQUEST, "이미 만료된 기존 쿠폰은 등록할 수 없습니다."),
 	COUPON_INVALID_CREATED_BY(HttpStatus.BAD_REQUEST, "쿠폰 등록 관리자 식별자는 필수입니다."),
 	COUPON_INVALID_LESSON_DATE(HttpStatus.BAD_REQUEST, "쿠폰을 사용할 수업 날짜는 필수입니다."),
 	COUPON_INVALID_EXPIRY_DATE(HttpStatus.BAD_REQUEST, "쿠폰 만료 기준 날짜는 필수입니다."),

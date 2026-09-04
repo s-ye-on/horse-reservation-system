@@ -61,7 +61,13 @@ created_at
 updated_at
 ```
 
-사용 가능 횟수는 `remaining_count - held_count`다. 첫 수업 완료 전에는 `first_used_at`과 `expires_at`이 비어 있을 수 있다.
+쿠폰 현재 상태의 SSOT는 `total_count`, `remaining_count`, `held_count`이며 사용 가능 횟수는
+`remaining_count - held_count`다. Horse에서 신규 발행한 쿠폰은 첫 수업 완료 전까지
+`first_used_at`과 `expires_at`이 비어 있다. Horse 도입 전부터 사용 중인 쿠폰을 등록할 때는
+`remaining_count = total_count - used_count`, `held_count = 0`으로 초기화하고 실제
+`first_used_at`과 그로부터 3개월 뒤인 `expires_at`을 함께 저장한다. 이 초기 상태는 과거
+`CouponUsageLog`를 생성하지 않는다. 최초 사용일은 등록일 이후일 수 없으며 기존 만료 경계가
+이미 지난 쿠폰은 등록하지 않는다.
 
 ## Reservation
 
