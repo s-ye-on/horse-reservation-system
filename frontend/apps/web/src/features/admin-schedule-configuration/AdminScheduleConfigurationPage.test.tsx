@@ -99,6 +99,52 @@ describe('AdminScheduleConfigurationPage', () => {
     expect(screen.getAllByText(/조건에 맞는 .* 없습니다/)).toHaveLength(2)
   })
 
+  it('저장된_정규_시간표를_요일과_시간에_맞춰_클래스별_정원과_함께_표시한다', async () => {
+    const mondayTemplate = {
+      ...TEMPLATE,
+      templateId: 2,
+      dayOfWeek: 'MONDAY' as const,
+      startTime: '10:00:00',
+      endTime: '10:45:00',
+      classCapacities: { ...CLASS_CAPACITIES, FIRST_RIDE: 4, DRESSAGE: 0 },
+    }
+    const thursdayTemplate = {
+      ...TEMPLATE,
+      templateId: 3,
+      dayOfWeek: 'THURSDAY' as const,
+      startTime: '14:00:00',
+      endTime: '14:45:00',
+      active: false,
+      classCapacities: { ...CLASS_CAPACITIES, JUMPING: 2 },
+    }
+    const getTemplates = vi.fn().mockResolvedValue([thursdayTemplate, TEMPLATE, mondayTemplate])
+    renderPage(createApi({ getTemplates }))
+
+    const overview = await screen.findByRole('region', { name: '주간 정규 시간표 상세' })
+    expect(getTemplates).toHaveBeenCalledTimes(1)
+    expect(within(overview).getByRole('heading', { name: '월요일' })).toBeInTheDocument()
+    expect(within(overview).getByRole('heading', { name: '일요일' })).toBeInTheDocument()
+
+    const mondayCard = within(overview).getByLabelText('월요일 10:00 정규 시간표')
+    expect(mondayCard).toHaveTextContent('전체 8명 · 원형 4명')
+    expect(mondayCard.querySelector('[data-class-capacity="FIRST_RIDE"]')).toHaveTextContent('왕초보4명')
+    expect(mondayCard.querySelector('[data-class-capacity="DRESSAGE"]')).toHaveTextContent('마장마술0명')
+
+    const thursdayCard = within(overview).getByLabelText('목요일 14:00 정규 시간표')
+    expect(thursdayCard).toHaveTextContent('비활성')
+    expect(thursdayCard.querySelector('[data-class-capacity="JUMPING"]')).toHaveTextContent('장애물2명')
+    expect(within(overview).queryByLabelText(/수요일 .* 정규 시간표/)).not.toBeInTheDocument()
+    expect(overview.querySelectorAll('[data-regular-template-id]')).toHaveLength(3)
+    expect(overview.querySelectorAll('[data-weekly-cell]')).toHaveLength(3)
+  })
+
+  it('저장된_정규_시간표가_없으면_가짜_수업_없이_빈_상태를_표시한다', async () => {
+    renderPage(createApi({ getTemplates: vi.fn().mockResolvedValue([]) }))
+
+    expect(await screen.findByText('등록된 정규 시간표가 없습니다.')).toBeInTheDocument()
+    expect(document.querySelectorAll('[data-regular-template-id]')).toHaveLength(0)
+  })
+
   it('시간표와_휴일을_요일_시간_식별자_순으로_안정적으로_표시한다', async () => {
     const wednesdayTemplate = {
       ...TEMPLATE,

@@ -73,6 +73,11 @@ test.describe('M31-R14 Checkpoint 1 핵심 운영 흐름', () => {
       await expect(page.getByText(/동일한 설정 버전의 동기화를 다시 실행했습니다/)).toBeVisible()
       await expect(page.getByText('시간표 최신 상태')).toBeVisible()
       await expect(page.getByRole('heading', { name: '일요일 18:00~18:45' })).toBeVisible()
+      const weeklyOverview = page.getByRole('region', { name: '주간 정규 시간표 상세' })
+      const createdTemplate = weeklyOverview.getByLabel('일요일 18:00 정규 시간표')
+      await expect(createdTemplate).toContainText('전체 8명 · 원형 4명')
+      await expect(createdTemplate.locator('[data-class-capacity="FIRST_RIDE"]')).toContainText('왕초보0명')
+      await expect(createdTemplate.locator('[data-class-capacity="JUMPING"]')).toContainText('장애물0명')
       expect(readM31R14ScheduleSynchronizationSnapshot()).toEqual({
         status: 'ACTIVE',
         activeVersion: pending.pendingVersion,

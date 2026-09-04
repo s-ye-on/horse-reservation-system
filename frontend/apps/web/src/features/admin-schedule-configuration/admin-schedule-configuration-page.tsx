@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type {
   RecurringHolidayImpactResponse,
@@ -340,10 +340,11 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
         </header>
         <section className="schedule-config-notice" aria-label="운영 기준">
           <strong>기본 정기 휴일은 월요일입니다.</strong>
-          <span>월요일 정규 Template은 OPEN 예외 시 사용되므로 휴일 규칙과 별도로 유지됩니다.</span>
+          <span>월요일 정규 시간표는 날짜별 운영 예외 시 사용되므로 휴일 규칙과 별도로 유지됩니다.</span>
         </section>
         {error ? <p id="schedule-config-error" className="schedule-config-alert error" role="alert" data-error-code={error.code}>{error.message}</p> : null}
         {success ? <p className="schedule-config-alert success" role="status">{success}</p> : null}
+        <RegularScheduleWeeklyOverview templates={templatesQuery.data ?? []} />
         <section className="schedule-config-filters" aria-label="시간표 설정 검색">
           <TextInput label="검색" value={search} onChange={setSearch} placeholder="시간 또는 휴일 사유" />
           <label>요일<select value={dayFilter} onChange={(event) => setDayFilter(event.target.value as Day | 'ALL')}>
@@ -391,6 +392,118 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
         </div>
       ) : null}
     </main>
+  )
+}
+
+function RegularScheduleWeeklyOverview({ templates }: { templates: ScheduleTemplateResponse[] }) {
+  const sortedTemplates = useMemo(() => [...templates].sort((left, right) =>
+    compareDay(left.dayOfWeek, right.dayOfWeek)
+      || left.startTime.localeCompare(right.startTime)
+      || left.templateId - right.templateId), [templates])
+  const startTimes = useMemo(() => (
+    [...new Set(sortedTemplates.map((template) => template.startTime))].sort()
+  ), [sortedTemplates])
+  const templatesByCell = useMemo(() => {
+    const grouped = new Map<string, ScheduleTemplateResponse[]>()
+    for (const template of sortedTemplates) {
+      const key = `${template.dayOfWeek}|${template.startTime}`
+      grouped.set(key, [...(grouped.get(key) ?? []), template])
+    }
+    return grouped
+  }, [sortedTemplates])
+
+  return (
+    <section className="schedule-config-weekly-overview" aria-labelledby="regular-weekly-heading">
+      <div className="schedule-config-weekly-heading">
+        <div>
+          <h2 id="regular-weekly-heading">주간 정규 시간표</h2>
+          <p>저장된 요일별 수업 시간과 클래스별 정원을 한눈에 확인합니다.</p>
+        </div>
+        <strong>{sortedTemplates.length}개 시간표</strong>
+      </div>
+      {sortedTemplates.length === 0 ? (
+        <PageState embedded message="등록된 정규 시간표가 없습니다." />
+      ) : (
+        <div className="schedule-config-weekly-scroll" role="region" aria-label="주간 정규 시간표 상세" tabIndex={0}>
+          <div className="schedule-config-weekly-grid">
+            <h3 className="schedule-config-weekly-corner">시간</h3>
+            {DAY_OPTIONS.map(([day, label], dayIndex) => (
+              <h3
+                className="schedule-config-weekly-day"
+                data-weekly-day={day}
+                key={day}
+                style={{ gridColumn: dayIndex + 2, gridRow: 1 }}
+              >
+                {label}
+              </h3>
+            ))}
+            {startTimes.map((startTime, timeIndex) => (
+              <h3
+                className="schedule-config-weekly-time"
+                data-weekly-time={startTime}
+                key={startTime}
+                style={{ gridColumn: 1, gridRow: timeIndex + 2 }}
+              >
+                {shortTime(startTime)}
+              </h3>
+            ))}
+            {DAY_OPTIONS.flatMap(([day, label], dayIndex) => startTimes.flatMap((startTime, timeIndex) => {
+              const cellTemplates = templatesByCell.get(`${day}|${startTime}`) ?? []
+              if (cellTemplates.length === 0) return []
+              const style: CSSProperties = { gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }
+              return [
+                <div
+                  className="schedule-config-weekly-cell"
+                  data-weekly-cell={day}
+                  data-weekly-start-time={startTime}
+                  key={`${day}|${startTime}`}
+                  style={style}
+                >
+                  {cellTemplates.map((template) => (
+                    <RegularScheduleWeeklyCard dayLabel={label} key={template.templateId} template={template} />
+                  ))}
+                </div>,
+              ]
+            }))}
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function RegularScheduleWeeklyCard({ dayLabel: weekday, template }: {
+  dayLabel: string
+  template: ScheduleTemplateResponse
+}) {
+  return (
+    <article
+      aria-label={`${weekday} ${shortTime(template.startTime)} 정규 시간표`}
+      className={`schedule-config-weekly-card${template.active ? '' : ' inactive'}`}
+      data-regular-template-id={template.templateId}
+    >
+      <header>
+        <div>
+          <span className="schedule-config-weekly-mobile-day">{weekday}</span>
+          <strong>{shortTime(template.startTime)} - {shortTime(template.endTime)}</strong>
+        </div>
+        <Status active={template.active} />
+      </header>
+      <p className="schedule-config-weekly-capacity-summary">
+        전체 {template.totalCapacity}명 · 원형 {template.roundArenaCapacity}명
+      </p>
+      <dl className="schedule-config-weekly-class-capacities">
+        {CLASS_FIELDS.map(([ridingClass, label]) => {
+          const capacity = template.classCapacities[ridingClass]
+          return (
+            <div className={capacity === 0 ? 'zero' : ''} data-class-capacity={ridingClass} key={ridingClass}>
+              <dt>{label}</dt>
+              <dd>{capacity}명</dd>
+            </div>
+          )
+        })}
+      </dl>
+    </article>
   )
 }
 
@@ -655,6 +768,10 @@ function apiDateToInput(value: Date) {
 
 function dayLabel(day: string) {
   return DAY_OPTIONS.find(([value]) => value === day)?.[1] ?? day
+}
+
+function shortTime(value: string) {
+  return value.slice(0, 5)
 }
 
 function matchesDay(day: string, filter: Day | 'ALL') {
