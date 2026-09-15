@@ -113,6 +113,7 @@ template_id nullable
 total_capacity
 round_arena_capacity
 class_capacity_json
+capacity_overridden
 is_closed
 admin_closed
 recurring_holiday_closed
@@ -124,6 +125,12 @@ updated_at
 `TimeSlotCapacity`는 45분 concrete occurrence, 정원과 개별 휴강 상태를 저장한다. 현재 점유
 수는 Reservation에서 파생한다. `is_closed`는 세 마감 원인의 OR과 일치해야 하며 자동
 occurrence는 물리 삭제하지 않는다.
+
+`capacityOverridden`은 slot-level 정원 provenance다. 새 TEMPLATE occurrence는 false이고 Template
+정원 동기화 대상이다. MANUAL occurrence와 관리자가 전체·원형·RidingClass별 정원을 직접 변경한
+occurrence는 true이며 Template 정원 동기화에서 제외한다. 필드별 override 상태는 두지 않는다.
+기존 행은 provenance를 복원할 원장이 없으므로 보존 우선으로 true 이관하고, 검토된 명시적 Template
+기준 적용 절차에서만 false로 전환한다.
 
 M32-06은 구보초보·구보를 명시적인 일반 클래스 catalog에 추가하고 `class_capacity_json`,
 예약 자격, 관리자 수업 구성과 수업 생성이 같은 catalog를 사용하도록 전파한다. 기존 클래스
@@ -176,8 +183,17 @@ updated_at
 요일과 시작 시각별 행을 사용한다. 월요일 정기 휴일과 독립적으로 월요일 Template도
 존재하므로 날짜 OPEN 시 정규 시간표 전체를 생성할 수 있다.
 
+관리자 `삭제`는 행 삭제가 아니라 `active=false`인 운영 종료다. 같은 요일·시각을 다시 생성하면
+UNIQUE key를 점유한 inactive 행의 ID와 과거 TimeSlot FK를 유지한 채 현재 입력 설정으로 갱신하고
+`active=true`로 재사용한다. 수정·재운영은 아직 시작하지 않은 비 override TEMPLATE occurrence에
+같은 정원을 전파하며, 하나라도 Reservation 점유 하한과 충돌하면 Template 변경 전체를 거부한다.
+운영 종료·재운영은 Reservation 상태와 Template 독립 마감 원인을 변경하지 않는다.
+
 M32-06 이후 Template 정원 입력과 materialized TimeSlot 생성도 구보초보·구보 capacity를
 손실 없이 전달해야 한다. 관련 API, 관리자·회원 UI와 계약 테스트는 같은 class catalog를 따른다.
+
+상세 lifecycle과 migration 경계는
+[ADR-024](adr-024-regular-schedule-template-retirement-and-future-capacity-sync.md)를 따른다.
 
 ## RecurringHolidayRule
 

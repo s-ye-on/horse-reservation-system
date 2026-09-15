@@ -4,6 +4,10 @@
 
 확정, R09 날짜 휴무 workflow 및 R10 개별 휴강 workflow 구현
 
+정규 시간표 운영 종료·같은 시간대 재운영과 미래 TEMPLATE occurrence 정원 동기화 결정은
+[ADR-024](adr-024-regular-schedule-template-retirement-and-future-capacity-sync.md)가 이 문서의
+기존 occurrence 정원 보존 결정을 부분 대체한다.
+
 ## 맥락
 
 현재 `TimeSlotCapacity`는 관리자가 직접 만든 날짜·시작 시각 행과 `is_closed`만 보유한다.
@@ -266,10 +270,10 @@ MySQL DDL은 트랜잭션 rollback 대상이 아니므로 V17의 두 ALTER 또�
 DDL을 forward-complete하거나 명시적으로 원복하고 `flyway repair`한다. migration을
 도메인별 버전으로 분리해 이 수동 복구 범위를 줄였지만 완전히 제거하지는 못한다.
 
-Template의 정원은 새 occurrence 생성 시점에만 기본값으로 복사한다. 기존 occurrence의
-수동 정원 보정은 자동 동기화가 덮어쓰지 않는다. Template 변경을 기존 미래 TimeSlot에
-반영하려면 영향 미리보기와 명시적 동기화 Command가 필요하며, 활성 예약 수보다 작게
-정원을 자동 축소하지 않는다.
+이 문단에서 확정했던 "Template 정원은 새 occurrence 생성 시점에만 복사하고 기존 occurrence
+정원은 보존한다"는 결정은 ADR-024가 부분 대체한다. 미래 TEMPLATE occurrence는 현재 Template
+정원을 따르되 slot-level override는 보존하며, 하나라도 활성 예약 점유 하한과 충돌하면 전체 변경을
+거부한다. 과거 occurrence 보존과 자동 축소 금지는 유지한다.
 
 자동 occurrence는 운영 동기화에서 물리 삭제하지 않는다. 자동 동기화는
 `admin_closed`를 변경하지 않으며 자신이 소유한 정기 휴일·Template 플래그만 변경한다.
@@ -313,10 +317,9 @@ ScheduleConfigGuard, ScheduleDate, 휴일과 TimeSlot 상태를 다시 검증한
 
 정기 휴일 또는 Template 비활성화로 TEMPLATE TimeSlot을 닫아도 기존 활성 예약은 자동
 취소하지 않는다. occurrence와 설정 version 반영이 끝나면 guard는 `ACTIVE`로 복귀한다.
-남은 활성 예약은 닫힌 TEMPLATE TimeSlot과 활성 Reservation에서 파생하는 별도 휴무 정리
-Read Model로 건수·목록·진행 상태를 제공한다. 이 정리 상태 때문에 전역 `SYNCING`을
-유지하지 않는다. 정리는 휴무 전용 취소로 쿠폰 예약 `stable/RETURN`, 1회 결제 예약
-`stable/NONE`을 적용한다.
+정기 휴일의 기존 정리 계약은 유지한다. Template 운영 종료의 남은 예약 정리는 ADR-024가 이
+문단을 대체하며, 미래 점유 Reservation에서 건수·목록을 파생해 기존 관리자 Reservation 취소
+흐름으로 처리한다. 어느 경우에도 정리 상태 때문에 전역 `SYNCING`을 유지하지 않는다.
 
 ### 날짜 휴무와 개별 휴강
 
@@ -432,6 +435,6 @@ reopen은 상태에 따라 철회 또는 완료 후 재개에 위임한다. 직�
 - 월요일 정기 휴일에는 자동 생성하지 않고 OPEN에는 전체 정규 occurrence를 생성한다.
 - 정기 휴일·Template 비활성화 동기화는 TEMPLATE 행만 닫고 MANUAL 행과 ADMIN 마감
   원인을 변경하거나 삭제하지 않는다.
-- 설정 동기화 완료 후 기존 활성 예약이 남아 있어도 ACTIVE로 복귀하고 별도 휴무 정리
-  목록에서 추적한다.
+- 설정 동기화 완료 후 기존 활성 예약이 남아 있어도 ACTIVE로 복귀한다. Template 운영 종료의
+  남은 예약은 ADR-024의 `예약 정리 필요`, 날짜 휴무·개별 휴강은 각 workflow에서 추적한다.
 - CLOSING과 개별 휴강이 신규 유입을 먼저 차단하고 전용 취소·쿠폰 반환·감사를 보존한다.

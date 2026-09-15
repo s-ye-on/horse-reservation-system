@@ -28,10 +28,24 @@
 - 행이 없음을 `NORMAL`로 해석하지 않는다. 예약·변경·관리자 수동 예약·휴무 전환처럼 정합성이 필요한 Command는 같은 `ScheduleDate` 행을 잠그고 상태를 재검증한다.
 - 과거 `ScheduleDate`는 현재 범위에서 삭제하지 않는다. 보존 기간은 예약·TimeSlot·감사 이력의 전체 보존 정책이 정해진 뒤 별도 Task에서 결정한다.
 - 정규 TimeSlot 동기화 범위는 오늘부터 `today.plusMonths(3)`까지이며 누락 occurrence만 보충한다. 반복 또는 동시 실행에도 같은 `lessonDate/startTime` 행을 중복 생성하지 않는다.
-- Template 정원은 새 `TEMPLATE` occurrence를 생성할 때만 기본값으로 복사한다.
-- 관리자가 개별 TimeSlot에 적용한 정원 보정은 자동 동기화가 덮어쓰지 않는다.
-- Template 변경을 기존 미래 TimeSlot에 반영하려면 영향 미리보기 후 명시적 동기화 Command를 실행해야 한다.
-- 자동 동기화는 활성 예약 수보다 작게 TimeSlot 정원을 축소하지 않는다.
+- 관리자가 정규 시간표를 `삭제`하면 사용자 의미상 앞으로 운영하지 않는 것이며 내부적으로는
+  Template을 `active=false`로 전환한다. Template, TimeSlot, Reservation과 감사 행을 물리 삭제하지 않는다.
+- 삭제된 Template의 미래 `TEMPLATE` TimeSlot은 `templateInactiveClosed=true`로 닫고 새 occurrence
+  생성을 중단한다. 기존 Reservation, 쿠폰 hold와 결제 상태는 자동 변경하지 않는다.
+- 삭제된 Template에 미래 점유 Reservation이 남으면 `ReservationStatus.occupyingStatuses()`에서
+  파생한 `예약 정리 필요` 건수·목록과 기존 관리자 취소 화면 동선을 제공한다. 0건이면 일반 운영
+  화면에서 숨기며 장기 운영 종료 목록은 만들지 않는다.
+- 삭제한 `(요일, 시작 시각)`에 정규 시간표를 다시 생성하면 새 행을 만들지 않고 기존 inactive
+  Template ID에 현재 입력 설정을 적용해 `active=true`로 재사용한다. 남아 있는 Reservation 상태는
+  변경하거나 복구하지 않는다.
+- 미래의 아직 시작하지 않은 `TEMPLATE` TimeSlot은 현재 Template의 전체·원형·RidingClass별 정원을
+  따른다. 관리자가 특정 TimeSlot 정원을 직접 수정하면 slot-level `capacityOverridden=true`로 표시해
+  이후 Template 정원 동기화에서 제외한다.
+- Template 수정과 재운영은 `capacityOverridden=false`인 모든 미래 대상의 점유 하한을 사전 검증한다.
+  하나라도 새 정원보다 현재 점유가 크면 부분 적용하지 않고 Template 변경 전체를 거부한다.
+- 과거 TimeSlot과 운영 기록은 Template 수정·삭제·재운영으로 변경하지 않는다. Template 동기화는
+  `templateInactiveClosed`와 비 override 정원만 소유하며 `adminClosed`, 정기 휴일, 날짜 마감과
+  `MANUAL` TimeSlot을 변경하거나 우회하지 않는다.
 - Template 또는 정기 휴일 변경은 일정 설정 version을 `SYNCING`으로 전환한 뒤 날짜별 occurrence에 반영한다. 전체 범위가 같은 version으로 동기화될 때까지 신규 예약, 해당 날짜로의 예약 변경·복구, 관리자 수동 예약과 수동 TimeSlot 생성을 허용하지 않는다.
 - `SYNCING` 중 회원 예약 가능 TimeSlot 조회도 일시 차단한다. 기존 예약·쿠폰·휴무 정리 조회, 휴무 정리 취소, 반려, 자동 입금·승인 만료, 동기화 상태 조회와 동일 version 재시도는 계속 허용한다.
 - `SYNCING` 차단은 `SCHEDULE_CONFIG_SYNC_IN_PROGRESS`와 `503 Service Unavailable`을 반환한다. 안정적인 예상 완료 시간을 계산할 수 있을 때만 `Retry-After`를 제공한다.
@@ -42,7 +56,9 @@
 - 운영 우선순위는 날짜 `CLOSING/CLOSED`, 개별 TimeSlot 마감, 날짜 `OPEN`, 정기 휴일, 정규 Template 순이다.
 - 개별 TimeSlot의 관리자 휴강, 정기 휴일, Template 비활성화 원인은 독립적으로 보존한다. 하나의 원인이 해제되어도 다른 원인이 남아 있으면 TimeSlot을 재개하지 않는다.
 - 정기 휴일과 Template 비활성화는 자동 생성된 `TEMPLATE` TimeSlot에만 적용한다. `MANUAL` TimeSlot은 날짜 휴무 또는 관리자 휴강이 아닌 설정 동기화로 닫지 않는다.
-- 설정 변경으로 TEMPLATE TimeSlot이 닫혀도 기존 활성 예약은 자동 취소하지 않는다. 설정 version 동기화가 끝나면 `ACTIVE`로 복귀하고 남은 예약은 별도 휴무 정리 목록과 진행 상태로 관리한다.
+- 설정 변경으로 TEMPLATE TimeSlot이 닫혀도 기존 활성 예약은 자동 취소하지 않는다. 설정 version
+  동기화가 끝나면 `ACTIVE`로 복귀한다. Template 삭제의 남은 예약은 위 `예약 정리 필요` 계약으로,
+  날짜 휴무·개별 휴강은 각각의 기존 정리 workflow로 관리한다.
 - 날짜 전체 휴무는 미래 날짜만 허용한다. 당일 일부 또는 전체 휴장은 개별 TimeSlot 휴강 절차를 사용한다.
 
 ### 날짜 전체 휴무

@@ -51,7 +51,7 @@
 
 - 회원 정보와 특수 클래스 승인 관리
 - 10회권 쿠폰 등록 및 보정
-- 요일별 정규 시간표와 정기 휴일 관리
+- 요일별 정규 시간표 생성·수정·삭제·같은 시간대 재운영과 정기 휴일 관리
 - 시간표 동기화 상태·진행률·실패 원인 조회와 동일 version 수동 재시도
 - 날짜별 `OPEN`, `CLOSING`, `CLOSED` 운영 상태와 휴무 정리
 - 날짜·시간·클래스별 정원과 개별 TimeSlot 휴강 관리
@@ -119,3 +119,19 @@
 - 이전·다음 월과 주를 탐색할 수 있으며 월간 화면은 현재 월, 주간 화면은 현재 주로 복귀할 수 있다.
 
 상세 조회 SSOT, 성능 경계와 구현 순서는 ADR-023과 MVP-3.3 Task를 따른다.
+
+## 정규 시간표 운영 종료와 재운영 확정 요구사항
+
+- 관리자에게 정규 시간표 `삭제`는 앞으로 운영하지 않는다는 의미이며 내부적으로 기존 Template을
+  비활성화해 과거 TimeSlot, Reservation과 감사 이력을 보존한다.
+- 삭제 직후 미래 Template TimeSlot과 신규 occurrence 유입을 차단하되 기존 Reservation은 자동
+  취소하지 않는다. 미래 점유 Reservation은 `예약 정리 필요`로 제공하고 기존 관리자 취소 흐름에서
+  처리한다.
+- 삭제한 요일·시각에 다시 정규 시간표를 만들면 동일 inactive Template에 현재 설정을 적용해 재사용한다.
+  재운영은 기존 Reservation 상태를 변경하거나 복구하지 않는다.
+- Template 정원 변경과 재운영은 미래 Template TimeSlot에 반영하되 관리자가 특정 TimeSlot에 직접
+  적용한 정원은 보존한다. 어느 대상이든 새 정원이 현재 점유보다 작으면 전체 변경을 거부한다.
+- 운영 기간, 별도 삭제 상태, Template·TimeSlot Hard Delete와 자동 Reservation 취소는 범위에 포함하지 않는다.
+
+상세 lifecycle, 정원 provenance, 원자성, rollout과 선행 결함은
+[ADR-024](../architecture/adr-024-regular-schedule-template-retirement-and-future-capacity-sync.md)를 따른다.
