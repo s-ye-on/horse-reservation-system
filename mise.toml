@@ -990,6 +990,14 @@ pnpm --dir frontend/apps/web test:e2e -- \
 git diff --check
 '''
 
+[tasks."verify:m34-01"]
+description = "Verify member available-time fail-closed behavior during schedule synchronization"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MemberAvailableTimeSlotsApiTest' \
+  --tests '*CouponReservationApplicationApiTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

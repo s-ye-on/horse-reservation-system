@@ -22,6 +22,7 @@ import com.horse.reservations.domain.ReservationBookingTimePolicy;
 import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.infrastructure.ReservationRepository;
 import com.horse.schedules.domain.exception.ScheduleException;
+import com.horse.schedules.infrastructure.ScheduleConfigGuardRepository;
 import com.horse.schedules.infrastructure.ScheduleDateRepository;
 import com.horse.timeslots.domain.TimeSlotCapacity;
 import com.horse.timeslots.domain.exception.TimeSlotException;
@@ -34,6 +35,7 @@ public class MemberAvailableTimeSlotsService {
 
 	private final Clock clock;
 	private final MemberAvailableRidingClassesService ridingClassesService;
+	private final ScheduleConfigGuardRepository configGuardRepository;
 	private final ScheduleDateRepository scheduleDateRepository;
 	private final TimeSlotCapacityRepository timeSlotRepository;
 	private final ReservationRepository reservationRepository;
@@ -41,12 +43,14 @@ public class MemberAvailableTimeSlotsService {
 	public MemberAvailableTimeSlotsService(
 		Clock clock,
 		MemberAvailableRidingClassesService ridingClassesService,
+		ScheduleConfigGuardRepository configGuardRepository,
 		ScheduleDateRepository scheduleDateRepository,
 		TimeSlotCapacityRepository timeSlotRepository,
 		ReservationRepository reservationRepository
 	) {
 		this.clock = clock;
 		this.ridingClassesService = ridingClassesService;
+		this.configGuardRepository = configGuardRepository;
 		this.scheduleDateRepository = scheduleDateRepository;
 		this.timeSlotRepository = timeSlotRepository;
 		this.reservationRepository = reservationRepository;
@@ -58,6 +62,7 @@ public class MemberAvailableTimeSlotsService {
 		String dateValue,
 		String classTypeValue
 	) {
+		configGuardRepository.findSingletonForShare().ensureActive();
 		final LocalDate date = parseDate(dateValue);
 		final RidingClass ridingClass = parseRidingClass(classTypeValue);
 		final MemberAvailableRidingClassesResult member =

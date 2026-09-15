@@ -62,6 +62,15 @@ class MemberAvailableTimeSlotsApiTest {
 	void 서울_기준_현재_시각을_고정한다() {
 		when(clock.instant()).thenReturn(CURRENT_INSTANT);
 		when(clock.getZone()).thenReturn(SEOUL_ZONE);
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'ACTIVE',
+				active_version = 1,
+				pending_version = NULL,
+				sync_started_at = NULL,
+				sync_started_by = NULL
+			WHERE id = 1
+			""");
 	}
 
 	@Test
@@ -96,6 +105,26 @@ class MemberAvailableTimeSlotsApiTest {
 			.andExpect(jsonPath("$.timeSlots[0].unavailableReason").doesNotExist());
 
 		assertThat(reservationCount()).isEqualTo(beforeCount);
+	}
+
+	@Test
+	void 일정_설정이_SYNCING이면_예약_가능_시간대_조회를_차단한다() throws Exception {
+		insertMember("syncing-member", 1);
+		jdbcTemplate.update("""
+			UPDATE schedule_config_guard
+			SET status = 'SYNCING',
+				pending_version = active_version + 1,
+				sync_started_at = '2026-07-21 10:00:00',
+				sync_started_by = 'm34-01-test-admin'
+			WHERE id = 1
+			""");
+
+		mockMvc.perform(get(ENDPOINT)
+				.param("date", futureDate().toString())
+				.param("classType", "ROUND_BEGINNER")
+				.with(jwt().jwt(token -> token.subject("syncing-member"))))
+			.andExpect(status().isServiceUnavailable())
+			.andExpect(jsonPath("$.code").value("SCHEDULE_CONFIG_SYNC_IN_PROGRESS"));
 	}
 
 	@Test
