@@ -287,6 +287,36 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		@Param("statuses") Collection<ReservationStatus> statuses
 	);
 
+	@Query(value = """
+		SELECT reservation.id AS reservationId,
+			reservation.lesson_date AS lessonDate,
+			reservation.start_time AS startTime,
+			reservation.end_time AS endTime,
+			member.id AS memberId,
+			member.name AS memberName,
+			member.phone AS memberPhone,
+			reservation.class_type AS ridingClass,
+			reservation.status AS status
+		FROM time_slot_capacities time_slot
+		STRAIGHT_JOIN reservations reservation
+		  ON reservation.lesson_date = time_slot.lesson_date
+		 AND reservation.start_time = time_slot.start_time
+		STRAIGHT_JOIN members member ON member.id = reservation.member_id
+		WHERE time_slot.template_id = :templateId
+		  AND reservation.status IN (:statuses)
+		  AND (
+			time_slot.lesson_date > :today
+			OR (time_slot.lesson_date = :today AND time_slot.start_time > :currentTime)
+		  )
+		ORDER BY reservation.lesson_date, reservation.start_time, reservation.id
+		""", nativeQuery = true)
+	List<TemplateFutureReservationProjection> findFutureOccupyingByTemplateId(
+		@Param("templateId") Long templateId,
+		@Param("today") LocalDate today,
+		@Param("currentTime") LocalTime currentTime,
+		@Param("statuses") Collection<String> statuses
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("SELECT reservation FROM Reservation reservation WHERE reservation.id = :reservationId")
 	Optional<Reservation> findByIdForUpdate(@Param("reservationId") Long reservationId);

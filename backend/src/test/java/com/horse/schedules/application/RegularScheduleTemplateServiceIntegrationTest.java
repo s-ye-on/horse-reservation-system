@@ -219,6 +219,24 @@ class RegularScheduleTemplateServiceIntegrationTest {
 	}
 
 	@Test
+	void 영향_미리보기의_Template_연결조건은_과거행에_대한_날짜범위를_우회하지_않는다() {
+		final RegularScheduleTemplate template = templateRepository.saveAndFlush(
+			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(9, 0)));
+		insertTemplateTimeSlot(template.getId(), "2026-07-17");
+		insertActiveReservation("r04-impact-past", "2026-07-17");
+		insertTemplateTimeSlot(template.getId(), "2026-07-31");
+		insertActiveReservation("r04-impact-future", "2026-07-31");
+
+		final ScheduleTemplateImpactPreview preview = templateService.preview(
+			DayOfWeek.FRIDAY,
+			LocalTime.of(9, 0),
+			template.getId());
+
+		assertThat(preview.existingTimeSlotCount()).isOne();
+		assertThat(preview.activeReservationCount()).isOne();
+	}
+
+	@Test
 	void 신규_템플릿_미리보기는_같은_요일과_시각의_MANUAL_슬롯을_집계한다() {
 		jdbcTemplate.update("""
 			INSERT INTO time_slot_capacities (
@@ -404,30 +422,38 @@ class RegularScheduleTemplateServiceIntegrationTest {
 	}
 
 	private void insertTemplateTimeSlot(long templateId) {
+		insertTemplateTimeSlot(templateId, "2026-07-31");
+	}
+
+	private void insertTemplateTimeSlot(long templateId, String lessonDate) {
 		jdbcTemplate.update("""
 			INSERT INTO time_slot_capacities (
 				lesson_date, start_time, source, template_id,
 				total_capacity, round_arena_capacity, class_capacity_json
-			) VALUES ('2026-07-31', '09:00:00', 'TEMPLATE', ?, 8, 4, ?)
-			""", templateId, CLASS_CAPACITIES_JSON);
+			) VALUES (?, '09:00:00', 'TEMPLATE', ?, 8, 4, ?)
+			""", lessonDate, templateId, CLASS_CAPACITIES_JSON);
 	}
 
 	private void insertActiveReservation() {
+		insertActiveReservation("r04-impact-member", "2026-07-31");
+	}
+
+	private void insertActiveReservation(String authSubject, String lessonDate) {
 		jdbcTemplate.update("""
 			INSERT INTO members (auth_subject, name, phone)
-			VALUES ('r04-impact-member', '영향 회원', '010-0000-0000')
-			""");
+			VALUES (?, '영향 회원', '010-0000-0000')
+			""", authSubject);
 		jdbcTemplate.update("""
 			INSERT INTO reservations (
 				member_id, class_type, lesson_date, start_time, status,
 				payment_source, payment_due_at, approval_requested_at
 			)
-			SELECT id, 'FIRST_RIDE', '2026-07-31', '09:00:00',
+			SELECT id, 'FIRST_RIDE', ?, '09:00:00',
 				'pending_payment', 'single_payment',
 				'2026-07-30 12:00:00', '2026-07-30 10:00:00'
 			FROM members
-			WHERE auth_subject = 'r04-impact-member'
-			""");
+			WHERE auth_subject = ?
+			""", lessonDate, authSubject);
 	}
 
 	private void resetGuardActive(long activeVersion) {

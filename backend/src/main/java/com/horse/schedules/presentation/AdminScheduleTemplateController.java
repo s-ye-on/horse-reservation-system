@@ -17,9 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 import com.horse.schedules.application.RegularScheduleTemplateCommand;
 import com.horse.schedules.application.RegularScheduleTemplateService;
 import com.horse.schedules.application.ScheduleOccurrenceSynchronizationService;
+import com.horse.schedules.application.ScheduleTemplateFutureReservationQueryService;
 import com.horse.schedules.application.ScheduleTemplateMutationResult;
 import com.horse.schedules.presentation.dto.ScheduleActivationRequest;
 import com.horse.schedules.presentation.dto.ScheduleTemplateImpactResponse;
+import com.horse.schedules.presentation.dto.ScheduleTemplateFutureReservationsResponse;
 import com.horse.schedules.presentation.dto.ScheduleTemplateMutationResponse;
 import com.horse.schedules.presentation.dto.ScheduleTemplatePreviewRequest;
 import com.horse.schedules.presentation.dto.ScheduleTemplateRequest;
@@ -46,13 +48,16 @@ public class AdminScheduleTemplateController {
 
 	private final RegularScheduleTemplateService service;
 	private final ScheduleOccurrenceSynchronizationService synchronizationService;
+	private final ScheduleTemplateFutureReservationQueryService futureReservationQueryService;
 
 	public AdminScheduleTemplateController(
 		RegularScheduleTemplateService service,
-		ScheduleOccurrenceSynchronizationService synchronizationService
+		ScheduleOccurrenceSynchronizationService synchronizationService,
+		ScheduleTemplateFutureReservationQueryService futureReservationQueryService
 	) {
 		this.service = service;
 		this.synchronizationService = synchronizationService;
+		this.futureReservationQueryService = futureReservationQueryService;
 	}
 
 	@GetMapping
@@ -63,6 +68,17 @@ public class AdminScheduleTemplateController {
 		return service.findAll().stream()
 			.map(ScheduleTemplateResponse::from)
 			.toList();
+	}
+
+	@GetMapping("/{templateId}/future-occupying-reservations")
+	@ApiResponse(responseCode = "200", content = @Content(
+		mediaType = "application/json",
+		schema = @Schema(implementation = ScheduleTemplateFutureReservationsResponse.class)))
+	public ScheduleTemplateFutureReservationsResponse getFutureOccupyingReservations(
+		@PathVariable long templateId
+	) {
+		return ScheduleTemplateFutureReservationsResponse.from(
+			futureReservationQueryService.find(templateId));
 	}
 
 	@PostMapping("/preview")

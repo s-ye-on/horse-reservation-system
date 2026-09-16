@@ -21,12 +21,11 @@ public class ScheduleTemplateImpactRepository {
 	private static final String COUNT_TIME_SLOTS_SQL = """
 		SELECT COUNT(*)
 		FROM time_slot_capacities
-		WHERE (
-			lesson_date BETWEEN ? AND ?
-			AND DAYOFWEEK(lesson_date) = ?
-			AND start_time = ?
-		)
-		OR (? IS NOT NULL AND template_id = ?)
+		WHERE lesson_date BETWEEN ? AND ?
+		  AND (
+			(DAYOFWEEK(lesson_date) = ? AND start_time = ?)
+			OR (? IS NOT NULL AND template_id = ?)
+		  )
 		""";
 	private static final String COUNT_ACTIVE_RESERVATIONS_SQL = """
 		SELECT COUNT(*)
@@ -34,15 +33,15 @@ public class ScheduleTemplateImpactRepository {
 		JOIN time_slot_capacities time_slot
 		  ON time_slot.lesson_date = reservation.lesson_date
 		 AND time_slot.start_time = reservation.start_time
-		WHERE (
+		WHERE time_slot.lesson_date BETWEEN ? AND ?
+		  AND (
 			(
-				time_slot.lesson_date BETWEEN ? AND ?
-				AND DAYOFWEEK(time_slot.lesson_date) = ?
+				DAYOFWEEK(time_slot.lesson_date) = ?
 				AND time_slot.start_time = ?
 			)
 			OR (? IS NOT NULL AND time_slot.template_id = ?)
-		)
-		AND reservation.active_slot_guard = 1
+		  )
+		  AND reservation.active_slot_guard = 1
 		""";
 
 	private final JdbcTemplate jdbcTemplate;

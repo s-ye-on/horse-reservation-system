@@ -998,6 +998,17 @@ run = '''
   --tests '*CouponReservationApplicationApiTest'
 '''
 
+[tasks."verify:m34-02"]
+description = "Verify template future occupying reservation impact and read model"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*AdminScheduleTemplateFutureReservationsApiTest' \
+  --tests '*ScheduleTemplateFutureReservationQueryCountIntegrationTest' \
+  --tests '*ScheduleTemplateFutureReservationQueryPlanIntegrationTest' \
+  --tests '*RegularScheduleTemplateServiceIntegrationTest' \
+  --tests '*AdminReservationQueryApiTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"
