@@ -1009,6 +1009,19 @@ run = '''
   --tests '*AdminReservationQueryApiTest'
 '''
 
+[tasks."verify:m34-02a"]
+description = "Verify retired template time slots are excluded from general views"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*MemberAvailableTimeSlotsApiTest' \
+  --tests '*AdminWeeklyOperationsCalendarApiTest' \
+  --tests '*AdminScheduleTemplateFutureReservationsApiTest' \
+  --tests '*ScheduleTemplateFutureReservationQueryCountIntegrationTest'
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/reservation-calendar/ReservationCalendarPage.test.tsx \
+  src/features/admin-weekly-operations-calendar/AdminWeeklyOperationsCalendarPage.test.tsx
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

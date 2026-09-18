@@ -91,6 +91,58 @@ class AdminWeeklyOperationsCalendarApiTest {
 	}
 
 	@Test
+	void 미래_retired_TEMPLATE은_숨기고_과거와_다른_마감_원인과_정리_대상은_보존한다() throws Exception {
+		final Long changedTemplateId = insertTemplate("FRIDAY", "10:00:00", true);
+		final Long inactiveTemplateId = insertTemplate("SATURDAY", "04:30:00", false);
+		final Long holidayTemplateId = insertTemplate("FRIDAY", "12:00:00", true);
+		final Long pastRetiredId = insertTemplateTimeSlot(
+			changedTemplateId, LocalDate.of(2026, 12, 30), "09:00:00", false, false, true);
+		final Long startedBeforeCurrentTimeId = insertTemplateTimeSlot(
+			changedTemplateId, LocalDate.of(2026, 12, 31), "00:29:59", false, false, true);
+		final Long startingAtCurrentTimeId = insertTemplateTimeSlot(
+			changedTemplateId, LocalDate.of(2026, 12, 31), "00:30:00", false, false, true);
+		insertTemplateTimeSlot(
+			changedTemplateId, LocalDate.of(2026, 12, 31), "00:30:01", false, false, true);
+		insertTemplateTimeSlot(
+			changedTemplateId, LocalDate.of(2027, 1, 1), "09:00:00", false, false, true);
+		final Long currentTemplateId = insertTemplateTimeSlot(
+			changedTemplateId, LocalDate.of(2027, 1, 1), "10:00:00", false, false, false);
+		final Long adminClosedId = insertTimeSlot(LocalDate.of(2027, 1, 1), "11:00:00", true);
+		final Long holidayClosedId = insertTemplateTimeSlot(
+			holidayTemplateId, LocalDate.of(2027, 1, 1), "12:00:00", false, true, false);
+		insertTemplateTimeSlot(
+			inactiveTemplateId, LocalDate.of(2027, 1, 2), "04:30:00", false, false, true);
+		final Long occupyingMemberId = insertMember("retired-occupying", "운영 종료 예약 회원");
+		insertReservation(
+			occupyingMemberId,
+			"ROUND_BEGINNER",
+			LocalDate.of(2027, 1, 2),
+			"04:30:00",
+			"confirmed");
+
+		mockMvc.perform(get(ENDPOINT)
+				.with(adminJwt())
+				.param("referenceDate", "2026-12-31"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.timeSlots.length()").value(6))
+			.andExpect(jsonPath("$.timeSlots[0].timeSlotId").value(pastRetiredId))
+			.andExpect(jsonPath("$.timeSlots[1].timeSlotId").value(startedBeforeCurrentTimeId))
+			.andExpect(jsonPath("$.timeSlots[2].timeSlotId").value(startingAtCurrentTimeId))
+			.andExpect(jsonPath("$.timeSlots[3].timeSlotId").value(currentTemplateId))
+			.andExpect(jsonPath("$.timeSlots[3].closed").value(false))
+			.andExpect(jsonPath("$.timeSlots[4].timeSlotId").value(adminClosedId))
+			.andExpect(jsonPath("$.timeSlots[4].closed").value(true))
+			.andExpect(jsonPath("$.timeSlots[5].timeSlotId").value(holidayClosedId))
+			.andExpect(jsonPath("$.timeSlots[5].closed").value(true));
+
+		mockMvc.perform(get("/api/admin/schedule-templates/{templateId}/future-occupying-reservations",
+				inactiveTemplateId).with(adminJwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.reservationCount").value(1))
+			.andExpect(jsonPath("$.reservations[0].memberId").value(occupyingMemberId));
+	}
+
+	@Test
 	void 점유_상태와_COMPLETED만_회원_클래스_원래상태로_표시하고_제외이력만_있는_슬롯은_비워둔다() throws Exception {
 		insertTimeSlot(LocalDate.of(2026, 12, 30), "10:00:00", false);
 		insertTimeSlot(LocalDate.of(2026, 12, 30), "11:00:00", false);
@@ -159,6 +211,42 @@ class AdminWeeklyOperationsCalendarApiTest {
 		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
 	}
 
+	private Long insertTemplate(String dayOfWeek, String startTime, boolean active) {
+		jdbcTemplate.update("""
+			INSERT INTO regular_schedule_templates (
+				day_of_week, start_time, end_time, total_capacity, round_arena_capacity,
+				class_capacity_json, active, created_by, updated_by
+			) VALUES (?, ?, ADDTIME(?, '00:45:00'), 8, 4, ?, ?, 'm34-02a-test', 'm34-02a-test')
+			""", dayOfWeek, startTime, startTime, CLASS_CAPACITIES, active);
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
+	private Long insertTemplateTimeSlot(
+		Long templateId,
+		LocalDate lessonDate,
+		String startTime,
+		boolean adminClosed,
+		boolean recurringHolidayClosed,
+		boolean templateInactiveClosed
+	) {
+		jdbcTemplate.update("""
+			INSERT INTO time_slot_capacities (
+				lesson_date, start_time, end_time, source, template_id, total_capacity,
+				round_arena_capacity, class_capacity_json, admin_closed,
+				recurring_holiday_closed, template_inactive_closed
+			) VALUES (?, ?, ADDTIME(?, '00:45:00'), 'TEMPLATE', ?, 8, 4, ?, ?, ?, ?)
+			""",
+			lessonDate,
+			startTime,
+			startTime,
+			templateId,
+			CLASS_CAPACITIES,
+			adminClosed,
+			recurringHolidayClosed,
+			templateInactiveClosed);
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
 	private Long insertMember(String suffix, String name) {
 		jdbcTemplate.update("""
 			INSERT INTO members (auth_subject, name, phone, large_arena_allowed)
@@ -168,6 +256,16 @@ class AdminWeeklyOperationsCalendarApiTest {
 	}
 
 	private void insertReservation(Long memberId, String ridingClass, String startTime, String status) {
+		insertReservation(memberId, ridingClass, LocalDate.of(2026, 12, 30), startTime, status);
+	}
+
+	private void insertReservation(
+		Long memberId,
+		String ridingClass,
+		LocalDate lessonDate,
+		String startTime,
+		String status
+	) {
 		final Long couponId = switch (status) {
 			case "pending_admin_approval", "approval_expired" -> insertCoupon(memberId);
 			default -> null;
@@ -189,10 +287,11 @@ class AdminWeeklyOperationsCalendarApiTest {
 				member_id, class_type, lesson_date, start_time, status, payment_source,
 				coupon_id, payment_due_at, approval_requested_at, admin_confirmed_at,
 				rejected_at, rejected_by, rejection_reason, cancelled_at, cancellation_responsibility
-			) VALUES (?, ?, '2026-12-30', ?, ?, ?, ?, ?, '2026-12-29 09:00:00', ?, ?, ?, ?, ?, ?)
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, '2026-12-29 09:00:00', ?, ?, ?, ?, ?, ?)
 			""",
 			memberId,
 			ridingClass,
+			lessonDate,
 			startTime,
 			status,
 			paymentSource,
@@ -241,6 +340,7 @@ class AdminWeeklyOperationsCalendarApiTest {
 			"DELETE FROM time_slot_capacities WHERE lesson_date BETWEEN ? AND ?",
 			FIXTURE_FROM,
 			FIXTURE_TO);
+		jdbcTemplate.update("DELETE FROM regular_schedule_templates WHERE created_by = 'm34-02a-test'");
 	}
 
 }

@@ -3,6 +3,7 @@ package com.horse.reservations.application;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.EnumSet;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.horse.reservations.domain.ReservationStatus;
 import com.horse.reservations.infrastructure.ReservationRepository;
 import com.horse.timeslots.domain.TimeSlotCapacity;
+import com.horse.timeslots.domain.TimeSlotSource;
 import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
 
 @Service
@@ -39,12 +41,18 @@ public class AdminWeeklyOperationsCalendarService {
 
 	@Transactional(readOnly = true)
 	public AdminWeeklyOperationsCalendarResult getCalendar(LocalDate referenceDate) {
-		final LocalDate resolvedReferenceDate = referenceDate == null ? LocalDate.now(clock) : referenceDate;
+		final LocalDateTime requestedAt = LocalDateTime.now(clock);
+		final LocalDate resolvedReferenceDate = referenceDate == null ? requestedAt.toLocalDate() : referenceDate;
 		final LocalDate weekStartDate = resolvedReferenceDate.with(
 			TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
 		final LocalDate weekEndDate = weekStartDate.plusDays(6);
 		final List<TimeSlotCapacity> timeSlots = timeSlotRepository
-			.findAllByLessonDateBetweenOrderByLessonDateAscStartTimeAscIdAsc(weekStartDate, weekEndDate);
+			.findOperationsCalendarVisibleBetween(
+				weekStartDate,
+				weekEndDate,
+				requestedAt.toLocalDate(),
+				requestedAt.toLocalTime(),
+				TimeSlotSource.TEMPLATE);
 		final Map<TimeSlotKey, List<AdminWeeklyOperationsReservationResult>> reservationsByTimeSlot =
 			reservationRepository.findWeeklyOperationsReservations(
 				weekStartDate,

@@ -128,6 +128,34 @@ class MemberAvailableTimeSlotsApiTest {
 	}
 
 	@Test
+	void 미래_retired_TEMPLATE만_숨기고_현재_시간과_다른_마감_원인은_유지한다() throws Exception {
+		final LocalDate date = futureDate();
+		insertScheduleDate(date);
+		insertMember("retired-filter-member", 1);
+		final Long changedTemplateId = insertTemplate("WEDNESDAY", "10:00:00", true);
+		final Long inactiveTemplateId = insertTemplate("WEDNESDAY", "04:30:00", false);
+		final Long holidayTemplateId = insertTemplate("WEDNESDAY", "12:00:00", true);
+		insertTemplateTimeSlot(date, "04:30:00", inactiveTemplateId, false, false, true);
+		insertTemplateTimeSlot(date, "09:00:00", changedTemplateId, false, false, true);
+		insertTemplateTimeSlot(date, "10:00:00", changedTemplateId, false, false, false);
+		insertTimeSlot(date, "11:00:00", 2, 2, true);
+		insertTemplateTimeSlot(date, "12:00:00", holidayTemplateId, false, true, false);
+
+		mockMvc.perform(get(ENDPOINT)
+				.param("date", date.toString())
+				.param("classType", "ROUND_BEGINNER")
+				.with(jwt().jwt(token -> token.subject("retired-filter-member"))))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.timeSlots.length()").value(3))
+			.andExpect(jsonPath("$.timeSlots[0].startTime").value("10:00:00"))
+			.andExpect(jsonPath("$.timeSlots[0].closed").value(false))
+			.andExpect(jsonPath("$.timeSlots[1].startTime").value("11:00:00"))
+			.andExpect(jsonPath("$.timeSlots[1].unavailableReason").value("CLOSED"))
+			.andExpect(jsonPath("$.timeSlots[2].startTime").value("12:00:00"))
+			.andExpect(jsonPath("$.timeSlots[2].unavailableReason").value("CLOSED"));
+	}
+
+	@Test
 	void 허용되지_않은_클래스와_마감과_만석_원인을_구분한다() throws Exception {
 		final LocalDate date = futureDate();
 		insertScheduleDate(date);
@@ -240,6 +268,41 @@ class MemberAvailableTimeSlotsApiTest {
 			INSERT INTO schedule_dates (schedule_date, status, applied_config_version)
 			VALUES (?, 'NORMAL', 1)
 			""", scheduleDate);
+	}
+
+	private Long insertTemplate(String dayOfWeek, String startTime, boolean active) {
+		jdbcTemplate.update("""
+			INSERT INTO regular_schedule_templates (
+				day_of_week, start_time, end_time, total_capacity, round_arena_capacity,
+				class_capacity_json, active, created_by, updated_by
+			) VALUES (?, ?, ADDTIME(?, '00:45:00'), 2, 2, ?, ?, 'm34-02a-test', 'm34-02a-test')
+			""", dayOfWeek, startTime, startTime, CLASS_CAPACITIES, active);
+		return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+	}
+
+	private void insertTemplateTimeSlot(
+		LocalDate lessonDate,
+		String startTime,
+		Long templateId,
+		boolean adminClosed,
+		boolean recurringHolidayClosed,
+		boolean templateInactiveClosed
+	) {
+		jdbcTemplate.update("""
+			INSERT INTO time_slot_capacities (
+				lesson_date, start_time, end_time, source, template_id, total_capacity,
+				round_arena_capacity, class_capacity_json, admin_closed,
+				recurring_holiday_closed, template_inactive_closed
+			) VALUES (?, ?, ADDTIME(?, '00:45:00'), 'TEMPLATE', ?, 2, 2, ?, ?, ?, ?)
+			""",
+			lessonDate,
+			startTime,
+			startTime,
+			templateId,
+			CLASS_CAPACITIES,
+			adminClosed,
+			recurringHolidayClosed,
+			templateInactiveClosed);
 	}
 
 	private void insertTimeSlot(

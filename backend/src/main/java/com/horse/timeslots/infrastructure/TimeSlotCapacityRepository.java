@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.horse.timeslots.domain.TimeSlotCapacity;
+import com.horse.timeslots.domain.TimeSlotSource;
 
 import jakarta.persistence.LockModeType;
 
@@ -50,11 +51,36 @@ public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapaci
 		@Param("time") LocalTime time
 	);
 
-	List<TimeSlotCapacity> findAllByLessonDateOrderByStartTimeAsc(LocalDate lessonDate);
+	@Query("""
+		select timeSlot
+		from TimeSlotCapacity timeSlot
+		where timeSlot.lessonDate = :lessonDate
+		  and (timeSlot.source <> :templateSource or timeSlot.templateInactiveClosed = false)
+		order by timeSlot.startTime
+		""")
+	List<TimeSlotCapacity> findMemberVisibleByLessonDate(
+		@Param("lessonDate") LocalDate lessonDate,
+		@Param("templateSource") TimeSlotSource templateSource
+	);
 
-	List<TimeSlotCapacity> findAllByLessonDateBetweenOrderByLessonDateAscStartTimeAscIdAsc(
-		LocalDate lessonDateFrom,
-		LocalDate lessonDateTo
+	@Query("""
+		select timeSlot
+		from TimeSlotCapacity timeSlot
+		where timeSlot.lessonDate between :lessonDateFrom and :lessonDateTo
+		  and (
+			timeSlot.source <> :templateSource
+			or timeSlot.templateInactiveClosed = false
+			or timeSlot.lessonDate < :currentDate
+			or (timeSlot.lessonDate = :currentDate and timeSlot.startTime <= :currentTime)
+		  )
+		order by timeSlot.lessonDate, timeSlot.startTime, timeSlot.id
+		""")
+	List<TimeSlotCapacity> findOperationsCalendarVisibleBetween(
+		@Param("lessonDateFrom") LocalDate lessonDateFrom,
+		@Param("lessonDateTo") LocalDate lessonDateTo,
+		@Param("currentDate") LocalDate currentDate,
+		@Param("currentTime") LocalTime currentTime,
+		@Param("templateSource") TimeSlotSource templateSource
 	);
 
 	@Query(value = """

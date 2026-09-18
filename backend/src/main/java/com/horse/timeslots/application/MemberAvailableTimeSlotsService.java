@@ -25,6 +25,7 @@ import com.horse.schedules.domain.exception.ScheduleException;
 import com.horse.schedules.infrastructure.ScheduleConfigGuardRepository;
 import com.horse.schedules.infrastructure.ScheduleDateRepository;
 import com.horse.timeslots.domain.TimeSlotCapacity;
+import com.horse.timeslots.domain.TimeSlotSource;
 import com.horse.timeslots.domain.exception.TimeSlotException;
 import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
 
@@ -82,7 +83,7 @@ public class MemberAvailableTimeSlotsService {
 				.collect(Collectors.groupingBy(Reservation::getStartTime));
 
 		final List<MemberAvailableTimeSlotResult> timeSlots = timeSlotRepository
-			.findAllByLessonDateOrderByStartTimeAsc(date).stream()
+			.findMemberVisibleByLessonDate(date, TimeSlotSource.TEMPLATE).stream()
 			.filter(timeSlot -> ReservationBookingTimePolicy.evaluate(
 				timeSlot.getLessonDate(),
 				timeSlot.getStartTime(),
