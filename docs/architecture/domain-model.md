@@ -129,8 +129,10 @@ occurrence는 물리 삭제하지 않는다.
 `capacityOverridden`은 slot-level 정원 provenance다. 새 TEMPLATE occurrence는 false이고 Template
 정원 동기화 대상이다. MANUAL occurrence와 관리자가 전체·원형·RidingClass별 정원을 직접 변경한
 occurrence는 true이며 Template 정원 동기화에서 제외한다. 필드별 override 상태는 두지 않는다.
-기존 행은 provenance를 복원할 원장이 없으므로 보존 우선으로 true 이관하고, 검토된 명시적 Template
-기준 적용 절차에서만 false로 전환한다.
+실운영 전 배포 데이터 확인에서 보존할 개별 보정 이력이 없었으므로 기존 TEMPLATE occurrence는
+false로 이관한다. 이 migration은 기존 정원 값을 변경하지 않는다. 이후 관리자 개별 TimeSlot 정원
+변경만 true로 전환하며 Template synchronization은 provenance를 true로 만들지 않는다. MANUAL
+occurrence는 이 TEMPLATE backfill 대상이 아니고 기존 true 계약을 유지한다.
 
 M32-06은 구보초보·구보를 명시적인 일반 클래스 catalog에 추가하고 `class_capacity_json`,
 예약 자격, 관리자 수업 구성과 수업 생성이 같은 catalog를 사용하도록 전파한다. 기존 클래스

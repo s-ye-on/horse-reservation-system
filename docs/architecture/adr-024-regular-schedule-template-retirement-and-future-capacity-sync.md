@@ -4,6 +4,8 @@
 
 Accepted, 2026-09-15
 
+기존 TEMPLATE TimeSlot rollout 결정 수정, 2026-09-19
+
 ADR-015의 "이미 materialize된 TimeSlot 정원은 Template 변경으로 갱신하지 않는다"는 결정을
 부분 대체한다. materialized occurrence, 독립 마감 원인, 설정 version과 예약 비자동 취소 결정은
 계속 ADR-015를 따른다.
@@ -107,19 +109,25 @@ TimeSlot 자체에 별도 설정 version을 추가하지 않는다. 점유 충�
 
 ### 기존 데이터 rollout
 
-기존 행에는 개별 정원 보정 provenance가 없고 현재 쓰기 경로는 이를 복원할 감사 데이터를 남기지
-않는다. migration에서 기존 행을 일괄 `capacityOverridden=false`로 두어 자동 덮어쓰지 않는다.
+기존 행에는 개별 정원 보정 provenance를 복원할 감사 원장이 없다. 다만 본격적인 실운영 전 배포 DB를
+read-only로 확인한 결과 미래 TEMPLATE TimeSlot은 270개, Template은 20개였으며 운영자가 보존해야 할
+개별 TimeSlot 정원 보정 이력은 없었다. 확인된 capacity mismatch 5건은 모두 전체·원형 정원이 같고
+`class_capacity_json`만 현재 Template과 달랐으며, 관리자 개별 보정 증거 없이 기존 비전파 정책으로
+설명할 수 있다.
 
-- 기존 TimeSlot은 보존 우선으로 `capacityOverridden=true`로 backfill한다.
-- 배포 전 환경별 inactive Template, 미래 TEMPLATE occurrence와 점유 Reservation 수를 read-only로
-  점검한다.
-- 기존 미래 occurrence를 Template 상속으로 전환하려면 관리자가 값을 확인한 뒤 명시적으로 Template
-  기준을 적용하는 rollout 절차를 사용한다. 이 절차도 점유 하한을 검증하고 부분 적용하지 않는다.
-- rollout 이후 새 TEMPLATE occurrence부터 `false`가 기본이므로 materialization horizon은 더 이상
-  설정 적용 시점을 지연시키지 않는다.
+따라서 M34-03 rollout은 다음 계약을 따른다.
 
-Repository migration과 seed에는 운영 inactive Template 데이터가 포함되어 있지 않다. 실제 배포
-환경의 기존 값을 추측해 자동 분류하지 않는다.
+- 기존 `source=TEMPLATE` TimeSlot은 `capacityOverridden=false`로 backfill한다.
+- 새로 materialize되는 TEMPLATE TimeSlot도 `false`로 생성한다.
+- 관리자가 특정 TimeSlot 정원을 직접 변경한 시점에만 해당 occurrence를 `true`로 전환한다.
+- Template synchronization 자체는 `capacityOverridden`을 `true`로 바꾸지 않는다.
+- MANUAL TimeSlot은 이 TEMPLATE backfill 대상이 아니며 기존 `capacityOverridden=true` 계약을 따른다.
+- M34-03 migration은 provenance만 이관하고 기존 정원 값을 변경하지 않는다. 실제 미래 정원 전파와
+  점유 하한의 원자적 검증은 M34-04가 담당한다.
+
+기존 TEMPLATE 행을 모두 `true`로 이관하면 확인된 270개 미래 occurrence가 동기화에서 제외되어
+materialization horizon을 제품 동작에서 제거하려는 이 ADR의 목적과 충돌한다. 이 배포 단계의 확인된
+데이터를 근거로 기존 TEMPLATE 행을 Template 상속 상태로 명시한다.
 
 ## 선행 구현 결함
 
@@ -150,7 +158,15 @@ TimeSlot FK, Reservation·감사 이력과 계절 재운영 연결을 훼손하�
 
 ### 모든 미래 occurrence 정원 덮어쓰기
 
-개별 날짜 정원 보정을 잃으므로 거부한다. slot-level provenance가 없는 기존 행도 자동 덮어쓰지 않는다.
+provenance와 점유 하한 검증 없이 migration에서 정원 값을 직접 덮어쓰면 개별 날짜 정원과 점유
+불변식을 잃으므로 거부한다. 기존 TEMPLATE 행을 `false`로 backfill하는 M34-03은 정원 값을 변경하지
+않고, 후속 M34-04 동기화만 검증된 비 override 미래 occurrence에 정원을 전파한다.
+
+### 기존 TEMPLATE occurrence를 모두 override로 보존
+
+확인된 배포 데이터에는 보존할 개별 보정 이력이 없고, 모든 기존 TEMPLATE occurrence를 `true`로
+이관하면 미래 270개 슬롯이 Template synchronization에서 제외된다. 내부 materialization 시점이 설정
+적용 시점을 결정하는 기존 문제를 유지하므로 거부한다.
 
 ### 충돌 occurrence만 제외한 부분 적용
 
