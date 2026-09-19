@@ -230,8 +230,8 @@ class DeadlockRetryIntegrationTest {
 		assertThat(jdbcTemplate.queryForMap(
 			"SELECT remaining_count, held_count FROM coupons WHERE id = ?",
 			fixture.couponId()))
-			.containsEntry("remaining_count", 9)
-			.containsEntry("held_count", 0);
+			.containsEntry("remaining_count", 9L)
+			.containsEntry("held_count", 0L);
 		assertThat(jdbcTemplate.queryForObject(
 			"SELECT status FROM reservations WHERE id = ?",
 			String.class,

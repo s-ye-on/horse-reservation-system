@@ -305,15 +305,23 @@ class ScheduleRepositoryIntegrationTest {
 			WHERE table_schema = DATABASE()
 			  AND table_name = 'time_slot_capacities'
 			  AND index_name IN (
-				'fk_time_slot_capacities_template',
+				'idx_time_slot_template_lesson_start',
 				'uk_time_slot_capacities_lesson_date_start_time'
 			  )
 			ORDER BY index_name
 			""", String.class);
 
 		assertThat(indexes).containsExactly(
-			"fk_time_slot_capacities_template",
+			"idx_time_slot_template_lesson_start",
 			"uk_time_slot_capacities_lesson_date_start_time");
+		assertThat(jdbcTemplate.queryForList("""
+			SELECT column_name
+			FROM information_schema.statistics
+			WHERE table_schema = DATABASE()
+			  AND table_name = 'time_slot_capacities'
+			  AND index_name = 'idx_time_slot_template_lesson_start'
+			ORDER BY seq_in_index
+			""", String.class)).containsExactly("template_id", "lesson_date", "start_time");
 	}
 
 	@Test
