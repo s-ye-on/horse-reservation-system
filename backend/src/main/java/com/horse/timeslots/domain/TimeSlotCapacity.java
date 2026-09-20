@@ -55,6 +55,9 @@ public class TimeSlotCapacity {
 	@Column(name = "template_id")
 	private Long templateId;
 
+	@Column(name = "capacity_overridden", nullable = false)
+	private boolean capacityOverridden;
+
 	@Column(name = "total_capacity", nullable = false)
 	private byte totalCapacity;
 
@@ -97,6 +100,7 @@ public class TimeSlotCapacity {
 		this.startTime = requireStartTime(startTime);
 		this.endTime = calculateEndTime(this.startTime);
 		this.source = TimeSlotSource.MANUAL;
+		this.capacityOverridden = true;
 		this.adminClosed = false;
 		this.recurringHolidayClosed = false;
 		this.templateInactiveClosed = false;
@@ -141,6 +145,7 @@ public class TimeSlotCapacity {
 			throw new TimeSlotException(ExceptionCode.TIMESLOT_INVALID_LESSON_INTERVAL);
 		}
 		timeSlot.source = TimeSlotSource.TEMPLATE;
+		timeSlot.capacityOverridden = false;
 		timeSlot.templateId = templateId;
 		timeSlot.recurringHolidayClosed = recurringHolidayClosed;
 		return timeSlot;
@@ -180,6 +185,7 @@ public class TimeSlotCapacity {
 		this.totalCapacity = totalCapacity.byteValue();
 		this.roundArenaCapacity = roundArenaCapacity.byteValue();
 		this.classCapacities = Map.copyOf(classCapacities);
+		this.capacityOverridden = true;
 	}
 
 	public void changeAdminClosed(Boolean adminClosed) {
@@ -322,6 +328,10 @@ public class TimeSlotCapacity {
 
 	public Long getTemplateId() {
 		return templateId;
+	}
+
+	public boolean isCapacityOverridden() {
+		return capacityOverridden;
 	}
 
 	public int getTotalCapacity() {

@@ -139,9 +139,14 @@ class ScheduleOccurrenceSynchronizationServiceIntegrationTest {
 		assertThat(result.status().appliedDateCount()).isEqualTo(expectedHorizonDateCount());
 		assertThat(countTemplateSlots(DayOfWeek.FRIDAY)).isPositive();
 		assertThat(countTemplateSlots(DayOfWeek.MONDAY)).isZero();
+		assertThat(jdbcTemplate.queryForObject("""
+			SELECT COUNT(*) FROM time_slot_capacities
+			WHERE source = 'TEMPLATE' AND capacity_overridden = TRUE
+			""", Integer.class)).isZero();
 		final TimeSlotCapacity preservedManual = timeSlotRepository.findById(manual.getId())
 			.orElseThrow();
 		assertThat(preservedManual.getSource()).isEqualTo(TimeSlotSource.MANUAL);
+		assertThat(preservedManual.isCapacityOverridden()).isTrue();
 		assertThat(preservedManual.getTotalCapacity()).isEqualTo(5);
 	}
 
@@ -201,10 +206,12 @@ class ScheduleOccurrenceSynchronizationServiceIntegrationTest {
 		assertThat(synchronizedActive.isRecurringHolidayClosed()).isFalse();
 		assertThat(synchronizedActive.isTemplateInactiveClosed()).isFalse();
 		assertThat(synchronizedActive.getTotalCapacity()).isEqualTo(5);
+		assertThat(synchronizedActive.isCapacityOverridden()).isFalse();
 		final TimeSlotCapacity synchronizedInactive =
 			timeSlotRepository.findById(inactiveSlot.getId()).orElseThrow();
 		assertThat(synchronizedInactive.isTemplateInactiveClosed()).isTrue();
 		assertThat(synchronizedInactive.isClosed()).isTrue();
+		assertThat(synchronizedInactive.isCapacityOverridden()).isFalse();
 	}
 
 	@Test

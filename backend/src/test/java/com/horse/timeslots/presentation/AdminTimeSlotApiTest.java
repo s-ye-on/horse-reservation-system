@@ -1,5 +1,6 @@
 package com.horse.timeslots.presentation;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -284,6 +285,11 @@ class AdminTimeSlotApiTest {
 			.andExpect(jsonPath("$.totalCapacity").value(7))
 			.andExpect(jsonPath("$.roundArenaCapacity").value(3))
 			.andExpect(jsonPath("$.classCapacities.DRESSAGE").value(2));
+		assertThat(jdbcTemplate.queryForObject("""
+			SELECT capacity_overridden
+			FROM time_slot_capacities
+			WHERE id = ?
+			""", Boolean.class, timeSlotId)).isTrue();
 	}
 
 	@Test

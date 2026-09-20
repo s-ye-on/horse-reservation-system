@@ -20,6 +20,7 @@ class TimeSlotCapacityTest {
 
 		assertThat(timeSlot.getEndTime()).isEqualTo(LocalTime.of(9, 45));
 		assertThat(timeSlot.getSource()).isEqualTo(TimeSlotSource.MANUAL);
+		assertThat(timeSlot.isCapacityOverridden()).isTrue();
 
 		timeSlot.changeAdminClosed(true);
 
@@ -109,10 +110,37 @@ class TimeSlotCapacityTest {
 
 		assertThat(timeSlot.getSource()).isEqualTo(TimeSlotSource.TEMPLATE);
 		assertThat(timeSlot.getTemplateId()).isEqualTo(2L);
+		assertThat(timeSlot.isCapacityOverridden()).isFalse();
 		assertThat(timeSlot.isAdminClosed()).isTrue();
 		assertThat(timeSlot.isRecurringHolidayClosed()).isFalse();
 		assertThat(timeSlot.isTemplateInactiveClosed()).isTrue();
 		assertThat(timeSlot.getTotalCapacity()).isEqualTo(5);
+	}
+
+	@Test
+	void 관리자_개별_정원_변경만_템플릿_정원_상속을_중단한다() {
+		final TimeSlotCapacity timeSlot = TimeSlotCapacity.createFromTemplate(
+			LocalDate.of(2026, 8, 1),
+			1L,
+			LocalTime.of(9, 0),
+			LocalTime.of(9, 45),
+			5,
+			2,
+			validClassCapacities(),
+			false);
+
+		assertTimeSlotException(
+			() -> timeSlot.changeCapacity(1, 1, validClassCapacities(), 2, 2, Map.of()),
+			ExceptionCode.TIMESLOT_CAPACITY_BELOW_OCCUPANCY);
+		assertThat(timeSlot.isCapacityOverridden()).isFalse();
+
+		timeSlot.changeCapacity(6, 3, validClassCapacities(), 2, 2, Map.of());
+		assertThat(timeSlot.isCapacityOverridden()).isTrue();
+		assertThat(timeSlot.getTotalCapacity()).isEqualTo(6);
+
+		timeSlot.synchronizeTemplateOccurrence(1L, true, false);
+		assertThat(timeSlot.isCapacityOverridden()).isTrue();
+		assertThat(timeSlot.getTotalCapacity()).isEqualTo(6);
 	}
 
 	@Test

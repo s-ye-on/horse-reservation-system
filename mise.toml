@@ -1022,6 +1022,18 @@ pnpm --dir frontend/apps/web exec vitest run \
   src/features/admin-weekly-operations-calendar/AdminWeeklyOperationsCalendarPage.test.tsx
 '''
 
+[tasks."verify:m34-03"]
+description = "Verify TimeSlot capacity provenance migration and admin override behavior"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*TimeSlotCapacityProvenanceMigrationIntegrationTest' \
+  --tests '*TimeSlotCapacityTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*ScheduleOccurrenceSynchronizationServiceIntegrationTest' \
+  --tests '*TimeSlotCapacityConcurrencyIntegrationTest' \
+  --tests '*AdminTimeSlotScheduleDateLockIntegrationTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"
