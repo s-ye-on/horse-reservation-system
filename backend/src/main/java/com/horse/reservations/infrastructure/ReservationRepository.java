@@ -427,6 +427,20 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 		@Param("statuses") Collection<ReservationStatus> statuses
 	);
 
+	@Lock(LockModeType.PESSIMISTIC_WRITE)
+	@Query("""
+		select reservation
+		from Reservation reservation
+		where reservation.lessonDate between :fromDate and :toDate
+		  and reservation.status in :statuses
+		order by reservation.lessonDate, reservation.startTime, reservation.id
+		""")
+	List<Reservation> findOccupyingBetweenForUpdate(
+		@Param("fromDate") LocalDate fromDate,
+		@Param("toDate") LocalDate toDate,
+		@Param("statuses") Collection<ReservationStatus> statuses
+	);
+
 	@Query("""
 		select reservation.id
 		from Reservation reservation

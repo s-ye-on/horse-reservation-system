@@ -104,6 +104,20 @@ public interface TimeSlotCapacityRepository extends JpaRepository<TimeSlotCapaci
 		""")
 	List<TimeSlotCapacity> findAllByIdForUpdateOrdered(@Param("timeSlotIds") Collection<Long> timeSlotIds);
 
+	@Query("""
+		select timeSlot
+		from TimeSlotCapacity timeSlot
+		where timeSlot.lessonDate between :fromDate and :toDate
+		  and timeSlot.source = :source
+		  and timeSlot.capacityOverridden = false
+		order by timeSlot.lessonDate, timeSlot.startTime, timeSlot.id
+		""")
+	List<TimeSlotCapacity> findInheritedTemplateSlotsBetween(
+		@Param("fromDate") LocalDate fromDate,
+		@Param("toDate") LocalDate toDate,
+		@Param("source") TimeSlotSource source
+	);
+
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select timeSlot from TimeSlotCapacity timeSlot where timeSlot.id = :timeSlotId")
 	Optional<TimeSlotCapacity> findByIdForUpdate(@Param("timeSlotId") Long timeSlotId);

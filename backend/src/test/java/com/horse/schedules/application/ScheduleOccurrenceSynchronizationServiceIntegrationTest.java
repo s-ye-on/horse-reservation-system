@@ -40,6 +40,7 @@ import com.horse.TestcontainersConfiguration;
 import com.horse.schedules.domain.RecurringHolidayRule;
 import com.horse.schedules.domain.RegularScheduleTemplate;
 import com.horse.schedules.domain.ScheduleConfigStatus;
+import com.horse.schedules.domain.ScheduleDateStatus;
 import com.horse.schedules.domain.exception.ScheduleException;
 import com.horse.schedules.infrastructure.RecurringHolidayRuleRepository;
 import com.horse.schedules.infrastructure.RegularScheduleTemplateRepository;
@@ -170,18 +171,18 @@ class ScheduleOccurrenceSynchronizationServiceIntegrationTest {
 	}
 
 	@Test
-	void TEMPLATE_자동_원인만_동기화하고_관리자_마감과_정원은_보존한다() {
+	void 미래_TEMPLATE_자동_원인과_상속_정원을_동기화하고_관리자_마감은_보존한다() {
 		final RegularScheduleTemplate activeTemplate =
-			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(9, 0), 8);
+			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(11, 0), 8);
 		final RegularScheduleTemplate inactiveTemplate =
-			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(10, 0), 8);
+			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(12, 0), 8);
 		inactiveTemplate.deactivate("schedule-admin");
 		templateRepository.saveAndFlush(inactiveTemplate);
 		final TimeSlotCapacity activeSlot = TimeSlotCapacity.createFromTemplate(
 			TODAY,
 			activeTemplate.getId(),
-			LocalTime.of(9, 0),
-			LocalTime.of(9, 45),
+			LocalTime.of(11, 0),
+			LocalTime.of(11, 45),
 			5,
 			2,
 			validClassCapacities(),
@@ -190,8 +191,8 @@ class ScheduleOccurrenceSynchronizationServiceIntegrationTest {
 		final TimeSlotCapacity inactiveSlot = TimeSlotCapacity.createFromTemplate(
 			TODAY,
 			inactiveTemplate.getId(),
-			LocalTime.of(10, 0),
-			LocalTime.of(10, 45),
+			LocalTime.of(12, 0),
+			LocalTime.of(12, 45),
 			5,
 			2,
 			validClassCapacities(),
@@ -205,7 +206,9 @@ class ScheduleOccurrenceSynchronizationServiceIntegrationTest {
 		assertThat(synchronizedActive.isAdminClosed()).isTrue();
 		assertThat(synchronizedActive.isRecurringHolidayClosed()).isFalse();
 		assertThat(synchronizedActive.isTemplateInactiveClosed()).isFalse();
-		assertThat(synchronizedActive.getTotalCapacity()).isEqualTo(5);
+		assertThat(synchronizedActive.getTotalCapacity()).isEqualTo(8);
+		assertThat(synchronizedActive.getRoundArenaCapacity()).isEqualTo(4);
+		assertThat(synchronizedActive.getClassCapacities()).isEqualTo(validClassCapacities());
 		assertThat(synchronizedActive.isCapacityOverridden()).isFalse();
 		final TimeSlotCapacity synchronizedInactive =
 			timeSlotRepository.findById(inactiveSlot.getId()).orElseThrow();
@@ -248,6 +251,84 @@ class ScheduleOccurrenceSynchronizationServiceIntegrationTest {
 		assertThat(timeSlotRepository.findByLessonDateAndStartTime(
 			newHorizonEnd,
 			LocalTime.of(9, 0))).isPresent();
+	}
+
+	@Test
+	void 기존_미래_상속_슬롯은_새_SYNCING_version에서만_정원을_조정한다() {
+		final RegularScheduleTemplate template =
+			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(9, 0), 8);
+		synchronizationService.retryPendingSynchronization(PENDING_VERSION);
+		final LocalDate inheritedDate = LocalDate.of(2026, 7, 31);
+		final LocalDate overriddenDate = LocalDate.of(2026, 8, 7);
+		final LocalDate closedDate = LocalDate.of(2026, 8, 14);
+		final LocalDate pastDate = LocalDate.of(2026, 7, 17);
+		final String staleClasses = """
+			{"FIRST_RIDE":1,"ROUND_BEGINNER":2,"ROUND_TROT":2,
+			"LARGE_ARENA_BEGINNER":3,"LARGE_ARENA_TROT":3,
+			"CANTER_BEGINNER":3,"CANTER":3,"DRESSAGE":1,"JUMPING":1}
+			""";
+		jdbcTemplate.update("""
+			UPDATE time_slot_capacities
+			SET total_capacity = 5, round_arena_capacity = 2,
+			    class_capacity_json = ?, admin_closed = TRUE
+			WHERE lesson_date = ? AND start_time = '09:00:00'
+			""", staleClasses, inheritedDate);
+		jdbcTemplate.update("""
+			UPDATE time_slot_capacities
+			SET total_capacity = 5, round_arena_capacity = 2,
+			    capacity_overridden = TRUE
+			WHERE lesson_date = ? AND start_time = '09:00:00'
+			""", overriddenDate);
+		jdbcTemplate.update("""
+			UPDATE time_slot_capacities
+			SET total_capacity = 5, round_arena_capacity = 2,
+			    recurring_holiday_closed = TRUE,
+			    template_inactive_closed = TRUE
+			WHERE lesson_date = ? AND start_time = '09:00:00'
+			""", closedDate);
+		jdbcTemplate.update("""
+			UPDATE time_slot_capacities
+			SET total_capacity = 5, round_arena_capacity = 2
+			WHERE lesson_date = ? AND start_time = '09:00:00'
+			""", TODAY);
+		jdbcTemplate.update(
+			"UPDATE schedule_dates SET status = 'CLOSED' WHERE schedule_date = ?", closedDate);
+		final TimeSlotCapacity past = timeSlotRepository.saveAndFlush(
+			TimeSlotCapacity.createFromTemplate(
+				pastDate, template.getId(), LocalTime.of(9, 0), LocalTime.of(9, 45),
+				5, 2, validClassCapacities(), false));
+		final TimeSlotCapacity manual = timeSlotRepository.saveAndFlush(
+			TimeSlotCapacity.create(
+				inheritedDate, LocalTime.of(11, 0), 5, 2, validClassCapacities()));
+
+		final ScheduleOccurrenceSynchronizationResult result =
+			synchronizationService.synchronizeCurrentHorizon();
+
+		assertThat(result.targetVersion()).isEqualTo(PENDING_VERSION + 1);
+		assertThat(result.status().status()).isEqualTo(ScheduleConfigStatus.ACTIVE);
+		assertThat(result.status().activeVersion()).isEqualTo(PENDING_VERSION + 1);
+		final TimeSlotCapacity inherited = timeSlotRepository.findByLessonDateAndStartTime(
+			inheritedDate, LocalTime.of(9, 0)).orElseThrow();
+		assertThat(inherited.getTotalCapacity()).isEqualTo(8);
+		assertThat(inherited.getRoundArenaCapacity()).isEqualTo(4);
+		assertThat(inherited.getClassCapacities()).isEqualTo(validClassCapacities());
+		assertThat(inherited.isCapacityOverridden()).isFalse();
+		assertThat(inherited.isAdminClosed()).isTrue();
+		assertThat(timeSlotRepository.findByLessonDateAndStartTime(
+			overriddenDate, LocalTime.of(9, 0)).orElseThrow().getTotalCapacity()).isEqualTo(5);
+		final TimeSlotCapacity closed = timeSlotRepository.findByLessonDateAndStartTime(
+			closedDate, LocalTime.of(9, 0)).orElseThrow();
+		assertThat(closed.getTotalCapacity()).isEqualTo(8);
+		assertThat(closed.isRecurringHolidayClosed()).isTrue();
+		assertThat(closed.isTemplateInactiveClosed()).isFalse();
+		assertThat(scheduleDateRepository.findByScheduleDate(closedDate).orElseThrow()
+			.getStatus()).isEqualTo(ScheduleDateStatus.CLOSED);
+		assertThat(timeSlotRepository.findById(past.getId()).orElseThrow()
+			.getTotalCapacity()).isEqualTo(5);
+		assertThat(timeSlotRepository.findByLessonDateAndStartTime(
+			TODAY, LocalTime.of(9, 0)).orElseThrow().getTotalCapacity()).isEqualTo(5);
+		assertThat(timeSlotRepository.findById(manual.getId()).orElseThrow()
+			.getTotalCapacity()).isEqualTo(5);
 	}
 
 	@Test

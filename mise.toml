@@ -1034,6 +1034,21 @@ run = '''
   --tests '*AdminTimeSlotScheduleDateLockIntegrationTest'
 '''
 
+[tasks."verify:m34-04"]
+description = "Verify atomic future Template capacity synchronization and occupancy floors"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*TimeSlotCapacityTest' \
+  --tests '*RegularScheduleTemplateServiceIntegrationTest' \
+  --tests '*RecurringHolidayRuleServiceIntegrationTest' \
+  --tests '*ScheduleOccurrenceSynchronizationServiceIntegrationTest' \
+  --tests '*ScheduleDateClosureServiceIntegrationTest' \
+  --tests '*ScheduleLockingIntegrationTest' \
+  --tests '*TimeSlotCapacityConcurrencyIntegrationTest' \
+  --tests '*AdminTimeSlotApiTest' \
+  --tests '*AdminScheduleConfigurationApiTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

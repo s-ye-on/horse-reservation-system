@@ -144,6 +144,33 @@ class TimeSlotCapacityTest {
 	}
 
 	@Test
+	void 템플릿_정원_동기화는_점유_하한을_검증하고_override를_만들지_않는다() {
+		final TimeSlotCapacity inherited = TimeSlotCapacity.createFromTemplate(
+			LocalDate.of(2026, 8, 1), 1L, LocalTime.of(9, 0), LocalTime.of(9, 45),
+			5, 2, validClassCapacities(), false);
+		final Map<String, Integer> reducedClass = new java.util.HashMap<>(validClassCapacities());
+		reducedClass.put("FIRST_RIDE", 0);
+
+		assertTimeSlotException(
+			() -> inherited.ensureCanSynchronizeTemplateCapacity(
+				5, 2, reducedClass, 1, 1,
+				Map.of(com.horse.members.domain.RidingClass.FIRST_RIDE, 1)),
+			ExceptionCode.TIMESLOT_CAPACITY_BELOW_OCCUPANCY);
+		assertThat(inherited.getClassCapacities()).isEqualTo(validClassCapacities());
+
+		assertThat(inherited.synchronizeTemplateCapacity(
+			6, 3, validClassCapacities(), 1, 1, Map.of())).isTrue();
+		assertThat(inherited.isCapacityOverridden()).isFalse();
+		assertThat(inherited.getTotalCapacity()).isEqualTo(6);
+		assertThat(inherited.getRoundArenaCapacity()).isEqualTo(3);
+
+		inherited.changeCapacity(4, 2, validClassCapacities(), 0, 0, Map.of());
+		assertThat(inherited.synchronizeTemplateCapacity(
+			8, 4, validClassCapacities(), 0, 0, Map.of())).isFalse();
+		assertThat(inherited.getTotalCapacity()).isEqualTo(4);
+	}
+
+	@Test
 	void 자정에_닿거나_넘어가는_시간대는_생성할_수_없다() {
 		assertTimeSlotException(
 			() -> TimeSlotCapacity.create(

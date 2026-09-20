@@ -37,19 +37,22 @@ public class RecurringHolidayRuleService {
 	private final RecurringHolidayRuleRepository ruleRepository;
 	private final RecurringHolidayImpactRepository impactRepository;
 	private final ScheduleAuditLogRepository auditLogRepository;
+	private final ScheduleTemplateCapacityPreflight capacityPreflight;
 
 	public RecurringHolidayRuleService(
 		Clock clock,
 		ScheduleConfigGuardRepository configGuardRepository,
 		RecurringHolidayRuleRepository ruleRepository,
 		RecurringHolidayImpactRepository impactRepository,
-		ScheduleAuditLogRepository auditLogRepository
+		ScheduleAuditLogRepository auditLogRepository,
+		ScheduleTemplateCapacityPreflight capacityPreflight
 	) {
 		this.clock = clock;
 		this.configGuardRepository = configGuardRepository;
 		this.ruleRepository = ruleRepository;
 		this.impactRepository = impactRepository;
 		this.auditLogRepository = auditLogRepository;
+		this.capacityPreflight = capacityPreflight;
 	}
 
 	@Transactional(readOnly = true)
@@ -105,6 +108,7 @@ public class RecurringHolidayRuleService {
 		final HolidayPeriod period = periodOf(rule);
 		final RecurringHolidayImpactPreview impact = preview(null, period);
 		ruleRepository.save(rule);
+		capacityPreflight.validateBeforeMutation();
 		final long pendingVersion = beginSynchronization(guard, command);
 		appendAudit(
 			rule,
@@ -137,6 +141,7 @@ public class RecurringHolidayRuleService {
 			ensureNoActiveOverlap(rule, ruleId);
 		}
 		final RecurringHolidayImpactPreview impact = preview(previousPeriod, periodOf(rule));
+		capacityPreflight.validateBeforeMutation();
 		final long pendingVersion = beginSynchronization(guard, command);
 		appendAudit(
 			rule,
@@ -201,6 +206,7 @@ public class RecurringHolidayRuleService {
 		final RecurringHolidayImpactPreview impact = active
 			? preview(null, period)
 			: preview(period, null);
+		capacityPreflight.validateBeforeMutation();
 		final long pendingVersion = guard.beginSynchronization(
 			expectedConfigVersion,
 			now(),

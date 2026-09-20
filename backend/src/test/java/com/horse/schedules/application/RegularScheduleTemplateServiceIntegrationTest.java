@@ -7,8 +7,10 @@ import static org.mockito.BDDMockito.given;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -20,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -36,6 +40,9 @@ import com.horse.schedules.domain.exception.ScheduleException;
 import com.horse.schedules.infrastructure.RegularScheduleTemplateRepository;
 import com.horse.schedules.infrastructure.RecurringHolidayRuleRepository;
 import com.horse.schedules.infrastructure.ScheduleAuditLogRepository;
+import com.horse.timeslots.domain.TimeSlotCapacity;
+import com.horse.timeslots.domain.exception.TimeSlotException;
+import com.horse.timeslots.infrastructure.TimeSlotCapacityRepository;
 
 @Import(TestcontainersConfiguration.class)
 @SpringBootTest
@@ -59,6 +66,12 @@ class RegularScheduleTemplateServiceIntegrationTest {
 
 	@Autowired
 	RegularScheduleTemplateService templateService;
+
+	@Autowired
+	ScheduleOccurrenceSynchronizationService synchronizationService;
+
+	@Autowired
+	TimeSlotCapacityRepository timeSlotRepository;
 
 	@Autowired
 	RegularScheduleTemplateRepository templateRepository;
@@ -199,6 +212,141 @@ class RegularScheduleTemplateServiceIntegrationTest {
 			.extracting(ScheduleAuditLog::getAction)
 			.containsExactly("UPDATED", "DEACTIVATED", "ACTIVATED");
 		assertManualTimeSlotUnchanged();
+	}
+
+	@Test
+	void 템플릿_수정은_기존_미래_상속_슬롯의_세_정원을_동기화한다() {
+		final RegularScheduleTemplate template = templateRepository.saveAndFlush(
+			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(9, 0)));
+		final LocalDate futureDate = LocalDate.of(2026, 7, 31);
+		final TimeSlotCapacity existing = timeSlotRepository.saveAndFlush(
+			TimeSlotCapacity.createFromTemplate(
+				futureDate, template.getId(), LocalTime.of(9, 0), LocalTime.of(9, 45),
+				5, 2, validClassCapacities(), false));
+		final Map<String, Integer> requestedClasses = new HashMap<>(validClassCapacities());
+		requestedClasses.put("FIRST_RIDE", 3);
+
+		final ScheduleTemplateMutationResult mutation = templateService.update(
+			template.getId(), new RegularScheduleTemplateCommand(
+				DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(9, 45),
+				7, 3, requestedClasses, 1L, "schedule-admin", "정원 변경"));
+		assertGuard("SYNCING", 1L, 2L);
+		assertThat(timeSlotRepository.findById(existing.getId()).orElseThrow()
+			.getTotalCapacity()).isEqualTo(5);
+
+		synchronizationService.retryPendingSynchronization(mutation.pendingConfigVersion());
+
+		final TimeSlotCapacity synced = timeSlotRepository.findById(existing.getId()).orElseThrow();
+		assertThat(synced.getTotalCapacity()).isEqualTo(7);
+		assertThat(synced.getRoundArenaCapacity()).isEqualTo(3);
+		assertThat(synced.getClassCapacities()).isEqualTo(requestedClasses);
+		assertThat(synced.isCapacityOverridden()).isFalse();
+		assertGuard("ACTIVE", 2L, null);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = {"TOTAL", "ROUND", "CLASS"})
+	void 미래_점유와_충돌하면_템플릿_변경_전체를_거부한다(String floor) {
+		final RegularScheduleTemplate template = templateRepository.saveAndFlush(
+			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(9, 0)));
+		final TimeSlotCapacity earlier = timeSlotRepository.saveAndFlush(
+			TimeSlotCapacity.createFromTemplate(
+				LocalDate.of(2026, 7, 31), template.getId(),
+				LocalTime.of(9, 0), LocalTime.of(9, 45),
+				8, 4, validClassCapacities(), false));
+		final TimeSlotCapacity later = timeSlotRepository.saveAndFlush(
+			TimeSlotCapacity.createFromTemplate(
+				LocalDate.of(2026, 8, 7), template.getId(),
+				LocalTime.of(9, 0), LocalTime.of(9, 45),
+				8, 4, validClassCapacities(), false));
+		insertActiveReservation("r04-capacity-conflict", "2026-08-07");
+		final Map<String, Integer> classes = new HashMap<>(validClassCapacities());
+		if (floor.equals("CLASS")) {
+			classes.put("FIRST_RIDE", 0);
+		}
+		final int total = floor.equals("TOTAL") ? 0 : 8;
+		final int round = floor.equals("TOTAL") || floor.equals("ROUND") ? 0 : 4;
+
+		assertThatThrownBy(() -> templateService.update(
+			template.getId(), new RegularScheduleTemplateCommand(
+				DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(9, 45),
+				total, round, classes, 1L, "schedule-admin", "점유 하한")))
+			.isInstanceOfSatisfying(TimeSlotException.class, exception -> {
+				assertThat(exception.code())
+					.isEqualTo(ExceptionCode.TIMESLOT_CAPACITY_BELOW_OCCUPANCY.code());
+				assertThat(exception.details().get("lessonDate")).isEqualTo("2026-08-07");
+				assertThat(exception.details().get("totalOccupied")).isEqualTo(1);
+			});
+
+		assertThat(templateRepository.findById(template.getId()).orElseThrow()
+			.getTotalCapacity()).isEqualTo(8);
+		assertThat(timeSlotRepository.findById(earlier.getId()).orElseThrow()
+			.getTotalCapacity()).isEqualTo(8);
+		assertThat(timeSlotRepository.findById(later.getId()).orElseThrow()
+			.getTotalCapacity()).isEqualTo(8);
+		assertGuard("ACTIVE", 1L, null);
+		assertThat(auditLogRepository.findAllByTarget(
+			ScheduleAuditTargetType.TEMPLATE, "template:" + template.getId())).isEmpty();
+	}
+
+	@Test
+	void 비활성_템플릿도_미래_예약_점유보다_작게_변경할_수_없다() {
+		final RegularScheduleTemplate template = createTemplate(
+			DayOfWeek.FRIDAY, LocalTime.of(9, 0));
+		template.deactivate("schedule-admin");
+		templateRepository.saveAndFlush(template);
+		final TimeSlotCapacity slot = TimeSlotCapacity.createFromTemplate(
+			LocalDate.of(2026, 7, 31), template.getId(),
+			LocalTime.of(9, 0), LocalTime.of(9, 45),
+			8, 4, validClassCapacities(), false);
+		slot.changeTemplateInactiveClosed(true);
+		timeSlotRepository.saveAndFlush(slot);
+		insertActiveReservation("r04-inactive-conflict", "2026-07-31");
+		final Map<String, Integer> requestedClasses = new HashMap<>(validClassCapacities());
+		requestedClasses.put("FIRST_RIDE", 0);
+
+		assertThatThrownBy(() -> templateService.update(
+			template.getId(), new RegularScheduleTemplateCommand(
+				DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(9, 45),
+				8, 4, requestedClasses, 1L, "schedule-admin", "운영 중단 정원 변경")))
+			.isInstanceOfSatisfying(TimeSlotException.class, exception ->
+				assertThat(exception.code())
+					.isEqualTo(ExceptionCode.TIMESLOT_CAPACITY_BELOW_OCCUPANCY.code()));
+		assertThat(templateRepository.findById(template.getId()).orElseThrow()
+			.getClassCapacities()).isEqualTo(validClassCapacities());
+		assertThat(timeSlotRepository.findById(slot.getId()).orElseThrow()
+			.isTemplateInactiveClosed()).isTrue();
+		assertGuard("ACTIVE", 1L, null);
+	}
+
+	@Test
+	void 비활성_템플릿의_기존_미래_슬롯_정원은_변경하되_닫힘은_유지한다() {
+		final RegularScheduleTemplate template = createTemplate(
+			DayOfWeek.FRIDAY, LocalTime.of(9, 0));
+		template.deactivate("schedule-admin");
+		templateRepository.saveAndFlush(template);
+		final TimeSlotCapacity slot = TimeSlotCapacity.createFromTemplate(
+			LocalDate.of(2026, 7, 31), template.getId(),
+			LocalTime.of(9, 0), LocalTime.of(9, 45),
+			5, 2, validClassCapacities(), false);
+		slot.changeTemplateInactiveClosed(true);
+		timeSlotRepository.saveAndFlush(slot);
+		final Map<String, Integer> requestedClasses = new HashMap<>(validClassCapacities());
+		requestedClasses.put("FIRST_RIDE", 3);
+
+		final ScheduleTemplateMutationResult mutation = templateService.update(
+			template.getId(), new RegularScheduleTemplateCommand(
+				DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(9, 45),
+				7, 3, requestedClasses, 1L, "schedule-admin", "운영 중단 정원 변경"));
+		synchronizationService.retryPendingSynchronization(mutation.pendingConfigVersion());
+
+		final TimeSlotCapacity updated = timeSlotRepository.findById(slot.getId()).orElseThrow();
+		assertThat(updated.getTotalCapacity()).isEqualTo(7);
+		assertThat(updated.getRoundArenaCapacity()).isEqualTo(3);
+		assertThat(updated.getClassCapacities()).isEqualTo(requestedClasses);
+		assertThat(updated.isCapacityOverridden()).isFalse();
+		assertThat(updated.isTemplateInactiveClosed()).isTrue();
+		assertThat(updated.isClosed()).isTrue();
 	}
 
 	@Test

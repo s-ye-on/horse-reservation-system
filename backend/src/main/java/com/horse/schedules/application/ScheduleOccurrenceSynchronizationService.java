@@ -20,13 +20,16 @@ public class ScheduleOccurrenceSynchronizationService {
 
 	private final ScheduleSynchronizationStateService stateService;
 	private final ScheduleOccurrenceDateSynchronizer dateSynchronizer;
+	private final ScheduleTemplateCapacityPreflight capacityPreflight;
 
 	public ScheduleOccurrenceSynchronizationService(
 		ScheduleSynchronizationStateService stateService,
-		ScheduleOccurrenceDateSynchronizer dateSynchronizer
+		ScheduleOccurrenceDateSynchronizer dateSynchronizer,
+		ScheduleTemplateCapacityPreflight capacityPreflight
 	) {
 		this.stateService = stateService;
 		this.dateSynchronizer = dateSynchronizer;
+		this.capacityPreflight = capacityPreflight;
 	}
 
 	public ScheduleOccurrenceSynchronizationResult retryPendingSynchronization(
@@ -42,6 +45,7 @@ public class ScheduleOccurrenceSynchronizationService {
 			if (preparation.alreadyCompleted()) {
 				return result(expectedPendingVersion, 0, 0, 0, 0);
 			}
+			capacityPreflight.validatePendingSynchronization(expectedPendingVersion);
 			for (LocalDate targetDate : preparation.horizonStart()
 				.datesUntil(preparation.horizonEnd().plusDays(1))
 				.toList()) {
@@ -97,6 +101,10 @@ public class ScheduleOccurrenceSynchronizationService {
 	}
 
 	public ScheduleOccurrenceSynchronizationResult synchronizeCurrentHorizon() {
+		final Long reconciliationVersion = capacityPreflight.beginReconciliationIfNeeded();
+		if (reconciliationVersion != null) {
+			return retryPendingSynchronization(reconciliationVersion);
+		}
 		final ScheduleSynchronizationStatus status = stateService.getStatus();
 		if (status.status() == ScheduleConfigStatus.SYNCING) {
 			return retryPendingSynchronization(status.pendingVersion());
@@ -136,10 +144,14 @@ public class ScheduleOccurrenceSynchronizationService {
 					status.appliedDateCount(),
 					status.totalDateCount());
 			}
-			if (status.status() != ScheduleConfigStatus.SYNCING) {
+			if (status.status() == ScheduleConfigStatus.SYNCING) {
+				retryPendingSynchronization(status.pendingVersion());
 				return;
 			}
-			retryPendingSynchronization(status.pendingVersion());
+			final Long reconciliationVersion = capacityPreflight.beginReconciliationIfNeeded();
+			if (reconciliationVersion != null) {
+				retryPendingSynchronization(reconciliationVersion);
+			}
 		}
 		catch (RuntimeException exception) {
 			LOGGER.warn(

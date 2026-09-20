@@ -172,10 +172,7 @@ public class TimeSlotCapacity {
 		int roundArenaOccupied,
 		Map<RidingClass, Integer> classOccupied
 	) {
-		validateTotalCapacity(totalCapacity);
-		validateRoundArenaCapacity(roundArenaCapacity, totalCapacity);
-		validateClassCapacities(classCapacities);
-		validateOccupancyFloor(
+		validateCapacityChange(
 			totalCapacity,
 			roundArenaCapacity,
 			classCapacities,
@@ -186,6 +183,73 @@ public class TimeSlotCapacity {
 		this.roundArenaCapacity = roundArenaCapacity.byteValue();
 		this.classCapacities = Map.copyOf(classCapacities);
 		this.capacityOverridden = true;
+	}
+
+	public void ensureCanSynchronizeTemplateCapacity(
+		Integer totalCapacity,
+		Integer roundArenaCapacity,
+		Map<String, Integer> classCapacities,
+		int totalOccupied,
+		int roundArenaOccupied,
+		Map<RidingClass, Integer> classOccupied
+	) {
+		if (source != TimeSlotSource.TEMPLATE || capacityOverridden) {
+			return;
+		}
+		validateCapacityChange(
+			totalCapacity,
+			roundArenaCapacity,
+			classCapacities,
+			totalOccupied,
+			roundArenaOccupied,
+			classOccupied);
+	}
+
+	public boolean synchronizeTemplateCapacity(
+		Integer totalCapacity,
+		Integer roundArenaCapacity,
+		Map<String, Integer> classCapacities,
+		int totalOccupied,
+		int roundArenaOccupied,
+		Map<RidingClass, Integer> classOccupied
+	) {
+		if (source != TimeSlotSource.TEMPLATE || capacityOverridden) {
+			return false;
+		}
+		ensureCanSynchronizeTemplateCapacity(
+			totalCapacity,
+			roundArenaCapacity,
+			classCapacities,
+			totalOccupied,
+			roundArenaOccupied,
+			classOccupied);
+		final boolean changed = this.totalCapacity != totalCapacity
+			|| this.roundArenaCapacity != roundArenaCapacity
+			|| !this.classCapacities.equals(classCapacities);
+		this.totalCapacity = totalCapacity.byteValue();
+		this.roundArenaCapacity = roundArenaCapacity.byteValue();
+		this.classCapacities = Map.copyOf(classCapacities);
+		return changed;
+	}
+
+	private static void validateCapacityChange(
+		Integer totalCapacity,
+		Integer roundArenaCapacity,
+		Map<String, Integer> classCapacities,
+		int totalOccupied,
+		int roundArenaOccupied,
+		Map<RidingClass, Integer> classOccupied
+	) {
+		validateTotalCapacity(totalCapacity);
+		validateRoundArenaCapacity(roundArenaCapacity, totalCapacity);
+		validateClassCapacities(classCapacities);
+		validateOccupancyFloor(
+			totalCapacity,
+			roundArenaCapacity,
+			classCapacities,
+			totalOccupied,
+			roundArenaOccupied,
+			classOccupied);
 	}
 
 	public void changeAdminClosed(Boolean adminClosed) {

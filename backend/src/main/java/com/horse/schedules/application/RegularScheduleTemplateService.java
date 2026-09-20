@@ -36,19 +36,22 @@ public class RegularScheduleTemplateService {
 	private final RegularScheduleTemplateRepository templateRepository;
 	private final ScheduleTemplateImpactRepository impactRepository;
 	private final ScheduleAuditLogRepository auditLogRepository;
+	private final ScheduleTemplateCapacityPreflight capacityPreflight;
 
 	public RegularScheduleTemplateService(
 		Clock clock,
 		ScheduleConfigGuardRepository configGuardRepository,
 		RegularScheduleTemplateRepository templateRepository,
 		ScheduleTemplateImpactRepository impactRepository,
-		ScheduleAuditLogRepository auditLogRepository
+		ScheduleAuditLogRepository auditLogRepository,
+		ScheduleTemplateCapacityPreflight capacityPreflight
 	) {
 		this.clock = clock;
 		this.configGuardRepository = configGuardRepository;
 		this.templateRepository = templateRepository;
 		this.impactRepository = impactRepository;
 		this.auditLogRepository = auditLogRepository;
+		this.capacityPreflight = capacityPreflight;
 	}
 
 	@Transactional(readOnly = true)
@@ -101,6 +104,7 @@ public class RegularScheduleTemplateService {
 			template.getStartTime(),
 			null);
 		templateRepository.save(template);
+		capacityPreflight.validateBeforeMutation();
 		final long pendingVersion = beginSynchronization(guard, command);
 		appendAudit(
 			template,
@@ -140,6 +144,7 @@ public class RegularScheduleTemplateService {
 			previousDayOfWeek,
 			template,
 			impact);
+		capacityPreflight.validateBeforeMutation();
 		final long pendingVersion = beginSynchronization(guard, command);
 		appendAudit(
 			template,
@@ -203,6 +208,7 @@ public class RegularScheduleTemplateService {
 		else {
 			template.deactivate(actorAuthSubject);
 		}
+		capacityPreflight.validateBeforeMutation();
 		final long pendingVersion = guard.beginSynchronization(
 			expectedConfigVersion,
 			now(),
