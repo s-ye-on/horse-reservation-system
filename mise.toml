@@ -1049,6 +1049,19 @@ run = '''
   --tests '*AdminScheduleConfigurationApiTest'
 '''
 
+[tasks."verify:m34-05"]
+description = "Verify regular schedule deletion and same-key resumption lifecycle"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*RegularScheduleTemplateServiceIntegrationTest' \
+  --tests '*ScheduleOccurrenceSynchronizationServiceIntegrationTest' \
+  --tests '*AdminScheduleConfigurationApiTest' \
+  --tests '*AdminScheduleTemplateFutureReservationsApiTest' \
+  --tests '*ScheduleTemplateFutureReservationQueryCountIntegrationTest' \
+  --tests '*MemberAvailableTimeSlotsApiTest' \
+  --tests '*AdminWeeklyOperationsCalendarApiTest'
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

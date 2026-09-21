@@ -90,6 +90,15 @@ public class RegularScheduleTemplateService {
 	public ScheduleTemplateMutationResult create(RegularScheduleTemplateCommand command) {
 		final ScheduleConfigGuard guard = configGuardRepository.findSingletonForUpdate();
 		guard.ensureCanBeginSynchronization(command.expectedConfigVersion());
+		final RegularScheduleTemplate existingTemplate = templateRepository
+			.findByDayOfWeekAndStartTime(command.dayOfWeek(), command.startTime())
+			.orElse(null);
+		if (existingTemplate != null) {
+			if (existingTemplate.isActive()) {
+				throw new ScheduleException(ExceptionCode.SCHEDULE_TEMPLATE_ALREADY_EXISTS);
+			}
+			return resume(existingTemplate, command, guard);
+		}
 		final RegularScheduleTemplate template = RegularScheduleTemplate.create(
 			command.dayOfWeek(),
 			command.startTime(),
@@ -98,7 +107,6 @@ public class RegularScheduleTemplateService {
 			command.roundArenaCapacity(),
 			command.classCapacities(),
 			command.actorAuthSubject());
-		ensureUnique(template.getDayOfWeek(), template.getStartTime(), null);
 		final ScheduleTemplateImpactPreview impact = preview(
 			template.getDayOfWeek(),
 			template.getStartTime(),
@@ -110,6 +118,38 @@ public class RegularScheduleTemplateService {
 			template,
 			"CREATED",
 			null,
+			stateOf(template),
+			command,
+			pendingVersion,
+			impact);
+		return result(template, pendingVersion, impact);
+	}
+
+	private ScheduleTemplateMutationResult resume(
+		RegularScheduleTemplate template,
+		RegularScheduleTemplateCommand command,
+		ScheduleConfigGuard guard
+	) {
+		final Map<String, Object> fromState = stateOf(template);
+		template.change(
+			command.dayOfWeek(),
+			command.startTime(),
+			command.endTime(),
+			command.totalCapacity(),
+			command.roundArenaCapacity(),
+			command.classCapacities(),
+			command.actorAuthSubject());
+		template.activate(command.actorAuthSubject());
+		final ScheduleTemplateImpactPreview impact = preview(
+			template.getDayOfWeek(),
+			template.getStartTime(),
+			template.getId());
+		capacityPreflight.validateBeforeMutation();
+		final long pendingVersion = beginSynchronization(guard, command);
+		appendAudit(
+			template,
+			"RESUMED",
+			fromState,
 			stateOf(template),
 			command,
 			pendingVersion,
@@ -187,12 +227,45 @@ public class RegularScheduleTemplateService {
 			reason);
 	}
 
+	@Transactional
+	public ScheduleTemplateMutationResult delete(
+		long templateId,
+		long expectedConfigVersion,
+		String actorAuthSubject,
+		String reason
+	) {
+		return changeActive(
+			templateId,
+			false,
+			expectedConfigVersion,
+			actorAuthSubject,
+			reason,
+			"DELETED");
+	}
+
 	private ScheduleTemplateMutationResult changeActive(
 		long templateId,
 		boolean active,
 		long expectedConfigVersion,
 		String actorAuthSubject,
 		String reason
+	) {
+		return changeActive(
+			templateId,
+			active,
+			expectedConfigVersion,
+			actorAuthSubject,
+			reason,
+			active ? "ACTIVATED" : "DEACTIVATED");
+	}
+
+	private ScheduleTemplateMutationResult changeActive(
+		long templateId,
+		boolean active,
+		long expectedConfigVersion,
+		String actorAuthSubject,
+		String reason,
+		String auditAction
 	) {
 		final ScheduleConfigGuard guard = configGuardRepository.findSingletonForUpdate();
 		guard.ensureCanBeginSynchronization(expectedConfigVersion);
@@ -215,7 +288,7 @@ public class RegularScheduleTemplateService {
 			actorAuthSubject);
 		appendAudit(
 			template,
-			active ? "ACTIVATED" : "DEACTIVATED",
+			auditAction,
 			fromState,
 			stateOf(template),
 			actorAuthSubject,

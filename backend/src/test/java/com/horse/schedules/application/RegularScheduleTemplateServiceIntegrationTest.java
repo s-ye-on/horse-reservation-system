@@ -68,6 +68,9 @@ class RegularScheduleTemplateServiceIntegrationTest {
 	RegularScheduleTemplateService templateService;
 
 	@Autowired
+	ScheduleTemplateFutureReservationQueryService futureReservationQueryService;
+
+	@Autowired
 	ScheduleOccurrenceSynchronizationService synchronizationService;
 
 	@Autowired
@@ -175,6 +178,104 @@ class RegularScheduleTemplateServiceIntegrationTest {
 
 		assertGuard("ACTIVE", 1L, null);
 		assertThat(templateRepository.count()).isOne();
+	}
+
+	@Test
+	void 삭제한_동일_key를_생성하면_기존_Template_ID로_재운영한다() {
+		final RegularScheduleTemplate template = templateRepository.saveAndFlush(
+			createTemplate(DayOfWeek.FRIDAY, LocalTime.of(9, 0)));
+		final TimeSlotCapacity past = timeSlotRepository.saveAndFlush(
+			TimeSlotCapacity.createFromTemplate(
+				LocalDate.of(2026, 7, 17), template.getId(),
+				LocalTime.of(9, 0), LocalTime.of(9, 45),
+				8, 4, validClassCapacities(), false));
+		final TimeSlotCapacity future = TimeSlotCapacity.createFromTemplate(
+			LocalDate.of(2026, 7, 31), template.getId(),
+			LocalTime.of(9, 0), LocalTime.of(9, 45),
+			8, 4, validClassCapacities(), false);
+		future.changeAdminClosed(true);
+		timeSlotRepository.saveAndFlush(future);
+		insertActiveReservation("m34-05-reservation", "2026-07-31");
+
+		final ScheduleTemplateMutationResult deleted = templateService.delete(
+			template.getId(), 1L, "schedule-admin", "잘못 만든 정규 시간표 삭제");
+		synchronizationService.retryPendingSynchronization(deleted.pendingConfigVersion());
+
+		assertThat(templateRepository.findById(template.getId()).orElseThrow().isActive()).isFalse();
+		final TimeSlotCapacity retired = timeSlotRepository.findById(future.getId()).orElseThrow();
+		assertThat(retired.isTemplateInactiveClosed()).isTrue();
+		assertThat(retired.isAdminClosed()).isTrue();
+		assertThat(timeSlotRepository.findById(past.getId()).orElseThrow()
+			.isTemplateInactiveClosed()).isFalse();
+		assertThat(jdbcTemplate.queryForObject(
+			"SELECT status FROM reservations WHERE lesson_date = '2026-07-31'",
+			String.class)).isEqualTo("pending_payment");
+		assertThat(futureReservationQueryService.find(template.getId()).reservationCount())
+			.isOne();
+
+		final Map<String, Integer> resumedClasses = new HashMap<>(validClassCapacities());
+		resumedClasses.put("FIRST_RIDE", 3);
+		final ScheduleTemplateMutationResult resumed = templateService.create(
+			new RegularScheduleTemplateCommand(
+				DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(9, 45),
+				7, 3, resumedClasses, 2L, "schedule-admin", "봄 시즌 재운영"));
+
+		assertThat(resumed.template().id()).isEqualTo(template.getId());
+		assertThat(resumed.template().active()).isTrue();
+		assertThat(templateRepository.count()).isOne();
+		synchronizationService.retryPendingSynchronization(resumed.pendingConfigVersion());
+
+		final TimeSlotCapacity reopened = timeSlotRepository.findById(future.getId()).orElseThrow();
+		assertThat(reopened.getTotalCapacity()).isEqualTo(7);
+		assertThat(reopened.getRoundArenaCapacity()).isEqualTo(3);
+		assertThat(reopened.getClassCapacities()).isEqualTo(resumedClasses);
+		assertThat(reopened.isTemplateInactiveClosed()).isFalse();
+		assertThat(reopened.isAdminClosed()).isTrue();
+		assertThat(reopened.isClosed()).isTrue();
+		assertThat(jdbcTemplate.queryForObject(
+			"SELECT status FROM reservations WHERE lesson_date = '2026-07-31'",
+			String.class)).isEqualTo("pending_payment");
+		assertThat(auditLogRepository.findAllByTarget(
+			ScheduleAuditTargetType.TEMPLATE,
+			"template:" + template.getId()))
+			.extracting(ScheduleAuditLog::getAction)
+			.containsExactly("DELETED", "RESUMED");
+	}
+
+	@Test
+	void 동일_key_재운영_정원이_미래_점유보다_작으면_전체를_거부한다() {
+		final RegularScheduleTemplate template = createTemplate(
+			DayOfWeek.FRIDAY, LocalTime.of(9, 0));
+		template.deactivate("schedule-admin");
+		templateRepository.saveAndFlush(template);
+		final TimeSlotCapacity slot = TimeSlotCapacity.createFromTemplate(
+			LocalDate.of(2026, 7, 31), template.getId(),
+			LocalTime.of(9, 0), LocalTime.of(9, 45),
+			8, 4, validClassCapacities(), false);
+		slot.changeTemplateInactiveClosed(true);
+		timeSlotRepository.saveAndFlush(slot);
+		insertActiveReservation("m34-05-capacity-conflict", "2026-07-31");
+		final Map<String, Integer> classes = new HashMap<>(validClassCapacities());
+		classes.put("FIRST_RIDE", 0);
+
+		assertThatThrownBy(() -> templateService.create(
+			new RegularScheduleTemplateCommand(
+				DayOfWeek.FRIDAY, LocalTime.of(9, 0), LocalTime.of(9, 45),
+				0, 0, classes, 1L, "schedule-admin", "충돌하는 재운영")))
+			.isInstanceOfSatisfying(TimeSlotException.class, exception ->
+				assertThat(exception.code())
+					.isEqualTo(ExceptionCode.TIMESLOT_CAPACITY_BELOW_OCCUPANCY.code()));
+
+		final RegularScheduleTemplate unchanged = templateRepository.findById(
+			template.getId()).orElseThrow();
+		assertThat(unchanged.isActive()).isFalse();
+		assertThat(unchanged.getTotalCapacity()).isEqualTo(8);
+		assertThat(timeSlotRepository.findById(slot.getId()).orElseThrow()
+			.getTotalCapacity()).isEqualTo(8);
+		assertGuard("ACTIVE", 1L, null);
+		assertThat(auditLogRepository.findAllByTarget(
+			ScheduleAuditTargetType.TEMPLATE,
+			"template:" + template.getId())).isEmpty();
 	}
 
 	@Test

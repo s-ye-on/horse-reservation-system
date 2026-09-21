@@ -2,6 +2,7 @@ package com.horse.schedules.presentation;
 
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -74,6 +75,51 @@ class AdminScheduleConfigurationApiTest {
 			.andExpect(status().isForbidden());
 		mockMvc.perform(get(HOLIDAY_ENDPOINT).with(memberJwt()))
 			.andExpect(status().isForbidden());
+		mockMvc.perform(delete(TEMPLATE_ENDPOINT + "/1")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"expectedConfigVersion\":1,\"reason\":\"삭제\"}"))
+			.andExpect(status().isUnauthorized());
+		mockMvc.perform(delete(TEMPLATE_ENDPOINT + "/1")
+				.with(memberJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"expectedConfigVersion\":1,\"reason\":\"삭제\"}"))
+			.andExpect(status().isForbidden());
+	}
+
+	@Test
+	void 관리자는_Template을_삭제해_운영_종료할_수_있다() throws Exception {
+		jdbcTemplate.update("""
+			INSERT INTO regular_schedule_templates (
+				day_of_week, start_time, end_time,
+				total_capacity, round_arena_capacity, class_capacity_json,
+				active, version, created_by, updated_by
+			) VALUES (
+				'TUESDAY', '12:00:00', '12:45:00',
+				8, 4, ?, TRUE, 0, 'schedule-admin', 'schedule-admin'
+			)
+			""", """
+			{"FIRST_RIDE":2,"ROUND_BEGINNER":2,"ROUND_TROT":2,
+			 "LARGE_ARENA_BEGINNER":3,"LARGE_ARENA_TROT":3,
+			 "CANTER_BEGINNER":3,"CANTER":3,"DRESSAGE":1,"JUMPING":1}
+			""");
+		final Long templateId = jdbcTemplate.queryForObject(
+			"SELECT id FROM regular_schedule_templates WHERE day_of_week = 'TUESDAY'",
+			Long.class);
+
+		mockMvc.perform(delete(TEMPLATE_ENDPOINT + "/{templateId}", templateId)
+				.with(adminJwt())
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""
+					{
+					  "expectedConfigVersion": 1,
+					  "reason": "잘못 만든 정규 시간표 삭제"
+					}
+					"""))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.template.templateId").value(templateId))
+			.andExpect(jsonPath("$.template.active").value(false))
+			.andExpect(jsonPath("$.pendingConfigVersion").value(2))
+			.andExpect(jsonPath("$.synchronization.status").value("SYNCING"));
 	}
 
 	@Test

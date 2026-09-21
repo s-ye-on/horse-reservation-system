@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,6 +21,7 @@ import com.horse.schedules.application.ScheduleOccurrenceSynchronizationService;
 import com.horse.schedules.application.ScheduleTemplateFutureReservationQueryService;
 import com.horse.schedules.application.ScheduleTemplateMutationResult;
 import com.horse.schedules.presentation.dto.ScheduleActivationRequest;
+import com.horse.schedules.presentation.dto.ScheduleTemplateDeleteRequest;
 import com.horse.schedules.presentation.dto.ScheduleTemplateImpactResponse;
 import com.horse.schedules.presentation.dto.ScheduleTemplateFutureReservationsResponse;
 import com.horse.schedules.presentation.dto.ScheduleTemplateMutationResponse;
@@ -116,6 +118,22 @@ public class AdminScheduleTemplateController {
 		@Valid @RequestBody ScheduleTemplateRequest request
 	) {
 		return response(service.update(templateId, command(request, adminSubject)));
+	}
+
+	@DeleteMapping("/{templateId}")
+	@ApiResponse(responseCode = "200", content = @Content(
+		mediaType = "application/json",
+		schema = @Schema(implementation = ScheduleTemplateMutationResponse.class)))
+	public ScheduleTemplateMutationResponse delete(
+		@PathVariable long templateId,
+		@AuthenticationPrincipal(expression = "subject") String adminSubject,
+		@Valid @RequestBody ScheduleTemplateDeleteRequest request
+	) {
+		return response(service.delete(
+			templateId,
+			request.expectedConfigVersion(),
+			adminSubject,
+			request.reason()));
 	}
 
 	@PatchMapping("/{templateId}/activation")
