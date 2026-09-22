@@ -63,6 +63,7 @@
         "tags": [
           "admin-schedule-template-controller"
         ],
+        "description": "정규 시간표 설정을 변경한다. 정원 충돌 시 ErrorResponse.details는 lessonDate,\nstartTime, totalOccupied, roundArenaOccupied, classOccupied, requestedTotalCapacity,\nrequestedRoundArenaCapacity, requestedClassCapacities를 제공한다.\n",
         "operationId": "update",
         "parameters": [
           {
@@ -86,6 +87,26 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleTemplateMutationResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleTemplateMutationConflictResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -126,8 +147,98 @@
               }
             }
           },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin-schedule-template-controller"
+        ],
+        "description": "정규 시간표를 물리 삭제하지 않고 향후 운영을 종료한다.",
+        "operationId": "delete",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleTemplateDeleteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleTemplateMutationResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -142,16 +253,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScheduleTemplateMutationResponse"
                 }
               }
             }
@@ -1617,66 +1718,6 @@
         ],
         "operationId": "getTemplates",
         "responses": {
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "200": {
             "description": "OK",
             "content": {
@@ -1689,25 +1730,17 @@
                 }
               }
             }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "admin-schedule-template-controller"
-        ],
-        "operationId": "create",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ScheduleTemplateRequest"
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
-          "required": true
-        },
-        "responses": {
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1748,8 +1781,87 @@
               }
             }
           },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-schedule-template-controller"
+        ],
+        "description": "동일 요일과 시작 시각의 inactive Template이 있으면 해당 ID를 재사용해 운영을 재개한다.\n정원 충돌 시 ErrorResponse.details는 lessonDate, startTime, totalOccupied,\nroundArenaOccupied, classOccupied, requestedTotalCapacity,\nrequestedRoundArenaCapacity, requestedClassCapacities를 제공한다.\n",
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleTemplateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleTemplateMutationResponse"
+                }
+              }
+            }
+          },
           "409": {
             "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleTemplateMutationConflictResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1764,16 +1876,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScheduleTemplateMutationResponse"
                 }
               }
             }
@@ -1798,6 +1900,26 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleTemplateImpactResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -1838,32 +1960,12 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "503": {
             "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScheduleTemplateImpactResponse"
                 }
               }
             }
@@ -3732,6 +3834,26 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleTemplateMutationResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -3772,32 +3894,12 @@
               }
             }
           },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
           "503": {
             "description": "Service Unavailable",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScheduleTemplateMutationResponse"
                 }
               }
             }
@@ -4440,6 +4542,98 @@
                   "items": {
                     "$ref": "#/components/schemas/TimeSlotResponse"
                   }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/schedule-templates/{templateId}/future-occupying-reservations": {
+      "get": {
+        "tags": [
+          "admin-schedule-template-controller"
+        ],
+        "description": "정규 시간표에 연결된 미래 점유 Reservation을 조회한다.",
+        "operationId": "getFutureOccupyingReservations",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleTemplateFutureReservationsResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -5928,6 +6122,179 @@
           "templateId",
           "totalCapacity",
           "version"
+        ]
+      },
+      "FieldError": {
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "message"
+        ]
+      },
+      "ScheduleTemplateCapacityConflictDetails": {
+        "type": "object",
+        "properties": {
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "totalOccupied": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "roundArenaOccupied": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "classOccupied": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "requestedTotalCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requestedRoundArenaCapacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "requestedClassCapacities": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "required": [
+          "classOccupied",
+          "lessonDate",
+          "requestedClassCapacities",
+          "requestedRoundArenaCapacity",
+          "requestedTotalCapacity",
+          "roundArenaOccupied",
+          "startTime",
+          "totalOccupied"
+        ]
+      },
+      "ScheduleTemplateCapacityConflictErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "TIMESLOT_CAPACITY_BELOW_OCCUPANCY"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "path": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          },
+          "details": {
+            "$ref": "#/components/schemas/ScheduleTemplateCapacityConflictDetails"
+          }
+        },
+        "required": [
+          "code",
+          "details",
+          "fieldErrors",
+          "message",
+          "path",
+          "status",
+          "timestamp"
+        ]
+      },
+      "ScheduleTemplateGeneralConflictErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "SCHEDULE_CONFIG_VERSION_CONFLICT",
+              "SCHEDULE_TEMPLATE_ALREADY_EXISTS"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "path": {
+            "type": "string"
+          },
+          "fieldErrors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            }
+          },
+          "details": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "required": [
+          "code",
+          "details",
+          "fieldErrors",
+          "message",
+          "path",
+          "status",
+          "timestamp"
+        ]
+      },
+      "ScheduleTemplateMutationConflictResponse": {
+        "discriminator": {
+          "propertyName": "code",
+          "mapping": {
+            "SCHEDULE_CONFIG_VERSION_CONFLICT": "#/components/schemas/ScheduleTemplateGeneralConflictErrorResponse",
+            "SCHEDULE_TEMPLATE_ALREADY_EXISTS": "#/components/schemas/ScheduleTemplateGeneralConflictErrorResponse",
+            "TIMESLOT_CAPACITY_BELOW_OCCUPANCY": "#/components/schemas/ScheduleTemplateCapacityConflictErrorResponse"
+          }
+        },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ScheduleTemplateGeneralConflictErrorResponse"
+          },
+          {
+            "$ref": "#/components/schemas/ScheduleTemplateCapacityConflictErrorResponse"
+          }
         ]
       },
       "RecurringHolidayRequest": {
@@ -8693,6 +9060,94 @@
           "headerName"
         ]
       },
+      "ScheduleTemplateFutureReservationResponse": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "lessonDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "startTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "endTime": {
+            "type": "string",
+            "format": "time"
+          },
+          "memberId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "memberName": {
+            "type": "string"
+          },
+          "memberPhone": {
+            "type": "string"
+          },
+          "ridingClass": {
+            "type": "string",
+            "enum": [
+              "FIRST_RIDE",
+              "ROUND_BEGINNER",
+              "ROUND_TROT",
+              "LARGE_ARENA_BEGINNER",
+              "LARGE_ARENA_TROT",
+              "CANTER_BEGINNER",
+              "CANTER",
+              "DRESSAGE",
+              "JUMPING"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_admin_approval",
+              "pending_payment",
+              "confirmed"
+            ]
+          }
+        },
+        "required": [
+          "endTime",
+          "lessonDate",
+          "memberId",
+          "memberName",
+          "memberPhone",
+          "reservationId",
+          "ridingClass",
+          "startTime",
+          "status"
+        ]
+      },
+      "ScheduleTemplateFutureReservationsResponse": {
+        "type": "object",
+        "properties": {
+          "templateId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reservationCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reservations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScheduleTemplateFutureReservationResponse"
+            }
+          }
+        },
+        "required": [
+          "reservationCount",
+          "reservations",
+          "templateId"
+        ]
+      },
       "ScheduleDateResponse": {
         "type": "object",
         "properties": {
@@ -10109,6 +10564,24 @@
           "toStatus"
         ]
       },
+      "ScheduleTemplateDeleteRequest": {
+        "type": "object",
+        "properties": {
+          "expectedConfigVersion": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1
+          }
+        },
+        "required": [
+          "expectedConfigVersion",
+          "reason"
+        ]
+      },
       "MemberClassChangeReasonRequest": {
         "type": "object",
         "properties": {
@@ -10160,20 +10633,6 @@
           "path",
           "status",
           "timestamp"
-        ]
-      },
-      "FieldError": {
-        "properties": {
-          "field": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "field",
-          "message"
         ]
       }
     },

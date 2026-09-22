@@ -1062,6 +1062,17 @@ run = '''
   --tests '*AdminWeeklyOperationsCalendarApiTest'
 '''
 
+[tasks."verify:m34-06"]
+description = "Verify Phase D OpenAPI and generated TypeScript client synchronization"
+run = '''
+./backend/gradlew -p backend test \
+  --tests '*M34PhaseDOpenApiContractTest' \
+  --tests '*AdminScheduleTemplateFutureReservationsApiTest' \
+  --tests '*AdminScheduleConfigurationApiTest'
+mise run api:check
+git diff --check
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

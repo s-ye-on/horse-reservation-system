@@ -22,13 +22,15 @@ import com.horse.schedules.application.ScheduleTemplateFutureReservationQuerySer
 import com.horse.schedules.application.ScheduleTemplateMutationResult;
 import com.horse.schedules.presentation.dto.ScheduleActivationRequest;
 import com.horse.schedules.presentation.dto.ScheduleTemplateDeleteRequest;
-import com.horse.schedules.presentation.dto.ScheduleTemplateImpactResponse;
 import com.horse.schedules.presentation.dto.ScheduleTemplateFutureReservationsResponse;
+import com.horse.schedules.presentation.dto.ScheduleTemplateImpactResponse;
+import com.horse.schedules.presentation.dto.ScheduleTemplateMutationConflictResponse;
 import com.horse.schedules.presentation.dto.ScheduleTemplateMutationResponse;
 import com.horse.schedules.presentation.dto.ScheduleTemplatePreviewRequest;
 import com.horse.schedules.presentation.dto.ScheduleTemplateRequest;
 import com.horse.schedules.presentation.dto.ScheduleTemplateResponse;
 
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -43,7 +45,6 @@ import jakarta.validation.Valid;
 	@ApiResponse(responseCode = "401", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
 	@ApiResponse(responseCode = "403", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
 	@ApiResponse(responseCode = "404", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
-	@ApiResponse(responseCode = "409", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse"))),
 	@ApiResponse(responseCode = "503", content = @Content(mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
 })
 public class AdminScheduleTemplateController {
@@ -66,6 +67,8 @@ public class AdminScheduleTemplateController {
 	@ApiResponse(responseCode = "200", content = @Content(
 		mediaType = "application/json",
 		array = @ArraySchema(schema = @Schema(implementation = ScheduleTemplateResponse.class))))
+	@ApiResponse(responseCode = "409", content = @Content(
+		mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
 	public List<ScheduleTemplateResponse> getTemplates() {
 		return service.findAll().stream()
 			.map(ScheduleTemplateResponse::from)
@@ -73,9 +76,12 @@ public class AdminScheduleTemplateController {
 	}
 
 	@GetMapping("/{templateId}/future-occupying-reservations")
+	@Operation(description = "정규 시간표에 연결된 미래 점유 Reservation을 조회한다.")
 	@ApiResponse(responseCode = "200", content = @Content(
 		mediaType = "application/json",
 		schema = @Schema(implementation = ScheduleTemplateFutureReservationsResponse.class)))
+	@ApiResponse(responseCode = "409", content = @Content(
+		mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
 	public ScheduleTemplateFutureReservationsResponse getFutureOccupyingReservations(
 		@PathVariable long templateId
 	) {
@@ -87,6 +93,8 @@ public class AdminScheduleTemplateController {
 	@ApiResponse(responseCode = "200", content = @Content(
 		mediaType = "application/json",
 		schema = @Schema(implementation = ScheduleTemplateImpactResponse.class)))
+	@ApiResponse(responseCode = "409", content = @Content(
+		mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
 	public ScheduleTemplateImpactResponse preview(
 		@Valid @RequestBody ScheduleTemplatePreviewRequest request
 	) {
@@ -98,9 +106,18 @@ public class AdminScheduleTemplateController {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
+	@Operation(description = """
+		동일 요일과 시작 시각의 inactive Template이 있으면 해당 ID를 재사용해 운영을 재개한다.
+		정원 충돌 시 ErrorResponse.details는 lessonDate, startTime, totalOccupied,
+		roundArenaOccupied, classOccupied, requestedTotalCapacity,
+		requestedRoundArenaCapacity, requestedClassCapacities를 제공한다.
+		""")
 	@ApiResponse(responseCode = "201", content = @Content(
 		mediaType = "application/json",
 		schema = @Schema(implementation = ScheduleTemplateMutationResponse.class)))
+	@ApiResponse(responseCode = "409", content = @Content(
+		mediaType = "application/json",
+		schema = @Schema(implementation = ScheduleTemplateMutationConflictResponse.class)))
 	public ScheduleTemplateMutationResponse create(
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
 		@Valid @RequestBody ScheduleTemplateRequest request
@@ -109,9 +126,17 @@ public class AdminScheduleTemplateController {
 	}
 
 	@PutMapping("/{templateId}")
+	@Operation(description = """
+		정규 시간표 설정을 변경한다. 정원 충돌 시 ErrorResponse.details는 lessonDate,
+		startTime, totalOccupied, roundArenaOccupied, classOccupied, requestedTotalCapacity,
+		requestedRoundArenaCapacity, requestedClassCapacities를 제공한다.
+		""")
 	@ApiResponse(responseCode = "200", content = @Content(
 		mediaType = "application/json",
 		schema = @Schema(implementation = ScheduleTemplateMutationResponse.class)))
+	@ApiResponse(responseCode = "409", content = @Content(
+		mediaType = "application/json",
+		schema = @Schema(implementation = ScheduleTemplateMutationConflictResponse.class)))
 	public ScheduleTemplateMutationResponse update(
 		@PathVariable long templateId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
@@ -121,9 +146,12 @@ public class AdminScheduleTemplateController {
 	}
 
 	@DeleteMapping("/{templateId}")
+	@Operation(description = "정규 시간표를 물리 삭제하지 않고 향후 운영을 종료한다.")
 	@ApiResponse(responseCode = "200", content = @Content(
 		mediaType = "application/json",
 		schema = @Schema(implementation = ScheduleTemplateMutationResponse.class)))
+	@ApiResponse(responseCode = "409", content = @Content(
+		mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
 	public ScheduleTemplateMutationResponse delete(
 		@PathVariable long templateId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,
@@ -140,6 +168,8 @@ public class AdminScheduleTemplateController {
 	@ApiResponse(responseCode = "200", content = @Content(
 		mediaType = "application/json",
 		schema = @Schema(implementation = ScheduleTemplateMutationResponse.class)))
+	@ApiResponse(responseCode = "409", content = @Content(
+		mediaType = "application/json", schema = @Schema(ref = "#/components/schemas/ErrorResponse")))
 	public ScheduleTemplateMutationResponse changeActivation(
 		@PathVariable long templateId,
 		@AuthenticationPrincipal(expression = "subject") String adminSubject,

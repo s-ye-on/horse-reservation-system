@@ -24,10 +24,25 @@ import {
     ScheduleActivationRequestToJSON,
 } from '../models/ScheduleActivationRequest';
 import {
+    type ScheduleTemplateDeleteRequest,
+    ScheduleTemplateDeleteRequestFromJSON,
+    ScheduleTemplateDeleteRequestToJSON,
+} from '../models/ScheduleTemplateDeleteRequest';
+import {
+    type ScheduleTemplateFutureReservationsResponse,
+    ScheduleTemplateFutureReservationsResponseFromJSON,
+    ScheduleTemplateFutureReservationsResponseToJSON,
+} from '../models/ScheduleTemplateFutureReservationsResponse';
+import {
     type ScheduleTemplateImpactResponse,
     ScheduleTemplateImpactResponseFromJSON,
     ScheduleTemplateImpactResponseToJSON,
 } from '../models/ScheduleTemplateImpactResponse';
+import {
+    type ScheduleTemplateMutationConflictResponse,
+    ScheduleTemplateMutationConflictResponseFromJSON,
+    ScheduleTemplateMutationConflictResponseToJSON,
+} from '../models/ScheduleTemplateMutationConflictResponse';
 import {
     type ScheduleTemplateMutationResponse,
     ScheduleTemplateMutationResponseFromJSON,
@@ -49,6 +64,11 @@ import {
     ScheduleTemplateResponseToJSON,
 } from '../models/ScheduleTemplateResponse';
 
+export interface DeleteRequest {
+    templateId: number;
+    scheduleTemplateDeleteRequest: ScheduleTemplateDeleteRequest;
+}
+
 export interface ChangeActivationRequest {
     templateId: number;
     scheduleActivationRequest: ScheduleActivationRequest;
@@ -56,6 +76,10 @@ export interface ChangeActivationRequest {
 
 export interface CreateRequest {
     scheduleTemplateRequest: ScheduleTemplateRequest;
+}
+
+export interface GetFutureOccupyingReservationsRequest {
+    templateId: number;
 }
 
 export interface PreviewRequest {
@@ -71,6 +95,69 @@ export interface UpdateRequest {
  *
  */
 export class AdminScheduleTemplateControllerApi extends runtime.BaseAPI {
+
+    /**
+     * Creates request options for _delete without sending the request
+     */
+    async _deleteRequestOpts(requestParameters: DeleteRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['templateId'] == null) {
+            throw new runtime.RequiredError(
+                'templateId',
+                'Required parameter "templateId" was null or undefined when calling _delete().'
+            );
+        }
+
+        if (requestParameters['scheduleTemplateDeleteRequest'] == null) {
+            throw new runtime.RequiredError(
+                'scheduleTemplateDeleteRequest',
+                'Required parameter "scheduleTemplateDeleteRequest" was null or undefined when calling _delete().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/api/admin/schedule-templates/{templateId}`;
+        urlPath = urlPath.replace('{templateId}', encodeURIComponent(String(requestParameters['templateId'])));
+
+        return {
+            path: urlPath,
+            method: 'DELETE',
+            headers: headerParameters,
+            query: queryParameters,
+            body: ScheduleTemplateDeleteRequestToJSON(requestParameters['scheduleTemplateDeleteRequest']),
+        };
+    }
+
+    /**
+     * 정규 시간표를 물리 삭제하지 않고 향후 운영을 종료한다.
+     */
+    async _deleteRaw(requestParameters: DeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ScheduleTemplateMutationResponse>> {
+        const requestOptions = await this._deleteRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ScheduleTemplateMutationResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * 정규 시간표를 물리 삭제하지 않고 향후 운영을 종료한다.
+     */
+    async _delete(requestParameters: DeleteRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ScheduleTemplateMutationResponse> {
+        const response = await this._deleteRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
 
     /**
      * Creates request options for changeActivation without sending the request
@@ -171,6 +258,7 @@ export class AdminScheduleTemplateControllerApi extends runtime.BaseAPI {
     }
 
     /**
+     * 동일 요일과 시작 시각의 inactive Template이 있으면 해당 ID를 재사용해 운영을 재개한다. 정원 충돌 시 ErrorResponse.details는 lessonDate, startTime, totalOccupied, roundArenaOccupied, classOccupied, requestedTotalCapacity, requestedRoundArenaCapacity, requestedClassCapacities를 제공한다.
      */
     async createRaw(requestParameters: CreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ScheduleTemplateMutationResponse>> {
         const requestOptions = await this.createRequestOpts(requestParameters);
@@ -180,9 +268,63 @@ export class AdminScheduleTemplateControllerApi extends runtime.BaseAPI {
     }
 
     /**
+     * 동일 요일과 시작 시각의 inactive Template이 있으면 해당 ID를 재사용해 운영을 재개한다. 정원 충돌 시 ErrorResponse.details는 lessonDate, startTime, totalOccupied, roundArenaOccupied, classOccupied, requestedTotalCapacity, requestedRoundArenaCapacity, requestedClassCapacities를 제공한다.
      */
     async create(requestParameters: CreateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ScheduleTemplateMutationResponse> {
         const response = await this.createRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Creates request options for getFutureOccupyingReservations without sending the request
+     */
+    async getFutureOccupyingReservationsRequestOpts(requestParameters: GetFutureOccupyingReservationsRequest): Promise<runtime.RequestOpts> {
+        if (requestParameters['templateId'] == null) {
+            throw new runtime.RequiredError(
+                'templateId',
+                'Required parameter "templateId" was null or undefined when calling getFutureOccupyingReservations().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("bearerAuth", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/api/admin/schedule-templates/{templateId}/future-occupying-reservations`;
+        urlPath = urlPath.replace('{templateId}', encodeURIComponent(String(requestParameters['templateId'])));
+
+        return {
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        };
+    }
+
+    /**
+     * 정규 시간표에 연결된 미래 점유 Reservation을 조회한다.
+     */
+    async getFutureOccupyingReservationsRaw(requestParameters: GetFutureOccupyingReservationsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ScheduleTemplateFutureReservationsResponse>> {
+        const requestOptions = await this.getFutureOccupyingReservationsRequestOpts(requestParameters);
+        const response = await this.request(requestOptions, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => ScheduleTemplateFutureReservationsResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * 정규 시간표에 연결된 미래 점유 Reservation을 조회한다.
+     */
+    async getFutureOccupyingReservations(requestParameters: GetFutureOccupyingReservationsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ScheduleTemplateFutureReservationsResponse> {
+        const response = await this.getFutureOccupyingReservationsRaw(requestParameters, initOverrides);
         return await response.value();
     }
 
@@ -328,6 +470,7 @@ export class AdminScheduleTemplateControllerApi extends runtime.BaseAPI {
     }
 
     /**
+     * 정규 시간표 설정을 변경한다. 정원 충돌 시 ErrorResponse.details는 lessonDate, startTime, totalOccupied, roundArenaOccupied, classOccupied, requestedTotalCapacity, requestedRoundArenaCapacity, requestedClassCapacities를 제공한다.
      */
     async updateRaw(requestParameters: UpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<ScheduleTemplateMutationResponse>> {
         const requestOptions = await this.updateRequestOpts(requestParameters);
@@ -337,6 +480,7 @@ export class AdminScheduleTemplateControllerApi extends runtime.BaseAPI {
     }
 
     /**
+     * 정규 시간표 설정을 변경한다. 정원 충돌 시 ErrorResponse.details는 lessonDate, startTime, totalOccupied, roundArenaOccupied, classOccupied, requestedTotalCapacity, requestedRoundArenaCapacity, requestedClassCapacities를 제공한다.
      */
     async update(requestParameters: UpdateRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<ScheduleTemplateMutationResponse> {
         const response = await this.updateRaw(requestParameters, initOverrides);

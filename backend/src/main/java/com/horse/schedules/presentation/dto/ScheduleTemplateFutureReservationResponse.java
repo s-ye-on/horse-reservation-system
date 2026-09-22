@@ -19,7 +19,14 @@ public record ScheduleTemplateFutureReservationResponse(
 	long memberId,
 	String memberName,
 	String memberPhone,
+	@Schema(allowableValues = {
+		"FIRST_RIDE", "ROUND_BEGINNER", "ROUND_TROT", "LARGE_ARENA_BEGINNER",
+		"LARGE_ARENA_TROT", "CANTER_BEGINNER", "CANTER", "DRESSAGE", "JUMPING"
+	})
 	String ridingClass,
+	@Schema(allowableValues = {
+		"pending_admin_approval", "pending_payment", "confirmed"
+	})
 	String status
 ) {
 
