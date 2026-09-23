@@ -1088,6 +1088,14 @@ mise run docs:check
 git diff --check
 '''
 
+[tasks."verify:m34-08"]
+description = "Run the Phase D final quality gate"
+run = '''
+mise run verify:all
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m34-07-admin-schedule-lifecycle-responsive.spec.ts
+git diff --check
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"
