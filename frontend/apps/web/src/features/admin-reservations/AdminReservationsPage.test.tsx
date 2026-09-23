@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { ResponseError, type AdminReservationPageResponse, type AdminReservationResponse } from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
+import { MemoryRouter } from 'react-router'
 import type { AdminReservationsApi } from './admin-reservations.api'
 import { AdminReservationsPage } from './admin-reservations-page'
 
@@ -146,6 +147,7 @@ function createApi(overrides: Partial<AdminReservationsApi> = {}): AdminReservat
     getReservations: vi.fn((status: string) => Promise.resolve(
       reservationPage(RESERVATIONS.filter((reservation) => reservation.status === status)),
     )),
+    getReservation: vi.fn().mockResolvedValue(RESERVATIONS[0]),
     confirm: vi.fn().mockResolvedValue(undefined),
     reject: vi.fn().mockResolvedValue(undefined),
     restore: vi.fn().mockResolvedValue(undefined),
@@ -166,9 +168,9 @@ function createApi(overrides: Partial<AdminReservationsApi> = {}): AdminReservat
   }
 }
 
-function renderPage(api: AdminReservationsApi) {
+function renderPage(api: AdminReservationsApi, initialEntry = '/admin/reservations') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
-  const Wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  const Wrapper = ({ children }: { children: ReactNode }) => <MemoryRouter initialEntries={[initialEntry]}><QueryClientProvider client={client}>{children}</QueryClientProvider></MemoryRouter>
   return render(<AdminReservationsPage api={api} />, { wrapper: Wrapper })
 }
 
@@ -177,6 +179,18 @@ async function cardFor(memberName: string) {
 }
 
 describe('AdminReservationsPage', () => {
+  it('예약_정리_링크의_ID로_선택한_예약과_기존_취소_흐름을_바로_표시한다', async () => {
+    const focusedReservation = RESERVATIONS.find((reservation) => reservation.reservationId === 6)!
+    const getReservation = vi.fn().mockResolvedValue(focusedReservation)
+    renderPage(createApi({ getReservation }), '/admin/reservations?reservationId=6')
+
+    const focusedSection = await screen.findByRole('region', { name: '예약 정리 대상' })
+    expect(getReservation).toHaveBeenCalledWith(6)
+    expect(within(focusedSection).getByRole('heading', { name: focusedReservation.memberName! })).toBeInTheDocument()
+    expect(within(focusedSection).getByText('예약 확정')).toBeInTheDocument()
+    expect(within(focusedSection).getByRole('button', { name: '예약 취소' })).toBeInTheDocument()
+  })
+
   it('네_상태와_서버_경고를_구분하고_긴급도_순으로_표시한다', async () => {
     renderPage(createApi())
 

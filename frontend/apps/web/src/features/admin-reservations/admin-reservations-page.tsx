@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router'
 import type { AdminReservationResponse, TimeSlotResponse } from '@horse/api-client'
 import {
   adminReservationsApi,
@@ -72,6 +73,11 @@ function getErrorMessage(error: unknown) {
 
 export function AdminReservationsPage({ api = adminReservationsApi }: { api?: AdminReservationsApi }) {
   const queryClient = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const requestedReservationId = searchParams.get('reservationId')
+  const focusedReservationId = requestedReservationId && /^\d+$/.test(requestedReservationId)
+    ? Number(requestedReservationId)
+    : undefined
   const commandLocked = useRef(false)
   const [pages, setPages] = useState<Record<ActionableStatus, number>>(INITIAL_PAGES)
   const [selectedAction, setSelectedAction] = useState<SelectedAction>()
@@ -83,6 +89,11 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
       queryFn: () => api.getReservations(status, pages[status], PAGE_SIZE),
       placeholderData: keepPreviousData,
     })),
+  })
+  const focusedReservationQuery = useQuery({
+    queryKey: [...RESERVATIONS_KEY, 'focused', focusedReservationId],
+    queryFn: () => api.getReservation(focusedReservationId as number),
+    enabled: focusedReservationId !== undefined,
   })
 
   useEffect(() => {
@@ -157,6 +168,35 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
 
         {command.isError ? <p className="admin-reservations-error" role="alert">{getErrorMessage(command.error)}</p> : null}
         {localError ? <p className="admin-reservations-error" role="alert">{localError}</p> : null}
+
+        {focusedReservationId !== undefined ? (
+          <section className="admin-reservations-focus" aria-labelledby="focused-reservation-heading">
+            <div className="admin-reservations-focus-heading">
+              <div><h2 id="focused-reservation-heading">예약 정리 대상</h2><p>정규 시간표에서 선택한 예약입니다.</p></div>
+              <strong>#{focusedReservationId}</strong>
+            </div>
+            {focusedReservationQuery.isPending ? <p role="status">선택한 예약을 불러오는 중입니다.</p> : null}
+            {focusedReservationQuery.isError ? <div className="admin-reservations-empty" role="alert">
+              <p>{getErrorMessage(focusedReservationQuery.error)}</p>
+              <button type="button" onClick={() => { void focusedReservationQuery.refetch() }}>다시 시도</button>
+            </div> : null}
+            {focusedReservationQuery.data ? <ReservationCard
+              reservation={focusedReservationQuery.data}
+              selectedAction={selectedAction}
+              note={note}
+              pending={command.isPending}
+              onChooseAction={chooseAction}
+              onChangeNote={setNote}
+              onCancel={() => { setSelectedAction(undefined); setNote(''); setLocalError(undefined) }}
+              onSubmit={runCommand}
+              api={api}
+              onOperationSuccess={async () => {
+                await queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY })
+                setSelectedAction(undefined)
+              }}
+            /> : null}
+          </section>
+        ) : null}
 
         <div className="admin-reservations-columns">
           {ACTIONABLE_STATUSES.map((status, index) => {
@@ -255,6 +295,9 @@ function ReservationCard({
   const reservationId = reservation.reservationId as number
   const action = selectedAction?.reservationId === reservationId ? selectedAction.kind : undefined
   const warning = WARNING_META[reservation.approvalWarning as keyof typeof WARNING_META]
+  const adjustable = reservation.status === 'pending_admin_approval'
+    || reservation.status === 'pending_payment'
+    || reservation.status === 'confirmed'
 
   return (
     <article className={`admin-reservation-card${warning ? ` warning-${reservation.approvalWarning}` : ''}`}>
@@ -269,6 +312,7 @@ function ReservationCard({
       <dl className="admin-reservation-details">
         <div><dt>수업</dt><dd>{CLASS_LABELS[reservation.classType ?? ''] ?? reservation.classType ?? '-'}</dd></div>
         <div><dt>일시</dt><dd>{formatLesson(reservation.lessonDate, reservation.startTime)}</dd></div>
+        <div><dt>상태</dt><dd>{STATUS_META[reservation.status as ActionableStatus]?.label ?? reservation.status}</dd></div>
         <div><dt>결제</dt><dd>{reservation.paymentSource === 'coupon' ? '쿠폰' : '1회 결제'}</dd></div>
         {reservation.paymentDueAt ? <div><dt>입금 마감</dt><dd>{formatDateTime(reservation.paymentDueAt)}</dd></div> : null}
       </dl>
@@ -286,8 +330,8 @@ function ReservationCard({
           {reservation.status === 'pending_payment' ? <button type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'confirm')}>입금 확인 및 확정</button> : null}
           {reservation.status === 'payment_expired' ? <button type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'restore')}>만료 예약 복구</button> : null}
           {reservation.status === 'pending_admin_approval' || reservation.status === 'pending_payment' ? <button className="secondary" type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'reject')}>반려</button> : null}
-          {reservation.status !== 'payment_expired' ? <button className="secondary" type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'change')}>시간 변경</button> : null}
-          {reservation.status !== 'payment_expired' ? <button className="danger" type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'cancel')}>예약 취소</button> : null}
+          {adjustable ? <button className="secondary" type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'change')}>시간 변경</button> : null}
+          {adjustable ? <button className="danger" type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'cancel')}>예약 취소</button> : null}
         </div>
       ) : (
         <ActionConfirmation

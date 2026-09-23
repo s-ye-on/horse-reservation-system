@@ -7,6 +7,7 @@ import {
   AdminReservationRejectControllerApi,
   AdminTimeSlotControllerApi,
   ResponseError,
+  type AdminReservationResponse,
   type AdminReservationPageResponse,
   type ReservationCancellationPreviewResponse,
   type TimeSlotResponse,
@@ -15,6 +16,7 @@ import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface AdminReservationsApi {
   getReservations(status: string, page: number, size: number): Promise<AdminReservationPageResponse>
+  getReservation(reservationId: number): Promise<AdminReservationResponse>
   confirm(reservationId: number): Promise<void>
   reject(reservationId: number, reason: string): Promise<void>
   restore(reservationId: number, memo: string): Promise<void>
@@ -44,6 +46,7 @@ const cancelApi = new AdminReservationCancelControllerApi(bearerApiConfiguration
 
 export const adminReservationsApi: AdminReservationsApi = {
   getReservations: (status, page, size) => queryApi.getReservations({ status, page, size }),
+  getReservation: (reservationId) => queryApi.getReservation({ reservationId }),
   confirm: async (reservationId) => {
     await confirmApi.confirm({ reservationId })
   },

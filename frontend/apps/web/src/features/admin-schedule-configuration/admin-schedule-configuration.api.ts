@@ -12,7 +12,10 @@ import {
   type ScheduleSynchronizationResponse,
   type ScheduleSynchronizationResultResponse,
   type ScheduleTemplateImpactResponse,
+  type ScheduleTemplateCapacityConflictDetails,
+  ScheduleTemplateMutationConflictResponseFromJSON,
   type ScheduleTemplateMutationResponse,
+  type ScheduleTemplateFutureReservationsResponse,
   type ScheduleTemplatePreviewRequest,
   type ScheduleTemplateRequest,
   type ScheduleTemplateResponse,
@@ -24,7 +27,8 @@ export interface AdminScheduleConfigurationApi {
   previewTemplate(request: ScheduleTemplatePreviewRequest): Promise<ScheduleTemplateImpactResponse>
   createTemplate(request: ScheduleTemplateRequest): Promise<ScheduleTemplateMutationResponse>
   updateTemplate(templateId: number, request: ScheduleTemplateRequest): Promise<ScheduleTemplateMutationResponse>
-  changeTemplateActivation(templateId: number, active: boolean, expectedConfigVersion: number, reason: string): Promise<ScheduleTemplateMutationResponse>
+  deleteTemplate(templateId: number, expectedConfigVersion: number, reason: string): Promise<ScheduleTemplateMutationResponse>
+  getFutureOccupyingReservations(templateId: number): Promise<ScheduleTemplateFutureReservationsResponse>
   getHolidays(): Promise<RecurringHolidayResponse[]>
   previewHoliday(request: RecurringHolidayPreviewRequest): Promise<RecurringHolidayImpactResponse>
   createHoliday(request: RecurringHolidayRequest): Promise<RecurringHolidayMutationResponse>
@@ -38,6 +42,7 @@ export interface ScheduleApiError {
   status?: number
   code?: string
   message: string
+  capacityConflict?: ScheduleTemplateCapacityConflictDetails
 }
 
 export class ScheduleClientError extends Error {
@@ -67,6 +72,17 @@ export async function readScheduleApiError(error: unknown): Promise<ScheduleApiE
     : '일정 설정을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.'
   try {
     const body = await error.response.clone().json() as Partial<ErrorResponse>
+    if (error.response.status === 409 && body.code === 'TIMESLOT_CAPACITY_BELOW_OCCUPANCY') {
+      const conflict = ScheduleTemplateMutationConflictResponseFromJSON(body)
+      if (conflict.code === 'TIMESLOT_CAPACITY_BELOW_OCCUPANCY') {
+        return {
+          status: error.response.status,
+          code: conflict.code,
+          message: conflict.message,
+          capacityConflict: conflict.details,
+        }
+      }
+    }
     return { status: error.response.status, code: body.code, message: body.message ?? fallback }
   } catch {
     return { status: error.response.status, message: fallback }
@@ -82,10 +98,11 @@ export const adminScheduleConfigurationApi: AdminScheduleConfigurationApi = {
   previewTemplate: (request) => templateApi.preview({ scheduleTemplatePreviewRequest: request }),
   createTemplate: (request) => templateApi.create({ scheduleTemplateRequest: request }),
   updateTemplate: (templateId, request) => templateApi.update({ templateId, scheduleTemplateRequest: request }),
-  changeTemplateActivation: (templateId, active, expectedConfigVersion, reason) => templateApi.changeActivation({
+  deleteTemplate: (templateId, expectedConfigVersion, reason) => templateApi._delete({
     templateId,
-    scheduleActivationRequest: { active, expectedConfigVersion, reason },
+    scheduleTemplateDeleteRequest: { expectedConfigVersion, reason },
   }),
+  getFutureOccupyingReservations: (templateId) => templateApi.getFutureOccupyingReservations({ templateId }),
   getHolidays: () => holidayApi.getHolidays(),
   previewHoliday: (request) => holidayApi.preview1({ recurringHolidayPreviewRequest: request }),
   createHoliday: (request) => holidayApi.create1({ recurringHolidayRequest: request }),

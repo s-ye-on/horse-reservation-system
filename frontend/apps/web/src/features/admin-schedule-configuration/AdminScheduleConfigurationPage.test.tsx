@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { MemoryRouter } from 'react-router'
 import { ResponseError, type RecurringHolidayResponse, type ScheduleSynchronizationResponse, type ScheduleTemplateResponse } from '@horse/api-client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AdminScheduleConfigurationApi } from './admin-schedule-configuration.api'
@@ -62,7 +63,8 @@ function createApi(overrides: Partial<AdminScheduleConfigurationApi> = {}): Admi
     previewTemplate: vi.fn().mockResolvedValue({ affectedDateCount: 13, existingTimeSlotCount: 12, activeReservationCount: 2 }),
     createTemplate: vi.fn().mockResolvedValue({}),
     updateTemplate: vi.fn().mockResolvedValue({}),
-    changeTemplateActivation: vi.fn().mockResolvedValue({}),
+    deleteTemplate: vi.fn().mockResolvedValue({}),
+    getFutureOccupyingReservations: vi.fn().mockResolvedValue({ templateId: 1, reservationCount: 0, reservations: [] }),
     getHolidays: vi.fn().mockResolvedValue([HOLIDAY]),
     previewHoliday: vi.fn().mockResolvedValue({
       previous: { affectedDateCount: 0, templateTimeSlotCount: 0, activeReservationCount: 0 },
@@ -80,7 +82,7 @@ function createApi(overrides: Partial<AdminScheduleConfigurationApi> = {}): Admi
 
 function renderPage(api: AdminScheduleConfigurationApi) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
-  const Wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  const Wrapper = ({ children }: { children: ReactNode }) => <MemoryRouter><QueryClientProvider client={client}>{children}</QueryClientProvider></MemoryRouter>
   return { ...render(<AdminScheduleConfigurationPage api={api} />, { wrapper: Wrapper }), client }
 }
 
@@ -130,12 +132,11 @@ describe('AdminScheduleConfigurationPage', () => {
     expect(mondayCard.querySelector('[data-class-capacity="FIRST_RIDE"]')).toHaveTextContent('왕초보4명')
     expect(mondayCard.querySelector('[data-class-capacity="DRESSAGE"]')).toHaveTextContent('마장마술0명')
 
-    const thursdayCard = within(overview).getByLabelText('목요일 14:00 정규 시간표')
-    expect(thursdayCard).toHaveTextContent('비활성')
-    expect(thursdayCard.querySelector('[data-class-capacity="JUMPING"]')).toHaveTextContent('장애물2명')
+    expect(within(overview).queryByLabelText('목요일 14:00 정규 시간표')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '목요일 14:00~14:45' })).not.toBeInTheDocument()
     expect(within(overview).queryByLabelText(/수요일 .* 정규 시간표/)).not.toBeInTheDocument()
-    expect(overview.querySelectorAll('[data-regular-template-id]')).toHaveLength(3)
-    expect(overview.querySelectorAll('[data-weekly-cell]')).toHaveLength(3)
+    expect(overview.querySelectorAll('[data-regular-template-id]')).toHaveLength(2)
+    expect(overview.querySelectorAll('[data-weekly-cell]')).toHaveLength(2)
   })
 
   it('저장된_정규_시간표가_없으면_가짜_수업_없이_빈_상태를_표시한다', async () => {
@@ -143,6 +144,49 @@ describe('AdminScheduleConfigurationPage', () => {
 
     expect(await screen.findByText('등록된 정규 시간표가 없습니다.')).toBeInTheDocument()
     expect(document.querySelectorAll('[data-regular-template-id]')).toHaveLength(0)
+  })
+
+  it('미래_점유_예약이_남은_inactive_시간표만_예약_정리_필요에_표시한다', async () => {
+    const inactiveWithReservations = { ...TEMPLATE, templateId: 9, active: false, dayOfWeek: 'FRIDAY' as const, startTime: '04:30:00', endTime: '05:15:00' }
+    const inactiveWithoutReservations = { ...TEMPLATE, templateId: 10, active: false, dayOfWeek: 'SATURDAY' as const }
+    const getFutureOccupyingReservations = vi.fn((templateId: number) => Promise.resolve(templateId === 9 ? {
+      templateId,
+      reservationCount: 1,
+      reservations: [{
+        reservationId: 77,
+        lessonDate: new Date('2026-10-02T00:00:00.000Z'),
+        startTime: '04:30:00',
+        endTime: '05:15:00',
+        memberId: 7,
+        memberName: '김정리',
+        memberPhone: '010-1234-5678',
+        ridingClass: 'ROUND_BEGINNER' as const,
+        status: 'confirmed' as const,
+      }],
+    } : { templateId, reservationCount: 0, reservations: [] }))
+    renderPage(createApi({
+      getTemplates: vi.fn().mockResolvedValue([TEMPLATE, inactiveWithReservations, inactiveWithoutReservations]),
+      getFutureOccupyingReservations,
+    }))
+
+    const cleanupSection = await screen.findByRole('region', { name: '예약 정리 필요' })
+    expect(cleanupSection).toHaveTextContent('금요일 04:30 운영 종료')
+    expect(cleanupSection).toHaveTextContent('김정리')
+    expect(cleanupSection).toHaveTextContent('원형초보')
+    expect(cleanupSection).toHaveTextContent('예약 확정')
+    expect(within(cleanupSection).getByRole('link', { name: '예약 확인' })).toHaveAttribute('href', '/admin/reservations?reservationId=77')
+    expect(cleanupSection).not.toHaveTextContent('토요일 09:00 운영 종료')
+    expect(getFutureOccupyingReservations).toHaveBeenCalledTimes(2)
+  })
+
+  it('inactive_시간표의_미래_점유_예약이_0건이면_운영_종료_목록을_남기지_않는다', async () => {
+    renderPage(createApi({
+      getTemplates: vi.fn().mockResolvedValue([{ ...TEMPLATE, active: false }]),
+      getFutureOccupyingReservations: vi.fn().mockResolvedValue({ templateId: 1, reservationCount: 0, reservations: [] }),
+    }))
+
+    expect(await screen.findByText('등록된 정규 시간표가 없습니다.')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('region', { name: '예약 정리 필요' })).not.toBeInTheDocument())
   })
 
   it('시간표와_휴일을_요일_시간_식별자_순으로_안정적으로_표시한다', async () => {
@@ -316,16 +360,24 @@ describe('AdminScheduleConfigurationPage', () => {
     expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
 
-  it('활성_상태_변경은_미리보기_시점의_config_version을_확정에_사용한다', async () => {
-    const changeTemplateActivation = vi.fn().mockResolvedValue({})
-    const { client } = renderPage(createApi({ changeTemplateActivation }))
+  it('정규_시간표는_대상과_남은_예약을_확인한_뒤_DELETE_계약으로_삭제한다', async () => {
+    const deleteTemplate = vi.fn().mockResolvedValue({})
+    const getFutureOccupyingReservations = vi.fn().mockResolvedValue({
+      templateId: 1,
+      reservationCount: 2,
+      reservations: [],
+    })
+    const { client } = renderPage(createApi({ deleteTemplate, getFutureOccupyingReservations }))
     const section = await screen.findByRole('region', { name: '정규 시간표' })
-    fireEvent.change(screen.getByLabelText('활성 상태 변경 사유'), { target: { value: '계절 운영 변경' } })
-    fireEvent.click(within(section).getByRole('button', { name: '비활성화' }))
-    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(screen.getByLabelText('운영 변경 사유'), { target: { value: '잘못 생성한 시간표' } })
+    fireEvent.click(within(section).getByRole('button', { name: '삭제' }))
+    const dialog = await screen.findByRole('dialog', { name: '정규 시간표 삭제 영향 확인' })
+    expect(dialog).toHaveTextContent('화요일 09:00')
+    expect(dialog).toHaveTextContent('2건')
+    expect(dialog).toHaveTextContent('기존 예약은 자동 취소되지 않으므로')
     client.setQueryData([...CONFIGURATION_QUERY_KEY, 'sync'], { ...ACTIVE_SYNC, activeVersion: 8 })
-    fireEvent.click(within(dialog).getByRole('button', { name: '변경 확정' }))
-    await waitFor(() => expect(changeTemplateActivation).toHaveBeenCalledWith(1, false, 7, '계절 운영 변경'))
+    fireEvent.click(within(dialog).getByRole('button', { name: '삭제 확정' }))
+    await waitFor(() => expect(deleteTemplate).toHaveBeenCalledWith(1, 7, '잘못 생성한 시간표'))
   })
 
   it('미리보기_후_SYNCING으로_전환되면_확정을_막고_정확한_503_안내를_표시한다', async () => {
@@ -375,5 +427,40 @@ describe('AdminScheduleConfigurationPage', () => {
     fireEvent.click(within(section).getByRole('button', { name: '영향 미리보기' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('시간표 설정이 변경되었습니다. 다시 조회한 뒤 시도해 주세요.')
     expect(screen.getByRole('alert')).toHaveAttribute('data-error-code', 'SCHEDULE_CONFIG_VERSION_CONFLICT')
+  })
+
+  it('정원_점유_충돌은_문제_수업과_현재_점유_요청_정원을_표시한다', async () => {
+    const response = new Response(JSON.stringify({
+      code: 'TIMESLOT_CAPACITY_BELOW_OCCUPANCY',
+      message: '현재 예약보다 작은 정원으로 변경할 수 없습니다.',
+      status: 409,
+      timestamp: '2026-09-23T10:00:00+09:00',
+      path: '/api/admin/schedule-templates',
+      fieldErrors: [],
+      details: {
+        lessonDate: '2026-10-06',
+        startTime: '09:00:00',
+        totalOccupied: 5,
+        roundArenaOccupied: 3,
+        classOccupied: { ROUND_BEGINNER: 3 },
+        requestedTotalCapacity: 4,
+        requestedRoundArenaCapacity: 2,
+        requestedClassCapacities: { ROUND_BEGINNER: 2 },
+      },
+    }), { status: 409, headers: { 'Content-Type': 'application/json' } })
+    renderPage(createApi({ createTemplate: vi.fn().mockRejectedValue(new ResponseError(response, 'capacity conflict')) }))
+    const section = await screen.findByRole('region', { name: '정규 시간표' })
+    fireEvent.change(within(section).getByLabelText('변경 사유'), { target: { value: '정원 축소' } })
+    fireEvent.click(within(section).getByRole('button', { name: '영향 미리보기' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: '변경 확정' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveAttribute('data-error-code', 'TIMESLOT_CAPACITY_BELOW_OCCUPANCY')
+    expect(alert).toHaveTextContent('2026년 10월 6일')
+    expect(alert).toHaveTextContent('09:00 수업')
+    expect(alert).toHaveTextContent('현재 5명 / 요청 4명')
+    expect(alert).toHaveTextContent('현재 3명 / 요청 2명')
+    expect(alert).toHaveTextContent('원형초보: 현재 3명 / 요청 2명')
   })
 })

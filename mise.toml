@@ -1073,6 +1073,21 @@ mise run api:check
 git diff --check
 '''
 
+[tasks."verify:m34-07"]
+description = "Verify admin regular schedule deletion and reservation cleanup web UX"
+run = '''
+pnpm --dir frontend/apps/web exec vitest run \
+  src/features/admin-schedule-configuration/AdminScheduleConfigurationPage.test.tsx \
+  src/features/admin-reservations/AdminReservationsPage.test.tsx \
+  src/app.test.tsx
+mise run web:lint
+mise run web:typecheck
+mise run web:build
+pnpm --dir frontend/apps/web test:e2e -- tests/e2e/m34-07-admin-schedule-lifecycle-responsive.spec.ts
+mise run docs:check
+git diff --check
+'''
+
 [tasks."verify:m31-01"]
 description = "Verify same-day reservation booking time policy"
 dir = "backend"

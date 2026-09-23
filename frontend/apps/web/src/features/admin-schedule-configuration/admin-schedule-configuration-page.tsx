@@ -1,11 +1,14 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router'
 import type {
   RecurringHolidayImpactResponse,
   RecurringHolidayRequest,
   RecurringHolidayResponse,
   ScheduleSynchronizationResponse,
   ScheduleTemplateImpactResponse,
+  ScheduleTemplateFutureReservationResponse,
+  ScheduleTemplateFutureReservationsResponse,
   ScheduleTemplateRequest,
   ScheduleTemplateResponse,
 } from '@horse/api-client'
@@ -56,9 +59,20 @@ interface HolidayForm {
 
 type PendingChange =
   | { type: 'template-save'; label: string; request: ScheduleTemplateRequest; templateId?: number; impact: ScheduleTemplateImpactResponse }
-  | { type: 'template-activation'; label: string; template: ScheduleTemplateResponse; nextActive: boolean; reason: string; expectedConfigVersion: number; impact: ScheduleTemplateImpactResponse }
+  | { type: 'template-delete'; label: string; template: ScheduleTemplateResponse; reason: string; expectedConfigVersion: number; futureReservations: ScheduleTemplateFutureReservationsResponse }
   | { type: 'holiday-save'; label: string; request: RecurringHolidayRequest; holidayId?: number; impact: RecurringHolidayImpactResponse }
   | { type: 'holiday-activation'; label: string; holiday: RecurringHolidayResponse; nextActive: boolean; reason: string; expectedConfigVersion: number; impact: RecurringHolidayImpactResponse }
+
+interface ReservationCleanupItem {
+  template: ScheduleTemplateResponse
+  futureReservations: ScheduleTemplateFutureReservationsResponse
+}
+
+const RESERVATION_STATUS_LABELS: Record<string, string> = {
+  pending_admin_approval: '관리자 승인 대기',
+  pending_payment: '입금 대기',
+  confirmed: '예약 확정',
+}
 
 const emptyClasses = () => Object.fromEntries(CLASS_FIELDS.map(([key]) => [key, '0']))
 const emptyTemplate = (): TemplateForm => ({
@@ -104,6 +118,23 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
     refetchInterval: (query) => query.state.data?.status === 'SYNCING' ? 2_000 : false,
   })
   const syncing = syncQuery.data?.status === 'SYNCING'
+  const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data])
+  const activeTemplates = useMemo(() => templates.filter((template) => template.active), [templates])
+  const inactiveTemplates = useMemo(() => templates.filter((template) => !template.active), [templates])
+  const cleanupQueries = useQueries({
+    queries: inactiveTemplates.map((template) => ({
+      queryKey: [...CONFIGURATION_KEY, 'future-occupying-reservations', template.templateId],
+      queryFn: () => api.getFutureOccupyingReservations(template.templateId),
+    })),
+  })
+  const cleanupItems = inactiveTemplates.flatMap((template, index): ReservationCleanupItem[] => {
+    const futureReservations = cleanupQueries[index]?.data
+    return futureReservations && futureReservations.reservationCount > 0
+      ? [{ template, futureReservations }]
+      : []
+  })
+  const cleanupLoading = cleanupQueries.some((query) => query.isPending)
+  const cleanupError = cleanupQueries.some((query) => query.isError)
 
   useLayoutEffect(() => {
     if (pending) {
@@ -181,15 +212,15 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
     onError: async (reason) => setError(await readScheduleApiError(reason)),
   })
 
-  const filteredTemplates = useMemo(() => (templatesQuery.data ?? [])
+  const filteredTemplates = useMemo(() => activeTemplates
     .filter((template) => {
       const keyword = search.trim().toLowerCase()
       const matchesKeyword = !keyword || `${dayLabel(template.dayOfWeek)} ${template.startTime} ${template.endTime}`.toLowerCase().includes(keyword)
-      return matchesKeyword && matchesDay(template.dayOfWeek, dayFilter) && matchesStatus(template.active, statusFilter)
+      return matchesKeyword && matchesDay(template.dayOfWeek, dayFilter)
     })
     .sort((left, right) => compareDay(left.dayOfWeek, right.dayOfWeek)
       || left.startTime.localeCompare(right.startTime)
-      || left.templateId - right.templateId), [dayFilter, search, statusFilter, templatesQuery.data])
+      || left.templateId - right.templateId), [activeTemplates, dayFilter, search])
 
   const filteredHolidays = useMemo(() => (holidaysQuery.data ?? [])
     .filter((holiday) => {
@@ -262,7 +293,35 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
     }
   }
 
-  const previewActivation = async (target: ScheduleTemplateResponse | RecurringHolidayResponse, type: 'template' | 'holiday') => {
+  const previewTemplateDelete = async (template: ScheduleTemplateResponse) => {
+    if (!activationReason.trim()) return setError({ message: '운영 변경 사유를 입력해 주세요.' })
+    const expectedConfigVersion = syncQuery.data?.activeVersion
+    if (syncQuery.data?.status === 'SYNCING' || expectedConfigVersion === undefined) {
+      return setError(syncInProgressError())
+    }
+    if (previewGuard.current) return
+    previewGuard.current = true
+    setPreviewing(true)
+    try {
+      const futureReservations = await api.getFutureOccupyingReservations(template.templateId)
+      openPending({
+        type: 'template-delete',
+        label: '정규 시간표 삭제',
+        template,
+        reason: activationReason.trim(),
+        expectedConfigVersion,
+        futureReservations,
+      })
+      setError(undefined)
+    } catch (reason) {
+      setError(await readScheduleApiError(reason))
+    } finally {
+      previewGuard.current = false
+      setPreviewing(false)
+    }
+  }
+
+  const previewHolidayActivation = async (holiday: RecurringHolidayResponse) => {
     if (!activationReason.trim()) return setError({ message: '활성 상태 변경 사유를 입력해 주세요.' })
     const expectedConfigVersion = syncQuery.data?.activeVersion
     if (syncQuery.data?.status === 'SYNCING' || expectedConfigVersion === undefined) {
@@ -272,40 +331,21 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
     previewGuard.current = true
     setPreviewing(true)
     try {
-      if (type === 'template') {
-        const template = target as ScheduleTemplateResponse
-        const impact = await api.previewTemplate({
-          templateId: template.templateId,
-          dayOfWeek: template.dayOfWeek,
-          startTime: template.startTime,
-        })
-        openPending({
-          type: 'template-activation',
-          label: `정규 시간표 ${template.active ? '비활성화' : '활성화'}`,
-          template,
-          nextActive: !template.active,
-          reason: activationReason.trim(),
-          expectedConfigVersion,
-          impact,
-        })
-      } else {
-        const holiday = target as RecurringHolidayResponse
-        const impact = await api.previewHoliday({
-          holidayId: holiday.holidayId,
-          dayOfWeek: holiday.dayOfWeek,
-          effectiveFrom: holiday.effectiveFrom,
-          effectiveTo: holiday.effectiveTo ?? undefined,
-        })
-        openPending({
-          type: 'holiday-activation',
-          label: `정기 휴일 ${holiday.active ? '비활성화' : '활성화'}`,
-          holiday,
-          nextActive: !holiday.active,
-          reason: activationReason.trim(),
-          expectedConfigVersion,
-          impact,
-        })
-      }
+      const impact = await api.previewHoliday({
+        holidayId: holiday.holidayId,
+        dayOfWeek: holiday.dayOfWeek,
+        effectiveFrom: holiday.effectiveFrom,
+        effectiveTo: holiday.effectiveTo ?? undefined,
+      })
+      openPending({
+        type: 'holiday-activation',
+        label: `정기 휴일 ${holiday.active ? '비활성화' : '활성화'}`,
+        holiday,
+        nextActive: !holiday.active,
+        reason: activationReason.trim(),
+        expectedConfigVersion,
+        impact,
+      })
       setError(undefined)
     } catch (reason) {
       setError(await readScheduleApiError(reason))
@@ -342,19 +382,30 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
           <strong>기본 정기 휴일은 월요일입니다.</strong>
           <span>월요일 정규 시간표는 날짜별 운영 예외 시 사용되므로 휴일 규칙과 별도로 유지됩니다.</span>
         </section>
-        {error ? <p id="schedule-config-error" className="schedule-config-alert error" role="alert" data-error-code={error.code}>{error.message}</p> : null}
+        {error ? <div id="schedule-config-error" className="schedule-config-alert error" role="alert" data-error-code={error.code}>
+          <p>{error.message}</p>
+          {error.capacityConflict ? <CapacityConflictDetails details={error.capacityConflict} /> : null}
+        </div> : null}
         {success ? <p className="schedule-config-alert success" role="status">{success}</p> : null}
-        <RegularScheduleWeeklyOverview templates={templatesQuery.data ?? []} />
+        {(cleanupLoading || cleanupError || cleanupItems.length > 0) ? (
+          <ReservationCleanupSection
+            items={cleanupItems}
+            loading={cleanupLoading}
+            failed={cleanupError}
+            onRetry={() => queryClient.invalidateQueries({ queryKey: [...CONFIGURATION_KEY, 'future-occupying-reservations'] })}
+          />
+        ) : null}
+        <RegularScheduleWeeklyOverview templates={activeTemplates} />
         <section className="schedule-config-filters" aria-label="시간표 설정 검색">
           <TextInput label="검색" value={search} onChange={setSearch} placeholder="시간 또는 휴일 사유" />
           <label>요일<select value={dayFilter} onChange={(event) => setDayFilter(event.target.value as Day | 'ALL')}>
             <option value="ALL">전체 요일</option>
             {DAY_OPTIONS.map(([value, label]) => <option value={value} key={value}>{label}</option>)}
           </select></label>
-          <label>상태<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
+          <label>정기 휴일 상태<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
             <option value="ALL">전체 상태</option><option value="ACTIVE">활성</option><option value="INACTIVE">비활성</option>
           </select></label>
-          <TextInput label="활성 상태 변경 사유" value={activationReason} onChange={setActivationReason} placeholder="예: 계절 운영 변경" />
+          <TextInput label="운영 변경 사유" value={activationReason} onChange={setActivationReason} placeholder="예: 계절 운영 종료" />
         </section>
         <div className="schedule-config-columns">
           <section className="schedule-config-section" aria-labelledby="template-heading">
@@ -362,7 +413,7 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
             <TemplateFormView value={templateForm} disabled={syncing || previewing || mutation.isPending} errorId={errorId} onChange={setTemplateForm} onSubmit={submitTemplate} onCancel={() => setTemplateForm(emptyTemplate())} />
             <div className="schedule-config-list">
               {filteredTemplates.length === 0 ? <PageState embedded message="조건에 맞는 정규 시간표가 없습니다." /> : filteredTemplates.map((template) => (
-                <TemplateCard key={template.templateId} template={template} disabled={syncing || previewing || mutation.isPending} onEdit={() => setTemplateForm(templateToForm(template))} onActivation={() => previewActivation(template, 'template')} />
+                <TemplateCard key={template.templateId} template={template} disabled={syncing || previewing || mutation.isPending} onEdit={() => setTemplateForm(templateToForm(template))} onDelete={() => previewTemplateDelete(template)} />
               ))}
             </div>
           </section>
@@ -371,7 +422,7 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
             <HolidayFormView value={holidayForm} disabled={syncing || previewing || mutation.isPending} errorId={errorId} onChange={setHolidayForm} onSubmit={submitHoliday} onCancel={() => setHolidayForm(emptyHoliday())} />
             <div className="schedule-config-list">
               {filteredHolidays.length === 0 ? <PageState embedded message="조건에 맞는 정기 휴일이 없습니다." /> : filteredHolidays.map((holiday) => (
-                <HolidayCard key={holiday.holidayId} holiday={holiday} disabled={syncing || previewing || mutation.isPending} onEdit={() => setHolidayForm(holidayToForm(holiday))} onActivation={() => previewActivation(holiday, 'holiday')} />
+                <HolidayCard key={holiday.holidayId} holiday={holiday} disabled={syncing || previewing || mutation.isPending} onEdit={() => setHolidayForm(holidayToForm(holiday))} onActivation={() => previewHolidayActivation(holiday)} />
               ))}
             </div>
           </section>
@@ -382,11 +433,13 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
           <section ref={dialogRef} className="schedule-config-dialog" role="dialog" aria-modal="true" aria-labelledby="change-preview-heading">
             <h2 id="change-preview-heading" ref={dialogHeadingRef} tabIndex={-1}>{pending.label} 영향 확인</h2>
             <ImpactSummary change={pending} />
-            <p>미리보기 이후 설정 version이 달라지면 서버가 변경을 거부합니다.</p>
+            {pending.type === 'template-delete' ? (
+              <p>삭제하면 신규 예약이 즉시 차단됩니다. 기존 예약은 자동 취소되지 않으므로 예약 운영 화면에서 별도로 처리해 주세요.</p>
+            ) : <p>미리보기 이후 설정 version이 달라지면 서버가 변경을 거부합니다.</p>}
             {syncing ? <p className="schedule-config-alert error" role="alert" data-error-code="SCHEDULE_CONFIG_SYNC_IN_PROGRESS">시간표를 갱신하고 있습니다. 잠시 후 다시 시도해 주세요.</p> : null}
             <div className="schedule-config-actions">
               <button type="button" className="secondary" disabled={mutation.isPending} onClick={() => setPending(undefined)}>취소</button>
-              <button type="button" disabled={syncing || mutation.isPending} onClick={confirmPending}>{mutation.isPending ? '반영 중' : '변경 확정'}</button>
+              <button type="button" className={pending.type === 'template-delete' ? 'danger' : undefined} disabled={syncing || mutation.isPending} onClick={confirmPending}>{mutation.isPending ? '반영 중' : pending.type === 'template-delete' ? '삭제 확정' : '변경 확정'}</button>
             </div>
           </section>
         </div>
@@ -396,7 +449,7 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
 }
 
 function RegularScheduleWeeklyOverview({ templates }: { templates: ScheduleTemplateResponse[] }) {
-  const sortedTemplates = useMemo(() => [...templates].sort((left, right) =>
+  const sortedTemplates = useMemo(() => templates.filter((template) => template.active).sort((left, right) =>
     compareDay(left.dayOfWeek, right.dayOfWeek)
       || left.startTime.localeCompare(right.startTime)
       || left.templateId - right.templateId), [templates])
@@ -524,8 +577,8 @@ async function executeChange(change: PendingChange, api: AdminScheduleConfigurat
   if (change.type === 'template-save') {
     return change.templateId ? api.updateTemplate(change.templateId, change.request) : api.createTemplate(change.request)
   }
-  if (change.type === 'template-activation') {
-    return api.changeTemplateActivation(change.template.templateId, change.nextActive, change.expectedConfigVersion, change.reason)
+  if (change.type === 'template-delete') {
+    return api.deleteTemplate(change.template.templateId, change.expectedConfigVersion, change.reason)
   }
   if (change.type === 'holiday-save') {
     return change.holidayId ? api.updateHoliday(change.holidayId, change.request) : api.createHoliday(change.request)
@@ -586,16 +639,16 @@ function HolidayFormView({ value, disabled, errorId, onChange, onSubmit, onCance
   </fieldset></form>
 }
 
-function TemplateCard({ template, disabled, onEdit, onActivation }: {
+function TemplateCard({ template, disabled, onEdit, onDelete }: {
   template: ScheduleTemplateResponse
   disabled: boolean
   onEdit(): void
-  onActivation(): void
+  onDelete(): void
 }) {
   return <article className="schedule-config-card">
     <div className="schedule-config-card-heading"><h3>{dayLabel(template.dayOfWeek)} {template.startTime.slice(0, 5)}~{template.endTime.slice(0, 5)}</h3><Status active={template.active} /></div>
     <p>전체 {template.totalCapacity}명 · 원형 {template.roundArenaCapacity}명</p>
-    <div className="schedule-config-actions"><button className="secondary" type="button" disabled={disabled} onClick={onEdit}>수정</button><button type="button" disabled={disabled} onClick={onActivation}>{template.active ? '비활성화' : '활성화'}</button></div>
+    <div className="schedule-config-actions"><button className="secondary" type="button" disabled={disabled} onClick={onEdit}>수정</button><button className="danger" type="button" disabled={disabled} onClick={onDelete}>삭제</button></div>
   </article>
 }
 
@@ -651,8 +704,91 @@ function formatSeoulDateTime(value: Date) {
   }).format(value)
 }
 
+function CapacityConflictDetails({ details }: { details: NonNullable<ScheduleApiError['capacityConflict']> }) {
+  const classConflicts = Object.entries(details.classOccupied)
+    .filter(([ridingClass, occupied]) => occupied > (details.requestedClassCapacities[ridingClass] ?? 0))
+  return <div className="schedule-config-conflict-details">
+    <strong>{formatLessonDate(details.lessonDate)} {shortTime(details.startTime)} 수업의 현재 예약을 먼저 확인해 주세요.</strong>
+    <dl>
+      <div><dt>전체 정원</dt><dd>현재 {details.totalOccupied}명 / 요청 {details.requestedTotalCapacity}명</dd></div>
+      <div><dt>원형 정원</dt><dd>현재 {details.roundArenaOccupied}명 / 요청 {details.requestedRoundArenaCapacity}명</dd></div>
+    </dl>
+    {classConflicts.length > 0 ? <ul>
+      {classConflicts.map(([ridingClass, occupied]) => <li key={ridingClass}>
+        {ridingClassLabel(ridingClass)}: 현재 {occupied}명 / 요청 {details.requestedClassCapacities[ridingClass] ?? 0}명
+      </li>)}
+    </ul> : null}
+  </div>
+}
+
+function ReservationCleanupSection({ items, loading, failed, onRetry }: {
+  items: ReservationCleanupItem[]
+  loading: boolean
+  failed: boolean
+  onRetry(): void
+}) {
+  const total = items.reduce((sum, item) => sum + item.futureReservations.reservationCount, 0)
+  return <section className="schedule-config-cleanup" aria-labelledby="reservation-cleanup-heading">
+    <div className="schedule-config-section-heading">
+      <div>
+        <h2 id="reservation-cleanup-heading">예약 정리 필요</h2>
+        <p>운영을 종료한 시간표에 남아 있는 예약입니다. 회원에게 안내한 뒤 기존 예약 관리에서 처리해 주세요.</p>
+      </div>
+      {total > 0 ? <strong>{total}건</strong> : null}
+    </div>
+    {loading ? <p role="status">남은 예약을 확인하고 있습니다.</p> : null}
+    {failed ? <div className="schedule-config-cleanup-error" role="alert">
+      <p>일부 시간표의 남은 예약을 불러오지 못했습니다.</p>
+      <button type="button" className="secondary" onClick={onRetry}>다시 시도</button>
+    </div> : null}
+    <div className="schedule-config-cleanup-list">
+      {items.map(({ template, futureReservations }) => <article key={template.templateId} className="schedule-config-cleanup-item">
+        <header>
+          <h3>{dayLabel(template.dayOfWeek)} {shortTime(template.startTime)} 운영 종료</h3>
+          <strong>{futureReservations.reservationCount}건</strong>
+        </header>
+        <ul>
+          {futureReservations.reservations.map((reservation) => <CleanupReservationRow key={reservation.reservationId} reservation={reservation} />)}
+        </ul>
+      </article>)}
+    </div>
+  </section>
+}
+
+function CleanupReservationRow({ reservation }: { reservation: ScheduleTemplateFutureReservationResponse }) {
+  return <li>
+    <div>
+      <strong>{reservation.memberName}</strong>
+      <span>{formatLessonDate(reservation.lessonDate)} {shortTime(reservation.startTime)} · {ridingClassLabel(reservation.ridingClass)} · {RESERVATION_STATUS_LABELS[reservation.status] ?? reservation.status}</span>
+      <span>{reservation.memberPhone}</span>
+    </div>
+    <Link to={`/admin/reservations?reservationId=${reservation.reservationId}`}>예약 확인</Link>
+  </li>
+}
+
+function formatLessonDate(value: Date) {
+  return new Intl.DateTimeFormat('ko-KR', {
+    timeZone: 'Asia/Seoul',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    weekday: 'short',
+  }).format(value)
+}
+
+function ridingClassLabel(value: string) {
+  return CLASS_FIELDS.find(([key]) => key === value)?.[1] ?? value
+}
+
 function ImpactSummary({ change }: { change: PendingChange }) {
-  if (change.type.startsWith('template')) {
+  if (change.type === 'template-delete') {
+    return <dl className="schedule-config-impact">
+      <div><dt>삭제 대상</dt><dd>{dayLabel(change.template.dayOfWeek)} {shortTime(change.template.startTime)}</dd></div>
+      <div><dt>정리할 예약</dt><dd>{change.futureReservations.reservationCount}건</dd></div>
+      <div><dt>처리 방식</dt><dd>신규 예약 차단</dd></div>
+    </dl>
+  }
+  if (change.type === 'template-save') {
     const impact = change.impact as ScheduleTemplateImpactResponse
     return <dl className="schedule-config-impact"><div><dt>영향 날짜</dt><dd>{impact.affectedDateCount}일</dd></div><div><dt>기존 시간대</dt><dd>{impact.existingTimeSlotCount}개</dd></div><div><dt>활성 예약</dt><dd>{impact.activeReservationCount}건</dd></div></dl>
   }

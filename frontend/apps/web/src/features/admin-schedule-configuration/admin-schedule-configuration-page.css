@@ -26,6 +26,7 @@
 .schedule-config-filters,
 .schedule-config-section,
 .schedule-config-weekly-overview,
+.schedule-config-cleanup,
 .schedule-config-card,
 .schedule-config-state,
 .schedule-config-sync,
@@ -33,12 +34,31 @@
 .schedule-config-notice { display: flex; gap: 8px 16px; margin-bottom: 14px; padding: 12px 14px; flex-wrap: wrap; font-size: .88rem; }
 .schedule-config-alert { margin: 0 0 12px; padding: 11px 13px; }
 .schedule-config-alert.error { border-color: #d8a3b0; color: #6e1d32; background: #fff6f8; }
+.schedule-config-alert > p { margin: 0; }
 .schedule-config-alert.success { border-color: #a9cfb8; color: #205b39; background: #f2fbf5; }
 .schedule-config-sync { display: grid; min-width: 220px; padding: 12px 14px; gap: 7px; font-size: .8rem; }
 .schedule-config-sync div { display: flex; justify-content: space-between; gap: 10px; }
 .schedule-config-sync.syncing { border-color: #d6a971; background: #fff9ef; }
 .schedule-config-sync progress { width: 100%; accent-color: var(--schedule-accent); }
 .schedule-config-weekly-overview { margin-bottom: 16px; padding: 18px; }
+.schedule-config-cleanup { margin-bottom: 16px; padding: 18px; border-color: #d6a971; background: #fffaf1; }
+.schedule-config-cleanup .schedule-config-section-heading { align-items: flex-start; }
+.schedule-config-cleanup .schedule-config-section-heading h2,
+.schedule-config-cleanup .schedule-config-section-heading p { margin: 0; }
+.schedule-config-cleanup .schedule-config-section-heading p { margin-top: 5px; color: var(--schedule-muted); font-size: .8rem; }
+.schedule-config-cleanup .schedule-config-section-heading > strong { flex: 0 0 auto; color: #7a4b0d; }
+.schedule-config-cleanup-list { display: grid; gap: 10px; margin-top: 14px; }
+.schedule-config-cleanup-item { padding-top: 12px; border-top: 1px solid #e5cfad; }
+.schedule-config-cleanup-item > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.schedule-config-cleanup-item h3 { margin: 0; font-size: .95rem; }
+.schedule-config-cleanup-item > ul { display: grid; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; }
+.schedule-config-cleanup-item li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border-radius: 6px; background: #fff; }
+.schedule-config-cleanup-item li > div { display: grid; min-width: 0; gap: 3px; }
+.schedule-config-cleanup-item li span { color: var(--schedule-muted); font-size: .78rem; overflow-wrap: anywhere; }
+.schedule-config-cleanup-item a { flex: 0 0 auto; min-height: 40px; padding: 9px 12px; border: 1px solid var(--schedule-accent); border-radius: 6px; color: var(--schedule-accent); background: #fff; font-weight: 720; text-decoration: none; }
+.schedule-config-cleanup-item a:focus-visible { outline: 3px solid rgba(122, 31, 53, .24); outline-offset: 2px; }
+.schedule-config-cleanup-error { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; }
+.schedule-config-cleanup-error p { margin: 0; }
 .schedule-config-weekly-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
 .schedule-config-weekly-heading h2,
 .schedule-config-weekly-heading p { margin: 0; }
@@ -112,6 +132,7 @@
 .schedule-config-status.inactive { color: #6b6064; background: #ece9ea; }
 .schedule-config-page button { min-height: 40px; padding: 0 13px; border: 1px solid var(--schedule-accent); border-radius: 6px; color: #fff; background: var(--schedule-accent); font: inherit; font-weight: 720; cursor: pointer; }
 .schedule-config-page button.secondary { color: var(--schedule-accent); background: #fff; }
+.schedule-config-page button.danger { border-color: #8c243d; background: #8c243d; }
 .schedule-config-page button:disabled,
 .schedule-config-form fieldset:disabled { cursor: not-allowed; opacity: .55; }
 .schedule-config-page button:focus-visible,
@@ -127,6 +148,12 @@
 .schedule-config-impact div { padding: 10px; border-radius: 6px; background: var(--schedule-accent-soft); }
 .schedule-config-impact dt { color: var(--schedule-muted); font-size: .72rem; }
 .schedule-config-impact dd { margin: 4px 0 0; font-weight: 760; }
+.schedule-config-conflict-details { display: grid; gap: 9px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #d8a3b0; }
+.schedule-config-conflict-details dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.schedule-config-conflict-details dl div { padding: 8px; border-radius: 6px; background: #fff; }
+.schedule-config-conflict-details dt { font-size: .72rem; }
+.schedule-config-conflict-details dd { margin: 3px 0 0; font-weight: 720; }
+.schedule-config-conflict-details ul { margin: 0; padding-left: 20px; }
 
 @media (max-width: 900px) {
   .schedule-config-columns,
@@ -140,7 +167,13 @@
   .schedule-config-actions { align-items: stretch; flex-direction: column; }
   .schedule-config-sync { width: 100%; min-width: 0; }
   .schedule-config-section,
-  .schedule-config-weekly-overview { padding: 13px; }
+  .schedule-config-weekly-overview,
+  .schedule-config-cleanup { padding: 13px; }
+  .schedule-config-cleanup .schedule-config-section-heading,
+  .schedule-config-cleanup-item > header,
+  .schedule-config-cleanup-item li,
+  .schedule-config-cleanup-error { align-items: stretch; flex-direction: column; }
+  .schedule-config-cleanup-item a { width: 100%; text-align: center; }
   .schedule-config-weekly-heading { align-items: stretch; flex-direction: column; gap: 8px; }
   .schedule-config-weekly-scroll { overflow-x: visible; }
   .schedule-config-weekly-grid { display: flex; flex-direction: column; gap: 9px; min-width: 0; border: 0; background: transparent; }
@@ -164,6 +197,7 @@
   .schedule-config-weekly-class-capacities { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px; }
   .schedule-config-form-grid,
   .schedule-config-class-grid,
-  .schedule-config-impact { grid-template-columns: minmax(0, 1fr); }
+  .schedule-config-impact,
+  .schedule-config-conflict-details dl { grid-template-columns: minmax(0, 1fr); }
   .schedule-config-page button { width: 100%; }
 }
