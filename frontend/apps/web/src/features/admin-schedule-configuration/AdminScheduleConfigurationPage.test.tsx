@@ -369,15 +369,57 @@ describe('AdminScheduleConfigurationPage', () => {
     })
     const { client } = renderPage(createApi({ deleteTemplate, getFutureOccupyingReservations }))
     const section = await screen.findByRole('region', { name: '정규 시간표' })
-    fireEvent.change(screen.getByLabelText('운영 변경 사유'), { target: { value: '잘못 생성한 시간표' } })
+    expect(screen.queryByLabelText('운영 변경 사유')).not.toBeInTheDocument()
     fireEvent.click(within(section).getByRole('button', { name: '삭제' }))
     const dialog = await screen.findByRole('dialog', { name: '정규 시간표 삭제 영향 확인' })
     expect(dialog).toHaveTextContent('화요일 09:00')
     expect(dialog).toHaveTextContent('2건')
     expect(dialog).toHaveTextContent('기존 예약은 자동 취소되지 않으므로')
+    const reasonInput = within(dialog).getByLabelText('삭제 사유')
+    expect(reasonInput).toHaveFocus()
+    expect(reasonInput).toBeRequired()
+    expect(reasonInput).toHaveAttribute('maxlength', '500')
+    fireEvent.click(within(dialog).getByRole('button', { name: '삭제 확정' }))
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('삭제 사유를 입력해 주세요.')
+    expect(reasonInput).toHaveAttribute('aria-invalid', 'true')
+    expect(deleteTemplate).not.toHaveBeenCalled()
+    fireEvent.change(reasonInput, { target: { value: ' 잘못 생성한 시간표 ' } })
     client.setQueryData([...CONFIGURATION_QUERY_KEY, 'sync'], { ...ACTIVE_SYNC, activeVersion: 8 })
     fireEvent.click(within(dialog).getByRole('button', { name: '삭제 확정' }))
     await waitFor(() => expect(deleteTemplate).toHaveBeenCalledWith(1, 7, '잘못 생성한 시간표'))
+    await waitFor(() => expect(screen.getByRole('heading', { name: '정규 시간표' })).toHaveFocus())
+  })
+
+  it('정규_시간표_수정은_대상_폼으로_이동하고_첫_입력에_포커스한다', async () => {
+    renderPage(createApi())
+    const section = await screen.findByRole('region', { name: '정규 시간표' })
+    const form = within(section).getByText('정규 시간표 생성').closest('form') as HTMLFormElement
+    const scrollIntoView = vi.fn()
+    Object.defineProperty(form, 'scrollIntoView', { configurable: true, value: scrollIntoView })
+
+    fireEvent.click(within(section).getByRole('button', { name: '수정' }))
+
+    expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    expect(within(form).getByText('화요일 09:00 정규 시간표 수정')).toBeInTheDocument()
+    expect(within(form).getByLabelText('요일')).toHaveFocus()
+  })
+
+  it('정기_휴일_활성_상태_변경_사유도_확인_dialog에서_입력한다', async () => {
+    const changeHolidayActivation = vi.fn().mockResolvedValue({})
+    renderPage(createApi({ changeHolidayActivation }))
+    const section = await screen.findByRole('region', { name: '정기 휴일' })
+
+    fireEvent.click(within(section).getByRole('button', { name: '비활성화' }))
+    const dialog = await screen.findByRole('dialog', { name: '정기 휴일 비활성화 영향 확인' })
+    const reasonInput = within(dialog).getByLabelText('비활성화 사유')
+    expect(reasonInput).toHaveFocus()
+    fireEvent.click(within(dialog).getByRole('button', { name: '변경 확정' }))
+    expect(within(dialog).getByRole('alert')).toHaveTextContent('활성 상태 변경 사유를 입력해 주세요.')
+    expect(changeHolidayActivation).not.toHaveBeenCalled()
+
+    fireEvent.change(reasonInput, { target: { value: ' 겨울 휴무 해제 ' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: '변경 확정' }))
+    await waitFor(() => expect(changeHolidayActivation).toHaveBeenCalledWith(2, false, 7, '겨울 휴무 해제'))
   })
 
   it('미리보기_후_SYNCING으로_전환되면_확정을_막고_정확한_503_안내를_표시한다', async () => {

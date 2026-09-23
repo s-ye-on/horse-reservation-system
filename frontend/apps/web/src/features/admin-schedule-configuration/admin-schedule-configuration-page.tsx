@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type RefObject } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import type {
@@ -102,12 +102,15 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
   const [pending, setPending] = useState<PendingChange>()
   const [error, setError] = useState<ScheduleApiError>()
   const [success, setSuccess] = useState<string>()
-  const [activationReason, setActivationReason] = useState('')
+  const [pendingReasonError, setPendingReasonError] = useState<string>()
   const [previewing, setPreviewing] = useState(false)
   const commandGuard = useRef(false)
   const previewGuard = useRef(false)
   const dialogHeadingRef = useRef<HTMLHeadingElement>(null)
+  const dialogReasonRef = useRef<HTMLInputElement>(null)
   const dialogRef = useRef<HTMLElement>(null)
+  const templateFormRef = useRef<HTMLFormElement>(null)
+  const templateHeadingRef = useRef<HTMLHeadingElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
 
   const templatesQuery = useQuery({ queryKey: [...CONFIGURATION_KEY, 'templates'], queryFn: api.getTemplates })
@@ -138,7 +141,11 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
 
   useLayoutEffect(() => {
     if (pending) {
-      dialogHeadingRef.current?.focus()
+      if (pending.type === 'template-delete' || pending.type === 'holiday-activation') {
+        dialogReasonRef.current?.focus()
+      } else {
+        dialogHeadingRef.current?.focus()
+      }
       return
     }
     returnFocusRef.current?.focus()
@@ -149,6 +156,7 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
     if (!pending) return
     const close = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        setPendingReasonError(undefined)
         setPending(undefined)
         return
       }
@@ -179,19 +187,25 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
 
   const openPending = (change: PendingChange) => {
     returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    setPendingReasonError(undefined)
     setPending(change)
+  }
+
+  const closePending = () => {
+    setPendingReasonError(undefined)
+    setPending(undefined)
   }
 
   const refresh = async () => queryClient.invalidateQueries({ queryKey: CONFIGURATION_KEY })
   const mutation = useMutation({
     mutationFn: (change: PendingChange) => executeChange(change, api, syncQuery.data),
     onSuccess: async (_, change) => {
-      setPending(undefined)
+      if (change.type === 'template-delete') returnFocusRef.current = templateHeadingRef.current
+      closePending()
       setError(undefined)
       setSuccess(`${change.label} 요청을 반영했습니다. 시간표 동기화 상태를 확인해 주세요.`)
       setTemplateForm(emptyTemplate())
       setHolidayForm(emptyHoliday())
-      setActivationReason('')
       await refresh()
     },
     onError: async (reason) => {
@@ -294,7 +308,6 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
   }
 
   const previewTemplateDelete = async (template: ScheduleTemplateResponse) => {
-    if (!activationReason.trim()) return setError({ message: '운영 변경 사유를 입력해 주세요.' })
     const expectedConfigVersion = syncQuery.data?.activeVersion
     if (syncQuery.data?.status === 'SYNCING' || expectedConfigVersion === undefined) {
       return setError(syncInProgressError())
@@ -308,7 +321,7 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
         type: 'template-delete',
         label: '정규 시간표 삭제',
         template,
-        reason: activationReason.trim(),
+        reason: '',
         expectedConfigVersion,
         futureReservations,
       })
@@ -322,7 +335,6 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
   }
 
   const previewHolidayActivation = async (holiday: RecurringHolidayResponse) => {
-    if (!activationReason.trim()) return setError({ message: '활성 상태 변경 사유를 입력해 주세요.' })
     const expectedConfigVersion = syncQuery.data?.activeVersion
     if (syncQuery.data?.status === 'SYNCING' || expectedConfigVersion === undefined) {
       return setError(syncInProgressError())
@@ -342,7 +354,7 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
         label: `정기 휴일 ${holiday.active ? '비활성화' : '활성화'}`,
         holiday,
         nextActive: !holiday.active,
-        reason: activationReason.trim(),
+        reason: '',
         expectedConfigVersion,
         impact,
       })
@@ -357,8 +369,36 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
 
   const confirmPending = () => {
     if (!pending || commandGuard.current) return
+    if ((pending.type === 'template-delete' || pending.type === 'holiday-activation') && !pending.reason.trim()) {
+      setPendingReasonError(pending.type === 'template-delete' ? '삭제 사유를 입력해 주세요.' : '활성 상태 변경 사유를 입력해 주세요.')
+      dialogReasonRef.current?.focus()
+      return
+    }
+    if ((pending.type === 'template-delete' || pending.type === 'holiday-activation') && pending.reason.trim().length > 500) {
+      setPendingReasonError('사유는 500자 이하로 입력해 주세요.')
+      dialogReasonRef.current?.focus()
+      return
+    }
     commandGuard.current = true
-    mutation.mutate(pending)
+    mutation.mutate(
+      pending.type === 'template-delete' || pending.type === 'holiday-activation'
+        ? { ...pending, reason: pending.reason.trim() }
+        : pending,
+    )
+  }
+
+  const updatePendingReason = (reason: string) => {
+    setPending((current) => {
+      if (!current || (current.type !== 'template-delete' && current.type !== 'holiday-activation')) return current
+      return { ...current, reason }
+    })
+    if (reason.trim()) setPendingReasonError(undefined)
+  }
+
+  const editTemplate = (template: ScheduleTemplateResponse) => {
+    setTemplateForm(templateToForm(template))
+    templateFormRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+    templateFormRef.current?.querySelector<HTMLElement>('select, input')?.focus()
   }
 
   const loading = templatesQuery.isPending || holidaysQuery.isPending || syncQuery.isPending
@@ -405,15 +445,14 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
           <label>정기 휴일 상태<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
             <option value="ALL">전체 상태</option><option value="ACTIVE">활성</option><option value="INACTIVE">비활성</option>
           </select></label>
-          <TextInput label="운영 변경 사유" value={activationReason} onChange={setActivationReason} placeholder="예: 계절 운영 종료" />
         </section>
         <div className="schedule-config-columns">
           <section className="schedule-config-section" aria-labelledby="template-heading">
-            <div className="schedule-config-section-heading"><div><h2 id="template-heading">정규 시간표</h2><p>{filteredTemplates.length}개 표시</p></div></div>
-            <TemplateFormView value={templateForm} disabled={syncing || previewing || mutation.isPending} errorId={errorId} onChange={setTemplateForm} onSubmit={submitTemplate} onCancel={() => setTemplateForm(emptyTemplate())} />
+            <div className="schedule-config-section-heading"><div><h2 id="template-heading" ref={templateHeadingRef} tabIndex={-1}>정규 시간표</h2><p>{filteredTemplates.length}개 표시</p></div></div>
+            <TemplateFormView formRef={templateFormRef} value={templateForm} disabled={syncing || previewing || mutation.isPending} errorId={errorId} onChange={setTemplateForm} onSubmit={submitTemplate} onCancel={() => setTemplateForm(emptyTemplate())} />
             <div className="schedule-config-list">
               {filteredTemplates.length === 0 ? <PageState embedded message="조건에 맞는 정규 시간표가 없습니다." /> : filteredTemplates.map((template) => (
-                <TemplateCard key={template.templateId} template={template} disabled={syncing || previewing || mutation.isPending} onEdit={() => setTemplateForm(templateToForm(template))} onDelete={() => previewTemplateDelete(template)} />
+                <TemplateCard key={template.templateId} template={template} disabled={syncing || previewing || mutation.isPending} onEdit={() => editTemplate(template)} onDelete={() => previewTemplateDelete(template)} />
               ))}
             </div>
           </section>
@@ -436,9 +475,26 @@ export function AdminScheduleConfigurationPage({ api = adminScheduleConfiguratio
             {pending.type === 'template-delete' ? (
               <p>삭제하면 신규 예약이 즉시 차단됩니다. 기존 예약은 자동 취소되지 않으므로 예약 운영 화면에서 별도로 처리해 주세요.</p>
             ) : <p>미리보기 이후 설정 version이 달라지면 서버가 변경을 거부합니다.</p>}
+            {pending.type === 'template-delete' || pending.type === 'holiday-activation' ? (
+              <label className="schedule-config-dialog-field" htmlFor="schedule-change-reason">
+                {pending.type === 'template-delete' ? '삭제 사유' : `${pending.nextActive ? '활성화' : '비활성화'} 사유`}
+                <input
+                  id="schedule-change-reason"
+                  ref={dialogReasonRef}
+                  value={pending.reason}
+                  required
+                  maxLength={500}
+                  placeholder={pending.type === 'template-delete' ? '예: 잘못 생성한 시간표' : '예: 계절 운영 변경'}
+                  aria-invalid={pendingReasonError ? 'true' : undefined}
+                  aria-describedby={pendingReasonError ? 'schedule-change-reason-error' : undefined}
+                  onChange={(event) => updatePendingReason(event.target.value)}
+                />
+                {pendingReasonError ? <span id="schedule-change-reason-error" className="schedule-config-field-error" role="alert">{pendingReasonError}</span> : null}
+              </label>
+            ) : null}
             {syncing ? <p className="schedule-config-alert error" role="alert" data-error-code="SCHEDULE_CONFIG_SYNC_IN_PROGRESS">시간표를 갱신하고 있습니다. 잠시 후 다시 시도해 주세요.</p> : null}
             <div className="schedule-config-actions">
-              <button type="button" className="secondary" disabled={mutation.isPending} onClick={() => setPending(undefined)}>취소</button>
+              <button type="button" className="secondary" disabled={mutation.isPending} onClick={closePending}>취소</button>
               <button type="button" className={pending.type === 'template-delete' ? 'danger' : undefined} disabled={syncing || mutation.isPending} onClick={confirmPending}>{mutation.isPending ? '반영 중' : pending.type === 'template-delete' ? '삭제 확정' : '변경 확정'}</button>
             </div>
           </section>
@@ -586,7 +642,8 @@ async function executeChange(change: PendingChange, api: AdminScheduleConfigurat
   return api.changeHolidayActivation(change.holiday.holidayId, change.nextActive, change.expectedConfigVersion, change.reason)
 }
 
-function TemplateFormView({ value, disabled, errorId, onChange, onSubmit, onCancel }: {
+function TemplateFormView({ formRef, value, disabled, errorId, onChange, onSubmit, onCancel }: {
+  formRef: RefObject<HTMLFormElement | null>
   value: TemplateForm
   disabled: boolean
   errorId?: string
@@ -595,8 +652,8 @@ function TemplateFormView({ value, disabled, errorId, onChange, onSubmit, onCanc
   onCancel(): void
 }) {
   const changeClass = (key: string, next: string) => onChange({ ...value, classCapacities: { ...value.classCapacities, [key]: next } })
-  return <form className="schedule-config-form" aria-describedby={errorId} onSubmit={onSubmit}><fieldset disabled={disabled}>
-    <legend>{value.templateId ? '정규 시간표 수정' : '정규 시간표 생성'}</legend>
+  return <form ref={formRef} className="schedule-config-form" aria-describedby={errorId} onSubmit={onSubmit}><fieldset disabled={disabled}>
+    <legend>{value.templateId ? `${dayLabel(value.dayOfWeek)} ${shortTime(value.startTime)} 정규 시간표 수정` : '정규 시간표 생성'}</legend>
     <div className="schedule-config-form-grid">
       <SelectDay label="요일" value={value.dayOfWeek} onChange={(dayOfWeek) => onChange({ ...value, dayOfWeek })} />
       <TextInput label="시작 시간" type="time" value={value.startTime} onChange={(startTime) => onChange({ ...value, startTime, endTime: plus45Minutes(startTime) })} />

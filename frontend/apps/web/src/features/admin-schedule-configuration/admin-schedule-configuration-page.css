@@ -106,7 +106,7 @@
 .schedule-config-weekly-class-capacities dd { margin: 0; font-size: .66rem; }
 .schedule-config-weekly-class-capacities dt { min-width: 0; overflow-wrap: anywhere; }
 .schedule-config-weekly-class-capacities dd { flex: 0 0 auto; font-weight: 750; }
-.schedule-config-filters { display: grid; grid-template-columns: 1.2fr .7fr .7fr 1.4fr; gap: 10px; margin-bottom: 16px; padding: 14px; }
+.schedule-config-filters { display: grid; grid-template-columns: 1.2fr .7fr .7fr; gap: 10px; margin-bottom: 16px; padding: 14px; }
 .schedule-config-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .schedule-config-section { padding: 18px; }
 .schedule-config-section-heading p { margin: 4px 0 0; color: var(--schedule-muted); font-size: .8rem; }
@@ -139,11 +139,16 @@
 .schedule-config-page input:focus-visible,
 .schedule-config-page select:focus-visible,
 .schedule-config-page summary:focus-visible,
+.schedule-config-section-heading h2:focus-visible,
 .schedule-config-dialog h2:focus-visible { outline: 3px solid rgba(122, 31, 53, .24); outline-offset: 2px; }
 .schedule-config-state { padding: 28px 18px; color: var(--schedule-muted); text-align: center; }
 .schedule-config-dialog-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; padding: 16px; place-items: center; background: rgba(31, 25, 28, .5); }
 .schedule-config-dialog { width: min(100%, 460px); max-height: calc(100vh - 32px); padding: 20px; overflow-y: auto; box-shadow: 0 18px 50px rgba(31, 25, 28, .22); }
 .schedule-config-dialog > p { color: var(--schedule-muted); font-size: .84rem; }
+.schedule-config-dialog-field { display: grid; gap: 6px; margin: 16px 0; font-size: .8rem; font-weight: 720; }
+.schedule-config-dialog-field input { width: 100%; min-height: 42px; padding: 0 10px; border: 1px solid #bbb1b5; border-radius: 6px; background: #fff; font: inherit; }
+.schedule-config-dialog-field input[aria-invalid="true"] { border-color: #a52d49; }
+.schedule-config-field-error { color: #7a1f35; font-size: .76rem; font-weight: 650; }
 .schedule-config-impact { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 16px 0; }
 .schedule-config-impact div { padding: 10px; border-radius: 6px; background: var(--schedule-accent-soft); }
 .schedule-config-impact dt { color: var(--schedule-muted); font-size: .72rem; }
