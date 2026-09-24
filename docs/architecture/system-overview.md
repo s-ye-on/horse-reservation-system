@@ -10,7 +10,7 @@
 - 데이터베이스: MySQL, Flyway
 - 백엔드 빌드: Gradle Wrapper
 - 웹: React, TypeScript, Vite, React Router
-- 모바일: React Native, TypeScript, Expo, Expo Router
+- 모바일 앱 골격 및 MVP 4 계획: React Native, TypeScript, Expo, Expo Router
 - API 계약: Spring OpenAPI 문서에서 TypeScript 클라이언트 생성
 - 프론트 패키지 관리: pnpm workspace
 - 루트 작업 실행기: mise
@@ -37,7 +37,7 @@ horse/
   mise.toml
 ```
 
-백엔드가 예약 가능 여부, 상태 전이, 정원, 쿠폰과 변경·취소 정책의 최종 권한을 가진다. 웹과 모바일은 백엔드 판정 결과를 표시하고 사용자 입력을 수집한다. 웹과 모바일은 API 클라이언트와 타입·순수 유틸리티만 공유하며 UI 컴포넌트 공유는 강제하지 않는다.
+백엔드가 예약 가능 여부, 상태 전이, 정원, 쿠폰과 변경·취소 정책의 최종 권한을 가진다. 현재 웹과 향후 모바일 앱은 백엔드 판정 결과를 표시하고 사용자 입력을 수집한다. 두 클라이언트는 API 클라이언트와 타입·순수 유틸리티만 공유하며 UI 컴포넌트 공유는 강제하지 않는다.
 
 ## 핵심 모듈
 
