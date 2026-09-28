@@ -1,16 +1,84 @@
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1d2520;
-  background: #f7faf8;
+  --horse-color-background: #fafafa;
+  --horse-color-surface: #ffffff;
+  --horse-color-foreground: #111111;
+  --horse-color-foreground-secondary: #222222;
+  --horse-color-muted: #6b6b6b;
+  --horse-color-border: #e5e5e5;
+  --horse-color-border-soft: #eeeeee;
+  --horse-color-border-strong: #111111;
+  --horse-color-brand: #800020;
+  --horse-color-brand-hover: #66001a;
+  --horse-color-brand-soft: #f8eef1;
+  --horse-color-brand-foreground: #ffffff;
+  --horse-color-success: #17a34a;
+  --horse-color-warning: #b45309;
+  --horse-color-danger: #dc2626;
+
+  --horse-font-display: "Iowan Old Style", Charter, Georgia, serif;
+  --horse-font-body: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
+  --horse-font-size-xs: 0.75rem;
+  --horse-font-size-sm: 0.875rem;
+  --horse-font-size-base: 1rem;
+  --horse-font-size-lg: 1.25rem;
+  --horse-font-size-xl: 1.5rem;
+  --horse-font-size-2xl: 2rem;
+
+  --horse-space-1: 4px;
+  --horse-space-2: 8px;
+  --horse-space-3: 12px;
+  --horse-space-4: 16px;
+  --horse-space-5: 20px;
+  --horse-space-6: 24px;
+  --horse-space-8: 32px;
+  --horse-space-10: 40px;
+  --horse-space-12: 48px;
+
+  --horse-radius-sm: 8px;
+  --horse-radius-md: 12px;
+  --horse-radius-pill: 999px;
+  --horse-focus-ring: 0 0 0 3px rgba(128, 0, 32, 0.24);
+  --horse-motion-fast: 150ms;
+  --horse-motion-base: 220ms;
+  --horse-container-max: 1240px;
+
+  font-family: var(--horse-font-body);
+  color: var(--horse-color-foreground);
+  background: var(--horse-color-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--horse-color-background);
 }
 
 * {
   box-sizing: border-box;
 }
 
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--horse-focus-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

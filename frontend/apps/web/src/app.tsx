@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from 'react-router'
+import { Link, Outlet, Route, Routes } from 'react-router'
 import { AdminMembersPage } from './features/admin-members/admin-members-page'
 import { AdminCouponRegistrationPage } from './features/admin-coupons/admin-coupon-registration-page'
 import { AdminTimeSlotsPage } from './features/admin-timeslots/admin-timeslots-page'
@@ -15,6 +15,7 @@ import { ReservationCalendarPage } from './features/reservation-calendar/reserva
 import { ReservationApplicationPage } from './features/reservation-application/reservation-application-page'
 import { MyReservationsPage } from './features/my-reservations/my-reservations-page'
 import { MyCouponsPage } from './features/my-coupons/my-coupons-page'
+import { MemberHomePage } from './features/member-home/member-home-page'
 import { ReservationChangePage } from './features/reservation-change/reservation-change-page'
 import { ReservationCancelPage } from './features/reservation-cancel/reservation-cancel-page'
 import { AuthAccessDeniedPage } from './features/auth/auth-access-denied-page'
@@ -24,22 +25,32 @@ import { AuthProvider } from './features/auth/auth-provider'
 import { AuthRouteGuard } from './features/auth/auth-route-guard'
 import { AuthSignupPage } from './features/auth/auth-signup-page'
 import { useAuth } from './features/auth/use-auth'
+import { AdminLayout } from './layouts/admin-layout'
+import { MemberLayout } from './layouts/member-layout'
 import './app.css'
+
+function PublicLayout() {
+  return (
+    <div className="public-app-shell">
+      <AuthNavigation />
+      <div id="main-content" tabIndex={-1}>
+        <Outlet />
+      </div>
+    </div>
+  )
+}
 
 function HomePage() {
   const { account } = useAuth()
+
+  if (account?.role === 'MEMBER') {
+    return <MemberHomePage />
+  }
 
   return (
     <main>
       <h1>마장 예약</h1>
       <nav aria-label="주요 메뉴">
-        {account?.role === 'MEMBER' ? (
-          <>
-            <Link to="/reservations">회원 예약</Link>
-            <Link to="/my/reservations">내 예약</Link>
-            <Link to="/my/coupons">내 쿠폰</Link>
-          </>
-        ) : null}
         {account?.role === 'ADMIN' ? <Link to="/admin">관리자</Link> : null}
         {!account ? <Link to="/login">로그인 후 예약하기</Link> : null}
       </nav>
@@ -73,36 +84,42 @@ function AdminHomePage() {
 export default function App() {
   return (
     <AuthProvider>
-      <AuthNavigation />
+      <a className="skip-link" href="#main-content">본문 콘텐츠로 건너뛰기</a>
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<AuthLoginPage />} />
-        <Route path="/signup" element={<AuthSignupPage />} />
-        <Route path="/forbidden" element={<AuthAccessDeniedPage />} />
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<AuthLoginPage />} />
+          <Route path="/signup" element={<AuthSignupPage />} />
+          <Route path="/forbidden" element={<AuthAccessDeniedPage />} />
+        </Route>
 
         <Route element={<AuthRouteGuard requiredRole="MEMBER" />}>
-          <Route path="/reservations" element={<ReservationCalendarPage />} />
-          <Route path="/reservations/new" element={<ReservationApplicationPage />} />
-          <Route path="/my/reservations" element={<MyReservationsPage />} />
-          <Route path="/my/reservations/:reservationId/change" element={<ReservationChangePage />} />
-          <Route path="/my/reservations/:reservationId/cancel" element={<ReservationCancelPage />} />
-          <Route path="/my/coupons" element={<MyCouponsPage />} />
+          <Route element={<MemberLayout />}>
+            <Route path="/reservations" element={<ReservationCalendarPage />} />
+            <Route path="/reservations/new" element={<ReservationApplicationPage />} />
+            <Route path="/my/reservations" element={<MyReservationsPage />} />
+            <Route path="/my/reservations/:reservationId/change" element={<ReservationChangePage />} />
+            <Route path="/my/reservations/:reservationId/cancel" element={<ReservationCancelPage />} />
+            <Route path="/my/coupons" element={<MyCouponsPage />} />
+          </Route>
         </Route>
 
         <Route element={<AuthRouteGuard requiredRole="ADMIN" />}>
-          <Route path="/admin" element={<AdminHomePage />} />
-          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-          <Route path="/admin/monthly-ride-statistics" element={<AdminMonthlyRideStatisticsPage />} />
-          <Route path="/admin/weekly-operations-calendar" element={<AdminWeeklyOperationsCalendarPage />} />
-          <Route path="/admin/members" element={<AdminMembersPage />} />
-          <Route path="/admin/family-groups" element={<AdminFamilyGroupsPage />} />
-          <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
-          <Route path="/admin/timeslots" element={<AdminTimeSlotsPage />} />
-          <Route path="/admin/schedule-configuration" element={<AdminScheduleConfigurationPage />} />
-          <Route path="/admin/schedule-closures" element={<AdminScheduleClosuresPage />} />
-          <Route path="/admin/reservations" element={<AdminReservationsPage />} />
-          <Route path="/admin/attendance" element={<AdminAttendancePage />} />
-          <Route path="/admin/audit-logs" element={<AdminAuditPage />} />
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminHomePage />} />
+            <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+            <Route path="/admin/monthly-ride-statistics" element={<AdminMonthlyRideStatisticsPage />} />
+            <Route path="/admin/weekly-operations-calendar" element={<AdminWeeklyOperationsCalendarPage />} />
+            <Route path="/admin/members" element={<AdminMembersPage />} />
+            <Route path="/admin/family-groups" element={<AdminFamilyGroupsPage />} />
+            <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
+            <Route path="/admin/timeslots" element={<AdminTimeSlotsPage />} />
+            <Route path="/admin/schedule-configuration" element={<AdminScheduleConfigurationPage />} />
+            <Route path="/admin/schedule-closures" element={<AdminScheduleClosuresPage />} />
+            <Route path="/admin/reservations" element={<AdminReservationsPage />} />
+            <Route path="/admin/attendance" element={<AdminAttendancePage />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditPage />} />
+          </Route>
         </Route>
       </Routes>
     </AuthProvider>
