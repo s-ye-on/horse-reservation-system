@@ -9,7 +9,6 @@ import {
 } from './reservation-change.api'
 import './reservation-change-page.css'
 
-const ACTIVE_STATUSES = new Set(['pending_admin_approval', 'pending_payment', 'confirmed'])
 const CLASS_LABELS: Record<string, string> = {
   FIRST_RIDE: '왕초보', ROUND_BEGINNER: '원형초보', ROUND_TROT: '원형 속보',
   LARGE_ARENA_BEGINNER: '대마장초보', LARGE_ARENA_TROT: '대마장 속보',
@@ -37,7 +36,7 @@ export function ReservationChangePage({ api = reservationChangeApi, today = getS
     enabled: validReservationId,
   })
   const reservation = reservationsQuery.data?.find((item) => item.reservationId === reservationId)
-  const canChange = reservation && ACTIVE_STATUSES.has(reservation.status ?? '')
+  const canChange = reservation?.actions?.change?.allowed === true
   const classType = reservation?.classType ?? ''
   const timeSlotsQuery = useQuery({
     queryKey: ['member', 'reservation-change', 'time-slots', selectedDate, classType],
@@ -78,14 +77,14 @@ export function ReservationChangePage({ api = reservationChangeApi, today = getS
     <main className="reservation-change-page">
       <div className="reservation-change-shell">
         <header className="reservation-change-header">
-          <div><p>CHANGE LESSON</p><h1>예약 변경</h1><span>클래스는 유지되며, 서버 확인 결과를 본 뒤 변경합니다.</span></div>
+          <div><p>CHANGE LESSON</p><h1>예약 변경</h1><span>수업 종류는 유지되며, 예상 처리 결과를 확인한 뒤 변경합니다.</span></div>
           <Link to="/my/reservations">내 예약</Link>
         </header>
 
         <section className="reservation-change-current" aria-label="현재 예약">
           <h2>현재 예약</h2>
           <dl>
-            <div><dt>클래스</dt><dd>{CLASS_LABELS[classType] ?? classType}</dd></div>
+            <div><dt>수업 종류</dt><dd>{CLASS_LABELS[classType] ?? '수업 종류 확인 필요'}</dd></div>
             <div><dt>날짜</dt><dd>{formatDate(reservation.lessonDate)}</dd></div>
             <div><dt>시간</dt><dd>{reservation.startTime?.slice(0, 5) ?? '-'}</dd></div>
           </dl>
@@ -96,7 +95,7 @@ export function ReservationChangePage({ api = reservationChangeApi, today = getS
           <label htmlFor="change-date">날짜</label>
           <input id="change-date" type="date" min={today} max={addMonths(today, 3)} value={selectedDate} onChange={(event) => chooseDate(event.target.value)} />
 
-          {timeSlotsQuery.isPending ? <p className="reservation-change-inline-state">예약 가능한 시간을 확인하는 중입니다.</p> : null}
+          {timeSlotsQuery.isPending ? <p className="reservation-change-inline-state">변경 가능한 수업 시간을 확인하는 중입니다.</p> : null}
           {timeSlotsQuery.isError ? <p className="reservation-change-error" role="alert">{changeErrorMessage(timeSlotsQuery.error, '시간대를 불러오지 못했습니다.')}</p> : null}
           {!timeSlotsQuery.isPending && !timeSlotsQuery.isError && selectableTimeSlots.length === 0 ? <p className="reservation-change-inline-state">선택한 날짜에 변경 가능한 시간이 없습니다.</p> : null}
           {selectableTimeSlots.length > 0 ? (
@@ -116,7 +115,7 @@ export function ReservationChangePage({ api = reservationChangeApi, today = getS
         {previewQuery.isError ? <p className="reservation-change-error" role="alert">{changeErrorMessage(previewQuery.error, '이 시간으로 변경할 수 없습니다.')}</p> : null}
         {previewQuery.data ? (
           <section className="reservation-change-preview" aria-live="polite">
-            <h2>변경 전 확인</h2>
+            <h2>예상 처리 결과</h2>
             <dl>
               <div><dt>변경 일시</dt><dd>{formatDate(previewQuery.data.targetLessonDate)} {previewQuery.data.targetStartTime?.slice(0, 5)}</dd></div>
               <div><dt>변경 기준</dt><dd>{timingLabel(previewQuery.data.timing)}</dd></div>
@@ -171,7 +170,7 @@ function timingLabel(timing?: string) {
   const normalized = timing?.toUpperCase()
   if (normalized === 'BEFORE_CUTOFF') return '변경 마감 전'
   if (normalized?.startsWith('AFTER_CUTOFF')) return '변경 마감 후'
-  return timing ?? '-'
+  return '처리 기준 확인 필요'
 }
 
 function couponActionLabel(action?: string) {
@@ -179,7 +178,7 @@ function couponActionLabel(action?: string) {
   if (action === 'DEDUCT' || action === 'deduct') return '1회 차감'
   if (action === 'RETURN' || action === 'return') return '반환 또는 재점유'
   if (action === 'NONE' || action === 'none') return '처리 없음'
-  return action ?? '-'
+  return '처리 결과 확인 필요'
 }
 
 function formatDate(date?: Date) {

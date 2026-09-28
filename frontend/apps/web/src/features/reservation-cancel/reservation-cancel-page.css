@@ -1,39 +1,46 @@
 .reservation-cancel-page {
-  --cancel-accent: #7a1f35; --cancel-soft: #f7e9ed; --cancel-ink: #292225; --cancel-muted: #71666a; --cancel-line: #ddd5d8;
-  width: 100%; min-height: 100vh; margin: 0; padding: 32px 16px 56px; color: var(--cancel-ink); background: #f6f5f5;
+  width: 100%; min-height: 100vh; margin: 0;
+  padding: var(--horse-space-8) var(--horse-space-4) var(--horse-space-12);
+  color: var(--horse-color-foreground); background: var(--horse-color-background);
 }
-.reservation-cancel-shell { width: min(100%, 720px); margin: 0 auto; }
-.reservation-cancel-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
-.reservation-cancel-header p { margin: 0 0 6px; color: var(--cancel-accent); font-size: .76rem; font-weight: 780; }
-.reservation-cancel-header h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.35rem); }
-.reservation-cancel-header span { display: block; margin-top: 7px; color: var(--cancel-muted); font-size: .86rem; }
-.reservation-cancel-header > a, .reservation-cancel-actions a, .reservation-cancel-result a, .reservation-cancel-state a { color: var(--cancel-accent); font-size: .8rem; font-weight: 720; }
-.reservation-cancel-summary, .reservation-cancel-preview, .reservation-cancel-reason, .reservation-cancel-result, .reservation-cancel-state { margin-top: 12px; padding: 18px; border: 1px solid var(--cancel-line); border-radius: 8px; background: #fff; }
-.reservation-cancel-summary h2, .reservation-cancel-preview h2 { margin: 0 0 14px; font-size: 1rem; }
-.reservation-cancel-summary dl, .reservation-cancel-preview dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
-.reservation-cancel-summary dt, .reservation-cancel-preview dt { color: var(--cancel-muted); font-size: .7rem; }
-.reservation-cancel-summary dd, .reservation-cancel-preview dd { margin: 4px 0 0; font-size: .84rem; font-weight: 690; overflow-wrap: anywhere; }
+.reservation-cancel-shell { width: min(100%, 760px); margin: 0 auto; }
+.reservation-cancel-header { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--horse-space-5); margin-bottom: var(--horse-space-6); }
+.reservation-cancel-header p { margin: 0 0 var(--horse-space-2); color: var(--horse-color-brand); font-size: var(--horse-font-size-xs); font-weight: 800; letter-spacing: .08em; }
+.reservation-cancel-header h1 { margin: 0; font-family: var(--horse-font-display); font-size: clamp(2rem, 4vw, 2.75rem); font-weight: 600; }
+.reservation-cancel-header span { display: block; margin-top: var(--horse-space-2); color: var(--horse-color-muted); font-size: var(--horse-font-size-sm); }
+.reservation-cancel-header > a, .reservation-cancel-actions a, .reservation-cancel-result a, .reservation-cancel-state a { color: var(--horse-color-brand); font-size: var(--horse-font-size-sm); font-weight: 700; }
+.reservation-cancel-summary, .reservation-cancel-preview, .reservation-cancel-reason, .reservation-cancel-result, .reservation-cancel-state {
+  margin-top: var(--horse-space-3); padding: var(--horse-space-5); border: 1px solid var(--horse-color-border); border-radius: var(--horse-radius-md); background: var(--horse-color-surface);
+}
+.reservation-cancel-summary h2, .reservation-cancel-preview h2 { margin: 0 0 var(--horse-space-4); font-size: var(--horse-font-size-base); }
+.reservation-cancel-summary dl, .reservation-cancel-preview dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--horse-space-3); margin: 0; }
+.reservation-cancel-summary dt, .reservation-cancel-preview dt { color: var(--horse-color-muted); font-size: var(--horse-font-size-xs); }
+.reservation-cancel-summary dd, .reservation-cancel-preview dd { margin: var(--horse-space-1) 0 0; overflow-wrap: anywhere; font-size: var(--horse-font-size-sm); font-weight: 700; }
 .reservation-cancel-preview { border-color: #d7b1bc; background: #fffafb; }
-.reservation-cancel-preview > p { margin: 15px 0 0; color: var(--cancel-muted); font-size: .76rem; line-height: 1.5; }
-.reservation-cancel-reason label { display: flex; justify-content: space-between; margin-bottom: 7px; color: var(--cancel-muted); font-size: .76rem; font-weight: 690; }
-.reservation-cancel-reason textarea { box-sizing: border-box; width: 100%; min-height: 100px; padding: 10px 11px; border: 1px solid var(--cancel-line); border-radius: 6px; color: var(--cancel-ink); background: #fff; font: inherit; resize: vertical; }
-.reservation-cancel-reason small { display: block; margin-top: 6px; color: var(--cancel-muted); font-size: .69rem; }
-.reservation-cancel-inline-state, .reservation-cancel-error { margin: 12px 0 0; padding: 12px; border-radius: 6px; color: var(--cancel-muted); background: #eeebec; font-size: .8rem; }
-.reservation-cancel-error { color: #742137; background: #fff0f3; }
-.reservation-cancel-actions { display: flex; justify-content: flex-end; gap: 9px; margin-top: 16px; }
-.reservation-cancel-actions a, .reservation-cancel-actions button { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; box-sizing: border-box; padding: 0 14px; border-radius: 6px; font: inherit; font-size: .8rem; font-weight: 720; text-decoration: none; }
-.reservation-cancel-actions a { border: 1px solid var(--cancel-line); color: var(--cancel-muted); }
-.reservation-cancel-actions button { border: 1px solid var(--cancel-accent); color: #fff; background: var(--cancel-accent); cursor: pointer; }
+.reservation-cancel-preview > p { margin: var(--horse-space-4) 0 0; color: var(--horse-color-muted); font-size: var(--horse-font-size-xs); line-height: 1.55; }
+.reservation-cancel-reason label { display: flex; justify-content: space-between; margin-bottom: var(--horse-space-2); color: var(--horse-color-muted); font-size: var(--horse-font-size-xs); font-weight: 700; }
+.reservation-cancel-reason textarea { width: 100%; min-height: 112px; padding: var(--horse-space-3); border: 1px solid var(--horse-color-border); border-radius: var(--horse-radius-sm); color: var(--horse-color-foreground); background: var(--horse-color-surface); font: inherit; resize: vertical; }
+.reservation-cancel-reason small { display: block; margin-top: var(--horse-space-2); color: var(--horse-color-muted); font-size: var(--horse-font-size-xs); }
+.reservation-cancel-inline-state, .reservation-cancel-error { margin: var(--horse-space-3) 0 0; padding: var(--horse-space-3); border-radius: var(--horse-radius-sm); color: var(--horse-color-muted); background: var(--horse-color-border-soft); font-size: var(--horse-font-size-sm); }
+.reservation-cancel-error { color: var(--horse-color-danger); background: #fff0f3; }
+.reservation-cancel-actions { display: flex; justify-content: flex-end; gap: var(--horse-space-2); margin-top: var(--horse-space-4); }
+.reservation-cancel-actions a, .reservation-cancel-actions button {
+  display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 var(--horse-space-4); border-radius: var(--horse-radius-sm);
+  font: inherit; font-size: var(--horse-font-size-sm); font-weight: 700; text-decoration: none;
+}
+.reservation-cancel-actions a { border: 1px solid var(--horse-color-border); color: var(--horse-color-muted); }
+.reservation-cancel-actions button { border: 1px solid var(--horse-color-danger); color: white; background: var(--horse-color-danger); cursor: pointer; }
 .reservation-cancel-actions button:disabled { cursor: not-allowed; opacity: .5; }
-.reservation-cancel-result { display: grid; gap: 7px; color: var(--cancel-accent); background: var(--cancel-soft); }
+.reservation-cancel-result { display: grid; gap: var(--horse-space-2); color: var(--horse-color-brand); background: var(--horse-color-brand-soft); }
 .reservation-cancel-result p, .reservation-cancel-result span, .reservation-cancel-result small { margin: 0; }
-.reservation-cancel-result span, .reservation-cancel-result small { color: var(--cancel-muted); font-size: .78rem; }
-.reservation-cancel-result a { margin-top: 5px; }
+.reservation-cancel-result span, .reservation-cancel-result small { color: var(--horse-color-muted); font-size: var(--horse-font-size-sm); }
+.reservation-cancel-result a { display: inline-flex; min-height: 44px; align-items: center; margin-top: var(--horse-space-1); }
 .reservation-cancel-state { text-align: center; }
-.reservation-cancel-state p { color: var(--cancel-muted); }
-.reservation-cancel-state[role="alert"] p { color: #742137; }
+.reservation-cancel-state p { color: var(--horse-color-muted); }
+.reservation-cancel-state[role="alert"] p { color: var(--horse-color-danger); }
+
 @media (max-width: 560px) {
-  .reservation-cancel-page { padding: 22px 12px 40px; }
+  .reservation-cancel-page { padding: var(--horse-space-6) var(--horse-space-3) var(--horse-space-10); }
   .reservation-cancel-header { align-items: flex-start; flex-direction: column; }
   .reservation-cancel-summary dl, .reservation-cancel-preview dl { grid-template-columns: minmax(0, 1fr); }
   .reservation-cancel-actions { flex-direction: column-reverse; }

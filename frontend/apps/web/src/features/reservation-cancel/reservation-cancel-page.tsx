@@ -9,7 +9,6 @@ import {
 } from './reservation-cancel.api'
 import './reservation-cancel-page.css'
 
-const ACTIVE_STATUSES = new Set(['pending_admin_approval', 'pending_payment', 'confirmed'])
 const CLASS_LABELS: Record<string, string> = {
   FIRST_RIDE: '왕초보', ROUND_BEGINNER: '원형초보', ROUND_TROT: '원형 속보',
   LARGE_ARENA_BEGINNER: '대마장초보', LARGE_ARENA_TROT: '대마장 속보',
@@ -29,7 +28,7 @@ export function ReservationCancelPage({ api = reservationCancelApi }: { api?: Re
     enabled: validReservationId,
   })
   const reservation = reservationsQuery.data?.find((item) => item.reservationId === reservationId)
-  const canCancel = reservation && ACTIVE_STATUSES.has(reservation.status ?? '')
+  const canCancel = reservation?.actions?.cancel?.allowed === true
   const previewQuery = useQuery({
     queryKey: ['member', 'reservation-cancel', 'preview', reservationId],
     queryFn: () => api.previewCancellation(reservationId),
@@ -55,14 +54,14 @@ export function ReservationCancelPage({ api = reservationCancelApi }: { api?: Re
     <main className="reservation-cancel-page">
       <div className="reservation-cancel-shell">
         <header className="reservation-cancel-header">
-          <div><p>CANCEL LESSON</p><h1>예약 취소</h1><span>실행 시점의 서버 판정이 최종 쿠폰 처리에 적용됩니다.</span></div>
+          <div><p>CANCEL LESSON</p><h1>예약 취소</h1><span>취소 전 예상 처리 결과를 확인해 주세요.</span></div>
           <Link to="/my/reservations">내 예약</Link>
         </header>
 
         <section className="reservation-cancel-summary" aria-label="취소할 예약">
           <h2>취소할 예약</h2>
           <dl>
-            <div><dt>클래스</dt><dd>{CLASS_LABELS[reservation.classType ?? ''] ?? reservation.classType ?? '-'}</dd></div>
+            <div><dt>수업 종류</dt><dd>{CLASS_LABELS[reservation.classType ?? ''] ?? '수업 종류 확인 필요'}</dd></div>
             <div><dt>날짜</dt><dd>{formatDate(reservation.lessonDate)}</dd></div>
             <div><dt>시간</dt><dd>{reservation.startTime?.slice(0, 5) ?? '-'}</dd></div>
           </dl>
@@ -72,10 +71,10 @@ export function ReservationCancelPage({ api = reservationCancelApi }: { api?: Re
         {previewQuery.isError ? <p className="reservation-cancel-error" role="alert">{cancelErrorMessage(previewQuery.error, '취소 예상 결과를 확인하지 못했습니다.')}</p> : null}
         {previewQuery.data ? (
           <section className="reservation-cancel-preview" aria-live="polite">
-            <h2>취소 전 확인</h2>
+            <h2>예상 처리 결과</h2>
             <dl>
               <div><dt>취소 기준</dt><dd>{timingLabel(previewQuery.data.timing)}</dd></div>
-              <div><dt>취소 책임</dt><dd>회원 사유</dd></div>
+              <div><dt>취소 책임</dt><dd>{responsibilityLabel(previewQuery.data.responsibility)}</dd></div>
               <div><dt>예상 쿠폰 처리</dt><dd>{couponActionLabel(previewQuery.data.couponAction)}</dd></div>
             </dl>
             <p>관리자 판단으로 예외 반환이 필요한 경우 직접 취소하지 말고 관리자에게 연락해 주세요.</p>
@@ -128,14 +127,21 @@ function timingLabel(timing?: string) {
   const normalized = timing?.toUpperCase()
   if (normalized === 'BEFORE_CUTOFF') return '취소 마감 전'
   if (normalized?.startsWith('AFTER_CUTOFF')) return '취소 마감 후'
-  return timing ?? '-'
+  return '처리 기준 확인 필요'
+}
+
+function responsibilityLabel(responsibility?: string) {
+  if (responsibility?.toLowerCase() === 'member') return '회원 사유'
+  if (responsibility?.toLowerCase() === 'stable') return '마장 사유'
+  if (responsibility?.toLowerCase() === 'exception') return '예외 처리'
+  return '책임 주체 확인 필요'
 }
 
 function couponActionLabel(action?: string) {
   if (action === 'DEDUCT' || action === 'deduct') return '1회 차감'
   if (action === 'RETURN' || action === 'return') return '쿠폰 반환'
   if (action === 'NONE' || action === 'none') return '처리 없음'
-  return action ?? '-'
+  return '처리 결과 확인 필요'
 }
 
 function formatDate(date?: Date) {

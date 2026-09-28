@@ -108,7 +108,7 @@ describe('ReservationChangePage', () => {
   it('시간대_로딩과_빈_목록을_표시한다', async () => {
     const pendingApi = createApi({ getAvailableTimeSlots: vi.fn(() => new Promise<never>(() => undefined)) })
     const view = renderPage(pendingApi)
-    expect(await screen.findByText('예약 가능한 시간을 확인하는 중입니다.')).toBeInTheDocument()
+    expect(await screen.findByText('변경 가능한 수업 시간을 확인하는 중입니다.')).toBeInTheDocument()
     view.unmount()
 
     renderPage(createApi({ getAvailableTimeSlots: vi.fn().mockResolvedValue({ timeSlots: [] }) }))
@@ -122,8 +122,16 @@ describe('ReservationChangePage', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('변경 정책상 처리할 수 없습니다')
   })
 
-  it('비활성_예약은_변경을_차단한다', async () => {
-    renderPage(createApi({ getMyReservations: vi.fn().mockResolvedValue([{ ...RESERVATION, status: 'completed' }]) }))
+  it('서버가_변경을_허용하지_않은_예약은_상태와_무관하게_차단한다', async () => {
+    renderPage(createApi({
+      getMyReservations: vi.fn().mockResolvedValue([{
+        ...RESERVATION,
+        actions: {
+          ...RESERVATION.actions,
+          change: { allowed: false, blockedReason: 'RESERVATION_CHANGE_NOT_ALLOWED' },
+        },
+      }]),
+    }))
     expect(await screen.findByRole('alert')).toHaveTextContent('현재 상태에서는 예약을 변경할 수 없습니다')
   })
 

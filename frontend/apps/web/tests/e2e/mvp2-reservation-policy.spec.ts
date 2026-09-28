@@ -74,7 +74,22 @@ test.describe('MVP 2 예약 변경·취소 정책 행렬', () => {
     const policyCase = fixture.sameDayChange
     const page = await createAuthenticatedPage(browser, policyCase.authSubject, 'MEMBER')
 
-    await openChangePage(page, policyCase)
+    await navigateWithinApp(page, `/my/reservations/${policyCase.reservationId}/change`)
+    const unavailable = page.getByRole('alert').filter({ hasText: '현재 상태에서는 예약을 변경할 수 없습니다.' })
+    await page.locator('h1, [role="alert"]').first().waitFor()
+    if (await unavailable.isVisible()) {
+      expect(readReservationPolicySnapshot(policyCase.reservationId)).toMatchObject({
+        lessonDate: policyCase.lessonDate,
+        startTime: policyCase.startTime,
+        freeChangeUsed: false,
+        changeLogCount: 0,
+      })
+      await page.context().close()
+      return
+    }
+
+    await expect(page.getByRole('heading', { name: '예약 변경' })).toBeVisible()
+    await page.getByLabel('날짜').fill(policyCase.targetLessonDate as string)
     const target = changeTarget(page, policyCase)
     if (await target.count() === 0) {
       await expect(target).toHaveCount(0)

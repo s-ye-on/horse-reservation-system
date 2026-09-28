@@ -97,8 +97,16 @@ describe('ReservationCancelPage', () => {
     expect(await screen.findByText('취소 정책을 확인하는 중입니다.')).toBeInTheDocument()
   })
 
-  it('비활성_예약은_취소를_차단한다', async () => {
-    renderPage(createApi({ getMyReservations: vi.fn().mockResolvedValue([{ ...RESERVATION, status: 'completed' }]) }))
+  it('서버가_취소를_허용하지_않은_예약은_상태와_무관하게_차단한다', async () => {
+    renderPage(createApi({
+      getMyReservations: vi.fn().mockResolvedValue([{
+        ...RESERVATION,
+        actions: {
+          ...RESERVATION.actions,
+          cancel: { allowed: false, blockedReason: 'RESERVATION_INVALID_STATUS' },
+        },
+      }]),
+    }))
     expect(await screen.findByRole('alert')).toHaveTextContent('현재 상태에서는 예약을 취소할 수 없습니다')
   })
 
