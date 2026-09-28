@@ -29,8 +29,8 @@ test.describe('MVP 1 예약 핵심 흐름', () => {
     const adminPage = await createAuthenticatedPage(browser, 'e2e-m1-29-admin', 'ADMIN')
 
     await applyForReservation(memberPage, member)
-    await expect(memberPage.getByText(/상태 pending_admin_approval/)).toBeVisible()
-    await expect(memberPage.getByText('임시 점유').locator('..')).toContainText('1회')
+    await expect(memberPage.getByText(/관리자 승인대기/)).toBeVisible()
+    await expect(memberPage.getByText('예약 처리 중 횟수').locator('..')).toContainText('1회')
 
     await confirmReservation(adminPage, member.name, '쿠폰 예약 확정')
 
@@ -77,8 +77,8 @@ test.describe('MVP 1 예약 핵심 흐름', () => {
     const adminPage = await createAuthenticatedPage(browser, 'e2e-m1-29-admin', 'ADMIN')
 
     await applyForReservation(memberPage, member)
-    await expect(memberPage.getByText(/상태 pending_payment/)).toBeVisible()
-    await expect(memberPage.getByText('2시간 이내 입금해 주세요')).toBeVisible()
+    await expect(memberPage.getByText(/입금 확인 대기/)).toBeVisible()
+    await expect(memberPage.getByText('안내된 기한까지 입금해 주세요')).toBeVisible()
 
     await navigateWithinApp(memberPage, '/my/reservations')
     await expect(reservationCard(memberPage, '원형초보').getByText('입금 확인 대기')).toBeVisible()

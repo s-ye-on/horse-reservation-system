@@ -79,11 +79,11 @@ describe('ReservationApplicationPage', () => {
     expect(await screen.findByText('원형초보')).toBeInTheDocument()
     expect(screen.getByText('2026년 8월 10일 월요일')).toBeInTheDocument()
     expect(screen.getByText('09:00')).toBeInTheDocument()
-    expect(screen.getByText('잔여 2자리')).toBeInTheDocument()
+    expect(screen.getByText('잔여석').nextElementSibling).toHaveTextContent('2자리')
     expect(getSelectedTimeSlot).toHaveBeenCalledWith('2026-08-10', 'ROUND_BEGINNER', 12)
   })
 
-  it('쿠폰_신청_응답의_점유와_잔여_정보를_표시한다', async () => {
+  it('쿠폰_신청_응답을_사용자_용어로_표시한다', async () => {
     const apply = vi.fn().mockResolvedValue({
       reservationId: 81,
       status: 'pending_admin_approval',
@@ -98,10 +98,11 @@ describe('ReservationApplicationPage', () => {
       expect.any(String),
     ))
     expect(await screen.findByText('관리자 승인을 기다리고 있습니다')).toBeInTheDocument()
-    expect(screen.getByText('예약 #81 · 상태 pending_admin_approval')).toBeInTheDocument()
-    expect(screen.getByText('현재 잔여').nextElementSibling).toHaveTextContent('6회')
-    expect(screen.getByText('임시 점유').nextElementSibling).toHaveTextContent('2회')
-    expect(screen.getByText('점유 후 사용 가능').nextElementSibling).toHaveTextContent('4회')
+    expect(screen.getByText('예약 번호 81 · 관리자 승인대기')).toBeInTheDocument()
+    expect(screen.queryByText(/pending_admin_approval/)).not.toBeInTheDocument()
+    expect(screen.getByText('현재 남은 횟수').nextElementSibling).toHaveTextContent('6회')
+    expect(screen.getByText('예약 처리 중 횟수').nextElementSibling).toHaveTextContent('2회')
+    expect(screen.getByText('지금 예약 가능한 횟수').nextElementSibling).toHaveTextContent('4회')
     expect(screen.getByText('2026. 10. 10.')).toBeInTheDocument()
   })
 
@@ -120,7 +121,9 @@ describe('ReservationApplicationPage', () => {
     }) }))
     fireEvent.click(await screen.findByRole('button', { name: '예약 신청' }))
     expect(await screen.findByText('입금 확인을 기다리고 있습니다')).toBeInTheDocument()
-    expect(screen.getByText('2시간 이내 입금해 주세요')).toBeInTheDocument()
+    expect(screen.getByText('안내된 기한까지 입금해 주세요')).toBeInTheDocument()
+    expect(screen.getByText('예약 번호 83 · 입금 확인 대기')).toBeInTheDocument()
+    expect(screen.queryByText(/pending_payment/)).not.toBeInTheDocument()
     expect(screen.getByText(/입금 마감/)).toHaveTextContent('2026. 8. 1. 오후 02:00')
     expect(screen.getByText(/관리자에게 연락/)).toBeInTheDocument()
   })

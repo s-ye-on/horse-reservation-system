@@ -43,19 +43,19 @@ function renderPage(api: ReservationCalendarApi) {
 describe('ReservationCalendarPage', () => {
   it('서버가_허용한_클래스와_현재_등급만_표시한다', async () => {
     renderPage(createApi())
-    expect((await screen.findByText('원형초보', { selector: 'strong' })).parentElement).toHaveTextContent('현재 등급은 원형초보입니다.')
-    const group = screen.getByRole('radiogroup', { name: '예약 가능 클래스' })
-    expect(within(group).getByRole('radio', { name: '원형초보' })).toBeInTheDocument()
-    expect(within(group).getByRole('radio', { name: '왕초보' })).toBeInTheDocument()
-    expect(within(group).getByRole('radio', { name: '마장마술' })).toBeInTheDocument()
-    expect(within(group).queryByRole('radio', { name: '장애물' })).not.toBeInTheDocument()
+    expect((await screen.findByRole('heading', { name: '수업 예약' })).parentElement).toHaveTextContent('현재 등급은 원형초보입니다.')
+    const group = screen.getByRole('group', { name: '예약 가능한 수업 종류' })
+    expect(within(group).getByRole('radio', { name: /원형초보/ })).toBeInTheDocument()
+    expect(within(group).getByRole('radio', { name: /왕초보/ })).toBeInTheDocument()
+    expect(within(group).getByRole('radio', { name: /마장마술/ })).toBeInTheDocument()
+    expect(within(group).queryByRole('radio', { name: /장애물/ })).not.toBeInTheDocument()
   })
 
   it('선택한_클래스와_서울_날짜로_시간대를_조회한다', async () => {
     const getAvailableTimeSlots = vi.fn().mockResolvedValue(TIME_SLOTS)
     renderPage(createApi({ getAvailableTimeSlots }))
     await waitFor(() => expect(getAvailableTimeSlots).toHaveBeenCalledWith('2026-07-15', 'ROUND_BEGINNER'))
-    fireEvent.click(screen.getByRole('radio', { name: '마장마술' }))
+    fireEvent.click(screen.getByRole('radio', { name: /마장마술/ }))
     await waitFor(() => expect(getAvailableTimeSlots).toHaveBeenCalledWith('2026-07-15', 'DRESSAGE'))
     fireEvent.click(screen.getByRole('button', { name: '다음 날짜' }))
     await waitFor(() => expect(getAvailableTimeSlots).toHaveBeenCalledWith('2026-07-16', 'DRESSAGE'))
@@ -70,11 +70,28 @@ describe('ReservationCalendarPage', () => {
 
   it('예약_가능한_시간대만_신청_화면으로_이동한다', async () => {
     renderPage(createApi())
-    const links = await screen.findAllByRole('link')
-    const reservationLinks = links.filter((link) => link.getAttribute('href')?.startsWith('/reservations/new'))
-    expect(reservationLinks).toHaveLength(1)
-    expect(reservationLinks[0]).toHaveAttribute('href', '/reservations/new?timeSlotId=1&classType=ROUND_BEGINNER&date=2026-07-15')
-    expect(screen.getByText('운영 마감').closest('[aria-disabled="true"]')).toBeInTheDocument()
+    expect(await screen.findByRole('radio', { name: /09:00/ })).toBeEnabled()
+    expect(screen.getByRole('radio', { name: /11:00/ })).toBeDisabled()
+    expect(screen.queryByRole('link', { name: '예약 내용 확인' })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('radio', { name: /09:00/ }))
+
+    expect(screen.getByRole('link', { name: '예약 내용 확인' })).toHaveAttribute(
+      'href',
+      '/reservations/new?timeSlotId=1&classType=ROUND_BEGINNER&date=2026-07-15',
+    )
+    expect(screen.getByRole('complementary', { name: '예약 요약' })).toHaveTextContent('09:00')
+  })
+
+  it('상위_선택이_바뀌면_선택한_시간과_다음_단계를_초기화한다', async () => {
+    renderPage(createApi())
+    fireEvent.click(await screen.findByRole('radio', { name: /09:00/ }))
+    expect(screen.getByRole('link', { name: '예약 내용 확인' })).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('radio', { name: /마장마술/ }))
+
+    expect(screen.queryByRole('link', { name: '예약 내용 확인' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '수업 시간을 선택해 주세요' })).toBeDisabled()
   })
 
   it('시간대가_없는_날짜는_빈_상태로_표시한다', async () => {
@@ -90,13 +107,13 @@ describe('ReservationCalendarPage', () => {
 
   it('클래스와_시간대_로딩을_구분해_표시한다', async () => {
     renderPage(createApi({ getAvailableTimeSlots: vi.fn(() => new Promise<MemberAvailableTimeSlotsResponse>(() => undefined)) }))
-    expect(await screen.findByText('시간대를 불러오는 중입니다.')).toBeInTheDocument()
+    expect(await screen.findByText('수업 시간을 불러오는 중입니다.')).toBeInTheDocument()
   })
 
   it.each([320, 768])('%ipx_화면에서_키보드로_클래스와_날짜를_탐색할_수_있다', async (width) => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
     renderPage(createApi())
-    expect(await screen.findByRole('radio', { name: '원형초보' })).toHaveAttribute('aria-checked', 'true')
+    expect(await screen.findByRole('radio', { name: /원형초보/ })).toBeChecked()
     expect(screen.getByRole('button', { name: '이전 날짜' })).toBeDisabled()
     expect(screen.getByLabelText('수업 날짜')).toHaveAttribute('min', '2026-07-15')
     expect(screen.getByLabelText('수업 날짜')).toHaveAttribute('max', '2026-10-15')
