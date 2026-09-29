@@ -1,60 +1,477 @@
 .my-coupons-page {
-  --coupon-accent: #7a1f35; --coupon-soft: #f7e9ed; --coupon-ink: #292225; --coupon-muted: #71666a; --coupon-line: #ddd5d8;
-  width: 100%; min-height: 100vh; margin: 0; padding: 32px 16px 56px; color: var(--coupon-ink); background: #f6f5f5;
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: var(--horse-space-8) var(--horse-space-4) var(--horse-space-12);
+  color: var(--horse-color-foreground);
+  background: var(--horse-color-background);
 }
-.my-coupons-shell { width: min(100%, 980px); margin: 0 auto; }
-.my-coupons-header { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px; margin-bottom: 24px; }
-.my-coupons-header p { margin: 0 0 6px; color: var(--coupon-accent); font-size: .76rem; font-weight: 780; }
-.my-coupons-header h1 { margin: 0; font-size: clamp(1.7rem, 4vw, 2.35rem); }
-.my-coupons-header span { display: block; margin-top: 7px; color: var(--coupon-muted); font-size: .86rem; }
-.my-coupons-header > a { display: inline-flex; min-height: 40px; align-items: center; padding: 0 13px; border: 1px solid var(--coupon-accent); border-radius: 6px; color: #fff; background: var(--coupon-accent); font-size: .8rem; font-weight: 720; text-decoration: none; }
-.my-coupons-section + .my-coupons-section { margin-top: 26px; }
-.my-coupons-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
-.my-coupons-section-heading h2 { margin: 0; font-size: 1.05rem; }
-.my-coupons-section-heading span { color: var(--coupon-muted); font-size: .78rem; }
-.my-coupon-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.my-coupon-card, .my-coupon-usage-item, .my-coupons-state { border: 1px solid var(--coupon-line); border-radius: 8px; background: #fff; }
-.my-coupon-card { min-width: 0; padding: 18px; }
-.my-coupon-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
-.my-coupon-card-heading p, .my-coupon-card-heading h3 { margin: 0; }
-.my-coupon-card-heading p { color: var(--coupon-muted); font-size: .68rem; }
-.my-coupon-card-heading h3 { margin-top: 4px; font-size: 1.05rem; }
-.my-coupon-status { padding: 5px 8px; border-radius: 999px; font-size: .7rem; font-weight: 740; }
-.my-coupon-status.active { color: #286143; background: #e7f3ec; }
-.my-coupon-status.expired { color: #7a2033; background: #fae5ea; }
-.my-coupon-status.depleted { color: #655d60; background: #ece9ea; }
-.my-coupon-counts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 16px 0; }
-.my-coupon-counts div { display: grid; gap: 3px; padding: 9px 6px; border-radius: 5px; background: #f3f1f2; text-align: center; }
-.my-coupon-counts div.available { color: var(--coupon-accent); background: var(--coupon-soft); }
-.my-coupon-counts span { color: var(--coupon-muted); font-size: .65rem; }
-.my-coupon-counts strong { font-size: 1.05rem; }
-.my-coupon-dates { display: grid; gap: 8px; margin: 0; padding-top: 13px; border-top: 1px solid var(--coupon-line); }
-.my-coupon-dates div { display: flex; justify-content: space-between; gap: 12px; }
-.my-coupon-dates dt { color: var(--coupon-muted); font-size: .73rem; }
-.my-coupon-dates dd { margin: 0; font-size: .76rem; font-weight: 680; text-align: right; }
-.my-coupon-usage-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.my-coupon-usage-item { display: grid; grid-template-columns: 1.2fr .8fr auto; gap: 12px; align-items: center; padding: 13px 15px; }
-.my-coupon-usage-item > div { display: flex; align-items: center; gap: 8px; }
-.my-coupon-action { padding: 4px 7px; border-radius: 999px; color: var(--coupon-accent); background: var(--coupon-soft); font-size: .68rem; font-weight: 720; }
-.my-coupon-usage-item strong { font-size: .8rem; }
-.my-coupon-usage-item p { margin: 0; color: var(--coupon-muted); font-size: .75rem; }
-.my-coupon-usage-item time { color: var(--coupon-muted); font-size: .72rem; text-align: right; }
-.my-coupons-state { padding: 30px 18px; color: var(--coupon-muted); text-align: center; }
-.my-coupons-state[role="alert"] { color: #742137; background: #fff6f8; }
-.my-coupons-state p { margin: 0; }
-.my-coupons-state button, .my-coupons-pagination button { min-height: 38px; padding: 0 12px; border: 1px solid var(--coupon-accent); border-radius: 5px; color: var(--coupon-accent); background: #fff; font: inherit; font-size: .78rem; font-weight: 710; cursor: pointer; }
-.my-coupons-state button { margin-top: 14px; }
-.my-coupons-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 12px; margin-top: 14px; }
-.my-coupons-pagination span, .my-coupons-pagination small { color: var(--coupon-muted); font-size: .76rem; text-align: center; }
-.my-coupons-pagination small { flex-basis: 100%; }
-.my-coupons-pagination button:focus-visible, .my-coupons-state button:focus-visible { outline: 3px solid #e2aaba; outline-offset: 2px; }
-.my-coupons-pagination button:disabled { cursor: not-allowed; opacity: .45; }
-@media (max-width: 720px) { .my-coupon-list { grid-template-columns: minmax(0, 1fr); } .my-coupon-usage-item { grid-template-columns: minmax(0, 1fr); } .my-coupon-usage-item time { text-align: left; } }
+
+.my-coupons-shell {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+}
+
+.my-coupons-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--horse-space-5);
+  margin-bottom: var(--horse-space-8);
+}
+
+.my-coupons-header p {
+  margin: 0 0 var(--horse-space-2);
+  color: var(--horse-color-brand);
+  font-size: var(--horse-font-size-xs);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.my-coupons-header h1,
+.my-coupons-section-heading h2,
+.my-coupon-card-heading h3 {
+  font-family: var(--horse-font-display);
+  letter-spacing: 0;
+}
+
+.my-coupons-header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.75rem);
+  font-weight: 600;
+}
+
+.my-coupons-header span {
+  display: block;
+  margin-top: var(--horse-space-2);
+  color: var(--horse-color-muted);
+  font-size: var(--horse-font-size-sm);
+  line-height: 1.55;
+}
+
+.my-coupons-header > a {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--horse-space-4);
+  border: 1px solid var(--horse-color-brand);
+  border-radius: var(--horse-radius-sm);
+  color: var(--horse-color-brand-foreground);
+  background: var(--horse-color-brand);
+  font-size: var(--horse-font-size-sm);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.my-coupons-header > a:hover {
+  border-color: var(--horse-color-brand-hover);
+  background: var(--horse-color-brand-hover);
+}
+
+.my-coupons-section + .my-coupons-section {
+  margin-top: var(--horse-space-10);
+}
+
+.my-coupons-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--horse-space-3);
+  margin-bottom: var(--horse-space-4);
+}
+
+.my-coupons-section-heading h2 {
+  margin: 0;
+  font-size: var(--horse-font-size-xl);
+}
+
+.my-coupons-section-heading span {
+  color: var(--horse-color-muted);
+  font-size: var(--horse-font-size-sm);
+}
+
+.my-coupon-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--horse-space-4);
+}
+
+.my-coupon-card,
+.my-coupons-state,
+.my-coupon-history-scroll {
+  border: 1px solid var(--horse-color-border);
+  border-radius: var(--horse-radius-md);
+  background: var(--horse-color-surface);
+}
+
+.my-coupon-card {
+  min-width: 0;
+  overflow: hidden;
+  border-top: 3px solid var(--horse-color-brand);
+  padding: var(--horse-space-5);
+}
+
+.my-coupon-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--horse-space-3);
+}
+
+.my-coupon-card-heading div {
+  min-width: 0;
+}
+
+.my-coupon-card-heading p,
+.my-coupon-card-heading h3,
+.my-coupon-card-heading div > span {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.my-coupon-card-heading p {
+  color: var(--horse-color-muted);
+  font-size: var(--horse-font-size-xs);
+}
+
+.my-coupon-card-heading h3 {
+  margin-top: var(--horse-space-1);
+  font-size: var(--horse-font-size-lg);
+}
+
+.my-coupon-card-heading div > span {
+  display: block;
+  margin-top: var(--horse-space-2);
+  color: var(--horse-color-muted);
+  font-size: var(--horse-font-size-sm);
+}
+
+.my-coupon-status {
+  flex: 0 0 auto;
+  padding: 5px var(--horse-space-2);
+  border-radius: var(--horse-radius-pill);
+  font-size: var(--horse-font-size-xs);
+  font-weight: 750;
+}
+
+.my-coupon-status.active {
+  color: var(--horse-color-success);
+  background: color-mix(in srgb, var(--horse-color-success) 10%, var(--horse-color-surface));
+}
+
+.my-coupon-status.expired {
+  color: var(--horse-color-danger);
+  background: color-mix(in srgb, var(--horse-color-danger) 9%, var(--horse-color-surface));
+}
+
+.my-coupon-status.depleted {
+  color: var(--horse-color-muted);
+  background: var(--horse-color-border-soft);
+}
+
+.my-coupon-counts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--horse-space-2);
+  margin: var(--horse-space-5) 0;
+}
+
+.my-coupon-counts div {
+  display: grid;
+  min-width: 0;
+  gap: var(--horse-space-1);
+  padding: var(--horse-space-3) var(--horse-space-2);
+  border-radius: var(--horse-radius-sm);
+  background: var(--horse-color-border-soft);
+  text-align: center;
+}
+
+.my-coupon-counts div.available {
+  color: var(--horse-color-brand);
+  background: var(--horse-color-brand-soft);
+}
+
+.my-coupon-counts span {
+  color: var(--horse-color-muted);
+  font-size: var(--horse-font-size-xs);
+}
+
+.my-coupon-counts strong {
+  overflow-wrap: anywhere;
+  font-size: var(--horse-font-size-lg);
+}
+
+.my-coupon-dates {
+  display: grid;
+  gap: var(--horse-space-3);
+  margin: 0;
+  padding-top: var(--horse-space-4);
+  border-top: 1px solid var(--horse-color-border);
+}
+
+.my-coupon-dates div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--horse-space-3);
+}
+
+.my-coupon-dates dt {
+  color: var(--horse-color-muted);
+  font-size: var(--horse-font-size-xs);
+}
+
+.my-coupon-dates dd {
+  margin: 0;
+  font-size: var(--horse-font-size-sm);
+  font-weight: 700;
+  text-align: right;
+}
+
+.my-coupon-expired-note,
+.my-coupons-refresh-error {
+  margin: var(--horse-space-4) 0 0;
+  color: var(--horse-color-muted);
+  font-size: var(--horse-font-size-xs);
+  line-height: 1.55;
+}
+
+.my-coupons-refresh-error {
+  margin: 0 0 var(--horse-space-3);
+  border: 1px solid color-mix(in srgb, var(--horse-color-warning) 30%, var(--horse-color-surface));
+  border-radius: var(--horse-radius-sm);
+  padding: var(--horse-space-3) var(--horse-space-4);
+  color: var(--horse-color-warning);
+  background: color-mix(in srgb, var(--horse-color-warning) 7%, var(--horse-color-surface));
+}
+
+.my-coupon-history-scroll {
+  overflow-x: auto;
+}
+
+.my-coupon-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--horse-font-size-sm);
+}
+
+.my-coupon-history-table th,
+.my-coupon-history-table td {
+  padding: var(--horse-space-4);
+  border-bottom: 1px solid var(--horse-color-border-soft);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.my-coupon-history-table th {
+  color: var(--horse-color-muted);
+  background: var(--horse-color-background);
+  font-size: var(--horse-font-size-xs);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.my-coupon-history-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.my-coupon-history-table td {
+  overflow-wrap: anywhere;
+}
+
+.my-coupon-history-table time {
+  color: var(--horse-color-muted);
+  white-space: nowrap;
+}
+
+.my-coupon-action {
+  display: inline-flex;
+  padding: 5px var(--horse-space-2);
+  border-radius: var(--horse-radius-pill);
+  color: var(--horse-color-brand);
+  background: var(--horse-color-brand-soft);
+  font-size: var(--horse-font-size-xs);
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.my-coupon-action.used,
+.my-coupon-action.deducted {
+  color: var(--horse-color-success);
+  background: color-mix(in srgb, var(--horse-color-success) 10%, var(--horse-color-surface));
+}
+
+.my-coupon-action.expired {
+  color: var(--horse-color-danger);
+  background: color-mix(in srgb, var(--horse-color-danger) 9%, var(--horse-color-surface));
+}
+
+.my-coupons-state {
+  padding: var(--horse-space-10) var(--horse-space-5);
+  color: var(--horse-color-muted);
+  text-align: center;
+}
+
+.my-coupons-state[role="alert"] {
+  color: var(--horse-color-danger);
+  background: color-mix(in srgb, var(--horse-color-danger) 5%, var(--horse-color-surface));
+}
+
+.my-coupons-state p {
+  margin: 0;
+}
+
+.my-coupons-state button,
+.my-coupons-pagination button {
+  min-height: 44px;
+  padding: 0 var(--horse-space-4);
+  border: 1px solid var(--horse-color-brand);
+  border-radius: var(--horse-radius-sm);
+  color: var(--horse-color-brand);
+  background: var(--horse-color-surface);
+  font: inherit;
+  font-size: var(--horse-font-size-sm);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.my-coupons-state button {
+  margin-top: var(--horse-space-4);
+}
+
+.my-coupons-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--horse-space-2) var(--horse-space-3);
+  margin-top: var(--horse-space-4);
+}
+
+.my-coupons-pagination span,
+.my-coupons-pagination small {
+  color: var(--horse-color-muted);
+  font-size: var(--horse-font-size-xs);
+  text-align: center;
+}
+
+.my-coupons-pagination small {
+  flex-basis: 100%;
+}
+
+.my-coupons-pagination button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.my-coupons-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .my-coupon-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .my-coupon-history-scroll {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .my-coupon-history-table,
+  .my-coupon-history-table tbody,
+  .my-coupon-history-table tr,
+  .my-coupon-history-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .my-coupon-history-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+  }
+
+  .my-coupon-history-table tr {
+    margin-bottom: var(--horse-space-3);
+    border: 1px solid var(--horse-color-border);
+    border-radius: var(--horse-radius-md);
+    padding: var(--horse-space-3) var(--horse-space-4);
+    background: var(--horse-color-surface);
+  }
+
+  .my-coupon-history-table td {
+    display: grid;
+    grid-template-columns: minmax(92px, 0.42fr) minmax(0, 1fr);
+    gap: var(--horse-space-3);
+    padding: var(--horse-space-2) 0;
+    border-bottom: 1px solid var(--horse-color-border-soft);
+  }
+
+  .my-coupon-history-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .my-coupon-history-table td::before {
+    content: attr(data-label);
+    color: var(--horse-color-muted);
+    font-size: var(--horse-font-size-xs);
+    font-weight: 800;
+  }
+}
+
 @media (max-width: 420px) {
-  .my-coupons-page { padding: 22px 12px 40px; }
-  .my-coupons-header { align-items: stretch; flex-direction: column; }
-  .my-coupons-header > a { align-self: flex-start; }
-  .my-coupon-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .my-coupons-pagination { justify-content: space-between; gap: 6px; }
-  .my-coupons-pagination button { padding-inline: 9px; }
+  .my-coupons-page {
+    padding: var(--horse-space-6) var(--horse-space-3) var(--horse-space-10);
+  }
+
+  .my-coupons-header,
+  .my-coupon-card-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .my-coupons-header > a,
+  .my-coupon-status {
+    align-self: flex-start;
+  }
+
+  .my-coupon-counts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .my-coupon-dates div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: var(--horse-space-1);
+  }
+
+  .my-coupon-dates dd {
+    text-align: left;
+  }
+
+  .my-coupons-pagination {
+    justify-content: space-between;
+    gap: var(--horse-space-1);
+  }
+
+  .my-coupons-pagination button {
+    padding-inline: var(--horse-space-3);
+  }
+
+  .my-coupon-history-table td {
+    grid-template-columns: minmax(82px, 0.42fr) minmax(0, 1fr);
+  }
 }

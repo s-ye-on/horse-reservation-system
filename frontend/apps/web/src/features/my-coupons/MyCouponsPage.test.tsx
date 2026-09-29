@@ -14,8 +14,8 @@ import type { MyCouponsApi } from './my-coupons.api'
 import { MyCouponsPage } from './my-coupons-page'
 
 const COUPONS: MemberCouponResponse[] = [
-  { couponId: 1, type: 'general', totalCount: 20, remainingCount: 20, heldCount: 1, availableCount: 19, firstUsedAt: null, expiresAt: null, freeChangeUsed: false, status: 'active' },
-  { couponId: 2, type: 'dressage', totalCount: 10, remainingCount: 6, heldCount: 2, availableCount: 4, firstUsedAt: new Date('2026-07-01'), expiresAt: new Date('2026-10-01'), freeChangeUsed: true, status: 'expired' },
+  { couponId: 1, type: 'GENERAL', totalCount: 20, remainingCount: 20, heldCount: 1, availableCount: 19, firstUsedAt: null, expiresAt: null, freeChangeUsed: false, status: 'ACTIVE' },
+  { couponId: 2, type: 'dressage', totalCount: 10, remainingCount: 2, heldCount: 2, availableCount: 0, firstUsedAt: new Date('2026-07-01'), expiresAt: new Date('2026-10-01'), freeChangeUsed: true, status: 'expired' },
   { couponId: 3, type: 'jumping', totalCount: 10, remainingCount: 0, heldCount: 0, availableCount: 0, firstUsedAt: new Date('2026-06-01'), expiresAt: new Date('2026-09-01'), freeChangeUsed: false, status: 'depleted' },
 ]
 
@@ -28,7 +28,7 @@ const USAGE_LOGS: MemberCouponUsageResponse[] = ACTIONS.map((action, index) => (
   couponOwnerMemberId: 7,
   familyGroupId: null,
   action,
-  countDelta: action === 'used' || action === 'deducted' ? -1 : 0,
+  countDelta: action === 'held' ? 1 : action === 'released' || action === 'used' || action === 'deducted' ? -1 : action === 'expired' ? -2 : 0,
   occurredAt: new Date(`2026-07-${String(10 + index).padStart(2, '0')}T10:00:00+09:00`),
   actorType: action === 'held' ? 'member' : 'admin',
 }))
@@ -68,15 +68,17 @@ function renderPage(api: MyCouponsApi) {
 }
 
 describe('MyCouponsPage', () => {
-  it('쿠폰별_종류와_총_잔여_점유_사용_가능_횟수를_표시한다', async () => {
+  it('쿠폰별_종류와_총_잔여_예약_처리_사용_가능_횟수를_표시한다', async () => {
     renderPage(createApi())
     const cards = await screen.findAllByRole('article')
     const counts = cards[0].querySelector('.my-coupon-counts') as HTMLElement
-    expect(within(cards[0]).getByRole('heading', { name: '일반 20회권' })).toBeInTheDocument()
-    expect(within(counts).getByText('총 횟수').nextElementSibling).toHaveTextContent('20')
-    expect(within(counts).getByText('잔여').nextElementSibling).toHaveTextContent('20')
-    expect(within(counts).getByText('예약 점유').nextElementSibling).toHaveTextContent('1')
-    expect(within(counts).getByText('사용 가능').nextElementSibling).toHaveTextContent('19')
+    expect(within(cards[0]).getByRole('heading', { name: '일반 기승 쿠폰' })).toBeInTheDocument()
+    expect(within(cards[0]).getByText('총 20회 중 잔여 20회')).toBeInTheDocument()
+    expect(within(counts).getByText('사용 가능').nextElementSibling).toHaveTextContent('19회')
+    expect(within(counts).getByText('예약 처리 중').nextElementSibling).toHaveTextContent('1회')
+    expect(within(counts).getByText('사용 완료').nextElementSibling).toHaveTextContent('0회')
+    expect(screen.queryByText(/20회권/)).not.toBeInTheDocument()
+    expect(screen.queryByText('GENERAL')).not.toBeInTheDocument()
   })
 
   it('첫_사용_전과_첫_기승일_만료일을_구분한다', async () => {
@@ -90,24 +92,26 @@ describe('MyCouponsPage', () => {
   it('무료_변경권과_세_쿠폰_상태를_표시한다', async () => {
     renderPage(createApi())
     expect((await screen.findAllByText('사용 가능')).length).toBeGreaterThan(1)
-    expect(screen.getByText('사용 완료')).toBeInTheDocument()
+    expect(screen.getAllByText('사용 완료').length).toBeGreaterThan(0)
     expect(screen.getByText('기간 만료')).toBeInTheDocument()
     expect(screen.getByText('모두 사용')).toBeInTheDocument()
   })
 
   it('일곱_사용_이력을_발생_시각과_관련_예약으로_표시한다', async () => {
     renderPage(createApi())
-    for (const label of ['예약 임시 점유', '예약 점유 확정', '수업 완료 사용', '점유 반환', '관리자 차감', '유효기간 만료', '무료 변경권 사용']) {
-      expect(await screen.findByText(label)).toBeInTheDocument()
+    for (const label of ['예약 처리 시작', '예약 확정', '수업 완료로 사용', '예약 취소로 반환', '관리자 처리로 사용', '유효기간 만료', '무료 변경 사용']) {
+      expect((await screen.findAllByText(label)).length).toBeGreaterThan(0)
     }
-    expect(screen.getByText('예약 #100')).toBeInTheDocument()
+    expect(screen.getByText('예약 번호 100')).toBeInTheDocument()
     expect(screen.getByText('관련 예약 없음')).toBeInTheDocument()
     expect(screen.getAllByText(/2026\. 7\./)).toHaveLength(7)
   })
 
-  it('차감_로그의_횟수_변화를_표시한다', async () => {
+  it('변동_종류에_맞게_예약_처리_중과_잔여_횟수를_표시한다', async () => {
     renderPage(createApi())
-    expect((await screen.findAllByText(/횟수 -1/)).length).toBe(2)
+    expect(await screen.findByText('예약 처리 중 +1회')).toBeInTheDocument()
+    expect(screen.getAllByText('잔여 -1회')).toHaveLength(2)
+    expect(screen.getByText('잔여 -2회')).toBeInTheDocument()
   })
 
   it('쿠폰과_사용_이력이_없는_상태를_각각_표시한다', async () => {
@@ -116,7 +120,7 @@ describe('MyCouponsPage', () => {
       getUsageLogs: vi.fn().mockResolvedValue(usagePage([])),
     }))
     expect(await screen.findByText('보유한 쿠폰이 없습니다. 쿠폰 등록은 관리자에게 문의해 주세요.')).toBeInTheDocument()
-    expect(screen.getByText('아직 쿠폰 사용 내역이 없습니다.')).toBeInTheDocument()
+    expect(screen.getByText('아직 쿠폰 변동 내역이 없습니다.')).toBeInTheDocument()
   })
 
   it.each([[401, '다시 로그인'], [500, '불러오지 못했습니다']])('%i_조회_오류를_구분한다', async (status, message) => {
@@ -125,7 +129,17 @@ describe('MyCouponsPage', () => {
       getCoupons: vi.fn().mockRejectedValue(error),
       getUsageLogs: vi.fn().mockRejectedValue(error),
     }))
-    expect(await screen.findByRole('alert')).toHaveTextContent(message)
+    const alerts = await screen.findAllByRole('alert')
+    expect(alerts).toHaveLength(2)
+    for (const alert of alerts) expect(alert).toHaveTextContent(message)
+  })
+
+  it('사용_내역_조회가_실패해도_보유_쿠폰은_표시한다', async () => {
+    renderPage(createApi({
+      getUsageLogs: vi.fn().mockRejectedValue(new ResponseError(new Response(null, { status: 500 }), 'failed')),
+    }))
+    expect(await screen.findByRole('heading', { name: '일반 기승 쿠폰' })).toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent('쿠폰 변동 내역을 불러오지 못했습니다.')
   })
 
   it('쿠폰과_사용_이력을_독립된_Page로_이동한다', async () => {
@@ -144,22 +158,22 @@ describe('MyCouponsPage', () => {
     const couponNavigation = await screen.findByRole('navigation', { name: '보유 쿠폰 페이지' })
     expect(within(couponNavigation).getByRole('button', { name: '이전' })).toBeDisabled()
     fireEvent.click(within(couponNavigation).getByRole('button', { name: '다음' }))
-    expect(await screen.findByRole('heading', { name: '마장마술 10회권' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '마장마술 쿠폰' })).toBeInTheDocument()
     expect(within(couponNavigation).getByText('2 / 2 페이지')).toBeInTheDocument()
     expect(within(couponNavigation).getByRole('button', { name: '다음' })).toBeDisabled()
 
-    const usageNavigation = screen.getByRole('navigation', { name: '쿠폰 사용 내역 페이지' })
+    const usageNavigation = screen.getByRole('navigation', { name: '쿠폰 변동 내역 페이지' })
     fireEvent.click(within(usageNavigation).getByRole('button', { name: '다음' }))
-    expect(await screen.findByText('예약 점유 확정')).toBeInTheDocument()
+    expect(await screen.findByText('예약 확정')).toBeInTheDocument()
     fireEvent.click(within(usageNavigation).getByRole('button', { name: '이전' }))
-    expect(await screen.findByText('예약 임시 점유')).toBeInTheDocument()
+    expect(await screen.findByText('예약 처리 시작')).toBeInTheDocument()
   })
 
   it('320px_화면에서도_쿠폰_요약과_사용_내역을_확인할_수_있다', async () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 320 })
     renderPage(createApi())
-    expect(await screen.findByRole('heading', { name: '일반 20회권' })).toBeInTheDocument()
-    expect(screen.getByText('무료 변경권 사용')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '일반 기승 쿠폰' })).toBeInTheDocument()
+    expect(screen.getAllByText('무료 변경 사용').length).toBeGreaterThan(0)
     expect(screen.getByRole('link', { name: '수업 예약' })).toHaveAttribute('href', '/reservations')
   })
 })
