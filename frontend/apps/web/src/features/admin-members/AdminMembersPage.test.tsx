@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { ResponseError, type AdminMemberPageResponse } from '@horse/api-client'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import type {
   AdminMemberProgressionResponse,
@@ -40,7 +40,17 @@ const EMPTY_AUDIT_PAGE = {
   hasNext: false,
 }
 
+beforeEach(() => {
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: function () { this.setAttribute('open', '') } })
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: function () { this.removeAttribute('open') } })
+})
 afterEach(cleanup)
+
+function confirmChange() {
+  fireEvent.click(screen.getByRole('button', { name: '변경 내용 확인' }))
+  expect(screen.getByRole('dialog')).toBeInTheDocument()
+  fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '변경 적용' }))
+}
 
 function memberPage(
   content: AdminMemberProgressionResponse[],
@@ -100,6 +110,63 @@ function renderPage(api: AdminMembersApi) {
 }
 
 describe('AdminMembersPage', () => {
+  it('승급_단계와_보류_상한과_예약_가능_단계를_서버_값으로_구분한다', async () => {
+    const held = { ...MEMBER, jumpingApproved: false, progressionClass: 'ROUND_TROT' as const, effectiveClass: 'FIRST_RIDE' as const, promotionHoldClass: 'FIRST_RIDE' as const }
+    renderPage(createApi({ getMembers: vi.fn().mockResolvedValue(memberPage([held])), getMember: vi.fn().mockResolvedValue(held) }))
+    await screen.findByRole('heading', { name: '김승마' })
+    const summary = screen.getByRole('region', { name: '회원 요약' })
+    expect(within(summary).getByText('일반 승급 단계').nextElementSibling).toHaveTextContent('원형 속보')
+    expect(within(summary).getByText('현재 예약 가능 일반 단계').nextElementSibling).toHaveTextContent('왕초보')
+    expect(within(summary).getByText('자동 승급 보류 상한').nextElementSibling).toHaveTextContent('왕초보')
+    expect(screen.getByRole('button', { name: '마장마술 승인 변경' })).toBeDisabled()
+  })
+
+  it('특수_승인_변경_직전_조회한_반대쪽_최신_승인값을_보존한다', async () => {
+    const latest = { ...MEMBER, jumpingApproved: false }
+    const getMember = vi.fn().mockResolvedValueOnce(MEMBER).mockResolvedValue(latest)
+    const changeRidingPermissions = vi.fn().mockResolvedValue({ ...latest, dressageApproved: true })
+    renderPage(createApi({ getMember, changeRidingPermissions }))
+    fireEvent.click(await screen.findByRole('button', { name: '마장마술 승인 변경' }))
+    fireEvent.change(screen.getByLabelText('승인 변경 사유'), { target: { value: '최신 승인 상태 확인' } })
+    fireEvent.click(screen.getByRole('button', { name: '승인 변경 내용 확인' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '변경 적용' }))
+    await waitFor(() => expect(changeRidingPermissions).toHaveBeenCalledWith(7, { dressageApproved: true, jumpingApproved: false, reason: '최신 승인 상태 확인' }))
+    expect(getMember).toHaveBeenCalledTimes(2)
+  })
+
+  it('특수_승인_해제_후_추가_인정분은_유지하고_별도_교정을_허용한다', async () => {
+    const revoked = { ...MEMBER, jumpingApproved: false }
+    const api = createApi({ changeRidingPermissions: vi.fn().mockResolvedValue(revoked) })
+    renderPage(api)
+    await screen.findByRole('heading', { name: '김승마' })
+    const option = screen.getByRole('option', { name: '특수 승인 추가 인정 횟수 교정' })
+    expect(option).toBeDisabled()
+    fireEvent.click(screen.getByRole('button', { name: '장애물 승인 변경' }))
+    fireEvent.change(screen.getByLabelText('승인 변경 사유'), { target: { value: '자격 재확인' } })
+    fireEvent.click(screen.getByRole('button', { name: '승인 변경 내용 확인' }))
+    expect(screen.getByRole('dialog')).toHaveTextContent('자동으로 제거되지 않습니다')
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '변경 적용' }))
+    await waitFor(() => expect(option).not.toBeDisabled())
+    fireEvent.change(screen.getByLabelText('변경 항목'), { target: { value: 'CORRECT_SPECIAL_APPROVAL_CREDIT' } })
+    fireEvent.change(screen.getByLabelText('교정 후 추가 인정 횟수'), { target: { value: '6' } })
+    fireEvent.click(screen.getByRole('button', { name: '변경 결과 미리보기' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('기존 인정 횟수 이하')
+    expect(api.previewProgression).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByLabelText('교정 후 추가 인정 횟수'), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: '변경 결과 미리보기' }))
+    await waitFor(() => expect(api.previewProgression).toHaveBeenCalledWith(7, { action: 'CORRECT_SPECIAL_APPROVAL_CREDIT', specialApprovalProgressionCredit: 0 }))
+  })
+
+  it('입력이_변경되면_기존_미리보기를_폐기한다', async () => {
+    renderPage(createApi())
+    await screen.findByRole('heading', { name: '김승마' })
+    fireEvent.click(screen.getByRole('button', { name: '변경 결과 미리보기' }))
+    await screen.findByRole('region', { name: '변경 전후 예상 클래스' })
+    fireEvent.change(screen.getByLabelText('인정 시작 클래스'), { target: { value: 'CANTER' } })
+    expect(screen.queryByRole('region', { name: '변경 전후 예상 클래스' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '변경 내용 확인' })).toBeDisabled()
+  })
+
   it('회원_목록과_상세_기승_정보를_표시한다', async () => {
     renderPage(createApi())
 
@@ -118,18 +185,20 @@ describe('AdminMembersPage', () => {
     const getProgressionAuditLogs = vi.fn().mockResolvedValue(EMPTY_AUDIT_PAGE)
     renderPage(createApi({ changeRidingPermissions, getProgressionAuditLogs }))
 
-    const dressageSwitch = await screen.findByRole('switch', { name: '마장마술 승인' })
+    const dressageSwitch = await screen.findByRole('button', { name: '마장마술 승인 변경' })
+    fireEvent.click(dressageSwitch)
     fireEvent.change(screen.getByRole('textbox', { name: '승인 변경 사유' }), {
       target: { value: '실력 확인 완료' },
     })
-    fireEvent.click(dressageSwitch)
+    fireEvent.click(screen.getByRole('button', { name: '승인 변경 내용 확인' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '변경 적용' }))
 
     await waitFor(() => expect(changeRidingPermissions).toHaveBeenCalledWith(7, {
       dressageApproved: true,
       jumpingApproved: true,
       reason: '실력 확인 완료',
     }))
-    await waitFor(() => expect(dressageSwitch).toHaveAttribute('aria-checked', 'true'))
+    await waitFor(() => expect(screen.getAllByText('승인 · 예약 가능')).toHaveLength(2))
     await waitFor(() => expect(getProgressionAuditLogs).toHaveBeenCalledTimes(2))
   })
 
@@ -141,15 +210,17 @@ describe('AdminMembersPage', () => {
     const changeRidingPermissions = vi.fn().mockReturnValue(pendingUpdate)
     renderPage(createApi({ changeRidingPermissions }))
 
-    const dressageSwitch = await screen.findByRole('switch', { name: '마장마술 승인' })
+    const dressageSwitch = await screen.findByRole('button', { name: '마장마술 승인 변경' })
+    fireEvent.click(dressageSwitch)
     fireEvent.change(screen.getByRole('textbox', { name: '승인 변경 사유' }), {
       target: { value: '실력 확인 완료' },
     })
-    fireEvent.click(dressageSwitch)
+    fireEvent.click(screen.getByRole('button', { name: '승인 변경 내용 확인' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '변경 적용' }))
 
     await waitFor(() => {
       expect(dressageSwitch).toBeDisabled()
-      expect(screen.getByRole('switch', { name: '장애물 승인' })).toBeDisabled()
+      expect(screen.getByRole('button', { name: '장애물 승인 변경' })).toBeDisabled()
     })
     fireEvent.click(dressageSwitch)
     expect(changeRidingPermissions).toHaveBeenCalledTimes(1)
@@ -197,8 +268,8 @@ describe('AdminMembersPage', () => {
     renderPage(createApi())
 
     expect(await screen.findByRole('button', { name: /김승마/ })).toBeInTheDocument()
-    expect(await screen.findByRole('switch', { name: '마장마술 승인' })).toBeInTheDocument()
-    expect(screen.getByRole('switch', { name: '장애물 승인' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '마장마술 승인 변경' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '장애물 승인 변경' })).toBeInTheDocument()
   })
 
   it('현재_승급_상태와_감사_snapshot을_운영자_용어로_표시한다', async () => {
@@ -272,11 +343,12 @@ describe('AdminMembersPage', () => {
     await screen.findByRole('heading', { name: '일반 클래스 승급 관리' })
 
     expect(screen.queryByText('undefined')).not.toBeInTheDocument()
-    expect(screen.getAllByText('확인 불가')).toHaveLength(5)
+    expect(screen.getByText('현재 예약 가능 일반 단계').nextElementSibling).toHaveTextContent('확인 불가')
+    expect(screen.getByText('승급 산정 횟수').nextElementSibling).toHaveTextContent('확인 불가')
     expect(screen.getByText('회원 클래스 관리 정보를 불러오지 못해 변경할 수 없습니다. 잠시 후 화면을 새로고침해 주세요.'))
       .toBeInTheDocument()
     expect(screen.getByRole('button', { name: '변경 결과 미리보기' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: '변경 적용' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '변경 내용 확인' })).toBeDisabled()
   })
 
   it('서버_preview를_확인하고_필수_사유와_함께_baseline을_적용한다', async () => {
@@ -309,13 +381,16 @@ describe('AdminMembersPage', () => {
       baselineClass: 'CANTER_BEGINNER',
     }))
     expect(await screen.findByRole('region', { name: '변경 전후 예상 클래스' })).toHaveTextContent('구보초보')
-    const applyButton = screen.getByRole('button', { name: '변경 적용' })
-    expect(applyButton).toBeDisabled()
+    const applyButton = screen.getByRole('button', { name: '변경 내용 확인' })
+    expect(applyButton).toBeEnabled()
+    fireEvent.click(applyButton)
+    expect(screen.getByText('관리자 사유는 공백을 제외하고 1~500자로 입력해 주세요.')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByText('예상 결과를 확인했습니다. 관리자 사유를 입력하면 변경을 적용할 수 있습니다.'))
       .toBeInTheDocument()
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: '기존 경력 확인' } })
     expect(applyButton).toBeEnabled()
-    fireEvent.click(applyButton)
+    confirmChange()
 
     await waitFor(() => expect(setProgressionBaseline).toHaveBeenCalledWith(
       7,
@@ -340,13 +415,13 @@ describe('AdminMembersPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '변경 결과 미리보기' }))
     await screen.findByRole('region', { name: '변경 전후 예상 클래스' })
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: '경력 확인' } })
-    fireEvent.click(screen.getByRole('button', { name: '변경 적용' }))
+    confirmChange()
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       '다른 변경이 반영됐습니다. 현재 상태에서 예상 결과를 다시 확인해 주세요.',
     )
     expect(screen.queryByRole('region', { name: '변경 전후 예상 클래스' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '변경 적용' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '변경 내용 확인' })).toBeDisabled()
   })
 
   it('횟수_보정값은_프론트에서_계산하지_않고_서버_preview와_Command에_전달한다', async () => {
@@ -371,7 +446,7 @@ describe('AdminMembersPage', () => {
       rideCountDelta: 2,
     }))
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: '누락 2회 정정' } })
-    fireEvent.click(await screen.findByRole('button', { name: '변경 적용' }))
+    confirmChange()
     await waitFor(() => expect(adjustRideCount).toHaveBeenCalledWith(7, 2, '누락 2회 정정', '"state-v1"'))
   })
 
@@ -403,7 +478,7 @@ describe('AdminMembersPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '변경 결과 미리보기' }))
     await screen.findByRole('region', { name: '변경 전후 예상 클래스' })
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: '안전 확인' } })
-    fireEvent.click(screen.getByRole('button', { name: '변경 적용' }))
+    confirmChange()
     await waitFor(() => expect(setPromotionHold).toHaveBeenCalledWith(
       7,
       'ROUND_TROT',
@@ -418,7 +493,7 @@ describe('AdminMembersPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '변경 결과 미리보기' }))
     await screen.findByRole('region', { name: '변경 전후 예상 클래스' })
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: '인정분 재검토' } })
-    fireEvent.click(screen.getByRole('button', { name: '변경 적용' }))
+    confirmChange()
     await waitFor(() => expect(correctSpecialApprovalCredit).toHaveBeenCalledWith(
       7,
       3,
@@ -451,14 +526,14 @@ describe('AdminMembersPage', () => {
     fireEvent.click(screen.getByRole('button', { name: '변경 결과 미리보기' }))
     await screen.findByRole('region', { name: '변경 전후 예상 클래스' })
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: 'baseline 교정' } })
-    fireEvent.click(screen.getByRole('button', { name: '변경 적용' }))
+    confirmChange()
     await waitFor(() => expect(removeProgressionBaseline).toHaveBeenCalledWith(7, 'baseline 교정', '"state-v1"'))
 
     fireEvent.change(screen.getByLabelText('변경 항목'), { target: { value: 'REMOVE_PROMOTION_HOLD' } })
     fireEvent.click(screen.getByRole('button', { name: '변경 결과 미리보기' }))
     await screen.findByRole('region', { name: '변경 전후 예상 클래스' })
     fireEvent.change(screen.getByLabelText('관리자 사유'), { target: { value: '안전 재평가 완료' } })
-    fireEvent.click(screen.getByRole('button', { name: '변경 적용' }))
+    confirmChange()
     await waitFor(() => expect(removePromotionHold).toHaveBeenCalledWith(7, '안전 재평가 완료', '"state-v1"'))
   })
 
@@ -474,10 +549,10 @@ describe('AdminMembersPage', () => {
       getMember: vi.fn().mockResolvedValue(heldMember),
     }))
 
-    expect(await screen.findByText('특수 승인을 변경하려면 승급 보류를 먼저 명시적으로 해제해야 합니다.'))
+    expect(await screen.findByText('특수 승인을 부여하려면 자동 승급 보류를 먼저 직접 해제해 주세요.'))
       .toBeInTheDocument()
-    expect(screen.getByRole('switch', { name: '마장마술 승인' })).toBeDisabled()
-    expect(screen.getByRole('switch', { name: '장애물 승인' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '마장마술 승인 변경' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '장애물 승인 변경' })).toBeDisabled()
     const management = screen.getByLabelText('변경 항목')
     expect(within(management).getByRole('option', { name: '자동 승급 보류 해제' })).toBeEnabled()
   })

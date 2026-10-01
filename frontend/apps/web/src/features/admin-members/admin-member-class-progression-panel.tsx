@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   getAdminMembersErrorCode,
@@ -12,16 +12,10 @@ import {
   type MemberClassProgressionPreviewResponse,
 } from './admin-members.api'
 
+import { MemberChangeDialog } from './member-change-dialog'
+import { GENERAL_GRADES, gradeLabel, formatDateTime, formatCount } from './member-formatters'
+
 const AUDIT_PAGE_SIZE = 5
-const GENERAL_GRADES: ReadonlyArray<{ value: GeneralRidingGrade; label: string }> = [
-  { value: 'FIRST_RIDE', label: '왕초보' },
-  { value: 'ROUND_BEGINNER', label: '원형초보' },
-  { value: 'ROUND_TROT', label: '원형 속보' },
-  { value: 'LARGE_ARENA_BEGINNER', label: '대마장초보' },
-  { value: 'LARGE_ARENA_TROT', label: '대마장 속보' },
-  { value: 'CANTER_BEGINNER', label: '구보초보' },
-  { value: 'CANTER', label: '구보' },
-]
 
 const ACTION_LABELS: Record<MemberClassProgressionPreviewAction, string> = {
   SET_BASELINE: '인정 시작 클래스 설정·변경',
@@ -51,11 +45,7 @@ interface AdminMemberClassProgressionPanelProps {
   onMemberUpdated(member: AdminMemberProgressionResponse): void
 }
 
-export function AdminMemberClassProgressionPanel({
-  member,
-  api,
-  onMemberUpdated,
-}: AdminMemberClassProgressionPanelProps) {
+export function AdminMemberClassProgressionPanel({ member, api, onMemberUpdated }: AdminMemberClassProgressionPanelProps) {
   const queryClient = useQueryClient()
   const [action, setAction] = useState<MemberClassProgressionPreviewAction>('SET_BASELINE')
   const [grade, setGrade] = useState<GeneralRidingGrade>(member.progressionClass ?? 'FIRST_RIDE')
@@ -63,261 +53,139 @@ export function AdminMemberClassProgressionPanel({
   const [reason, setReason] = useState('')
   const [preview, setPreview] = useState<MemberClassProgressionPreviewResponse>()
   const [localError, setLocalError] = useState<string>()
+  const [fieldError, setFieldError] = useState<string>()
+  const [reasonError, setReasonError] = useState<string>()
   const [successMessage, setSuccessMessage] = useState<string>()
   const [auditPage, setAuditPage] = useState(0)
+  const [confirmation, setConfirmation] = useState(false)
+  const generation = useRef(0)
+  const locked = useRef(false)
+  const feedback = useRef<HTMLParagraphElement>(null)
   const hasSpecialApproval = member.dressageApproved || member.jumpingApproved
-
+  const managementStartedAt = member.progressionManagementStartedAt?.valueOf()
   useEffect(() => {
+    generation.current++
     setPreview(undefined)
+    setConfirmation(false)
     setLocalError(undefined)
-  }, [
-    member.dressageApproved,
-    member.generalRideCount,
-    member.jumpingApproved,
-    member.progressionBaselineClass,
-    member.progressionValue,
-    member.promotionHoldClass,
-    member.specialApprovalProgressionCredit,
-  ])
-
+  }, [member.id, member.dressageApproved, member.generalRideCount, member.jumpingApproved, member.progressionBaselineClass, member.progressionBaselineThreshold, member.progressionBaselineActualRideCount, managementStartedAt, member.progressionValue, member.progressionClass, member.effectiveClass, member.promotionHoldClass, member.specialApprovalProgressionCredit])
   const auditQuery = useQuery({
     queryKey: ['admin', 'members', member.id, 'progression-audit', auditPage],
     queryFn: () => api.getProgressionAuditLogs(member.id, auditPage, AUDIT_PAGE_SIZE),
   })
-
   const previewMutation = useMutation({
-    mutationFn: (request: MemberClassProgressionPreviewRequest) => api.previewProgression(member.id, request),
+    retry: false,
+    mutationFn: async (request: { value: MemberClassProgressionPreviewRequest; generation: number }) => ({ value: await api.previewProgression(member.id, request.value), generation: request.generation }),
     onSuccess: (result) => {
-      setPreview(result)
+      if (result.generation !== generation.current) return
+      setPreview(result.value)
       setLocalError(undefined)
       setSuccessMessage(undefined)
     },
-    onError: (error) => {
+    onError: async (error, request) => {
+      const message = await progressionErrorMessage(error, 'preview')
+      if (request.generation !== generation.current) return
       setPreview(undefined)
-      void progressionErrorMessage(error, 'preview').then(setLocalError)
+      setLocalError(message)
     },
   })
-
   const commandMutation = useMutation({
+    retry: false,
     mutationFn: async () => {
-      if (!preview) throw new Error('예상 결과를 먼저 확인해 주세요.')
+      if (!preview || isActionDisabled(action, member, hasSpecialApproval)) throw new Error('예상 결과를 다시 확인해 주세요.')
       return executeCommand(api, member.id, action, grade, numericValue, reason.trim(), preview.stateToken)
     },
-    onSuccess: (updatedMember) => {
+    onSuccess: async (updatedMember) => {
       onMemberUpdated(updatedMember)
       setPreview(undefined)
       setReason('')
       setLocalError(undefined)
       setSuccessMessage(`${ACTION_LABELS[action]} 처리가 완료됐습니다.`)
-      void queryClient.invalidateQueries({ queryKey: ['admin', 'members', member.id, 'progression-audit'] })
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'members', member.id, 'progression-audit'] })
     },
-    onError: (error) => {
-      void progressionErrorMessage(error, 'command').then(({ message, staleState }) => {
-        if (staleState) setPreview(undefined)
-        setLocalError(message)
-      })
+    onError: async (error) => {
+      const result = await progressionErrorMessage(error, 'command')
+      setPreview(undefined)
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'members', member.id], exact: true })
+      await queryClient.invalidateQueries({ queryKey: ['admin', 'member-list'] })
+      setLocalError(result.message)
     },
+    onSettled: () => { locked.current = false; setConfirmation(false); requestAnimationFrame(() => feedback.current?.focus()) },
   })
-
   const resetPreview = () => {
+    generation.current++
     setPreview(undefined)
+    setConfirmation(false)
+    setFieldError(undefined)
+    setReasonError(undefined)
     setLocalError(undefined)
     setSuccessMessage(undefined)
     previewMutation.reset()
     commandMutation.reset()
   }
-
-  const previewChange = (event: FormEvent) => {
-    event.preventDefault()
-    try {
-      const request = buildPreviewRequest(action, grade, numericValue)
-      setLocalError(undefined)
-      previewMutation.mutate(request)
-    } catch (error) {
-      setPreview(undefined)
-      setLocalError(error instanceof Error ? error.message : '입력값을 확인해 주세요.')
-    }
-  }
-
   const progressionDataAvailable = hasProgressionSnapshot(member)
   const actionDisabled = !progressionDataAvailable || isActionDisabled(action, member, hasSpecialApproval)
   const busy = previewMutation.isPending || commandMutation.isPending
-
-  return (
+  const previewChange = (event: FormEvent) => {
+    event.preventDefault()
+    if (busy || actionDisabled) return
+    try {
+      const request = buildPreviewRequest(action, grade, numericValue)
+      if (action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' && (Number(numericValue) < 0 || Number(numericValue) > member.specialApprovalProgressionCredit)) throw new Error('추가 인정 횟수는 0 이상이며 기존 인정 횟수 이하로 입력해 주세요.')
+      setLocalError(undefined)
+      setFieldError(undefined)
+      previewMutation.mutate({ value: request, generation: generation.current })
+    } catch (error) { setPreview(undefined); setFieldError(error instanceof Error ? error.message : '입력값을 확인해 주세요.') }
+  }
+  const review = () => {
+    if (!preview || busy || actionDisabled) return
+    if (!reason.trim() || reason.trim().length > 500) { setReasonError('관리자 사유는 공백을 제외하고 1~500자로 입력해 주세요.'); document.getElementById('member-general-reason')?.focus(); return }
+    setReasonError(undefined)
+    setConfirmation(true)
+  }
+  return <>
     <section className="admin-member-progression" aria-labelledby="member-progression-title">
-      <div className="admin-member-section-heading">
-        <div>
-          <h3 id="member-progression-title">일반 클래스 승급 관리</h3>
-          <p>실제 일반 기승 기록과 관리자 인정 정보를 기준으로 현재 클래스를 계산합니다.</p>
-        </div>
-        <span>{gradeLabel(member.effectiveClass)}</span>
-      </div>
-
-      <dl className="admin-member-progression-grid">
-        <ProgressionStat label="실제 일반 기승 횟수" value={formatCount(member.generalRideCount)} />
-        <ProgressionStat label="승급 산정 횟수" value={formatCount(member.progressionValue)} />
-        <ProgressionStat label="자동 산정 클래스" value={gradeLabel(member.progressionClass)} />
-        <ProgressionStat label="현재 적용 클래스" value={gradeLabel(member.effectiveClass)} />
-        <ProgressionStat label="인정 시작 클래스" value={gradeLabel(member.progressionBaselineClass)} />
-        <ProgressionStat label="특수 승인 추가 인정 횟수" value={formatCount(member.specialApprovalProgressionCredit)} />
-        <ProgressionStat label="자동 승급 보류 클래스" value={gradeLabel(member.promotionHoldClass)} />
-        <ProgressionStat label="승급 관리 시작 시각" value={formatDateTime(member.progressionManagementStartedAt)} />
-      </dl>
-
-      <p className="admin-member-policy-note">
-        특수 클래스 승인이 있는 회원은 자동 승급 보류를 함께 사용할 수 없습니다. 실제 기승 횟수 보정은
-        Horse에서 누락되거나 중복 집계된 일반 기승 기록만 바로잡습니다.
-      </p>
-
-      <form className="admin-member-progression-form" onSubmit={previewChange}>
-        <label>
-          변경 항목
-          <select
-            aria-label="변경 항목"
-            value={action}
-            disabled={busy || !progressionDataAvailable}
-            onChange={(event) => {
-              setAction(event.target.value as MemberClassProgressionPreviewAction)
-              resetPreview()
-            }}
-          >
-            {(Object.keys(ACTION_LABELS) as MemberClassProgressionPreviewAction[]).map((candidate) => (
-              <option
-                key={candidate}
-                value={candidate}
-                disabled={!progressionDataAvailable || isActionDisabled(candidate, member, hasSpecialApproval)}
-              >
-                {ACTION_LABELS[candidate]}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {action === 'SET_BASELINE' || action === 'SET_PROMOTION_HOLD' ? (
-          <label>
-            {action === 'SET_BASELINE' ? '인정 시작 클래스' : '보류할 최고 클래스'}
-            <select
-              aria-label={action === 'SET_BASELINE' ? '인정 시작 클래스' : '보류할 최고 클래스'}
-              value={grade}
-              disabled={busy || !progressionDataAvailable}
-              onChange={(event) => {
-                setGrade(event.target.value as GeneralRidingGrade)
-                resetPreview()
-              }}
-            >
-              {GENERAL_GRADES.map((candidate) => (
-                <option key={candidate.value} value={candidate.value}>{candidate.label}</option>
-              ))}
-            </select>
-          </label>
-        ) : null}
-
-        {action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' || action === 'ADJUST_RIDE_COUNT' ? (
-          <label>
-            {action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' ? '교정 후 추가 인정 횟수' : '기승 횟수 증감'}
-            <input
-              type="number"
-              step="1"
-              value={numericValue}
-              disabled={busy || !progressionDataAvailable}
-              onChange={(event) => {
-                setNumericValue(event.target.value)
-                resetPreview()
-              }}
-            />
-          </label>
-        ) : null}
-
-        <label className="admin-member-progression-reason">
-          관리자 사유
-          <input
-            type="text"
-            maxLength={500}
-            value={reason}
-            disabled={busy || !progressionDataAvailable}
-            onChange={(event) => setReason(event.target.value)}
-          />
-        </label>
-
-        {actionDisabled ? (
-          <p
-            className="admin-member-progression-guidance"
-            id="member-progression-apply-guidance"
-            role="status"
-          >
-            {disabledActionGuidance(member, hasSpecialApproval, progressionDataAvailable)}
-          </p>
-        ) : (
-          <p className="admin-member-progression-guidance" id="member-progression-apply-guidance">
-            {preview
-              ? reason.trim()
-                ? '예상 결과를 확인했습니다. 이제 변경을 적용할 수 있습니다.'
-                : '예상 결과를 확인했습니다. 관리자 사유를 입력하면 변경을 적용할 수 있습니다.'
-              : '먼저 변경 결과를 미리 본 뒤 적용할 수 있습니다.'}
-          </p>
-        )}
-
-        <div className="admin-member-progression-actions">
-          <button type="submit" disabled={busy || actionDisabled}>변경 결과 미리보기</button>
-          <button
-            type="button"
-            className="admin-member-primary-action"
-            aria-describedby="member-progression-apply-guidance"
-            disabled={busy || actionDisabled || preview === undefined || !reason.trim()}
-            onClick={() => commandMutation.mutate()}
-          >
-            {commandMutation.isPending ? '적용 중' : '변경 적용'}
-          </button>
-        </div>
+      <div className="admin-member-section-heading"><div><h3 id="member-progression-title">일반 클래스 승급 관리</h3><p>작업을 선택하고 변경 전·후 결과를 확인한 뒤 적용합니다.</p></div></div>
+      <p className="admin-member-policy-note">실제 기승 횟수 보정은 Horse에서 누락되거나 중복 집계된 일반 기승 기록만 바로잡습니다. 특수 승인과 자동 승급 보류는 함께 사용할 수 없습니다.</p>
+      <form className="admin-member-progression-form" onSubmit={previewChange} noValidate>
+        <label htmlFor="member-general-action">변경 항목</label>
+        <select id="member-general-action" value={action} disabled={busy || !progressionDataAvailable} onChange={(event) => { setAction(event.target.value as MemberClassProgressionPreviewAction); resetPreview() }}>
+          {(Object.keys(ACTION_LABELS) as MemberClassProgressionPreviewAction[]).map((candidate) => <option key={candidate} value={candidate} disabled={!progressionDataAvailable || isActionDisabled(candidate, member, hasSpecialApproval)}>{ACTION_LABELS[candidate]}</option>)}
+        </select>
+        {action === 'SET_BASELINE' || action === 'SET_PROMOTION_HOLD' ? <div className="admin-member-field">
+          <label htmlFor="member-general-grade">{action === 'SET_BASELINE' ? '인정 시작 클래스' : '보류할 최고 클래스'}</label>
+          <select id="member-general-grade" value={grade} disabled={busy || !progressionDataAvailable} onChange={(event) => { setGrade(event.target.value as GeneralRidingGrade); resetPreview() }}>{GENERAL_GRADES.map((candidate) => <option key={candidate.value} value={candidate.value}>{candidate.label}</option>)}</select>
+        </div> : null}
+        {action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' || action === 'ADJUST_RIDE_COUNT' ? <div className="admin-member-field">
+          <label htmlFor="member-general-value">{action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' ? '교정 후 추가 인정 횟수' : '기승 횟수 증감'}</label>
+          <input id="member-general-value" type="number" step="1" min={action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' ? 0 : undefined} max={action === 'CORRECT_SPECIAL_APPROVAL_CREDIT' ? member.specialApprovalProgressionCredit : undefined} value={numericValue} disabled={busy || !progressionDataAvailable} aria-invalid={Boolean(fieldError)} aria-describedby="member-general-value-error" onChange={(event) => { setNumericValue(event.target.value); resetPreview() }} />
+        </div> : null}
+        <p id="member-general-value-error" className="admin-member-inline-error" role={fieldError ? 'alert' : undefined}>{fieldError}</p>
+        {actionDisabled ? <p className="admin-member-progression-guidance" id="member-progression-apply-guidance" role="status">{disabledActionGuidance(member, hasSpecialApproval, progressionDataAvailable)}</p> : <p className="admin-member-help" id="member-progression-apply-guidance">{preview ? reason.trim() ? '예상 결과를 확인했습니다. 변경 내용을 확인한 뒤 적용해 주세요.' : '예상 결과를 확인했습니다. 관리자 사유를 입력하면 변경을 적용할 수 있습니다.' : '먼저 변경 결과를 미리 본 뒤 적용할 수 있습니다.'}</p>}
+        <button type="submit" disabled={busy || actionDisabled}>{previewMutation.isPending ? '결과 확인 중' : '변경 결과 미리보기'}</button>
       </form>
-
-      {preview ? <ProgressionPreview preview={preview} /> : null}
-      {localError ? <p className="admin-member-inline-error" role="alert">{localError}</p> : null}
-      {successMessage ? <p className="admin-member-success" role="status">{successMessage}</p> : null}
-
-      <section className="admin-member-progression-audit" aria-labelledby="member-progression-audit-title">
-        <div className="admin-member-section-heading">
-          <h3 id="member-progression-audit-title">변경 감사</h3>
-          <span>총 {auditQuery.data?.totalElements ?? 0}건</span>
-        </div>
-        {auditQuery.isPending ? (
-          <p role="status">감사 이력을 불러오는 중입니다.</p>
-        ) : auditQuery.isError ? (
-          <p className="admin-member-inline-error" role="alert">감사 이력을 불러오지 못했습니다.</p>
-        ) : auditQuery.data?.content.length === 0 ? (
-          <p>기록된 변경 감사 이력이 없습니다.</p>
-        ) : (
-          <ol className="admin-member-progression-audit-list">
-            {auditQuery.data?.content.map((audit) => (
-              <li key={audit.auditId}>
-                <div><strong>{AUDIT_LABELS[audit.action]}</strong><time dateTime={audit.occurredAt.toISOString()}>{formatDateTime(audit.occurredAt)}</time></div>
-                <p>{audit.reason}</p>
-                <small>처리자 {audit.actorAuthSubject}</small>
-                <details>
-                  <summary>전후 상태 보기</summary>
-                  <dl>
-                    <div><dt>변경 전</dt><dd><AuditState state={audit.fromState} /></dd></div>
-                    <div><dt>변경 후</dt><dd><AuditState state={audit.toState} /></dd></div>
-                  </dl>
-                </details>
-              </li>
-            ))}
-          </ol>
-        )}
-        {(auditQuery.data?.totalPages ?? 0) > 0 ? (
-          <nav className="admin-member-progression-pagination" aria-label="회원 클래스 변경 감사 페이지">
-            <button type="button" disabled={auditPage === 0 || auditQuery.isFetching} onClick={() => setAuditPage((value) => value - 1)}>이전</button>
-            <span>{auditPage + 1} / {auditQuery.data?.totalPages ?? 1} 페이지</span>
-            <button type="button" disabled={!auditQuery.data?.hasNext || auditQuery.isFetching} onClick={() => setAuditPage((value) => value + 1)}>다음</button>
-          </nav>
-        ) : null}
-      </section>
+      {preview ? <ProgressionPreview preview={preview} /> : <div className="admin-member-progression-preview"><h4>변경 전·후 확인</h4><p>미리보기를 실행하면 현재 값과 변경 후 예상 결과가 표시됩니다.</p></div>}
+      <div className="admin-member-reason-area">
+        <label htmlFor="member-general-reason">관리자 사유</label><textarea id="member-general-reason" maxLength={500} value={reason} disabled={busy || !progressionDataAvailable} aria-invalid={Boolean(reasonError)} aria-describedby="member-general-reason-help member-general-reason-error" onChange={(event) => { setReason(event.target.value); setReasonError(undefined) }} />
+        <p className="admin-member-help" id="member-general-reason-help">미리보기 확인 후 입력 · 필수 · 공백 제외 1~500자</p><p id="member-general-reason-error" className="admin-member-inline-error" role={reasonError ? 'alert' : undefined}>{reasonError}</p>
+        <button type="button" className="admin-member-primary-action" aria-describedby="member-progression-apply-guidance" disabled={busy || actionDisabled || !preview} onClick={review}>변경 내용 확인</button>
+      </div>
+      {localError || successMessage ? <p ref={feedback} tabIndex={-1} className={localError ? 'admin-member-inline-error' : 'admin-member-success'} role={localError ? 'alert' : 'status'}>{localError ?? successMessage}</p> : null}
+      {confirmation && preview ? <MemberChangeDialog title={`${ACTION_LABELS[action]} 확인`} pending={commandMutation.isPending} onClose={() => setConfirmation(false)} onConfirm={() => { if (!locked.current && preview && !actionDisabled) { locked.current = true; commandMutation.mutate() } }}>
+        <dl className="admin-member-confirm-facts"><div><dt>회원</dt><dd>{member.name} · {member.phone}</dd></div><div><dt>작업</dt><dd>{ACTION_LABELS[action]}</dd></div><div><dt>사유</dt><dd>{reason.trim()}</dd></div></dl>
+        <ProgressionPreview preview={preview} />
+        <p>최종 결과는 서버 검증을 따릅니다. 적용 후 최신 회원 상태와 감사 이력을 확인해 주세요.</p>
+      </MemberChangeDialog> : null}
     </section>
-  )
-}
-
-function ProgressionStat({ label, value }: { label: string; value: string }) {
-  return <div><dt>{label}</dt><dd>{value}</dd></div>
+    <section className="admin-member-progression-audit" aria-labelledby="member-progression-audit-title">
+      <div className="admin-member-section-heading"><div><h3 id="member-progression-audit-title">변경 감사 이력</h3><p>변경 내용·사유·시점 · 페이지당 5건</p></div><span>총 {auditQuery.data?.totalElements ?? 0}건</span></div>
+      {auditQuery.isPending ? <p role="status">감사 이력을 불러오는 중입니다.</p> : auditQuery.isError ? <div role="alert"><p>감사 이력을 불러오지 못했습니다.</p><button type="button" onClick={() => { void auditQuery.refetch() }}>다시 불러오기</button></div> : auditQuery.data?.content.length === 0 ? <p>기록된 변경 감사 이력이 없습니다.</p> : <ol className="admin-member-progression-audit-list">{auditQuery.data?.content.map((audit) => <li key={audit.auditId}>
+        <div className="admin-member-audit-top"><strong>{AUDIT_LABELS[audit.action]}</strong><time dateTime={audit.occurredAt.toISOString()}>{formatDateTime(audit.occurredAt)}</time></div><p>{audit.reason}</p>
+        <details><summary>전후 상태 보기</summary><div className="admin-member-audit-comparison"><section><h4>변경 전</h4><AuditState state={audit.fromState} /></section><section><h4>변경 후</h4><AuditState state={audit.toState} /></section></div></details>
+      </li>)}</ol>}
+      {(auditQuery.data?.totalPages ?? 0) > 0 ? <nav className="admin-member-progression-pagination" aria-label="회원 클래스 변경 감사 페이지"><button type="button" disabled={auditPage === 0 || auditQuery.isFetching} onClick={() => setAuditPage((value) => value - 1)}>이전</button><span>{auditPage + 1} / {auditQuery.data?.totalPages ?? 1} 페이지</span><button type="button" disabled={!auditQuery.data?.hasNext || auditQuery.isFetching} onClick={() => setAuditPage((value) => value + 1)}>다음</button></nav> : null}
+    </section>
+  </>
 }
 
 function ProgressionPreview({ preview }: { preview: MemberClassProgressionPreviewResponse }) {
@@ -344,6 +212,8 @@ function ProgressionProjection({
     <dl>
       <div><dt>{title} 적용 클래스</dt><dd>{gradeLabel(projection.effectiveClass)}</dd></div>
       <div><dt>승급 산정</dt><dd>{formatCount(projection.progressionValue)} · {gradeLabel(projection.progressionClass)}</dd></div>
+      <div><dt>인정 시작 클래스</dt><dd>{projection.baselineClass ? gradeLabel(projection.baselineClass) : '설정 없음'}</dd></div>
+      <div><dt>보류 상한</dt><dd>{projection.promotionHoldClass ? gradeLabel(projection.promotionHoldClass) : '설정 없음'}</dd></div>
       <div><dt>실제 일반 기승 횟수</dt><dd>{formatCount(projection.actualCompletedRideCount)}</dd></div>
       <div><dt>특수 승인 추가 인정 횟수</dt><dd>{formatCount(projection.specialApprovalProgressionCredit)}</dd></div>
     </dl>
@@ -441,6 +311,7 @@ function disabledActionGuidance(
 }
 
 function integerValue(value: string) {
+  if (!value.trim()) throw new Error('값은 정수로 입력해 주세요.')
   const parsed = Number(value)
   if (!Number.isInteger(parsed)) throw new Error('값은 정수로 입력해 주세요.')
   return parsed
@@ -470,26 +341,6 @@ async function progressionErrorMessage(error: unknown, target: 'preview' | 'comm
     : '변경을 적용하지 못했습니다. 현재 상태를 다시 확인해 주세요.'
   }
   return target === 'preview' ? message : { message, staleState }
-}
-
-function gradeLabel(grade: GeneralRidingGrade | null | undefined) {
-  if (grade === undefined) return '확인 불가'
-  if (grade === null) return '미설정'
-  return GENERAL_GRADES.find((candidate) => candidate.value === grade)?.label ?? '확인 불가'
-}
-
-function formatDateTime(value: string | Date | null | undefined) {
-  if (value === undefined) return '확인 불가'
-  if (value === null) return '미설정'
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat('ko-KR', {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  }).format(date)
-}
-
-function formatCount(value: number | null | undefined) {
-  return typeof value === 'number' && Number.isFinite(value) ? `${value}회` : '확인 불가'
 }
 
 function hasProgressionSnapshot(member: AdminMemberProgressionResponse) {
@@ -524,6 +375,9 @@ function auditStateEntries(state: object): Array<[string, string]> {
   addNumber(entries, values, 'baselineActualRideCount', '인정 시점 실제 기승', '회')
   addNumber(entries, values, 'specialApprovalProgressionCredit', '특수 승인 추가 인정 횟수', '회')
   addGrade(entries, values, 'promotionHoldClass', '자동 승급 보류 클래스')
+  for (const [key, label] of [['dressageApproved', '마장마술 승인'], ['jumpingApproved', '장애물 승인']]) {
+    if (typeof values[key] === 'boolean') entries.push([label, values[key] ? '승인' : '미승인'])
+  }
   return entries
 }
 
