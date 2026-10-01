@@ -115,31 +115,32 @@ async function closeDateWithReservation(
 ) {
   const datePanel = page.getByRole('tabpanel', { name: '날짜 전체 휴무' })
   await datePanel.getByLabel('대상 날짜').fill(fixture.dateClosureDate)
-  await expect(datePanel.getByText('R14 날짜 회원')).toBeVisible()
+  await expect(datePanel.getByRole('heading', { name: /R14 날짜 회원/ })).toBeVisible()
   await datePanel.getByLabel('운영 사유').fill('Checkpoint 날짜 휴무')
-  await datePanel.getByRole('button', { name: '영향 확인 후 휴무 시작' }).click()
+  await datePanel.getByRole('button', { name: '날짜 휴무 시작' }).click()
   await page.getByRole('dialog', { name: '날짜 휴무 처리 시작' })
-    .getByRole('button', { name: 'CLOSING 시작' }).click()
+    .getByRole('button', { name: '날짜 휴무 시작' }).click()
 
-  await expect(page.getByText(/날짜를 CLOSING으로 전환했습니다/)).toBeVisible()
+  await expect(page.getByText(/날짜 휴무를 시작했습니다/)).toBeVisible()
   const reservation = datePanel.locator('article').filter({ hasText: 'R14 날짜 회원' })
-  await reservation.getByLabel('취소 메모').fill('고객 연락 후 날짜 휴무')
-  await reservation.getByRole('button', { name: '연락 후 취소 확정' }).click()
+  await reservation.locator('summary').click()
+  await reservation.getByLabel('관리자 메모').fill('고객 연락 후 날짜 휴무')
+  await reservation.getByRole('button', { name: '예약 한 건 취소' }).click()
   const cancellationResponse = page.waitForResponse((response) =>
     response.url().includes('/cancel-for-closure')
     && response.request().method() === 'POST')
-  await page.getByRole('dialog', { name: /휴무 취소/ })
-    .getByRole('button', { name: '예약 취소 확정' }).click()
+  await page.getByRole('dialog', { name: /예약 번호.*취소 확인/ })
+    .getByRole('button', { name: '예약 한 건 취소' }).click()
   expect(await (await cancellationResponse).json()).toMatchObject({
     changed: true,
     couponAction: 'none',
   })
   await expect(reservation).toHaveCount(0)
 
-  await datePanel.getByRole('button', { name: 'CLOSED 확정' }).click()
-  await page.getByRole('dialog', { name: '날짜 휴무 확정' })
-    .getByRole('button', { name: 'CLOSED 확정' }).click()
-  await expect(page.getByText(/날짜를 CLOSED로 확정했습니다/)).toBeVisible()
+  await datePanel.getByRole('button', { name: '휴무 완료' }).click()
+  await page.getByRole('dialog', { name: '날짜 휴무 완료' })
+    .getByRole('button', { name: '휴무 완료' }).click()
+  await expect(page.getByText(/날짜 휴무가 완료되었습니다/)).toBeVisible()
   await expect(datePanel.locator('[data-status="CLOSED"]')).toBeVisible()
 }
 
@@ -151,11 +152,11 @@ async function closeDateWithoutReservation(
   await datePanel.getByLabel('대상 날짜').fill(emptyClosureDate)
   await expect(datePanel.getByText('0건', { exact: true }).first()).toBeVisible()
   await datePanel.getByLabel('운영 사유').fill('예약 없는 날짜 휴무')
-  await datePanel.getByRole('button', { name: '활성 예약 없음 · 즉시 CLOSED 확정' }).click()
-  await page.getByRole('dialog', { name: '예약 없는 날짜 즉시 휴무' })
-    .getByRole('button', { name: '즉시 CLOSED 확정' }).click()
+  await datePanel.getByRole('button', { name: '날짜 휴무 시작' }).click()
+  await page.getByRole('dialog', { name: '날짜 휴무 처리 시작' })
+    .getByRole('button', { name: '날짜 휴무 시작' }).click()
 
-  await expect(page.getByText(/날짜를 CLOSED로 확정했습니다/)).toBeVisible()
+  await expect(page.getByText(/날짜 휴무가 완료되었습니다/)).toBeVisible()
   await expect(datePanel.locator('[data-status="CLOSED"]')).toBeVisible()
 }
 
@@ -163,48 +164,49 @@ async function completeAndReopenTimeSlotClosure(
   page: import('@playwright/test').Page,
   fixture: M31R14ClosureFixture,
 ) {
-  await page.getByRole('tab', { name: '개별 TimeSlot 휴강' }).click()
-  const slotPanel = page.getByRole('tabpanel', { name: '개별 TimeSlot 휴강' })
-  await slotPanel.getByLabel('대상 TimeSlot').selectOption(String(fixture.timeSlotClosureId))
-  await expect(slotPanel.getByText('선택한 TimeSlot에 휴강 작업이 없습니다.')).toBeVisible()
-  await expect(slotPanel.getByLabel('대상 TimeSlot').locator('option:checked'))
+  await page.getByRole('tab', { name: '개별 수업 휴강' }).click()
+  const slotPanel = page.getByRole('tabpanel', { name: '개별 수업 휴강' })
+  await slotPanel.getByLabel('대상 수업 시간').selectOption(String(fixture.timeSlotClosureId))
+  await expect(slotPanel.getByText('아직 영향 예약이 확정되지 않았습니다. 휴강 시작 후 확인할 수 있습니다.')).toBeVisible()
+  await expect(slotPanel.getByLabel('대상 수업 시간').locator('option:checked'))
     .toContainText(formatSeoulDate(fixture.timeSlotClosureDate))
   await slotPanel.getByLabel('운영 사유').fill('Checkpoint 개별 휴강')
-  await slotPanel.getByRole('button', { name: '휴강 시작' }).click()
-  await page.getByRole('dialog', { name: '개별 TimeSlot 휴강 시작' })
+  await slotPanel.getByRole('button', { name: '휴강 시작 검토' }).click()
+  await page.getByRole('dialog', { name: '개별 수업 시간 휴강 시작' })
     .getByRole('button', { name: '휴강 시작' }).click()
 
   await expect(page.getByText(/개별 휴강을 시작하고 영향 예약 목록을 고정했습니다/)).toBeVisible()
   const reservation = slotPanel.locator('article').filter({ hasText: 'R14 휴강 회원' })
-  await expect(reservation).toContainText(`#${fixture.timeSlotClosureReservationId}`)
-  await reservation.getByLabel('취소 메모').fill('고객 연락 후 개별 휴강')
-  await reservation.getByRole('button', { name: '연락 후 취소 확정' }).click()
-  await page.getByRole('dialog', { name: /휴강 취소/ })
-    .getByRole('button', { name: '예약 취소 확정' }).click()
-  await expect(reservation.getByText('취소 완료 · 쿠폰 NONE')).toBeVisible()
+  await expect(reservation).toContainText(`예약 번호 ${fixture.timeSlotClosureReservationId}`)
+  await reservation.locator('summary').click()
+  await reservation.getByLabel('관리자 메모').fill('고객 연락 후 개별 휴강')
+  await reservation.getByRole('button', { name: '예약 한 건 취소' }).click()
+  await page.getByRole('dialog', { name: /예약 번호.*취소 확인/ })
+    .getByRole('button', { name: '예약 한 건 취소' }).click()
+  await expect(reservation.getByText('취소 처리 완료 · 별도 쿠폰 처리가 없습니다.')).toBeVisible()
 
-  await slotPanel.getByRole('button', { name: '휴강 정리 완료' }).click()
-  await page.getByRole('dialog', { name: '개별 휴강 정리 완료' })
+  await slotPanel.getByRole('button', { name: '휴강 완료' }).click()
+  await page.getByRole('dialog', { name: '개별 휴강 완료' })
     .getByRole('button', { name: '휴강 완료' }).click()
   await expect(page.getByText(/휴강을 완료했습니다/)).toBeVisible()
 
-  await slotPanel.getByRole('button', { name: '완료 후 재개' }).click()
-  await page.getByRole('dialog', { name: '완료된 TimeSlot 재개' })
-    .getByRole('button', { name: '예약 재개' }).click()
+  await slotPanel.getByRole('button', { name: '관리자 휴강 해제' }).click()
+  await page.getByRole('dialog', { name: '관리자 휴강 설정 해제' })
+    .getByRole('button', { name: '관리자 휴강 해제' }).click()
   await expect(page.getByText(/기존 예약은 복구되지 않습니다/)).toBeVisible()
-  await expect(slotPanel.getByText('개별 휴강은 재개되었습니다.')).toBeVisible()
+  await expect(slotPanel.getByRole('heading', { name: '관리자 휴강 해제' })).toBeVisible()
 }
 
 async function withdrawEmptyTimeSlotClosure(
   page: import('@playwright/test').Page,
   timeSlotId: number,
 ) {
-  const slotPanel = page.getByRole('tabpanel', { name: '개별 TimeSlot 휴강' })
-  await slotPanel.getByLabel('대상 TimeSlot').selectOption(String(timeSlotId))
-  await expect(slotPanel.getByText('선택한 TimeSlot에 휴강 작업이 없습니다.')).toBeVisible()
+  const slotPanel = page.getByRole('tabpanel', { name: '개별 수업 휴강' })
+  await slotPanel.getByLabel('대상 수업 시간').selectOption(String(timeSlotId))
+  await expect(slotPanel.getByText('아직 영향 예약이 확정되지 않았습니다. 휴강 시작 후 확인할 수 있습니다.')).toBeVisible()
   await slotPanel.getByLabel('운영 사유').fill('Checkpoint 철회 검증')
-  await slotPanel.getByRole('button', { name: '휴강 시작' }).click()
-  await page.getByRole('dialog', { name: '개별 TimeSlot 휴강 시작' })
+  await slotPanel.getByRole('button', { name: '휴강 시작 검토' }).click()
+  await page.getByRole('dialog', { name: '개별 수업 시간 휴강 시작' })
     .getByRole('button', { name: '휴강 시작' }).click()
   await expect(page.getByText(/개별 휴강을 시작하고 영향 예약 목록을 고정했습니다/)).toBeVisible()
 
