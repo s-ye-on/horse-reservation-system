@@ -38,17 +38,19 @@ test.describe('MVP 3 관리자 운영 핵심 흐름', () => {
     const page = await createAuthenticatedPage(browser, 'e2e-m3-11-admin', 'ADMIN')
     await navigateWithinApp(page, '/admin/attendance')
 
-    await page.getByLabel('수업 날짜').selectOption(fixture.lessonDate)
-    await page.getByLabel('시작 시간').selectOption('17:00:00')
+    const card = page.getByRole('article', { name: fixture.completedMemberName })
+    await card.getByRole('checkbox').check()
+    await card.getByLabel(`${fixture.completedMemberName} 처리 결과`).selectOption('complete')
+    await card.locator('..').locator('..').getByRole('button', { name: '선택 예약 함께 확인' }).click()
     const responsePromise = page.waitForResponse((response) =>
       response.url().endsWith('/api/admin/reservations/complete-bulk')
       && response.request().method() === 'POST')
-    await page.getByRole('button', { name: '선택 예약 일괄 처리' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: '선택 1건 결과 기록' }).click()
     const response = await responsePromise
 
     expect(await response.json()).toMatchObject({ requestedCount: 1, succeededCount: 1, failedCount: 0 })
-    await expect(page.getByText('일괄 처리 결과')).toBeVisible()
-    await expect(page.getByText('성공 1건 · 실패 0건')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '이번 처리 결과' })).toBeVisible()
+    await expect(page.getByText('요청 1건 · 성공 1건 · 실패 0건')).toBeVisible()
     expect(readMvpThreeSnapshot(fixture.completedReservationId)).toEqual({
       status: 'completed',
       remainingCount: 9,

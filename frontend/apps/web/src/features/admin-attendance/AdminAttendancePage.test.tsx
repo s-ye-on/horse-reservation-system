@@ -6,7 +6,7 @@ import {
   type AdminReservationResponse,
   type ReservationCompletionResponse,
 } from '@horse/api-client'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { adminAttendanceApi, type AdminAttendanceApi } from './admin-attendance.api'
 import { AdminAttendancePage } from './admin-attendance-page'
@@ -81,6 +81,12 @@ const UPCOMING: AdminReservationResponse = {
   },
 }
 
+beforeEach(() => {
+  // jsdom does not implement native modal dialogs; browser tests cover the top layer.
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: function () { this.setAttribute('open', '') } })
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: function () { this.removeAttribute('open') } })
+})
+
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
@@ -128,15 +134,19 @@ describe('AdminAttendancePage', () => {
     renderPage(createApi())
     const card = await cardFor('김일반')
     expect(within(card).getByText('원형 속보')).toBeInTheDocument()
-    expect(within(card).getByText('쿠폰')).toBeInTheDocument()
-    expect(within(card).getByText('#71 · 잔여 5회')).toBeInTheDocument()
+    fireEvent.click(within(card).getByText('연락처·결제 정보 보기'))
+    expect(within(card).getByText('쿠폰 예약')).toBeInTheDocument()
+    expect(within(card).getByText('쿠폰 번호 71 · 잔여 5회 · 예약 처리 중 1회')).toBeInTheDocument()
   })
 
-  it('오늘_처리_가능과_지난_미처리_예약을_구분한다', async () => {
+  it('과거와_현재_예약을_각_날짜와_시작_시각으로_구분한다', async () => {
     renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([GENERAL, OVERDUE]) }))
 
-    const todaySection = (await screen.findByRole('heading', { name: '오늘 처리 가능' })).closest('section') as HTMLElement
-    const overdueSection = screen.getByRole('heading', { name: '지난 미처리' }).closest('section') as HTMLElement
+    const todaySection = (await cardFor('김일반')).closest('section') as HTMLElement
+    const overdueSection = (await cardFor('최미처리')).closest('section') as HTMLElement
+    expect(todaySection).not.toBe(overdueSection)
+    expect(within(todaySection).getByRole('heading', { level: 2 })).toHaveTextContent('09:00')
+    expect(within(overdueSection).getByRole('heading', { level: 2 })).toHaveTextContent('09:00')
     expect(within(todaySection).getByRole('heading', { name: '김일반' })).toBeInTheDocument()
     expect(within(overdueSection).getByRole('heading', { name: '최미처리' })).toBeInTheDocument()
   })
@@ -145,9 +155,10 @@ describe('AdminAttendancePage', () => {
     renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([UPCOMING]) }))
     const card = await cardFor('정예정')
 
-    expect(within(card).queryByRole('button', { name: '수업 완료' })).not.toBeInTheDocument()
-    expect(within(card).queryByRole('button', { name: '노쇼 처리' })).not.toBeInTheDocument()
-    expect(within(card).getByText('수업 시작 전에는 완료 또는 노쇼 처리할 수 없습니다.')).toBeInTheDocument()
+    expect(within(card).getByRole('button', { name: '수업 완료' })).toBeDisabled()
+    expect(within(card).getByRole('button', { name: '노쇼 입력' })).toBeDisabled()
+    expect(within(card).getByRole('checkbox')).toBeDisabled()
+    expect(within(card).getByText('아직 수업 시작 전이라 처리할 수 없습니다.')).toBeInTheDocument()
   })
 
   it.each([
@@ -159,49 +170,54 @@ describe('AdminAttendancePage', () => {
     renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([reservation]), complete }))
     const card = await cardFor(reservation.memberName as string)
     fireEvent.click(within(card).getByRole('button', { name: '수업 완료' }))
-    fireEvent.click(within(card).getByRole('button', { name: '완료 처리 확인' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).queryByRole('textbox')).not.toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole('button', { name: '이 예약 결과 기록' }))
     await waitFor(() => expect(complete).toHaveBeenCalledWith(reservation.reservationId))
-    expect(await screen.findByText('상태 completed')).toBeInTheDocument()
-    expect(screen.getByText(expected)).toBeInTheDocument()
+    expect(await screen.findByText('수업 완료 기록 성공')).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(expected))).toBeInTheDocument()
+    expect(screen.queryByText('상태 completed')).not.toBeInTheDocument()
   })
 
   it('쿠폰_예약_노쇼는_차감과_반환만_허용하고_메모와_함께_제출한다', async () => {
     const noShow = vi.fn().mockResolvedValue({ reservationId: 31, status: 'no_show', couponId: 71, couponAction: 'return' })
     renderPage(createApi({ noShow }))
     const card = await cardFor('김일반')
-    fireEvent.click(within(card).getByRole('button', { name: '노쇼 처리' }))
-    const couponSelect = within(card).getByLabelText('쿠폰 처리')
-    expect(within(couponSelect).getByRole('option', { name: '1회 차감' })).toBeInTheDocument()
-    expect(within(couponSelect).getByRole('option', { name: '점유 반환' })).toBeInTheDocument()
+    fireEvent.click(within(card).getByRole('button', { name: '노쇼 입력' }))
+    const couponSelect = within(card).getByLabelText('김일반 쿠폰 처리')
+    expect(within(couponSelect).getByRole('option', { name: '쿠폰 1회 차감' })).toBeInTheDocument()
+    expect(within(couponSelect).getByRole('option', { name: '쿠폰 점유 반환' })).toBeInTheDocument()
     expect(within(couponSelect).queryByRole('option', { name: '쿠폰 처리 없음' })).not.toBeInTheDocument()
     fireEvent.change(couponSelect, { target: { value: 'return' } })
-    fireEvent.change(within(card).getByLabelText('관리자 메모'), { target: { value: '질병 사유 예외 반환' } })
-    fireEvent.click(within(card).getByRole('button', { name: '노쇼 처리 확인' }))
+    fireEvent.change(within(card).getByLabelText('김일반 관리자 메모'), { target: { value: '질병 사유 예외 반환' } })
+    fireEvent.click(within(card).getByRole('button', { name: '노쇼 확인' }))
+    fireEvent.click(screen.getByRole('button', { name: '이 예약 결과 기록' }))
     await waitFor(() => expect(noShow).toHaveBeenCalledWith(31, 'return', '질병 사유 예외 반환'))
-    expect(await screen.findByText('쿠폰 처리 점유 반환')).toBeInTheDocument()
+    const result = await screen.findByRole('status', { name: '이번 처리 결과' })
+    expect(within(result).getByText('쿠폰 점유 반환')).toBeInTheDocument()
   })
 
   it('일회_결제_노쇼는_쿠폰_처리_없음만_허용한다', async () => {
     const noShow = vi.fn().mockResolvedValue({ reservationId: 33, status: 'no_show', couponAction: 'none' })
     renderPage(createApi({ noShow }))
     const card = await cardFor('박장애물')
-    fireEvent.click(within(card).getByRole('button', { name: '노쇼 처리' }))
-    const couponSelect = within(card).getByLabelText('쿠폰 처리')
-    expect(within(couponSelect).getAllByRole('option')).toHaveLength(1)
-    expect(couponSelect).toHaveValue('none')
-    fireEvent.change(within(card).getByLabelText('관리자 메모'), { target: { value: '당일 미방문' } })
-    fireEvent.click(within(card).getByRole('button', { name: '노쇼 처리 확인' }))
+    fireEvent.click(within(card).getByRole('button', { name: '노쇼 입력' }))
+    expect(within(card).queryByRole('combobox')).not.toBeInTheDocument()
+    expect(within(card).getByText('단건 결제 예약 · 별도 쿠폰 처리 없음')).toBeInTheDocument()
+    fireEvent.change(within(card).getByLabelText('박장애물 관리자 메모'), { target: { value: '당일 미방문' } })
+    fireEvent.click(within(card).getByRole('button', { name: '노쇼 확인' }))
+    fireEvent.click(screen.getByRole('button', { name: '이 예약 결과 기록' }))
     await waitFor(() => expect(noShow).toHaveBeenCalledWith(33, 'none', '당일 미방문'))
   })
 
-  it.each([[409, '최신 목록'], [403, '관리자 권한']])('%i_오류는_목록을_최신화하고_중복_제출을_막는다', async (status, message) => {
+  it.each([[409, '최신 상태'], [403, '관리자 권한']])('%i_오류는_목록을_최신화하고_중복_제출을_막는다', async (status, message) => {
     const error = new ResponseError(new Response(null, { status }), 'failed')
     const getConfirmedReservations = vi.fn().mockResolvedValue([GENERAL])
     const complete = vi.fn().mockRejectedValue(error)
     renderPage(createApi({ getConfirmedReservations, complete }))
     const card = await cardFor('김일반')
     fireEvent.click(within(card).getByRole('button', { name: '수업 완료' }))
-    const submit = within(card).getByRole('button', { name: '완료 처리 확인' })
+    const submit = screen.getByRole('button', { name: '이 예약 결과 기록' })
     fireEvent.click(submit)
     fireEvent.click(submit)
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
@@ -213,8 +229,9 @@ describe('AdminAttendancePage', () => {
     const noShow = vi.fn()
     renderPage(createApi({ noShow }))
     const card = await cardFor('김일반')
-    fireEvent.click(within(card).getByRole('button', { name: '노쇼 처리' }))
-    fireEvent.click(within(card).getByRole('button', { name: '노쇼 처리 확인' }))
+    fireEvent.click(within(card).getByRole('button', { name: '노쇼 입력' }))
+    fireEvent.change(within(card).getByLabelText('김일반 쿠폰 처리'), { target: { value: 'deduct' } })
+    fireEvent.click(within(card).getByRole('button', { name: '노쇼 확인' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('1자 이상 500자 이하')
     expect(noShow).not.toHaveBeenCalled()
   })
@@ -223,6 +240,27 @@ describe('AdminAttendancePage', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 320 })
     renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([GENERAL]) }))
     expect(await screen.findByRole('button', { name: '수업 완료' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '노쇼 처리' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '노쇼 입력' })).toBeInTheDocument()
+  })
+
+  it('조회에서_허용돼도_Command의_휴강_거부를_표시하고_다시_조회한다', async () => {
+    const getConfirmedReservations = vi.fn().mockResolvedValue([GENERAL])
+    const complete = vi.fn().mockRejectedValue(new ResponseError(new Response(JSON.stringify({ code: 'TIMESLOT_CLOSURE_COMMAND_NOT_ALLOWED' }), { status: 409 }), 'closure'))
+    renderPage(createApi({ getConfirmedReservations, complete }))
+    fireEvent.click(within(await cardFor('김일반')).getByRole('button', { name: '수업 완료' }))
+    fireEvent.click(screen.getByRole('button', { name: '이 예약 결과 기록' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('현재 휴강 처리된 수업 시간입니다.')
+    await waitFor(() => expect(getConfirmedReservations).toHaveBeenCalledTimes(2))
+  })
+
+  it('loading_error_empty를_구분한다', async () => {
+    const view = renderPage(createApi({ getConfirmedReservations: vi.fn(() => new Promise<AdminReservationResponse[]>(() => {})) }))
+    expect(screen.getByRole('status')).toHaveTextContent('불러오는 중')
+    view.unmount()
+    const failed = renderPage(createApi({ getConfirmedReservations: vi.fn().mockRejectedValue(new Error('offline')) }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('불러오지 못했습니다')
+    failed.unmount()
+    renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([]) }))
+    expect(await screen.findByRole('heading', { name: '현재 불러온 확정 예약이 없습니다.' })).toBeInTheDocument()
   })
 })
