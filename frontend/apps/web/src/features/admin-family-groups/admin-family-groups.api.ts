@@ -84,7 +84,8 @@ export function getFamilyGroupErrorMessage(error: unknown, fallback: string): st
   if (!(error instanceof ResponseError)) return fallback
   if (error.response.status === 401) return '관리자 로그인이 필요합니다.'
   if (error.response.status === 403) return '가족 그룹을 관리할 권한이 없습니다.'
-  if (error.response.status === 404) return '가족 그룹 또는 회원을 찾을 수 없습니다.'
-  if (error.response.status === 409) return '현재 상태에서는 요청을 처리할 수 없습니다. 목록을 새로고침해 주세요.'
+  if (error.response.status === 400) return '입력 내용을 확인해 주세요. 이름과 사유의 필수 입력 및 길이 제한을 확인해 주세요.'
+  if (error.response.status === 404) return '그룹 또는 회원 관계가 변경되었습니다. 최신 목록을 확인한 뒤 다시 진행해 주세요.'
+  if (error.response.status === 409) return '회원 소속 또는 그룹 상태가 변경되었습니다. 최신 목록을 확인한 뒤 다시 판단해 주세요.'
   return fallback
 }

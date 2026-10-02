@@ -83,9 +83,9 @@ describe('adminFamilyGroupsApi', () => {
   it('공통_인증과_상태_오류를_관리자에게_이해_가능한_메시지로_변환한다', () => {
     expect(getFamilyGroupErrorMessage(responseError(401), 'fallback')).toBe('관리자 로그인이 필요합니다.')
     expect(getFamilyGroupErrorMessage(responseError(403), 'fallback')).toBe('가족 그룹을 관리할 권한이 없습니다.')
-    expect(getFamilyGroupErrorMessage(responseError(404), 'fallback')).toBe('가족 그룹 또는 회원을 찾을 수 없습니다.')
+    expect(getFamilyGroupErrorMessage(responseError(404), 'fallback')).toBe('그룹 또는 회원 관계가 변경되었습니다. 최신 목록을 확인한 뒤 다시 진행해 주세요.')
     expect(getFamilyGroupErrorMessage(responseError(409), 'fallback')).toBe(
-      '현재 상태에서는 요청을 처리할 수 없습니다. 목록을 새로고침해 주세요.',
+      '회원 소속 또는 그룹 상태가 변경되었습니다. 최신 목록을 확인한 뒤 다시 판단해 주세요.',
     )
   })
 })
