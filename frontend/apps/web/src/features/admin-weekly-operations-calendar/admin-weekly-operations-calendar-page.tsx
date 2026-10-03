@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router'
 import type {
@@ -55,38 +55,35 @@ export function AdminWeeklyOperationsCalendarPage({
       <div className="admin-weekly-calendar-shell">
         <header className="admin-weekly-calendar-header">
           <div>
-            <p>WEEKLY OPERATIONS</p>
+            <p className="admin-weekly-calendar-eyebrow">운영 현황 · 조회 전용</p>
             <h1>주간 운영 캘린더</h1>
-            <span>실제 운영 시간대와 예약 회원을 주간 시간표로 확인합니다.</span>
+            <span>월요일부터 일요일까지 실제 생성된 운영 시간대와 표시 대상 예약을 확인합니다. 변경 작업은 관련 관리자 화면에서 진행합니다.</span>
           </div>
-          <Link to="/admin">관리자 메뉴</Link>
         </header>
 
-        <section className="admin-weekly-calendar-controls" aria-label="조회 주 이동">
-          <button
-            type="button"
-            aria-label="이전 주"
-            onClick={() => setReferenceDate((date) => moveDate(date, -7))}
-          >
-            <span aria-hidden="true">&larr;</span>
-            <span>이전 주</span>
-          </button>
-          <button
-            type="button"
-            className="today"
-            disabled={referenceDate === currentDate}
-            onClick={() => setReferenceDate(currentDate)}
-          >
-            오늘
-          </button>
-          <button
-            type="button"
-            aria-label="다음 주"
-            onClick={() => setReferenceDate((date) => moveDate(date, 7))}
-          >
-            <span>다음 주</span>
-            <span aria-hidden="true">&rarr;</span>
-          </button>
+        <section className="admin-weekly-calendar-toolbar" aria-label="조회 주 이동">
+          <div className="admin-weekly-calendar-toolbar-top">
+            <div>
+              <p className="admin-weekly-calendar-kicker">선택 주 · 월요일부터 일요일</p>
+              <h2 className="admin-weekly-calendar-week-range">
+                {calendarQuery.isSuccess
+                  ? formatWeekRange(dateKey(calendarQuery.data.weekStartDate), dateKey(calendarQuery.data.weekEndDate))
+                  : '주간 운영 시간대 조회'}
+              </h2>
+            </div>
+            <div className="admin-weekly-calendar-controls">
+              <button type="button" aria-label="이전 주" onClick={() => setReferenceDate((date) => moveDate(date, -7))}>
+                이전 주
+              </button>
+              <button type="button" className="today" disabled={referenceDate === currentDate} onClick={() => setReferenceDate(currentDate)}>
+                오늘
+              </button>
+              <button type="button" aria-label="다음 주" onClick={() => setReferenceDate((date) => moveDate(date, 7))}>
+                다음 주
+              </button>
+            </div>
+          </div>
+          <p className="admin-weekly-calendar-week-note">예약이 없는 실제 시간대도 함께 표시합니다.</p>
         </section>
 
         <section className="admin-weekly-calendar-results" aria-live="polite">
@@ -96,43 +93,47 @@ export function AdminWeeklyOperationsCalendarPage({
           {calendarQuery.isError ? (
             <CalendarError error={calendarQuery.error} retry={() => calendarQuery.refetch()} />
           ) : null}
-          {calendarQuery.isSuccess ? <WeeklyCalendar calendar={calendarQuery.data} /> : null}
+          {calendarQuery.isSuccess ? <WeeklyCalendar calendar={calendarQuery.data} today={currentDate} /> : null}
+        </section>
+        <section className="admin-weekly-calendar-related" aria-labelledby="weekly-related-title">
+          <h2 id="weekly-related-title">변경이 필요한 경우</h2>
+          <p>이 캘린더는 조회 전용입니다. 변경 작업은 각 관리자 화면에서 진행해 주세요.</p>
+          <nav aria-label="관련 관리자 화면">
+            <Link to="/admin/schedule-configuration">일정 설정</Link>
+            <Link to="/admin/schedule-closures">휴무·휴강</Link>
+            <Link to="/admin/timeslots">시간대 관리</Link>
+            <Link to="/admin/reservations">예약 관리</Link>
+            <Link to="/admin/attendance">완료·노쇼</Link>
+          </nav>
         </section>
       </div>
     </main>
   )
 }
 
-function WeeklyCalendar({ calendar }: { calendar: AdminWeeklyOperationsCalendarResponse }) {
+function WeeklyCalendar({ calendar, today }: { calendar: AdminWeeklyOperationsCalendarResponse; today: string }) {
   if (calendar.timeSlots.length === 0) {
     return (
-      <>
-        <CalendarHeading calendar={calendar} />
-        <CalendarState message="이 주에는 운영 시간대가 없습니다." />
-      </>
+      <section className="admin-weekly-calendar-state">
+        <h2>이 주에 표시할 운영 시간대가 없습니다.</h2>
+        <p>현재 조회 응답에 표시할 시간대가 없다는 뜻입니다. 휴무 여부나 조회 가능 기간을 의미하지 않습니다.</p>
+      </section>
     )
   }
 
   return (
     <>
-      <CalendarHeading calendar={calendar} />
-      <WeeklyTimeTable calendar={calendar} />
+      <div className="admin-weekly-calendar-results-heading">
+        <h2>한 주의 운영 시간대</h2>
+        <p>실제 시간대 {calendar.timeSlots.length}개 · 표시 예약 {calendar.timeSlots.reduce((sum, slot) => sum + slot.reservations.length, 0)}건</p>
+      </div>
+      <WeeklyTimeTable calendar={calendar} today={today} />
     </>
   )
 }
 
-function CalendarHeading({ calendar }: { calendar: AdminWeeklyOperationsCalendarResponse }) {
-  return (
-    <div className="admin-weekly-calendar-results-heading">
-      <div>
-        <h2>{formatWeekRange(dateKey(calendar.weekStartDate), dateKey(calendar.weekEndDate))}</h2>
-        <p>예약이 없는 실제 시간대도 함께 표시합니다.</p>
-      </div>
-    </div>
-  )
-}
-
-function WeeklyTimeTable({ calendar }: { calendar: AdminWeeklyOperationsCalendarResponse }) {
+function WeeklyTimeTable({ calendar, today }: { calendar: AdminWeeklyOperationsCalendarResponse; today: string }) {
+  const tableId = useId()
   const weekStart = dateKey(calendar.weekStartDate)
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => moveDate(weekStart, index)), [weekStart])
   const startTimes = useMemo(() => (
@@ -141,53 +142,68 @@ function WeeklyTimeTable({ calendar }: { calendar: AdminWeeklyOperationsCalendar
   const slotsByCell = useMemo(() => groupSlots(calendar.timeSlots), [calendar.timeSlots])
 
   return (
-    <section className="admin-weekly-calendar-timetable" aria-label="주간 운영 시간표">
-      <h3 className="admin-weekly-calendar-corner">시간</h3>
-      {days.map((day, dayIndex) => (
-        <h3
-          aria-label={`${weekdayLabel(day)} ${shortDateLabel(day)}`}
-          className="admin-weekly-calendar-day-heading"
-          data-day-heading={day}
-          key={day}
-          style={{ gridColumn: dayIndex + 2, gridRow: 1 }}
-        >
-          <strong>{weekdayLabel(day)}</strong>
-          <span>{shortDateLabel(day)}</span>
-        </h3>
-      ))}
-      {startTimes.map((startTime, timeIndex) => (
-        <h3
-          className="admin-weekly-calendar-time-heading"
-          data-time-heading={startTime}
-          key={startTime}
-          style={{ gridColumn: 1, gridRow: timeIndex + 2 }}
-        >
-          {shortTime(startTime)}
-        </h3>
-      ))}
-      {days.flatMap((day, dayIndex) => startTimes.flatMap((startTime, timeIndex) => {
-        const slots = slotsByCell.get(`${day}|${startTime}`) ?? []
-        if (slots.length === 0) return []
-        const style: CSSProperties = { gridColumn: dayIndex + 2, gridRow: timeIndex + 2 }
-        return [
-          <div
-            aria-label={`${fullDateLabel(day)} ${shortTime(startTime)} 시간대`}
-            className="admin-weekly-calendar-cell"
-            data-calendar-cell={day}
-            data-calendar-start-time={startTime}
-            key={`${day}|${startTime}`}
-            role="group"
-            style={style}
-          >
-            {slots.map((slot) => <TimeSlotCard key={slot.timeSlotId} slot={slot} />)}
-          </div>,
-        ]
-      }))}
-    </section>
+    <>
+      <section className="admin-weekly-calendar-scroll" aria-label="주간 운영 시간표" tabIndex={0}>
+        <table className="admin-weekly-calendar-timetable">
+          <caption className="admin-weekly-calendar-sr-only">
+            {formatWeekRange(dateKey(calendar.weekStartDate), dateKey(calendar.weekEndDate))} 실제 운영 시간대와 표시 예약
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="admin-weekly-calendar-time-axis">시작 시각</th>
+              {days.map((day) => (
+                <th scope="col" id={`${tableId}-day-${day}`} key={day} data-day-heading={day} aria-current={day === today ? 'date' : undefined}>
+                  {fullDateLabel(day)}
+                  <small>시간대 {calendar.timeSlots.filter((slot) => dateKey(slot.lessonDate) === day).length}개</small>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {startTimes.map((startTime) => (
+              <tr key={startTime}>
+                <th scope="row" className="admin-weekly-calendar-time-axis" id={`${tableId}-time-${startTime}`} data-time-heading={startTime}>
+                  {shortTime(startTime)}
+                </th>
+                {days.map((day) => {
+                  const slots = slotsByCell.get(`${day}|${startTime}`) ?? []
+                  return (
+                    <td key={day} headers={`${tableId}-time-${startTime} ${tableId}-day-${day}`}
+                      data-calendar-cell={day} data-calendar-start-time={startTime}
+                      className={slots.length === 0 ? 'admin-weekly-calendar-empty-cell' : undefined}>
+                      {slots.length ? slots.map((slot) => <TimeSlotCard key={slot.timeSlotId} slot={slot} />) : (
+                        <>
+                          <span aria-hidden="true">&mdash;</span>
+                          <span className="admin-weekly-calendar-sr-only">표시할 운영 시간대가 없습니다.</span>
+                        </>
+                      )}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+      <section className="admin-weekly-calendar-mobile" aria-label="날짜별 운영 시간대">
+        {days.map((day) => {
+          const daySlots = startTimes.flatMap((time) => slotsByCell.get(`${day}|${time}`) ?? [])
+          return (
+            <section className="admin-weekly-calendar-day" key={day} aria-labelledby={`${tableId}-mobile-${day}`} aria-current={day === today ? 'date' : undefined}>
+              <header><h3 id={`${tableId}-mobile-${day}`}>{fullDateLabel(day)}</h3><p>시간대 {daySlots.length}개</p></header>
+              {daySlots.length ? daySlots.map((slot) => <TimeSlotCard key={slot.timeSlotId} slot={slot} />)
+                : <p className="admin-weekly-calendar-day-empty">표시할 운영 시간대가 없습니다.</p>}
+            </section>
+          )
+        })}
+      </section>
+    </>
   )
 }
 
 function TimeSlotCard({ slot }: { slot: AdminWeeklyOperationsTimeSlotResponse }) {
+  const capacityId = useId()
+  const [expanded, setExpanded] = useState(false)
   const lessonDate = dateKey(slot.lessonDate)
   return (
     <article
@@ -197,16 +213,12 @@ function TimeSlotCard({ slot }: { slot: AdminWeeklyOperationsTimeSlotResponse })
     >
       <header>
         <div>
-          <span className="admin-weekly-calendar-mobile-date">{fullDateLabel(lessonDate)}</span>
-          <strong>{shortTime(slot.startTime)} - {shortTime(slot.endTime)}</strong>
+          <strong>{shortTime(slot.startTime)}–{shortTime(slot.endTime)}</strong>
         </div>
         {slot.closed ? <span className="admin-weekly-calendar-closed">신규 예약 마감</span> : null}
       </header>
-      <p className="admin-weekly-calendar-capacity">
-        전체 정원 {slot.totalCapacity}명 · 원형마장 {slot.roundArenaCapacity}명
-      </p>
       {slot.reservations.length === 0 ? (
-        <p className="admin-weekly-calendar-empty-reservations">예약 없음</p>
+        <p className="admin-weekly-calendar-empty-reservations">현재 표시 대상 예약이 없습니다.</p>
       ) : (
         <ul className="admin-weekly-calendar-reservations">
           {slot.reservations.map((reservation) => (
@@ -214,6 +226,24 @@ function TimeSlotCard({ slot }: { slot: AdminWeeklyOperationsTimeSlotResponse })
           ))}
         </ul>
       )}
+      <p className="admin-weekly-calendar-capacity">
+        <span>전체 정원 <strong>{slot.totalCapacity}명</strong></span>
+        <span>원형마장 <strong>{slot.roundArenaCapacity}명</strong></span>
+      </p>
+      <button type="button" className="admin-weekly-calendar-disclosure"
+        aria-label={`${fullDateLabel(lessonDate)} ${shortTime(slot.startTime)} 클래스별 정원`}
+        aria-expanded={expanded} aria-controls={capacityId} onClick={() => setExpanded((value) => !value)}>
+        클래스별 정원 <span aria-hidden="true">{expanded ? '−' : '+'}</span>
+      </button>
+      <ul className="admin-weekly-calendar-class-capacities" id={capacityId} hidden={!expanded}>
+        {Object.entries(slot.classCapacities).map(([ridingClass, capacity]) => (
+          <li key={ridingClass}>
+            <span>{RIDING_CLASS_LABELS[ridingClass as AdminWeeklyOperationsReservationResponseRidingClassEnum] ?? '클래스 확인 필요'}</span>
+            <strong>{capacity}명</strong>
+          </li>
+        ))}
+        {Object.keys(slot.classCapacities).length === 0 ? <li>클래스별 정원 정보가 없습니다.</li> : null}
+      </ul>
     </article>
   )
 }
@@ -298,11 +328,6 @@ function dateAtSeoulMidnight(value: string) {
 
 function weekdayLabel(value: string) {
   return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', weekday: 'short' })
-    .format(dateAtSeoulMidnight(value))
-}
-
-function shortDateLabel(value: string) {
-  return new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric' })
     .format(dateAtSeoulMidnight(value))
 }
 

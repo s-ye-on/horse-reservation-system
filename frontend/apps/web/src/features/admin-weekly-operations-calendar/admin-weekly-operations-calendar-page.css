@@ -1,409 +1,102 @@
-.admin-weekly-calendar-page {
-  --weekly-accent: #17603b;
-  --weekly-accent-dark: #10472b;
-  --weekly-ink: #202722;
-  --weekly-muted: #667069;
-  --weekly-line: #d8ded9;
-  width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  padding: 32px 16px 56px;
-  color: var(--weekly-ink);
-  background: #f2f5f3;
+.admin-weekly-calendar-page { width: min(100%, 1220px); margin: 0 auto; padding: 32px; min-width: 0; color: var(--horse-color-foreground); }
+.admin-weekly-calendar-page h1, .admin-weekly-calendar-page h2, .admin-weekly-calendar-page h3 { margin: 0; font-family: var(--horse-font-display); line-height: 1.25; letter-spacing: 0; }
+.admin-weekly-calendar-header { margin-bottom: 24px; }
+.admin-weekly-calendar-header h1 { font-size: 32px; margin-bottom: 8px; }
+.admin-weekly-calendar-header .admin-weekly-calendar-eyebrow { margin: 0 0 8px; color: var(--horse-color-brand); font-size: 12px; font-weight: 700; }
+.admin-weekly-calendar-header span { display: block; max-width: 75ch; color: var(--horse-color-muted); font-size: 14px; line-height: 1.55; }
+.admin-weekly-calendar-page button, .admin-weekly-calendar-related a {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px;
+  border: 1px solid var(--horse-color-border); border-radius: 8px; background: var(--horse-color-surface);
+  color: var(--horse-color-foreground); font-size: 14px; font-weight: 700; cursor: pointer; text-decoration: none;
 }
-
-.admin-weekly-calendar-shell {
-  width: min(100%, 1480px);
-  margin: 0 auto;
+.admin-weekly-calendar-page button:hover:not(:disabled), .admin-weekly-calendar-related a:hover { border-color: var(--horse-color-foreground); }
+.admin-weekly-calendar-page button:disabled { opacity: .52; cursor: not-allowed; }
+.admin-weekly-calendar-page button:focus-visible, .admin-weekly-calendar-page a:focus-visible,
+.admin-weekly-calendar-scroll:focus-visible { outline: 2px solid var(--horse-color-brand); outline-offset: 2px; }
+.admin-weekly-calendar-toolbar, .admin-weekly-calendar-related, .admin-weekly-calendar-state,
+.admin-weekly-calendar-scroll, .admin-weekly-calendar-day { min-width: 0; border: 1px solid var(--horse-color-border); border-radius: 8px; background: var(--horse-color-surface); }
+.admin-weekly-calendar-toolbar { padding: 20px; margin-bottom: 20px; }
+.admin-weekly-calendar-toolbar-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.admin-weekly-calendar-toolbar-top > div { min-width: 0; }
+.admin-weekly-calendar-kicker { margin: 0 0 4px; color: var(--horse-color-muted); font-size: 12px; font-weight: 700; }
+.admin-weekly-calendar-page .admin-weekly-calendar-week-range { font-size: 20px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.admin-weekly-calendar-controls { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-weekly-calendar-controls button { white-space: nowrap; }
+.admin-weekly-calendar-week-note { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--horse-color-border); font-size: 12px; color: var(--horse-color-muted); }
+.admin-weekly-calendar-results-heading { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.admin-weekly-calendar-results-heading h2 { font-size: 20px; }
+.admin-weekly-calendar-results-heading p { margin: 0; color: var(--horse-color-muted); font-size: 12px; }
+.admin-weekly-calendar-scroll { position: relative; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.admin-weekly-calendar-timetable { width: 100%; min-width: 980px; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+.admin-weekly-calendar-timetable th, .admin-weekly-calendar-timetable td { border-right: 1px solid var(--horse-color-border); border-bottom: 1px solid var(--horse-color-border); vertical-align: top; }
+.admin-weekly-calendar-timetable tr > :last-child { border-right: 0; }
+.admin-weekly-calendar-timetable tbody tr:last-child > * { border-bottom: 0; }
+.admin-weekly-calendar-timetable thead th { padding: 12px 8px; text-align: left; font-family: var(--horse-font-display); font-size: 16px; line-height: 1.5; }
+.admin-weekly-calendar-timetable thead small { display: block; color: var(--horse-color-muted); font: 12px/1.4 var(--horse-font-body); }
+.admin-weekly-calendar-timetable th[aria-current="date"], .admin-weekly-calendar-day[aria-current="date"] h3 { color: var(--horse-color-brand); }
+.admin-weekly-calendar-day[aria-current="date"] { border-color: color-mix(in srgb, var(--horse-color-brand), var(--horse-color-surface) 75%); }
+.admin-weekly-calendar-timetable .admin-weekly-calendar-time-axis { width: 78px; padding: 12px 8px; background: var(--horse-color-background); text-align: left; font: 700 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.admin-weekly-calendar-timetable tbody th { white-space: nowrap; }
+.admin-weekly-calendar-timetable td { min-width: 0; padding: 8px; }
+.admin-weekly-calendar-empty-cell { background: var(--horse-color-background); }
+.admin-weekly-calendar-empty-cell > span:first-child { display: block; padding: 16px 0; text-align: center; font-size: 12px; color: var(--horse-color-muted); }
+.admin-weekly-calendar-slot { min-width: 0; padding: 12px; border: 1px solid var(--horse-color-border); border-radius: 8px; background: var(--horse-color-surface); }
+.admin-weekly-calendar-slot + .admin-weekly-calendar-slot { margin-top: 8px; }
+.admin-weekly-calendar-slot > header { display: flex; flex-direction: column; align-items: start; gap: 4px; }
+.admin-weekly-calendar-slot > header strong { font: 700 14px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.admin-weekly-calendar-closed, .admin-weekly-calendar-reservations em { display: inline-flex; max-width: 100%; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; font-style: normal; line-height: 1.3; overflow-wrap: anywhere; }
+.admin-weekly-calendar-closed, .admin-weekly-calendar-reservations .status-pending_admin_approval { background: color-mix(in srgb, var(--horse-color-warning), transparent 90%); color: color-mix(in srgb, var(--horse-color-warning), var(--horse-color-foreground) 30%); }
+.admin-weekly-calendar-reservations .status-confirmed { background: color-mix(in srgb, var(--horse-color-success), transparent 92%); color: color-mix(in srgb, var(--horse-color-success), var(--horse-color-foreground) 38%); }
+.admin-weekly-calendar-reservations .status-pending_payment, .admin-weekly-calendar-reservations .status-completed { background: var(--horse-color-surface); color: var(--horse-color-foreground); border: 1px solid var(--horse-color-border); }
+.admin-weekly-calendar-reservations, .admin-weekly-calendar-class-capacities { list-style: none; margin: 0; padding: 0; }
+.admin-weekly-calendar-reservations { margin-top: 12px; }
+.admin-weekly-calendar-reservations li { display: grid; gap: 2px; min-width: 0; padding: 8px 0; border-top: 1px solid var(--horse-color-border-soft); }
+.admin-weekly-calendar-reservations strong { font-size: 14px; overflow-wrap: anywhere; }
+.admin-weekly-calendar-reservations li > span { font-size: 12px; color: var(--horse-color-muted); overflow-wrap: anywhere; }
+.admin-weekly-calendar-reservations em { justify-self: start; margin-top: 2px; }
+.admin-weekly-calendar-empty-reservations { margin: 12px 0 0; padding: 8px 0; border-top: 1px solid var(--horse-color-border-soft); font-size: 12px; color: var(--horse-color-muted); line-height: 1.5; }
+.admin-weekly-calendar-capacity { display: flex; flex-wrap: wrap; gap: 2px 8px; margin: 12px 0 0; padding-top: 8px; border-top: 1px solid var(--horse-color-border-soft); color: var(--horse-color-muted); font-size: 11px; }
+.admin-weekly-calendar-capacity strong { font-weight: 600; }
+.admin-weekly-calendar-page .admin-weekly-calendar-disclosure { width: 100%; justify-content: space-between; gap: 8px; padding: 8px 0; border: 0; border-top: 1px solid var(--horse-color-border); border-radius: 0; font-size: 12px; text-align: left; }
+.admin-weekly-calendar-disclosure span { font-size: 18px; font-weight: 400; }
+.admin-weekly-calendar-class-capacities li { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-top: 1px solid var(--horse-color-border-soft); font-size: 12px; }
+.admin-weekly-calendar-class-capacities li > span { min-width: 0; overflow-wrap: anywhere; }
+.admin-weekly-calendar-class-capacities strong { flex-shrink: 0; }
+.admin-weekly-calendar-class-capacities[hidden] { display: none; }
+.admin-weekly-calendar-mobile { display: none; }
+.admin-weekly-calendar-day { padding: 16px; }
+.admin-weekly-calendar-day > header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid var(--horse-color-border); }
+.admin-weekly-calendar-day h3 { font-size: 20px; }
+.admin-weekly-calendar-day header p { margin: 0; color: var(--horse-color-muted); font-size: 12px; }
+.admin-weekly-calendar-day-empty { margin: 0; color: var(--horse-color-muted); font-size: 14px; }
+.admin-weekly-calendar-state { padding: 32px; text-align: center; color: var(--horse-color-muted); font-size: 14px; line-height: 1.55; }
+.admin-weekly-calendar-state h2 { margin: 0 0 8px; font-size: 20px; color: var(--horse-color-foreground); }
+.admin-weekly-calendar-state p { margin: 0; }
+.admin-weekly-calendar-state button { margin-top: 16px; }
+.admin-weekly-calendar-state.error { border-color: color-mix(in srgb, var(--horse-color-danger), transparent 72%); background: color-mix(in srgb, var(--horse-color-danger), var(--horse-color-surface) 92%); }
+.admin-weekly-calendar-related { margin-top: 32px; padding: 20px; }
+.admin-weekly-calendar-related h2 { font-size: 20px; }
+.admin-weekly-calendar-related p { margin: 8px 0 12px; color: var(--horse-color-muted); font-size: 12px; }
+.admin-weekly-calendar-related nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.admin-weekly-calendar-related a { padding: 8px 12px; font-size: 12px; }
+.admin-weekly-calendar-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@media (max-width: 960px) {
+  .admin-weekly-calendar-page { padding: 20px 16px 48px; }
+  .admin-weekly-calendar-scroll { display: none; }
+  .admin-weekly-calendar-mobile { display: grid; gap: 12px; }
 }
-
-.admin-weekly-calendar-header,
-.admin-weekly-calendar-results-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
+@media (max-width: 600px) {
+  .admin-weekly-calendar-toolbar-top { align-items: stretch; flex-direction: column; }
+  .admin-weekly-calendar-controls { display: grid; grid-template-columns: 1fr 1fr; }
+  .admin-weekly-calendar-controls .today { grid-column: 1 / -1; grid-row: 1; }
+  .admin-weekly-calendar-results-heading { display: block; }
+  .admin-weekly-calendar-results-heading p { margin-top: 4px; }
+  .admin-weekly-calendar-slot > header { flex-direction: row; justify-content: space-between; flex-wrap: wrap; align-items: center; }
+  .admin-weekly-calendar-related nav { display: grid; grid-template-columns: 1fr 1fr; }
 }
-
-.admin-weekly-calendar-header {
-  margin-bottom: 20px;
-}
-
-.admin-weekly-calendar-header p,
-.admin-weekly-calendar-header h1,
-.admin-weekly-calendar-header span,
-.admin-weekly-calendar-results-heading h2,
-.admin-weekly-calendar-results-heading p {
-  margin: 0;
-}
-
-.admin-weekly-calendar-header p {
-  margin-bottom: 6px;
-  color: var(--weekly-accent);
-  font-size: .76rem;
-  font-weight: 780;
-}
-
-.admin-weekly-calendar-header h1 {
-  font-size: clamp(1.55rem, 3vw, 2.15rem);
-}
-
-.admin-weekly-calendar-header span,
-.admin-weekly-calendar-results-heading p {
-  display: block;
-  margin-top: 7px;
-  color: var(--weekly-muted);
-  font-size: .88rem;
-}
-
-.admin-weekly-calendar-header a {
-  flex: 0 0 auto;
-  min-height: 40px;
-  padding: 10px 13px;
-  border: 1px solid var(--weekly-accent);
-  border-radius: 6px;
-  color: var(--weekly-accent);
-  background: #fff;
-  font-size: .82rem;
-  font-weight: 720;
-  text-decoration: none;
-}
-
-.admin-weekly-calendar-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 24px;
-  padding: 14px;
-  border: 1px solid var(--weekly-line);
-  background: #fff;
-}
-
-.admin-weekly-calendar-controls button,
-.admin-weekly-calendar-state button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 42px;
-  padding: 0 16px;
-  border: 1px solid var(--weekly-accent);
-  border-radius: 5px;
-  color: #fff;
-  background: var(--weekly-accent);
-  font: inherit;
-  font-size: .82rem;
-  font-weight: 720;
-  cursor: pointer;
-}
-
-.admin-weekly-calendar-controls button.today {
-  color: var(--weekly-accent);
-  background: #fff;
-}
-
-.admin-weekly-calendar-controls button:disabled {
-  border-color: var(--weekly-line);
-  color: #89918b;
-  background: #eef1ef;
-  cursor: default;
-}
-
-.admin-weekly-calendar-results {
-  padding-top: 18px;
-  border-top: 3px solid var(--weekly-accent);
-}
-
-.admin-weekly-calendar-results-heading {
-  align-items: flex-start;
-  margin-bottom: 14px;
-}
-
-.admin-weekly-calendar-results-heading h2 {
-  font-size: 1.15rem;
-}
-
-.admin-weekly-calendar-timetable {
-  display: grid;
-  grid-auto-rows: minmax(112px, auto);
-  grid-template-columns: 64px repeat(7, minmax(148px, 1fr));
-  gap: 1px;
-  min-width: 1100px;
-  border: 1px solid var(--weekly-line);
-  background: var(--weekly-line);
-}
-
-.admin-weekly-calendar-results:has(.admin-weekly-calendar-timetable) {
-  overflow-x: auto;
-  scrollbar-gutter: stable;
-}
-
-.admin-weekly-calendar-corner,
-.admin-weekly-calendar-day-heading,
-.admin-weekly-calendar-time-heading {
-  position: sticky;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  padding: 10px 6px;
-  background: #eef3ef;
-}
-
-.admin-weekly-calendar-corner {
-  top: 0;
-  left: 0;
-  grid-column: 1;
-  grid-row: 1;
-  color: var(--weekly-muted);
-  font-size: .72rem;
-}
-
-.admin-weekly-calendar-day-heading {
-  top: 0;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.admin-weekly-calendar-day-heading strong {
-  font-size: .86rem;
-}
-
-.admin-weekly-calendar-day-heading span,
-.admin-weekly-calendar-time-heading {
-  color: var(--weekly-muted);
-  font-size: .74rem;
-}
-
-.admin-weekly-calendar-time-heading {
-  left: 0;
-  align-items: flex-start;
-  padding-top: 14px;
-  font-weight: 700;
-}
-
-.admin-weekly-calendar-cell {
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  padding: 6px;
-  background: #f8faf8;
-}
-
-.admin-weekly-calendar-slot {
-  min-width: 0;
-  padding: 10px;
-  border: 1px solid #cdd8d0;
-  border-left: 4px solid var(--weekly-accent);
-  border-radius: 6px;
-  background: #fff;
-}
-
-.admin-weekly-calendar-slot.closed {
-  border-left-color: #8a3442;
-  background: #fffafb;
-}
-
-.admin-weekly-calendar-slot > header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 6px;
-}
-
-.admin-weekly-calendar-slot > header strong,
-.admin-weekly-calendar-mobile-date {
-  display: block;
-}
-
-.admin-weekly-calendar-slot > header strong {
-  font-size: .78rem;
-}
-
-.admin-weekly-calendar-mobile-date {
-  display: none;
-  margin-bottom: 3px;
-  color: var(--weekly-muted);
-  font-size: .74rem;
-}
-
-.admin-weekly-calendar-closed {
-  flex: 0 0 auto;
-  padding: 3px 5px;
-  border-radius: 4px;
-  color: #7b1e31;
-  background: #f8e8ec;
-  font-size: .64rem;
-  font-weight: 750;
-}
-
-.admin-weekly-calendar-capacity {
-  margin: 6px 0 8px;
-  color: var(--weekly-muted);
-  font-size: .68rem;
-}
-
-.admin-weekly-calendar-empty-reservations {
-  margin: 10px 0 0;
-  padding: 9px 6px;
-  border: 1px dashed #c9d3cc;
-  color: var(--weekly-muted);
-  background: #f8faf8;
-  font-size: .72rem;
-  text-align: center;
-}
-
-.admin-weekly-calendar-reservations {
-  display: grid;
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.admin-weekly-calendar-reservations li {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  padding: 7px;
-  border: 1px solid #e2e7e3;
-  background: #f8faf8;
-}
-
-.admin-weekly-calendar-reservations strong {
-  overflow-wrap: anywhere;
-  font-size: .76rem;
-}
-
-.admin-weekly-calendar-reservations li > span {
-  color: var(--weekly-muted);
-  font-size: .68rem;
-}
-
-.admin-weekly-calendar-reservations em {
-  width: fit-content;
-  padding: 3px 5px;
-  border-radius: 4px;
-  color: #315347;
-  background: #e7f1eb;
-  font-size: .64rem;
-  font-style: normal;
-  font-weight: 720;
-}
-
-.admin-weekly-calendar-reservations em.status-pending_admin_approval,
-.admin-weekly-calendar-reservations em.status-pending_payment {
-  color: #74530c;
-  background: #fff3d6;
-}
-
-.admin-weekly-calendar-reservations em.status-completed {
-  color: #36536d;
-  background: #e7f0f7;
-}
-
-.admin-weekly-calendar-state {
-  padding: 30px 16px;
-  border: 1px solid var(--weekly-line);
-  border-radius: 7px;
-  color: var(--weekly-muted);
-  background: #fff;
-  text-align: center;
-}
-
-.admin-weekly-calendar-state p {
-  margin: 0 0 13px;
-}
-
-.admin-weekly-calendar-state.error {
-  color: #7b1e31;
-  border-color: #e4bcc5;
-}
-
-.admin-weekly-calendar-controls button:focus-visible,
-.admin-weekly-calendar-state button:focus-visible,
-.admin-weekly-calendar-header a:focus-visible {
-  outline: 3px solid rgba(23, 96, 59, .22);
-  outline-offset: 2px;
-}
-
-@media (max-width: 760px) {
-  .admin-weekly-calendar-page {
-    padding: 24px 12px 44px;
-  }
-
-  .admin-weekly-calendar-header {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .admin-weekly-calendar-header a {
-    align-self: flex-start;
-  }
-
-  .admin-weekly-calendar-results:has(.admin-weekly-calendar-timetable) {
-    overflow-x: visible;
-  }
-
-  .admin-weekly-calendar-timetable {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    min-width: 0;
-    border: 0;
-    background: transparent;
-  }
-
-  .admin-weekly-calendar-corner,
-  .admin-weekly-calendar-day-heading,
-  .admin-weekly-calendar-time-heading {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    clip-path: inset(50%);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .admin-weekly-calendar-cell {
-    display: contents;
-  }
-
-  .admin-weekly-calendar-slot {
-    width: 100%;
-    padding: 13px;
-  }
-
-  .admin-weekly-calendar-mobile-date {
-    display: block;
-  }
-
-  .admin-weekly-calendar-reservations li {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    column-gap: 9px;
-  }
-
-  .admin-weekly-calendar-reservations em {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-}
-
-@media (max-width: 380px) {
-  .admin-weekly-calendar-controls {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .admin-weekly-calendar-controls button.today {
-    grid-column: 1 / -1;
-    grid-row: 2;
-  }
+@media (max-width: 390px) {
+  .admin-weekly-calendar-page { padding-inline: 12px; }
+  .admin-weekly-calendar-header h1 { font-size: 28px; }
+  .admin-weekly-calendar-toolbar { padding: 16px; }
+  .admin-weekly-calendar-related nav { grid-template-columns: 1fr; }
 }
