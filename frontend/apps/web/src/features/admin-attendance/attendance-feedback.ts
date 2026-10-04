@@ -11,6 +11,15 @@ export function attendanceClassLabel(value: string) {
   return CLASS_LABELS[value] ?? '수업 종류 확인 필요'
 }
 
+export function attendanceCouponTypeLabel(value?: string) {
+  switch (value) {
+    case 'general': return '일반 기승 쿠폰'
+    case 'dressage': return '마장마술 쿠폰'
+    case 'jumping': return '장애물 쿠폰'
+    default: return '쿠폰 종류 확인 필요'
+  }
+}
+
 export function attendanceErrorMessage(code?: string | null) {
   if (code === 'RESERVATION_LESSON_NOT_STARTED') return '아직 수업 시작 전이라 처리할 수 없습니다.'
   if (code === 'TIMESLOT_CLOSURE_COMMAND_NOT_ALLOWED') return '현재 휴강 처리된 수업 시간입니다. 운영 상태를 확인해 주세요.'

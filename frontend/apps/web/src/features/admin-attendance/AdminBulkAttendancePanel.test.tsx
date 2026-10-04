@@ -20,7 +20,7 @@ const COUPON_RESERVATION: AdminReservationResponse = {
   startTime: '09:00:00',
   status: 'confirmed',
   paymentSource: 'coupon',
-  coupon: { couponId: 81, couponType: 'GENERAL', status: 'active', remainingCount: 4, heldCount: 1, expiresAt: null },
+  coupon: { couponId: 81, couponType: 'general', status: 'active', remainingCount: 4, heldCount: 1, expiresAt: null },
   paymentDueAt: null,
   approvalRequestedAt: new Date('2026-07-01T01:00:00Z'),
   adminConfirmedAt: new Date('2026-07-01T02:00:00Z'),
@@ -172,6 +172,30 @@ describe('AdminBulkAttendancePanel', () => {
     await waitFor(() => expect(processBulk).toHaveBeenCalledWith('2026-08-10', '09:00:00', [
       { reservationId: 41, action: 'no_show', couponAction: 'return', memo: '질병 예외 반환' },
       { reservationId: 42, action: 'no_show', couponAction: 'none', memo: '당일 미방문' },
+    ]))
+  })
+
+  it('일괄_노쇼_확인에서_예약별_쿠폰_종류와_차감_반환_없음을_표시한다', async () => {
+    const dressage = { ...COUPON_RESERVATION, reservationId: 43, memberName: '박마술', classType: 'DRESSAGE', coupon: { ...COUPON_RESERVATION.coupon!, couponId: 83, couponType: 'dressage' } }
+    const processBulk = vi.fn().mockResolvedValue(successResponse())
+    renderPanel(createApi({ processBulk }), [COUPON_RESERVATION, dressage, PAYMENT_RESERVATION])
+    for (const checkbox of screen.getAllByRole('checkbox')) fireEvent.click(checkbox)
+    for (const [name, couponAction] of [['김쿠폰', 'deduct'], ['박마술', 'return'], ['이결제', 'none']]) {
+      fireEvent.change(screen.getByLabelText(`${name} 처리 결과`), { target: { value: 'no_show' } })
+      if (couponAction !== 'none') fireEvent.change(screen.getByLabelText(`${name} 쿠폰 처리`), { target: { value: couponAction } })
+      fireEvent.change(screen.getByLabelText(`${name} 관리자 메모`), { target: { value: `${name} 미방문` } })
+    }
+    fireEvent.click(screen.getByRole('button', { name: '선택 예약 함께 확인' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByText('일반 기승 쿠폰 · 쿠폰 1회 차감')).toBeInTheDocument()
+    expect(within(dialog).getByText('마장마술 쿠폰 · 쿠폰 점유 반환')).toBeInTheDocument()
+    expect(within(dialog).getByText('단건 결제 · 별도 쿠폰 처리 없음')).toBeInTheDocument()
+    expect(within(dialog).queryByText(/쿠폰 번호/)).not.toBeInTheDocument()
+    fireEvent.click(within(dialog).getByRole('button', { name: '선택 3건 결과 기록' }))
+    await waitFor(() => expect(processBulk).toHaveBeenCalledWith('2026-08-10', '09:00:00', [
+      { reservationId: 41, action: 'no_show', couponAction: 'deduct', memo: '김쿠폰 미방문' },
+      { reservationId: 43, action: 'no_show', couponAction: 'return', memo: '박마술 미방문' },
+      { reservationId: 42, action: 'no_show', couponAction: 'none', memo: '이결제 미방문' },
     ]))
   })
 

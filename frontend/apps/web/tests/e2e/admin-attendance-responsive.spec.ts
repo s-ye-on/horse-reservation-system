@@ -11,7 +11,7 @@ function reservation(index: number) {
     memberPhone: '010-1234-5678', lessonDate: DATE, startTime: '14:00:00',
     classType: index % 3 === 0 ? 'ROUND_TROT' : index % 3 === 1 ? 'DRESSAGE' : 'JUMPING',
     status: 'confirmed', paymentSource: index === 1 ? 'single_payment' : 'coupon',
-    coupon: index === 1 ? null : { couponId: 70 + index, couponType: 'GENERAL', status: 'active', remainingCount: 5, heldCount: 1, expiresAt: null },
+    coupon: index === 1 ? null : { couponId: 70 + index, couponType: 'general', status: 'active', remainingCount: 5, heldCount: 1, expiresAt: null },
     actions: { complete: allowed, noShow: allowed, change: allowed, cancel: allowed, approve: allowed },
     approvalRequestedAt: `${DATE}T01:00:00Z`, createdAt: `${DATE}T01:00:00Z`, updatedAt: `${DATE}T01:00:00Z`,
   }
@@ -66,6 +66,11 @@ for (const width of [1440, 960, 320]) {
     await page.screenshot({ path: `/tmp/horse-attendance-${width}.png`, fullPage: false })
 
     const single = page.getByRole('article', { name: '기승회원0', exact: true })
+    await expect(single.getByText('일반 기승 쿠폰', { exact: true })).toBeVisible()
+    await expect(single.getByText('쿠폰 번호 70', { exact: true })).toBeHidden()
+    await single.getByText('연락처·결제 정보 보기').click()
+    await expect(single.getByText('쿠폰 번호 70', { exact: true })).toBeVisible()
+    await single.getByText('연락처·결제 정보 보기').click()
     const checkbox = single.getByRole('checkbox')
     await checkbox.focus(); await page.keyboard.press('Space')
     await expect(checkbox).toBeChecked()
@@ -113,12 +118,16 @@ for (const width of [1440, 960, 320]) {
     for (const [index, couponAction] of [[1, 'deduct'], [2, 'return']] as const) {
       const entry = remaining[index], card = page.getByRole('article', { name: entry.memberName, exact: true })
       await card.getByLabel(`${entry.memberName} 처리 결과`).selectOption('no_show')
+      await expect(card.getByText('처리 대상: 일반 기승 쿠폰')).toBeVisible()
       await card.getByLabel(`${entry.memberName} 쿠폰 처리`).selectOption(couponAction)
       await card.getByLabel(`${entry.memberName} 관리자 메모`).fill(index === 1 ? '당일 미방문 확인' : '긴메모'.repeat(166))
     }
     await page.getByRole('button', { name: '선택 예약 함께 확인' }).first().click()
     await expect(dialog).toContainText('수업 완료 6건 · 노쇼 2건')
     await expect(dialog).toContainText('쿠폰 점유 반환')
+    await expect(dialog).toContainText('일반 기승 쿠폰 · 쿠폰 1회 차감')
+    await expect(dialog).toContainText('일반 기승 쿠폰 · 쿠폰 점유 반환')
+    await expect(dialog.getByText(/쿠폰 번호/)).toHaveCount(0)
     await expectNoOverflow(page)
     expect(await page.locator('.attendance-dialog-scroll').evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true)
     await page.screenshot({ path: `/tmp/horse-attendance-dialog-${width}.png`, fullPage: false })

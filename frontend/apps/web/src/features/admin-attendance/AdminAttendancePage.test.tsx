@@ -21,7 +21,7 @@ const GENERAL: AdminReservationResponse = {
   startTime: '09:00:00',
   status: 'confirmed',
   paymentSource: 'coupon',
-  coupon: { couponId: 71, couponType: 'GENERAL', status: 'active', remainingCount: 5, heldCount: 1, expiresAt: null },
+  coupon: { couponId: 71, couponType: 'general', status: 'active', remainingCount: 5, heldCount: 1, expiresAt: null },
   paymentDueAt: null,
   approvalRequestedAt: new Date('2026-07-01T01:00:00Z'),
   adminConfirmedAt: new Date('2026-07-01T02:00:00Z'),
@@ -48,7 +48,7 @@ const DRESSAGE: AdminReservationResponse = {
   reservationId: 32,
   memberName: '이마술',
   classType: 'DRESSAGE',
-  coupon: { couponId: 72, couponType: 'DRESSAGE', status: 'active', remainingCount: 7, heldCount: 1, expiresAt: null },
+  coupon: { couponId: 72, couponType: 'dressage', status: 'active', remainingCount: 7, heldCount: 1, expiresAt: null },
 }
 
 const JUMPING: AdminReservationResponse = {
@@ -134,9 +134,30 @@ describe('AdminAttendancePage', () => {
     renderPage(createApi())
     const card = await cardFor('김일반')
     expect(within(card).getByText('원형 속보')).toBeInTheDocument()
+    expect(within(card).getByText('일반 기승 쿠폰')).toBeVisible()
+    const couponNumber = within(card).getByText('쿠폰 번호 71')
+    expect(couponNumber.closest('details')).not.toHaveAttribute('open')
+    expect(card.querySelector('.attendance-meta')).not.toHaveTextContent('쿠폰 번호')
     fireEvent.click(within(card).getByText('연락처·결제 정보 보기'))
     expect(within(card).getByText('쿠폰 예약')).toBeInTheDocument()
-    expect(within(card).getByText('쿠폰 번호 71 · 잔여 5회 · 예약 처리 중 1회')).toBeInTheDocument()
+    expect(within(card).getByText('잔여 5회 · 예약 처리 중 1회')).toBeInTheDocument()
+    expect(couponNumber).toBeVisible()
+  })
+
+  it.each([
+    ['general', '일반 기승 쿠폰'],
+    ['dressage', '마장마술 쿠폰'],
+    ['jumping', '장애물 쿠폰'],
+    ['unknown', '쿠폰 종류 확인 필요'],
+  ])('쿠폰_종류_%s를_수업_종류에서_추정하지_않고_표시한다', async (couponType, label) => {
+    const reservation = { ...GENERAL, coupon: { ...GENERAL.coupon!, couponType } }
+    renderPage(createApi({ getConfirmedReservations: vi.fn().mockResolvedValue([reservation]) }))
+    const card = await cardFor('김일반')
+    expect(within(card).getByText('원형 속보')).toBeInTheDocument()
+    expect(within(card).getByText(label)).toBeVisible()
+    fireEvent.click(within(card).getByRole('button', { name: '노쇼 입력' }))
+    expect(within(card).getByText(`처리 대상: ${label}`)).toBeVisible()
+    if (couponType !== 'general') expect(within(card).queryByText('일반 기승 쿠폰')).not.toBeInTheDocument()
   })
 
   it('과거와_현재_예약을_각_날짜와_시작_시각으로_구분한다', async () => {
@@ -184,6 +205,7 @@ describe('AdminAttendancePage', () => {
     renderPage(createApi({ noShow }))
     const card = await cardFor('김일반')
     fireEvent.click(within(card).getByRole('button', { name: '노쇼 입력' }))
+    expect(within(card).getByText('처리 대상: 일반 기승 쿠폰')).toBeVisible()
     const couponSelect = within(card).getByLabelText('김일반 쿠폰 처리')
     expect(within(couponSelect).getByRole('option', { name: '쿠폰 1회 차감' })).toBeInTheDocument()
     expect(within(couponSelect).getByRole('option', { name: '쿠폰 점유 반환' })).toBeInTheDocument()
@@ -191,6 +213,8 @@ describe('AdminAttendancePage', () => {
     fireEvent.change(couponSelect, { target: { value: 'return' } })
     fireEvent.change(within(card).getByLabelText('김일반 관리자 메모'), { target: { value: '질병 사유 예외 반환' } })
     fireEvent.click(within(card).getByRole('button', { name: '노쇼 확인' }))
+    expect(within(screen.getByRole('dialog')).getByText('일반 기승 쿠폰 · 쿠폰 점유 반환')).toBeInTheDocument()
+    expect(within(screen.getByRole('dialog')).queryByText(/쿠폰 번호/)).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: '이 예약 결과 기록' }))
     await waitFor(() => expect(noShow).toHaveBeenCalledWith(31, 'return', '질병 사유 예외 반환'))
     const result = await screen.findByRole('status', { name: '이번 처리 결과' })
