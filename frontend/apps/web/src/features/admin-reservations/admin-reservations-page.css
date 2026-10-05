@@ -1,471 +1,105 @@
 .admin-reservations-page {
-  --reservation-accent: #7a1f35;
-  --reservation-accent-dark: #5d1728;
-  --reservation-soft: #f7e9ed;
-  --reservation-ink: #282124;
-  --reservation-muted: #71666a;
-  --reservation-line: #ddd5d8;
-  width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  padding: 32px 16px 56px;
-  color: var(--reservation-ink);
-  background: #f4f3f3;
-}
-
-.admin-reservations-shell {
   width: min(100%, 1240px);
+  min-width: 0;
   margin: 0 auto;
+  padding: 32px;
+  color: var(--horse-color-foreground);
 }
-
-.admin-reservations-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.admin-reservations-eyebrow {
-  margin: 0 0 6px;
-  color: var(--reservation-accent);
-  font-size: .76rem;
-  font-weight: 780;
-}
-
-.admin-reservations-header h1 {
-  margin: 0;
-  font-size: clamp(1.55rem, 3vw, 2.15rem);
-}
-
-.admin-reservations-header p:not(.admin-reservations-eyebrow) {
-  margin: 7px 0 0;
-  color: var(--reservation-muted);
-  font-size: .9rem;
-}
-
-.admin-reservations-total {
-  flex: 0 0 auto;
-  padding: 8px 11px;
-  border: 1px solid #cfb8bf;
-  border-radius: 6px;
-  color: var(--reservation-accent);
-  background: #fff;
-  font-size: .84rem;
-  font-weight: 760;
-}
-
-.admin-reservations-columns {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-  align-items: start;
-}
-
-.admin-reservations-focus {
-  width: min(100%, 560px);
-  margin: 0 0 20px;
-  padding: 16px;
-  border: 1px solid #d2a766;
-  border-radius: 8px;
-  background: #fffaf1;
-}
-
-.admin-reservations-focus-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-
-.admin-reservations-focus-heading h2,
-.admin-reservations-focus-heading p { margin: 0; }
-.admin-reservations-focus-heading h2 { font-size: 1.05rem; }
-.admin-reservations-focus-heading p { margin-top: 4px; color: var(--reservation-muted); font-size: .8rem; }
-.admin-reservations-focus-heading > strong { color: var(--reservation-accent); }
-
-.admin-reservations-section {
-  min-width: 0;
-}
-
-.admin-reservations-section-title {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 78px;
-  margin-bottom: 10px;
-  padding: 14px;
-  border-top: 3px solid var(--reservation-accent);
-  border-radius: 6px;
-  background: #e9e6e7;
-}
-
-.admin-reservations-section-title h2,
-.admin-reservations-section-title p {
+.admin-reservations-page *, .admin-reservation-dialog * { min-width: 0; }
+.admin-reservations-page h1, .admin-reservations-page h2, .admin-reservation-dialog h2 {
+  font-family: var(--horse-font-display);
+  letter-spacing: 0;
+  line-height: 1.25;
   margin: 0;
 }
-
-.admin-reservations-section-title h2 {
-  font-size: 1rem;
+.admin-reservations-header { display: flex; justify-content: space-between; align-items: end; gap: 20px; margin-bottom: 24px; }
+.admin-reservations-header h1 { font-size: 32px; }
+.admin-reservations-header p:not(.admin-reservations-eyebrow) { margin: 8px 0 0; color: var(--horse-color-muted); font-size: 14px; line-height: 1.55; }
+.admin-reservations-eyebrow { margin: 0 0 8px; font-size: 12px; font-weight: 700; color: var(--horse-color-brand); }
+.admin-reservations-total { flex-shrink: 0; padding: 8px 12px; border: 1px solid var(--horse-color-border); border-radius: 8px; background: var(--horse-color-surface); font-size: 14px; }
+.admin-reservations-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 28px; }
+.admin-reservations-overview a { display: grid; gap: 8px; padding: 16px; border-left: 2px solid var(--horse-color-brand); color: var(--horse-color-foreground); text-decoration: none; background: var(--horse-color-surface); }
+.admin-reservations-overview span { font-size: 12px; color: var(--horse-color-muted); }
+.admin-reservations-overview strong { font-size: 20px; }
+.admin-reservations-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; align-items: start; }
+.admin-reservations-section-title { display: flex; justify-content: space-between; align-items: start; gap: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--horse-color-border); padding-bottom: 16px; }
+.admin-reservations-section-title h2 { font-size: 24px; scroll-margin-top: 120px; }
+.admin-reservations-section-title p { font-size: 12px; color: var(--horse-color-muted); margin: 6px 0 0; line-height: 1.55; }
+.admin-reservations-section-title > strong { font-size: 14px; padding: 5px 10px; border-radius: 999px; background: var(--horse-color-brand-soft); color: var(--horse-color-brand); }
+.admin-reservations-list { display: grid; gap: 12px; }
+.admin-reservation-card { border: 1px solid var(--horse-color-border); border-radius: 8px; background: var(--horse-color-surface); padding: 20px; }
+.admin-reservation-card.warning-critical { border-left: 3px solid var(--horse-color-danger); }
+.admin-reservation-card.warning-warning { border-left: 3px solid #b45309; }
+.admin-reservation-card-top { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.admin-reservation-card-top h3 { font-size: 18px; margin: 0 0 4px; }
+.admin-reservation-number { color: var(--horse-color-muted); font-size: 12px; }
+.admin-reservation-warning, .admin-reservation-status { display: inline-block; border-radius: 999px; padding: 4px 8px; font-size: 12px; font-weight: 700; }
+.admin-reservation-warning { flex-shrink: 0; }
+.admin-reservation-warning.critical { color: #991b1b; background: #fef2f2; }
+.admin-reservation-warning.warning, .status-pending_payment, .status-payment_expired { color: #92400e; background: #fffbeb; }
+.admin-reservation-warning.normal, .status-confirmed { color: #166534; background: #f0fdf4; }
+.status-pending_admin_approval { color: var(--horse-color-brand); background: var(--horse-color-brand-soft); }
+.admin-reservation-details, .admin-reservation-dialog-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.admin-reservation-details dt, .admin-reservation-dialog-facts dt { font-size: 12px; color: var(--horse-color-muted); }
+.admin-reservation-details dd, .admin-reservation-dialog-facts dd { margin: 4px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; }
+.admin-reservation-coupon { color: var(--horse-color-brand); font-size: 14px; font-weight: 700; margin: 0 0 12px; }
+.admin-reservation-metadata { border-top: 1px solid var(--horse-color-border); margin-bottom: 16px; }
+.admin-reservation-metadata summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-size: 12px; font-weight: 700; }
+.admin-reservation-metadata a { color: var(--horse-color-brand); display: inline-flex; align-items: center; min-height: 44px; }
+.admin-reservation-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: end; }
+.admin-reservations-page button, .admin-reservation-dialog button {
+  min-height: 44px; padding: 10px 14px; border: 1px solid var(--horse-color-brand); border-radius: 8px;
+  color: var(--horse-color-brand-foreground); background: var(--horse-color-brand); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
 }
-
-.admin-reservations-section-title p {
-  margin-top: 5px;
-  color: var(--reservation-muted);
-  font-size: .75rem;
-  line-height: 1.4;
-}
-
-.admin-reservations-section-title strong {
-  display: grid;
-  min-width: 28px;
-  min-height: 28px;
-  place-items: center;
-  border-radius: 50%;
-  color: #fff;
-  background: var(--reservation-accent);
-  font-size: .78rem;
-}
-
-.admin-reservations-list {
-  display: grid;
-  gap: 10px;
-}
-
-.admin-reservation-card,
-.admin-reservations-empty,
-.admin-reservations-state {
-  border: 1px solid var(--reservation-line);
-  border-radius: 8px;
-  background: #fff;
-}
-
-.admin-reservation-card {
-  min-width: 0;
-  padding: 15px;
-}
-
-.admin-reservation-card.warning-critical {
-  border-color: #9c2d42;
-  box-shadow: inset 3px 0 0 #9c2d42;
-}
-
-.admin-reservation-card.warning-warning {
-  border-color: #c88a2c;
-  box-shadow: inset 3px 0 0 #c88a2c;
-}
-
-.admin-reservation-card-top,
-.admin-reservation-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.admin-reservation-card-top h3 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.admin-reservation-card-top a {
-  display: inline-block;
-  margin-top: 4px;
-  color: var(--reservation-muted);
-  font-size: .78rem;
-  text-decoration: none;
-}
-
-.admin-reservation-warning {
-  flex: 0 0 auto;
-  padding: 5px 7px;
-  border-radius: 999px;
-  font-size: .7rem;
-  font-weight: 760;
-}
-
-.admin-reservation-warning.normal {
-  color: #286142;
-  background: #e7f3ec;
-}
-
-.admin-reservation-warning.warning {
-  color: #744b0d;
-  background: #fff1d9;
-}
-
-.admin-reservation-warning.critical {
-  color: #7b1e31;
-  background: #fae5ea;
-}
-
-.admin-reservation-details {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
-  margin: 14px 0;
-}
-
-.admin-reservation-details div {
-  min-width: 0;
-}
-
-.admin-reservation-details dt {
-  color: var(--reservation-muted);
-  font-size: .68rem;
-}
-
-.admin-reservation-details dd {
-  overflow-wrap: anywhere;
-  margin: 2px 0 0;
-  font-size: .79rem;
-  font-weight: 690;
-}
-
-.admin-reservation-coupon {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 0 0 13px;
-  padding: 9px;
-  border-radius: 5px;
-  color: var(--reservation-accent-dark);
-  background: var(--reservation-soft);
-  font-size: .73rem;
-  font-weight: 690;
-}
-
-.admin-reservation-coupon span {
-  color: var(--reservation-muted);
-  font-weight: 540;
-}
-
-.admin-reservation-actions {
-  justify-content: flex-end;
-  flex-wrap: wrap;
-}
-
-.admin-reservation-actions button {
-  min-height: 38px;
-  padding: 0 11px;
-  border: 1px solid var(--reservation-accent);
-  border-radius: 5px;
-  color: #fff;
-  background: var(--reservation-accent);
-  font: inherit;
-  font-size: .76rem;
-  font-weight: 720;
-  cursor: pointer;
-}
-
-.admin-reservation-actions button:hover:not(:disabled) {
-  background: var(--reservation-accent-dark);
-}
-
-.admin-reservation-actions button.secondary {
-  color: var(--reservation-accent);
-  background: #fff;
-}
-
-.admin-reservation-actions button.danger {
-  border-color: #8a2438;
-  color: #8a2438;
-  background: #fff5f7;
-}
-
-.admin-reservation-actions button:disabled,
-.admin-reservation-confirmation textarea:disabled {
-  cursor: not-allowed;
-  opacity: .55;
-}
-
-.admin-reservation-actions button:focus-visible,
-.admin-reservation-confirmation textarea:focus-visible {
-  outline: 3px solid rgba(122, 31, 53, .2);
-  outline-offset: 2px;
-}
-
-.admin-reservation-confirmation {
-  margin-top: 13px;
-  padding-top: 13px;
-  border-top: 1px solid var(--reservation-line);
-}
-
-.admin-reservation-confirmation > p {
-  margin: 0 0 10px;
-  font-size: .8rem;
-  font-weight: 700;
-}
-
-.admin-reservation-confirmation label {
-  display: grid;
-  gap: 5px;
-  margin-bottom: 10px;
-  color: var(--reservation-muted);
-  font-size: .75rem;
-  font-weight: 690;
-}
-
-.admin-reservation-confirmation textarea {
-  width: 100%;
-  min-height: 78px;
-  resize: vertical;
-  padding: 8px;
-  border: 1px solid #bfb5b8;
-  border-radius: 5px;
-  font: inherit;
-}
-
-.admin-reservation-confirmation label span {
-  text-align: right;
-  font-size: .68rem;
-  font-weight: 500;
-}
-
-.admin-reservation-adjustment h4 {
-  margin: 0 0 12px;
-  font-size: .9rem;
-}
-
-.admin-reservation-adjustment select {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 40px;
-  margin-top: 5px;
-  padding: 7px 9px;
-  border: 1px solid var(--reservation-line);
-  border-radius: 5px;
-  color: var(--reservation-ink);
-  background: #fff;
-  font: inherit;
-}
-
-.admin-reservation-adjustment small {
-  display: block;
-  margin-top: 5px;
-  color: var(--reservation-muted);
-}
-
-.admin-reservation-recommendation {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin: 10px 0;
-  padding: 9px;
-  border-radius: 5px;
-  color: var(--reservation-accent);
-  background: var(--reservation-soft);
-  font-size: .74rem;
-}
-
-.admin-reservation-override {
-  margin: 7px 0;
-  color: #7a4b0d;
-  font-size: .72rem;
-}
-
-.admin-reservations-empty,
-.admin-reservations-state {
-  margin: 0;
-  padding: 28px 16px;
-  color: var(--reservation-muted);
-  font-size: .83rem;
-  text-align: center;
-}
-
-.admin-reservations-error {
-  margin: 0 0 14px;
-  padding: 11px 13px;
-  border-left: 3px solid var(--reservation-accent);
-  color: #742137;
-  background: #fff6f8;
-  font-size: .84rem;
-}
-
-.admin-reservations-empty p {
-  margin: 0 0 12px;
-}
-
-.admin-reservations-empty button,
-.admin-reservations-pagination button {
-  min-height: 36px;
-  padding: 0 10px;
-  border: 1px solid var(--reservation-accent);
-  border-radius: 5px;
-  color: var(--reservation-accent);
-  background: #fff;
-  font: inherit;
-  font-size: .74rem;
-  font-weight: 710;
-  cursor: pointer;
-}
-
-.admin-reservations-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.admin-reservations-pagination span,
-.admin-reservations-page-loading {
-  color: var(--reservation-muted);
-  font-size: .72rem;
-  text-align: center;
-}
-
-.admin-reservations-page-loading {
-  margin: 8px 0 0;
-}
-
-.admin-reservations-empty button:focus-visible,
-.admin-reservations-pagination button:focus-visible {
-  outline: 3px solid rgba(122, 31, 53, .2);
-  outline-offset: 2px;
-}
-
-.admin-reservations-pagination button:disabled {
-  cursor: not-allowed;
-  opacity: .45;
-}
-
-@media (max-width: 980px) {
-  .admin-reservations-columns {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .admin-reservations-section-title {
-    min-height: auto;
-  }
-}
-
-@media (max-width: 420px) {
-  .admin-reservations-page {
-    padding: 22px 12px 40px;
-  }
-
-  .admin-reservations-header,
-  .admin-reservations-focus-heading,
-  .admin-reservation-card-top,
-  .admin-reservation-coupon,
-  .admin-reservation-actions {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .admin-reservations-total {
-    align-self: flex-start;
-  }
-
-  .admin-reservation-actions button {
-    width: 100%;
-  }
-
-  .admin-reservations-pagination button {
-    padding-inline: 8px;
-  }
+.admin-reservations-page button.secondary, .admin-reservation-dialog button.secondary,
+.admin-reservations-pagination button, .admin-reservation-dialog > header > button { color: var(--horse-color-foreground); background: var(--horse-color-surface); border-color: var(--horse-color-border); }
+.admin-reservations-page button.danger { color: var(--horse-color-danger); background: var(--horse-color-surface); border-color: var(--horse-color-danger); }
+.admin-reservations-page button:disabled, .admin-reservation-dialog button:disabled { opacity: .5; cursor: not-allowed; }
+.admin-reservations-page :focus-visible, .admin-reservation-dialog :focus-visible { outline: 2px solid var(--horse-color-brand); outline-offset: 3px; }
+.admin-reservation-blocked { margin: 12px 0 0; color: var(--horse-color-muted); font-size: 12px; line-height: 1.5; }
+.admin-reservations-empty, .admin-reservations-state { padding: 28px 20px; margin: 0; background: var(--horse-color-surface); border: 1px solid var(--horse-color-border); border-radius: 8px; text-align: center; font-size: 14px; color: var(--horse-color-muted); }
+.admin-reservations-result { border: 1px solid var(--horse-color-border); border-left: 3px solid #166534; background: var(--horse-color-surface); border-radius: 8px; margin-bottom: 24px; padding: 20px; }
+.admin-reservations-result h2 { font-size: 20px; }
+.admin-reservations-result p { font-size: 14px; margin: 8px 0 0; line-height: 1.55; }
+.admin-reservations-result.result-error, .admin-reservations-error { border-left-color: var(--horse-color-danger); color: #991b1b; }
+.admin-reservations-pagination { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; }
+.admin-reservations-pagination span, .admin-reservations-page-loading { font-size: 12px; color: var(--horse-color-muted); }
+.admin-reservations-page-loading { text-align: center; }
+.admin-reservations-focus { margin: 0 0 28px; }
+.admin-reservations-focus-heading { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.admin-reservations-focus-heading h2 { font-size: 24px; }
+.admin-reservations-focus-heading p, .admin-reservations-focus-heading > strong { font-size: 12px; color: var(--horse-color-muted); }
+.admin-reservation-dialog { width: min(640px, calc(100% - 32px)); max-height: 90dvh; border: 1px solid var(--horse-color-border); border-radius: 8px; padding: 24px; background: var(--horse-color-surface); color: var(--horse-color-foreground); }
+.admin-reservation-dialog[open] { display: flex; flex-direction: column; }
+.admin-reservation-dialog::backdrop { background: rgb(17 17 17 / 50%); }
+.admin-reservation-dialog > header { display: flex; align-items: start; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--horse-color-border); padding-bottom: 16px; }
+.admin-reservation-dialog h2 { font-size: 24px; }
+.admin-reservation-dialog > header > button { flex-shrink: 0; }
+.admin-reservation-dialog-body { min-height: 0; overflow-y: auto; padding: 4px 3px; }
+.admin-reservation-dialog-facts > div { background: var(--horse-color-background); padding: 12px; border-radius: 8px; }
+.admin-reservation-confirmation { border-top: 1px solid var(--horse-color-border); padding-top: 16px; font-size: 14px; }
+.admin-reservation-confirmation > p { line-height: 1.55; }
+.admin-reservation-confirmation h4 { font-size: 16px; margin: 0 0 16px; }
+.admin-reservation-confirmation fieldset { margin: 0; padding: 0; border: 0; }
+.admin-reservation-confirmation label { display: grid; gap: 8px; margin-bottom: 16px; font-size: 14px; font-weight: 700; }
+.admin-reservation-confirmation textarea, .admin-reservation-confirmation select { width: 100%; min-width: 0; min-height: 44px; border: 1px solid var(--horse-color-border); border-radius: 8px; padding: 10px 12px; font: inherit; font-size: 14px; background: var(--horse-color-surface); color: var(--horse-color-foreground); }
+.admin-reservation-confirmation textarea { min-height: 96px; resize: vertical; }
+.admin-reservation-confirmation label > span, .admin-reservation-confirmation small { font-size: 12px; color: var(--horse-color-muted); font-weight: 400; }
+.admin-reservation-confirmation [aria-invalid="true"] { border-color: var(--horse-color-danger); }
+.admin-reservation-confirmation .admin-reservation-field-error { color: #991b1b; }
+.admin-reservation-field-error:empty { display: none; }
+.admin-reservation-recommendation { padding: 16px; background: var(--horse-color-brand-soft); display: flex; justify-content: space-between; gap: 12px; margin: 16px 0; border-radius: 8px; color: var(--horse-color-brand); }
+.admin-reservation-notice, .admin-reservation-override { color: var(--horse-color-muted); font-size: 12px; line-height: 1.55; }
+.admin-reservation-override { color: #92400e; }
+.admin-reservation-dialog .admin-reservation-actions { border-top: 1px solid var(--horse-color-border); padding-top: 16px; margin-top: 20px; }
+.admin-reservations-page p, .admin-reservations-page dd, .admin-reservations-page h3, .admin-reservation-dialog p, .admin-reservation-dialog dd, .admin-reservation-dialog h2 { overflow-wrap: anywhere; }
+@media (max-width: 960px) { .admin-reservations-page { padding: 24px 16px 48px; } }
+@media (max-width: 760px) { .admin-reservations-columns { grid-template-columns: 1fr; } .admin-reservations-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 390px) {
+  .admin-reservations-header { flex-direction: column; align-items: start; }
+  .admin-reservation-card, .admin-reservation-dialog { padding: 16px; }
+  .admin-reservation-details, .admin-reservation-dialog-facts { grid-template-columns: 1fr; gap: 12px; }
+  .admin-reservation-actions { flex-direction: column; align-items: stretch; }
+  .admin-reservation-recommendation { flex-direction: column; }
+  .admin-reservations-overview a { padding: 12px; }
 }

@@ -150,9 +150,10 @@ test.describe('MVP 2 예약 변경·취소 정책 행렬', () => {
     const card = page.locator('article').filter({ hasText: policyCase.name })
     await expect(card).toBeVisible()
     await card.getByRole('button', { name: '예약 취소' }).click()
+    const dialog = page.getByRole('dialog', { name: '예약 취소 처리' })
 
-    const responsibility = card.getByLabel('취소 책임')
-    const recommendation = card.locator('.admin-reservation-recommendation')
+    const responsibility = dialog.getByLabel('취소 책임')
+    const recommendation = dialog.locator('.admin-reservation-recommendation')
     await expect(recommendation).toContainText('1회 차감')
     await responsibility.selectOption('stable')
     await expect(recommendation).toContainText('쿠폰 반환')
@@ -163,13 +164,14 @@ test.describe('MVP 2 예약 변경·취소 정책 행렬', () => {
     await responsibility.selectOption('stable')
     await expect(recommendation).toContainText('쿠폰 반환')
 
-    await card.getByLabel('최종 쿠폰 처리').selectOption('deduct')
-    await expect(card.getByText('권장안과 다른 최종 처리를 선택했습니다.')).toBeVisible()
-    await card.getByLabel('관리자 메모').fill('회원과 협의하여 차감 처리')
+    await dialog.getByLabel('최종 쿠폰 처리').selectOption('deduct')
+    await expect(dialog.getByText('권장안과 다른 최종 처리를 선택했습니다.')).toBeVisible()
+    await dialog.getByLabel('관리자 메모').fill('회원과 협의하여 차감 처리')
+    await dialog.getByRole('button', { name: '처리 내용 확인' }).click()
     const responsePromise = page.waitForResponse((response) =>
       response.url().endsWith(`/api/admin/reservations/${policyCase.reservationId}/cancel`)
       && response.request().method() === 'POST')
-    await card.getByRole('button', { name: '예약 취소 확인' }).click()
+    await dialog.getByRole('button', { name: '예약 취소 확인' }).click()
     const response = await responsePromise
     expect(await response.json()).toMatchObject({ status: 'cancelled', responsibility: 'stable', couponAction: 'deduct' })
     await expect(card).toBeHidden()

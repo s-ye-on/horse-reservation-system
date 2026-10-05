@@ -112,7 +112,7 @@ async function confirmReservation(page: Page, memberName: string, actionName: st
   await card.getByRole('button', { name: actionName }).click()
   const confirmResponse = page.waitForResponse((response) =>
     response.url().endsWith('/confirm') && response.request().method() === 'POST')
-  await card.getByRole('button', { name: '예약 확정 확인' }).click()
+  await page.getByRole('dialog', { name: '예약 확정' }).getByRole('button', { name: '예약 확정 확인' }).click()
   const body = await (await confirmResponse).json()
   expect(body.status).toBe('confirmed')
   await expect(card.getByRole('button', { name: actionName })).toHaveCount(0)

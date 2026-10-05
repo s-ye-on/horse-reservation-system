@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { ResponseError, type AdminReservationPageResponse, type AdminReservationResponse } from '@horse/api-client'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router'
 import type { AdminReservationsApi } from './admin-reservations.api'
@@ -54,7 +54,7 @@ const RESERVATIONS: AdminReservationResponse[] = [
     status: 'pending_admin_approval',
     paymentSource: 'coupon',
     approvalWarning: 'critical',
-    coupon: { couponId: 21, couponType: 'GENERAL', status: 'active', remainingCount: 4, heldCount: 1, expiresAt: null },
+    coupon: { couponId: 21, couponType: 'general', status: 'active', remainingCount: 4, heldCount: 1, expiresAt: null },
   },
   {
     ...BASE_RESERVATION,
@@ -68,7 +68,7 @@ const RESERVATIONS: AdminReservationResponse[] = [
     status: 'pending_admin_approval',
     paymentSource: 'coupon',
     approvalWarning: 'warning',
-    coupon: { couponId: 22, couponType: 'GENERAL', status: 'active', remainingCount: 8, heldCount: 1, expiresAt: null },
+    coupon: { couponId: 22, couponType: 'general', status: 'active', remainingCount: 8, heldCount: 1, expiresAt: null },
   },
   {
     ...BASE_RESERVATION,
@@ -82,7 +82,7 @@ const RESERVATIONS: AdminReservationResponse[] = [
     status: 'pending_admin_approval',
     paymentSource: 'coupon',
     approvalWarning: 'normal',
-    coupon: { couponId: 23, couponType: 'GENERAL', status: 'active', remainingCount: 9, heldCount: 1, expiresAt: null },
+    coupon: { couponId: 23, couponType: 'general', status: 'active', remainingCount: 9, heldCount: 1, expiresAt: null },
   },
   {
     ...BASE_RESERVATION,
@@ -120,11 +120,15 @@ const RESERVATIONS: AdminReservationResponse[] = [
     startTime: '09:00:00',
     status: 'confirmed',
     paymentSource: 'coupon',
-    coupon: { couponId: 26, couponType: 'GENERAL', status: 'active', remainingCount: 7, heldCount: 1, expiresAt: null },
+    coupon: { couponId: 26, couponType: 'general', status: 'active', remainingCount: 7, heldCount: 1, expiresAt: null },
   },
 ]
 
 afterEach(cleanup)
+beforeAll(() => {
+  HTMLDialogElement.prototype.showModal = function () { this.setAttribute('open', '') }
+  HTMLDialogElement.prototype.close = function () { this.removeAttribute('open') }
+})
 
 function reservationPage(
   content: AdminReservationResponse[],
@@ -171,7 +175,7 @@ function createApi(overrides: Partial<AdminReservationsApi> = {}): AdminReservat
 function renderPage(api: AdminReservationsApi, initialEntry = '/admin/reservations') {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
   const Wrapper = ({ children }: { children: ReactNode }) => <MemoryRouter initialEntries={[initialEntry]}><QueryClientProvider client={client}>{children}</QueryClientProvider></MemoryRouter>
-  return render(<AdminReservationsPage api={api} />, { wrapper: Wrapper })
+  return { ...render(<AdminReservationsPage api={api} />, { wrapper: Wrapper }), client }
 }
 
 async function cardFor(memberName: string) {
@@ -203,7 +207,8 @@ describe('AdminReservationsPage', () => {
     expect(within(approvalSection).getByText('정상')).toBeInTheDocument()
     const cards = within(approvalSection).getAllByRole('article')
     expect(within(cards[0]).getByRole('heading', { name: '김긴급' })).toBeInTheDocument()
-    expect(within(cards[0]).getByText(/일반 쿠폰 #21/)).toBeInTheDocument()
+    expect(within(cards[0]).getByText('일반 기승 쿠폰')).toBeInTheDocument()
+    expect(within(cards[0]).getByText('#21')).toBeInTheDocument()
     expect(within(cards[1]).getByRole('heading', { name: '이확인' })).toBeInTheDocument()
     expect(within(cards[2]).getByRole('heading', { name: '박정상' })).toBeInTheDocument()
   })
@@ -263,13 +268,14 @@ describe('AdminReservationsPage', () => {
 
     const criticalCard = await cardFor('김긴급')
     fireEvent.click(within(criticalCard).getByRole('button', { name: '쿠폰 예약 확정' }))
-    fireEvent.click(within(criticalCard).getByRole('button', { name: '예약 확정 확인' }))
+    fireEvent.click(screen.getByRole('button', { name: '예약 확정 확인' }))
     await waitFor(() => expect(confirm).toHaveBeenCalledWith(1))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
 
     const warningCard = await cardFor('이확인')
     fireEvent.click(within(warningCard).getByRole('button', { name: '반려' }))
-    fireEvent.change(within(warningCard).getByLabelText('반려 사유'), { target: { value: '회원 요청 확인 필요' } })
-    fireEvent.click(within(warningCard).getByRole('button', { name: '예약 반려 확인' }))
+    fireEvent.change(screen.getByLabelText('반려 사유'), { target: { value: '회원 요청 확인 필요' } })
+    fireEvent.click(screen.getByRole('button', { name: '예약 반려 확인' }))
     await waitFor(() => expect(reject).toHaveBeenCalledWith(2, '회원 요청 확인 필요'))
   })
 
@@ -278,7 +284,7 @@ describe('AdminReservationsPage', () => {
     renderPage(createApi({ confirm }))
     const card = await cardFor('최입금')
     fireEvent.click(within(card).getByRole('button', { name: '입금 확인 및 확정' }))
-    fireEvent.click(within(card).getByRole('button', { name: '예약 확정 확인' }))
+    fireEvent.click(screen.getByRole('button', { name: '예약 확정 확인' }))
     await waitFor(() => expect(confirm).toHaveBeenCalledWith(4))
   })
 
@@ -287,8 +293,8 @@ describe('AdminReservationsPage', () => {
     renderPage(createApi({ restore }))
     const card = await cardFor('정만료')
     fireEvent.click(within(card).getByRole('button', { name: '만료 예약 복구' }))
-    fireEvent.change(within(card).getByLabelText('복구 메모'), { target: { value: '입금 내역을 늦게 확인함' } })
-    fireEvent.click(within(card).getByRole('button', { name: '예약 복구 확인' }))
+    fireEvent.change(screen.getByLabelText('복구 메모'), { target: { value: '입금 내역을 늦게 확인함' } })
+    fireEvent.click(screen.getByRole('button', { name: '예약 복구 확인' }))
     await waitFor(() => expect(restore).toHaveBeenCalledWith(5, '입금 내역을 늦게 확인함'))
   })
 
@@ -301,7 +307,7 @@ describe('AdminReservationsPage', () => {
     renderPage(createApi({ getReservations, confirm }))
     const card = await cardFor('김긴급')
     fireEvent.click(within(card).getByRole('button', { name: '쿠폰 예약 확정' }))
-    const submit = within(card).getByRole('button', { name: '예약 확정 확인' })
+    const submit = screen.getByRole('button', { name: '예약 확정 확인' })
     fireEvent.click(submit)
     fireEvent.click(submit)
     expect(await screen.findByRole('alert')).toHaveTextContent(message)
@@ -315,12 +321,13 @@ describe('AdminReservationsPage', () => {
     const card = await cardFor('한확정')
     expect(within(card).queryByRole('button', { name: '반려' })).not.toBeInTheDocument()
     fireEvent.click(within(card).getByRole('button', { name: '시간 변경' }))
-    const timeSlot = await within(card).findByLabelText('변경 시간대')
+    const timeSlot = await screen.findByLabelText('변경 시간대')
     await within(timeSlot).findByRole('option', { name: /8월 15일/ })
     expect(within(timeSlot).queryByRole('option', { name: /8월 16일/ })).not.toBeInTheDocument()
     fireEvent.change(timeSlot, { target: { value: '101' } })
-    fireEvent.change(within(card).getByLabelText('관리자 메모'), { target: { value: ' 회원 요청으로 변경 ' } })
-    fireEvent.click(within(card).getByRole('button', { name: '시간 변경 확인' }))
+    fireEvent.change(screen.getByLabelText('관리자 메모'), { target: { value: ' 회원 요청으로 변경 ' } })
+    fireEvent.click(screen.getByRole('button', { name: '처리 내용 확인' }))
+    fireEvent.click(screen.getByRole('button', { name: '시간 변경 확인' }))
     await waitFor(() => expect(change).toHaveBeenCalledWith(6, 101, '회원 요청으로 변경'))
   })
 
@@ -335,15 +342,16 @@ describe('AdminReservationsPage', () => {
     renderPage(createApi({ previewCancellation, cancel }))
     const card = await cardFor('한확정')
     fireEvent.click(within(card).getByRole('button', { name: '예약 취소' }))
-    expect(await within(card).findByText('1회 차감')).toBeInTheDocument()
-    fireEvent.change(within(card).getByLabelText('취소 책임'), { target: { value: 'stable' } })
+    await waitFor(() => expect(screen.getByLabelText('최종 쿠폰 처리')).toHaveValue('deduct'))
+    fireEvent.change(screen.getByLabelText('취소 책임'), { target: { value: 'stable' } })
     await waitFor(() => expect(previewCancellation).toHaveBeenCalledWith(6, 'stable'))
-    const recommendation = within(card).getByText('서버 권장 처리').parentElement as HTMLElement
+    const recommendation = (await screen.findByText('서버 권장 처리')).parentElement as HTMLElement
     await waitFor(() => expect(recommendation).toHaveTextContent('쿠폰 반환'))
-    fireEvent.change(within(card).getByLabelText('최종 쿠폰 처리'), { target: { value: 'deduct' } })
-    expect(within(card).getByText('권장안과 다른 최종 처리를 선택했습니다.')).toBeInTheDocument()
-    fireEvent.change(within(card).getByLabelText('관리자 메모'), { target: { value: '마장 판단으로 차감' } })
-    fireEvent.click(within(card).getByRole('button', { name: '예약 취소 확인' }))
+    fireEvent.change(screen.getByLabelText('최종 쿠폰 처리'), { target: { value: 'deduct' } })
+    expect(screen.getByText('권장안과 다른 최종 처리를 선택했습니다.')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('관리자 메모'), { target: { value: '마장 판단으로 차감' } })
+    fireEvent.click(screen.getByRole('button', { name: '처리 내용 확인' }))
+    fireEvent.click(screen.getByRole('button', { name: '예약 취소 확인' }))
     await waitFor(() => expect(cancel).toHaveBeenCalledWith(6, 'stable', 'deduct', '마장 판단으로 차감'))
   })
 
@@ -353,8 +361,8 @@ describe('AdminReservationsPage', () => {
     }))
     const card = await cardFor('최입금')
     fireEvent.click(within(card).getByRole('button', { name: '예약 취소' }))
-    const couponAction = await within(card).findByLabelText('최종 쿠폰 처리')
-    expect(within(couponAction).getAllByRole('option')).toHaveLength(1)
+    const couponAction = await screen.findByLabelText('최종 쿠폰 처리')
+    expect(within(couponAction).getAllByRole('option')).toHaveLength(2)
     expect(within(couponAction).getByRole('option', { name: '처리 없음' })).toBeInTheDocument()
   })
 
@@ -363,12 +371,13 @@ describe('AdminReservationsPage', () => {
     renderPage(createApi({ change: vi.fn().mockRejectedValue(error) }))
     const card = await cardFor('한확정')
     fireEvent.click(within(card).getByRole('button', { name: '시간 변경' }))
-    const timeSlot = await within(card).findByLabelText('변경 시간대')
+    const timeSlot = await screen.findByLabelText('변경 시간대')
     await within(timeSlot).findByRole('option', { name: /8월 15일/ })
     fireEvent.change(timeSlot, { target: { value: '101' } })
-    fireEvent.change(within(card).getByLabelText('관리자 메모'), { target: { value: '변경 시도' } })
-    fireEvent.click(within(card).getByRole('button', { name: '시간 변경 확인' }))
-    expect(await within(card).findByRole('alert')).toHaveTextContent(message)
+    fireEvent.change(screen.getByLabelText('관리자 메모'), { target: { value: '변경 시도' } })
+    fireEvent.click(screen.getByRole('button', { name: '처리 내용 확인' }))
+    fireEvent.click(screen.getByRole('button', { name: '시간 변경 확인' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(message)
   })
 
   it('320px_화면에서도_상태별_작업을_사용할_수_있다', async () => {
@@ -379,5 +388,94 @@ describe('AdminReservationsPage', () => {
     expect(screen.getByRole('button', { name: '만료 예약 복구' })).toBeInTheDocument()
     expect((screen.getAllByRole('button', { name: '시간 변경' })).length).toBeGreaterThan(0)
     expect((screen.getAllByRole('button', { name: '예약 취소' })).length).toBeGreaterThan(0)
+  })
+
+  it('서버의_개별_action_차단을_표시하지만_복구에_approve를_사용하지_않는다', async () => {
+    const blocked = { ...RESERVATIONS[0], actions: {
+      ...BASE_RESERVATION.actions,
+      approve: { allowed: false, blockedReason: 'RESERVATION_LESSON_ALREADY_STARTED' },
+      change: { allowed: false, blockedReason: 'RESERVATION_LESSON_ALREADY_STARTED' },
+      cancel: { allowed: false, blockedReason: 'RESERVATION_LESSON_ALREADY_STARTED' },
+    } }
+    renderPage(createApi({ getReservations: vi.fn((status) => Promise.resolve(reservationPage(
+      status === 'pending_admin_approval' ? [blocked] : status === 'payment_expired' ? [{ ...RESERVATIONS[4], actions: blocked.actions }] : [],
+    ))) }))
+    const card = await cardFor('김긴급')
+    expect(within(card).getByRole('button', { name: '쿠폰 예약 확정' })).toBeDisabled()
+    expect(within(card).getByRole('button', { name: '시간 변경' })).toBeDisabled()
+    expect(within(card).getByRole('button', { name: '예약 취소' })).toBeDisabled()
+    expect(within(card).getAllByText(/이미 수업이 시작/)).toHaveLength(3)
+    expect(screen.getByRole('button', { name: '만료 예약 복구' })).toBeEnabled()
+  })
+
+  it('집중_영역과_목록에_같은_예약이_있어도_dialog는_하나이며_성공_결과는_유지된다', async () => {
+    let confirmed = false
+    const reservation = RESERVATIONS[0]
+    const api = createApi({
+      getReservations: vi.fn((status) => Promise.resolve(reservationPage(!confirmed && status === reservation.status ? [reservation] : []))),
+      getReservation: vi.fn(() => Promise.resolve({ ...reservation, status: confirmed ? 'confirmed' : reservation.status })),
+      confirm: vi.fn(async () => { confirmed = true }),
+    })
+    renderPage(api, '/admin/reservations?reservationId=1')
+    const section = await screen.findByRole('region', { name: '예약 정리 대상' })
+    fireEvent.click(within(section).getByRole('button', { name: '쿠폰 예약 확정' }))
+    expect(screen.getAllByRole('dialog')).toHaveLength(1)
+    expect(within(screen.getByRole('dialog')).getByRole('heading', { name: '예약 확정' })).toHaveFocus()
+    fireEvent.click(screen.getByRole('button', { name: '예약 확정 확인' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(screen.getByRole('heading', { name: '이번 처리 결과' })).toHaveFocus()
+    expect(screen.getByRole('status')).toHaveTextContent('김긴급')
+  })
+
+  it('공백_사유_오류를_field에_연결하고_command를_실행하지_않는다', async () => {
+    const api = createApi()
+    renderPage(api)
+    fireEvent.click(within(await cardFor('김긴급')).getByRole('button', { name: '반려' }))
+    fireEvent.change(screen.getByLabelText('반려 사유'), { target: { value: '   ' } })
+    fireEvent.click(screen.getByRole('button', { name: '예약 반려 확인' }))
+    expect(screen.getByLabelText('반려 사유')).toHaveAttribute('aria-invalid', 'true')
+    expect(screen.getByLabelText('반려 사유')).toHaveAccessibleDescription(/1자 이상 500자/)
+    expect(api.reject).not.toHaveBeenCalled()
+  })
+
+  it('책임_변경의_preview_실패는_이전_권장안으로_실행하지_않는다', async () => {
+    const api = createApi({ previewCancellation: vi.fn((_id, responsibility) => responsibility === 'member'
+      ? Promise.resolve({ reservationId: 6, timing: 'after_cutoff_weekday', responsibility, couponAction: 'deduct' })
+      : Promise.reject(new Error('preview failed'))) })
+    renderPage(api)
+    fireEvent.click(within(await cardFor('한확정')).getByRole('button', { name: '예약 취소' }))
+    await waitFor(() => expect(screen.getByLabelText('최종 쿠폰 처리')).toHaveValue('deduct'))
+    fireEvent.change(screen.getByLabelText('취소 책임'), { target: { value: 'stable' } })
+    expect(await screen.findByRole('alert')).toHaveTextContent('최신 권장안')
+    expect(screen.getByRole('button', { name: '처리 내용 확인' })).toBeDisabled()
+    expect(api.cancel).not.toHaveBeenCalled()
+  })
+
+  it('Command_휴강_충돌은_업무_문구와_최신_조회로_복구한다', async () => {
+    const api = createApi({ confirm: vi.fn().mockRejectedValue(new ResponseError(new Response(JSON.stringify({ code: 'TIMESLOT_CLOSURE_COMMAND_NOT_ALLOWED' }), { status: 409 }), 'failed')) })
+    renderPage(api)
+    fireEvent.click(within(await cardFor('김긴급')).getByRole('button', { name: '쿠폰 예약 확정' }))
+    fireEvent.click(screen.getByRole('button', { name: '예약 확정 확인' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('현재 휴강 처리된 수업 시간')
+    expect(api.getReservations).toHaveBeenCalledTimes(8)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('확인_후_preview가_바뀌면_관리자_선택을_보존하되_다시_확인해야_한다', async () => {
+    let recommendation = 'return'
+    const api = createApi({ previewCancellation: vi.fn((_id, responsibility) => Promise.resolve({ reservationId: 6, timing: 'before_cutoff', responsibility, couponAction: recommendation })) })
+    const { client } = renderPage(api)
+    fireEvent.click(within(await cardFor('한확정')).getByRole('button', { name: '예약 취소' }))
+    await waitFor(() => expect(screen.getByLabelText('최종 쿠폰 처리')).toHaveValue('return'))
+    fireEvent.change(screen.getByLabelText('관리자 메모'), { target: { value: '예약 취소 확인' } })
+    fireEvent.click(screen.getByRole('button', { name: '처리 내용 확인' }))
+    expect(screen.getByRole('button', { name: '예약 취소 확인' })).toBeEnabled()
+    recommendation = 'deduct'
+    await client.invalidateQueries({ queryKey: ['admin', 'reservation-adjustment', 'cancellation-preview', 6, 'member'] })
+    await waitFor(() => expect(screen.queryByRole('button', { name: '예약 취소 확인' })).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: '처리 내용 확인' })).toBeEnabled()
+    expect(screen.getByLabelText('최종 쿠폰 처리')).toHaveValue('return')
+    expect(screen.getByText('권장안과 다른 최종 처리를 선택했습니다.')).toBeInTheDocument()
+    expect(api.cancel).not.toHaveBeenCalled()
   })
 })

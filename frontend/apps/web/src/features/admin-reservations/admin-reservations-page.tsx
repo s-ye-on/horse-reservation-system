@@ -1,13 +1,15 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
 import type { AdminReservationResponse, TimeSlotResponse } from '@horse/api-client'
 import {
   adminReservationsApi,
   getAdminReservationErrorKind,
+  getAdminReservationCommandErrorMessage,
   type AdminReservationsApi,
 } from './admin-reservations.api'
 import './admin-reservations-page.css'
+import { AdminReservationActionDialog } from './admin-reservation-action-dialog'
 
 const RESERVATIONS_KEY = ['admin', 'actionable-reservations'] as const
 const MAX_MEMO_LENGTH = 500
@@ -53,9 +55,11 @@ type AdjustmentActionKind = 'change' | 'cancel'
 type ActionKind = BaseActionKind | AdjustmentActionKind
 
 interface SelectedAction {
-  reservationId: number
+  reservation: AdminReservationResponse
   kind: ActionKind
 }
+
+const ACTION_LABELS: Record<ActionKind, string> = { confirm: '예약 확정', reject: '예약 반려', restore: '예약 복구', change: '예약 시간 변경', cancel: '예약 취소 처리' }
 
 interface ReservationCommand {
   reservationId: number
@@ -65,7 +69,9 @@ interface ReservationCommand {
 
 function getErrorMessage(error: unknown) {
   const kind = getAdminReservationErrorKind(error)
+  if (kind === 'unauthorized') return '로그인이 필요합니다. 다시 로그인해 주세요.'
   if (kind === 'forbidden') return '관리자 권한이 없어 예약을 처리할 수 없습니다.'
+  if (kind === 'not-found') return '대상 예약이나 시간대를 찾을 수 없습니다. 최신 목록을 확인해 주세요.'
   if (kind === 'validation') return '입력한 사유 또는 메모를 다시 확인해 주세요.'
   if (kind === 'conflict') return '예약 상태가 변경됐거나 복구 가능한 정원이 없습니다. 최신 목록을 확인해 주세요.'
   return '예약을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.'
@@ -79,10 +85,13 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
     ? Number(requestedReservationId)
     : undefined
   const commandLocked = useRef(false)
+  const resultHeading = useRef<HTMLHeadingElement>(null)
   const [pages, setPages] = useState<Record<ActionableStatus, number>>(INITIAL_PAGES)
   const [selectedAction, setSelectedAction] = useState<SelectedAction>()
   const [note, setNote] = useState('')
   const [localError, setLocalError] = useState<string>()
+  const [result, setResult] = useState<{ message: string; error?: boolean }>()
+  const [adjustmentPending, setAdjustmentPending] = useState(false)
   const queries = useQueries({
     queries: ACTIONABLE_STATUSES.map((status) => ({
       queryKey: [...RESERVATIONS_KEY, status, pages[status]],
@@ -95,6 +104,25 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
     queryFn: () => api.getReservation(focusedReservationId as number),
     enabled: focusedReservationId !== undefined,
   })
+
+  useEffect(() => { if (result && !selectedAction) resultHeading.current?.focus() }, [result, selectedAction])
+
+  const finishOperation = async (reservation: AdminReservationResponse, kind: ActionKind) => {
+    await queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY })
+    if (kind === 'change') await queryClient.invalidateQueries({ queryKey: ['admin', 'reservation-adjustment', 'time-slots'] })
+    setSelectedAction(undefined)
+    setNote('')
+    setLocalError(undefined)
+    setResult({ message: `${reservation.memberName}님의 예약 #${reservation.reservationId} ${ACTION_LABELS[kind]} 처리가 반영되었습니다.` })
+  }
+
+  const failOperation = async (error: unknown) => {
+    const message = await getAdminReservationCommandErrorMessage(error) ?? getErrorMessage(error)
+    await queryClient.refetchQueries({ queryKey: RESERVATIONS_KEY })
+    await queryClient.invalidateQueries({ queryKey: ['admin', 'reservation-adjustment'] })
+    setSelectedAction(undefined)
+    setResult({ message, error: true })
+  }
 
   useEffect(() => {
     ACTIONABLE_STATUSES.forEach((status, index) => {
@@ -109,27 +137,21 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
 
   const command = useMutation({
     mutationFn: async (operation: ReservationCommand) => {
-      try {
-        if (operation.kind === 'confirm') await api.confirm(operation.reservationId)
-        if (operation.kind === 'reject') await api.reject(operation.reservationId, operation.note ?? '')
-        if (operation.kind === 'restore') await api.restore(operation.reservationId, operation.note ?? '')
-      } catch (error) {
-        await queryClient.refetchQueries({ queryKey: RESERVATIONS_KEY })
-        throw error
-      }
+      if (operation.kind === 'confirm') await api.confirm(operation.reservationId)
+      if (operation.kind === 'reject') await api.reject(operation.reservationId, operation.note ?? '')
+      if (operation.kind === 'restore') await api.restore(operation.reservationId, operation.note ?? '')
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY })
-      setSelectedAction(undefined)
-      setNote('')
-      setLocalError(undefined)
+      if (selectedAction) await finishOperation(selectedAction.reservation, selectedAction.kind)
     },
+    onError: failOperation,
   })
 
-  const chooseAction = (reservationId: number, kind: ActionKind) => {
-    setSelectedAction({ reservationId, kind })
+  const chooseAction = (reservation: AdminReservationResponse, kind: ActionKind) => {
+    setSelectedAction({ reservation, kind })
     setNote('')
     setLocalError(undefined)
+    setResult(undefined)
     command.reset()
   }
 
@@ -166,8 +188,12 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
           <span className="admin-reservations-total">운영 대상 {total}건</span>
         </header>
 
-        {command.isError ? <p className="admin-reservations-error" role="alert">{getErrorMessage(command.error)}</p> : null}
-        {localError ? <p className="admin-reservations-error" role="alert">{localError}</p> : null}
+        {result ? <section className={`admin-reservations-result${result.error ? ' result-error' : ''}`} role={result.error ? 'alert' : 'status'}>
+          <h2 ref={resultHeading} tabIndex={-1}>이번 처리 결과</h2><p>{result.message}</p>
+        </section> : null}
+        <nav className="admin-reservations-overview" aria-label="예약 상태별 목록 바로가기">
+          {ACTIONABLE_STATUSES.map((status, index) => <a key={status} href={`#${status}-title`}><span>{STATUS_META[status].label}</span><strong>{queries[index].isError ? '확인 필요' : `${queries[index].data?.totalElements ?? 0}건`}</strong></a>)}
+        </nav>
 
         {focusedReservationId !== undefined ? (
           <section className="admin-reservations-focus" aria-labelledby="focused-reservation-heading">
@@ -182,18 +208,8 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
             </div> : null}
             {focusedReservationQuery.data ? <ReservationCard
               reservation={focusedReservationQuery.data}
-              selectedAction={selectedAction}
-              note={note}
-              pending={command.isPending}
+              pending={command.isPending || adjustmentPending}
               onChooseAction={chooseAction}
-              onChangeNote={setNote}
-              onCancel={() => { setSelectedAction(undefined); setNote(''); setLocalError(undefined) }}
-              onSubmit={runCommand}
-              api={api}
-              onOperationSuccess={async () => {
-                await queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY })
-                setSelectedAction(undefined)
-              }}
             /> : null}
           </section>
         ) : null}
@@ -228,18 +244,8 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
                       <ReservationCard
                         key={reservation.reservationId}
                         reservation={reservation}
-                        selectedAction={selectedAction}
-                        note={note}
-                        pending={command.isPending}
+                        pending={command.isPending || adjustmentPending}
                         onChooseAction={chooseAction}
-                        onChangeNote={setNote}
-                        onCancel={() => { setSelectedAction(undefined); setNote(''); setLocalError(undefined) }}
-                        onSubmit={runCommand}
-                        api={api}
-                        onOperationSuccess={async () => {
-                          await queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY })
-                          setSelectedAction(undefined)
-                        }}
                       />
                     ))}
                   </div>
@@ -264,6 +270,16 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
             )
           })}
         </div>
+        {selectedAction ? <AdminReservationActionDialog title={ACTION_LABELS[selectedAction.kind]} pending={command.isPending || adjustmentPending}
+          onClose={() => { setSelectedAction(undefined); setNote(''); setLocalError(undefined) }}>
+          <ReservationFacts reservation={selectedAction.reservation} />
+          <ActionConfirmation action={selectedAction.kind} reservationId={selectedAction.reservation.reservationId}
+            reservation={selectedAction.reservation} note={note} pending={command.isPending} localError={localError}
+            onChangeNote={(value) => { setNote(value); setLocalError(undefined) }}
+            onCancel={() => { setSelectedAction(undefined); setNote(''); setLocalError(undefined) }} onSubmit={runCommand} api={api}
+            onPending={setAdjustmentPending} onFailure={failOperation}
+            onOperationSuccess={() => finishOperation(selectedAction.reservation, selectedAction.kind)} />
+        </AdminReservationActionDialog> : null}
       </div>
     </main>
   )
@@ -271,29 +287,13 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
 
 function ReservationCard({
   reservation,
-  selectedAction,
-  note,
   pending,
   onChooseAction,
-  onChangeNote,
-  onCancel,
-  onSubmit,
-  api,
-  onOperationSuccess,
 }: {
   reservation: AdminReservationResponse
-  selectedAction?: SelectedAction
-  note: string
   pending: boolean
-  onChooseAction(reservationId: number, kind: ActionKind): void
-  onChangeNote(value: string): void
-  onCancel(): void
-  onSubmit(command: ReservationCommand): void
-  api: AdminReservationsApi
-  onOperationSuccess(): Promise<void>
+  onChooseAction(reservation: AdminReservationResponse, kind: ActionKind): void
 }) {
-  const reservationId = reservation.reservationId as number
-  const action = selectedAction?.reservationId === reservationId ? selectedAction.kind : undefined
   const warning = WARNING_META[reservation.approvalWarning as keyof typeof WARNING_META]
   const adjustable = reservation.status === 'pending_admin_approval'
     || reservation.status === 'pending_payment'
@@ -304,83 +304,90 @@ function ReservationCard({
       <div className="admin-reservation-card-top">
         <div>
           <h3>{reservation.memberName ?? '이름 없음'}</h3>
-          <a href={`tel:${reservation.memberPhone ?? ''}`}>{reservation.memberPhone ?? '전화번호 없음'}</a>
+          <span className="admin-reservation-number">예약 #{reservation.reservationId}</span>
         </div>
         {warning ? <span className={`admin-reservation-warning ${reservation.approvalWarning}`}>{warning.label}</span> : null}
       </div>
 
       <dl className="admin-reservation-details">
-        <div><dt>수업</dt><dd>{CLASS_LABELS[reservation.classType ?? ''] ?? reservation.classType ?? '-'}</dd></div>
+        <div><dt>수업</dt><dd>{CLASS_LABELS[reservation.classType ?? ''] ?? '수업 정보 확인 필요'}</dd></div>
         <div><dt>일시</dt><dd>{formatLesson(reservation.lessonDate, reservation.startTime)}</dd></div>
-        <div><dt>상태</dt><dd>{STATUS_META[reservation.status as ActionableStatus]?.label ?? reservation.status}</dd></div>
+        <div><dt>상태</dt><dd><span className={`admin-reservation-status status-${reservation.status}`}>{statusLabel(reservation.status)}</span></dd></div>
         <div><dt>결제</dt><dd>{reservation.paymentSource === 'coupon' ? '쿠폰' : '1회 결제'}</dd></div>
         {reservation.paymentDueAt ? <div><dt>입금 마감</dt><dd>{formatDateTime(reservation.paymentDueAt)}</dd></div> : null}
       </dl>
 
       {reservation.coupon ? (
         <p className="admin-reservation-coupon">
-          {couponLabel(reservation.coupon.couponType)} #{reservation.coupon.couponId}
-          <span>잔여 {reservation.coupon.remainingCount ?? 0}회 · 점유 {reservation.coupon.heldCount ?? 0}회</span>
+          {couponLabel(reservation.coupon.couponType)}
         </p>
       ) : null}
 
-      {!action ? (
+      <details className="admin-reservation-metadata"><summary>연락처·결제 상세</summary><dl className="admin-reservation-details">
+        <div><dt>전화번호</dt><dd>{reservation.memberPhone ? <a href={`tel:${reservation.memberPhone}`}>{reservation.memberPhone}</a> : '전화번호 없음'}</dd></div>
+        <div><dt>신청 시각</dt><dd>{formatDateTime(reservation.approvalRequestedAt)}</dd></div>
+        {reservation.coupon ? <><div><dt>쿠폰 정보</dt><dd>잔여 {reservation.coupon.remainingCount}회 · 점유 {reservation.coupon.heldCount}회</dd></div>
+          <div><dt>쿠폰 상태</dt><dd>{({ active: '유효', depleted: '소진', expired: '만료' } as Record<string, string>)[reservation.coupon.status] ?? '확인 필요'}</dd></div>
+          <div><dt>쿠폰 번호</dt><dd>#{reservation.coupon.couponId}</dd></div>
+          <div><dt>쿠폰 만료</dt><dd>{reservation.coupon.expiresAt ? formatDateTime(reservation.coupon.expiresAt) : '만료일 없음'}</dd></div></> : null}
+        {reservation.adminMemo ? <div><dt>관리자 메모</dt><dd>{reservation.adminMemo}</dd></div> : null}
+      </dl></details>
         <div className="admin-reservation-actions">
-          {reservation.status === 'pending_admin_approval' ? <button type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'confirm')}>쿠폰 예약 확정</button> : null}
-          {reservation.status === 'pending_payment' ? <button type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'confirm')}>입금 확인 및 확정</button> : null}
-          {reservation.status === 'payment_expired' ? <button type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'restore')}>만료 예약 복구</button> : null}
-          {reservation.status === 'pending_admin_approval' || reservation.status === 'pending_payment' ? <button className="secondary" type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'reject')}>반려</button> : null}
-          {adjustable ? <button className="secondary" type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'change')}>시간 변경</button> : null}
-          {adjustable ? <button className="danger" type="button" disabled={pending} onClick={() => onChooseAction(reservationId, 'cancel')}>예약 취소</button> : null}
+          {reservation.status === 'pending_admin_approval' ? <button type="button" disabled={pending || !reservation.actions.approve.allowed} onClick={() => onChooseAction(reservation, 'confirm')}>쿠폰 예약 확정</button> : null}
+          {reservation.status === 'pending_payment' ? <button type="button" disabled={pending || !reservation.actions.approve.allowed} onClick={() => onChooseAction(reservation, 'confirm')}>입금 확인 및 확정</button> : null}
+          {reservation.status === 'payment_expired' ? <button type="button" disabled={pending} onClick={() => onChooseAction(reservation, 'restore')}>만료 예약 복구</button> : null}
+          {reservation.status === 'pending_admin_approval' || reservation.status === 'pending_payment' ? <button className="secondary" type="button" disabled={pending} onClick={() => onChooseAction(reservation, 'reject')}>반려</button> : null}
+          {adjustable ? <button className="secondary" type="button" disabled={pending || !reservation.actions.change.allowed} onClick={() => onChooseAction(reservation, 'change')}>시간 변경</button> : null}
+          {adjustable ? <button className="danger" type="button" disabled={pending || !reservation.actions.cancel.allowed} onClick={() => onChooseAction(reservation, 'cancel')}>예약 취소</button> : null}
         </div>
-      ) : (
-        <ActionConfirmation
-          action={action}
-          reservationId={reservationId}
-          note={note}
-          pending={pending}
-          onChangeNote={onChangeNote}
-          onCancel={onCancel}
-          onSubmit={onSubmit}
-          reservation={reservation}
-          api={api}
-          onOperationSuccess={onOperationSuccess}
-        />
-      )}
+        {(['approve', 'change', 'cancel'] as const).filter((kind) =>
+          (kind !== 'approve' || reservation.status === 'pending_admin_approval' || reservation.status === 'pending_payment')
+          && (kind === 'approve' || adjustable) && !reservation.actions[kind].allowed).map((kind) =>
+          <p key={kind} className="admin-reservation-blocked">{({ approve: '예약 확정', change: '시간 변경', cancel: '예약 취소' })[kind]}: {blockedReasonLabel(reservation.actions[kind].blockedReason)}</p>)}
     </article>
   )
 }
 
-function ActionConfirmation({ action, reservationId, note, pending, onChangeNote, onCancel, onSubmit, reservation, api, onOperationSuccess }: {
+function ActionConfirmation({ action, reservationId, note, pending, localError, onChangeNote, onCancel, onSubmit, reservation, api, onOperationSuccess, onFailure, onPending }: {
   action: ActionKind
   reservationId: number
   note: string
   pending: boolean
+  localError?: string
   onChangeNote(value: string): void
   onCancel(): void
   onSubmit(command: ReservationCommand): void
   reservation: AdminReservationResponse
   api: AdminReservationsApi
   onOperationSuccess(): Promise<void>
+  onFailure(error: unknown): Promise<void>
+  onPending(pending: boolean): void
 }) {
+  const fieldId = useId()
   if (action === 'change' || action === 'cancel') {
-    return <ReservationAdjustmentPanel action={action} reservation={reservation} api={api} onCancel={onCancel} onSuccess={onOperationSuccess} />
+    return <ReservationAdjustmentPanel action={action} reservation={reservation} api={api} onCancel={onCancel} onSuccess={onOperationSuccess} onFailure={onFailure} onPending={onPending} />
   }
   const isConfirm = action === 'confirm'
   const label = action === 'confirm' ? '예약 확정' : action === 'reject' ? '예약 반려' : '예약 복구'
   return (
     <div className="admin-reservation-confirmation">
-      <p>{label} 처리를 진행하시겠습니까?</p>
+      <p>{action === 'confirm' && reservation.paymentSource === 'single_payment' ? '입금 내역을 확인한 뒤 예약을 확정합니다.' : `${label} 처리를 진행하시겠습니까?`}</p>
+      {action === 'reject' ? <p className="admin-reservation-notice">신청을 반려하고 예약 점유를 해제합니다. 쿠폰 처리는 서버가 적용합니다.</p> : null}
+      {action === 'restore' ? <p className="admin-reservation-notice">입금 내역을 확인해 주세요. 정원·일정·중복 예약 조건은 서버가 다시 검증합니다.</p> : null}
       {!isConfirm ? (
         <label>{action === 'reject' ? '반려 사유' : '복구 메모'}
           <textarea
             aria-label={action === 'reject' ? '반려 사유' : '복구 메모'}
             value={note}
             maxLength={MAX_MEMO_LENGTH}
+            id={fieldId}
+            aria-invalid={Boolean(localError)}
+            aria-describedby={`${fieldId}-help ${fieldId}-error`}
             disabled={pending}
             onChange={(event) => onChangeNote(event.target.value)}
           />
-          <span>{note.length}/{MAX_MEMO_LENGTH}</span>
+          <span id={`${fieldId}-help`}>필수 · {note.length}/{MAX_MEMO_LENGTH}자</span>
+          <span id={`${fieldId}-error`} className="admin-reservation-field-error" role={localError ? 'alert' : undefined}>{localError}</span>
         </label>
       ) : null}
       <div className="admin-reservation-actions">
@@ -393,12 +400,14 @@ function ActionConfirmation({ action, reservationId, note, pending, onChangeNote
   )
 }
 
-function ReservationAdjustmentPanel({ action, reservation, api, onCancel, onSuccess }: {
+function ReservationAdjustmentPanel({ action, reservation, api, onCancel, onSuccess, onFailure, onPending }: {
   action: AdjustmentActionKind
   reservation: AdminReservationResponse
   api: AdminReservationsApi
   onCancel(): void
   onSuccess(): Promise<void>
+  onFailure(error: unknown): Promise<void>
+  onPending(pending: boolean): void
 }) {
   const reservationId = reservation.reservationId as number
   const [memo, setMemo] = useState('')
@@ -406,6 +415,10 @@ function ReservationAdjustmentPanel({ action, reservation, api, onCancel, onSucc
   const [responsibility, setResponsibility] = useState('member')
   const [couponAction, setCouponAction] = useState('')
   const [localError, setLocalError] = useState<string>()
+  const [fieldError, setFieldError] = useState<'memo' | 'target' | 'coupon'>()
+  const [review, setReview] = useState(false)
+  const locked = useRef(false)
+  const fieldId = useId()
   const timeSlotsQuery = useQuery({
     queryKey: ['admin', 'reservation-adjustment', 'time-slots'],
     queryFn: api.getTimeSlots,
@@ -418,8 +431,12 @@ function ReservationAdjustmentPanel({ action, reservation, api, onCancel, onSucc
     retry: false,
   })
   useEffect(() => {
-    if (cancellationPreview.data?.couponAction) setCouponAction(cancellationPreview.data.couponAction)
-  }, [cancellationPreview.data?.couponAction])
+    if (cancellationPreview.data?.couponAction) {
+      const recommendation = cancellationPreview.data.couponAction
+      setCouponAction((current) => current || recommendation)
+      setReview(false)
+    }
+  }, [responsibility, cancellationPreview.dataUpdatedAt, cancellationPreview.data?.couponAction])
 
   const operation = useMutation({
     mutationFn: async () => {
@@ -427,74 +444,103 @@ function ReservationAdjustmentPanel({ action, reservation, api, onCancel, onSucc
       if (action === 'cancel') await api.cancel(reservationId, responsibility, couponAction, memo.trim())
     },
     onSuccess,
+    onError: onFailure,
   })
+  useEffect(() => {
+    onPending(operation.isPending)
+    return () => onPending(false)
+  }, [operation.isPending, onPending])
   const availableTimeSlots = (timeSlotsQuery.data ?? []).filter((slot) => isAvailableTarget(reservation, slot))
+  const previewReady = cancellationPreview.isSuccess && !cancellationPreview.isFetching && !cancellationPreview.isError
   const submit = () => {
+    if (locked.current) return
     const trimmedMemo = memo.trim()
     if (!trimmedMemo || trimmedMemo.length > MAX_MEMO_LENGTH) {
+      setFieldError('memo')
       setLocalError(`관리자 메모는 1자 이상 ${MAX_MEMO_LENGTH}자 이하로 입력해 주세요.`)
       return
     }
-    if (action === 'change' && !targetTimeSlotId) {
+    if (action === 'change' && !availableTimeSlots.some((slot) => String(slot.id) === targetTimeSlotId)) {
+      setReview(false)
+      setFieldError('target')
       setLocalError('변경할 시간대를 선택해 주세요.')
       return
     }
     if (action === 'cancel' && !couponAction) {
+      setFieldError('coupon')
       setLocalError('최종 쿠폰 처리를 선택해 주세요.')
       return
     }
     setLocalError(undefined)
-    operation.mutate()
+    setFieldError(undefined)
+    if (!review) { setReview(true); return }
+    if (action === 'cancel' && !previewReady) return
+    locked.current = true
+    operation.mutate(undefined, { onSettled: () => { locked.current = false } })
   }
 
   return (
     <div className="admin-reservation-confirmation admin-reservation-adjustment">
       <h4>{action === 'change' ? '예약 시간 변경' : '예약 취소 처리'}</h4>
+      {review ? <p className="admin-reservation-notice">입력한 처리 내용을 확인해 주세요. 실제 실행 시 서버가 상태와 정책을 다시 검증합니다.</p> : null}
+      <fieldset disabled={operation.isPending || review}>
       {action === 'change' ? (
         <label>변경 시간대
-          <select aria-label="변경 시간대" value={targetTimeSlotId} disabled={timeSlotsQuery.isPending || operation.isPending} onChange={(event) => setTargetTimeSlotId(event.target.value)}>
+          <select aria-label="변경 시간대" value={targetTimeSlotId} aria-invalid={fieldError === 'target'} aria-describedby={`${fieldId}-target-error`} disabled={timeSlotsQuery.isPending || operation.isPending} onChange={(event) => { setTargetTimeSlotId(event.target.value); setFieldError(undefined); setLocalError(undefined) }}>
             <option value="">시간대를 선택하세요</option>
             {availableTimeSlots.map((slot) => <option key={slot.id} value={slot.id}>{formatLesson(slot.lessonDate, slot.startTime)}</option>)}
           </select>
           {timeSlotsQuery.isPending ? <small>시간대를 불러오는 중입니다.</small> : null}
           {timeSlotsQuery.isError ? <small role="alert">시간대를 불러오지 못했습니다.</small> : null}
           {!timeSlotsQuery.isPending && availableTimeSlots.length === 0 ? <small>변경 가능한 열린 시간대가 없습니다.</small> : null}
+          <span id={`${fieldId}-target-error`} className="admin-reservation-field-error" role={fieldError === 'target' ? 'alert' : undefined}>{fieldError === 'target' ? localError : ''}</span>
         </label>
       ) : (
         <>
           <label>취소 책임
-            <select aria-label="취소 책임" value={responsibility} disabled={operation.isPending} onChange={(event) => setResponsibility(event.target.value)}>
+            <select aria-label="취소 책임" value={responsibility} disabled={operation.isPending} onChange={(event) => { setResponsibility(event.target.value); setCouponAction(''); setLocalError(undefined); setFieldError(undefined) }}>
               <option value="member">회원 사유</option>
               <option value="stable">마장 사유</option>
               <option value="exception">운영 예외</option>
             </select>
           </label>
-          {cancellationPreview.isPending ? <p>권장 쿠폰 처리를 확인하는 중입니다.</p> : null}
-          {cancellationPreview.isError ? <p role="alert">권장 쿠폰 처리를 확인하지 못했습니다.</p> : null}
-          {cancellationPreview.data ? (
+          {cancellationPreview.isFetching ? <p role="status">권장 쿠폰 처리를 확인하는 중입니다.</p> : null}
+          {cancellationPreview.isError ? <div role="alert"><p>권장 쿠폰 처리를 확인하지 못했습니다. 최신 권장안을 다시 확인해 주세요.</p><button type="button" onClick={() => { void cancellationPreview.refetch() }}>권장안 다시 조회</button></div> : null}
+          {previewReady && cancellationPreview.data ? (
             <div className="admin-reservation-recommendation">
               <span>서버 권장 처리</span>
               <strong>{couponActionLabel(cancellationPreview.data.couponAction)}</strong>
             </div>
           ) : null}
           <label>최종 쿠폰 처리
-            <select aria-label="최종 쿠폰 처리" value={couponAction} disabled={operation.isPending || cancellationPreview.isPending} onChange={(event) => setCouponAction(event.target.value)}>
+            <select aria-label="최종 쿠폰 처리" value={couponAction} aria-invalid={fieldError === 'coupon'} aria-describedby={`${fieldId}-coupon-error`} disabled={operation.isPending || !previewReady} onChange={(event) => { setCouponAction(event.target.value); setFieldError(undefined); setLocalError(undefined) }}>
+              <option value="">처리를 선택하세요</option>
               {reservation.paymentSource === 'coupon' ? <><option value="return">쿠폰 반환</option><option value="deduct">1회 차감</option></> : <option value="none">처리 없음</option>}
             </select>
+            <span id={`${fieldId}-coupon-error`} className="admin-reservation-field-error" role={fieldError === 'coupon' ? 'alert' : undefined}>{fieldError === 'coupon' ? localError : ''}</span>
           </label>
-          {cancellationPreview.data?.couponAction && couponAction !== cancellationPreview.data.couponAction ? <p className="admin-reservation-override">권장안과 다른 최종 처리를 선택했습니다.</p> : null}
+          {previewReady && couponAction && cancellationPreview.data?.couponAction && couponAction !== cancellationPreview.data.couponAction ? <p className="admin-reservation-override">권장안과 다른 최종 처리를 선택했습니다.</p> : null}
+          <p className="admin-reservation-notice">{reservation.paymentSource === 'coupon' ? '쿠폰 반환 후 사용 가능 횟수는 최신 쿠폰 상태를 따릅니다.' : '별도 쿠폰 처리 없음. 자동 환불을 실행하는 작업이 아닙니다.'}</p>
         </>
       )}
       <label>관리자 메모
-        <textarea aria-label="관리자 메모" value={memo} maxLength={MAX_MEMO_LENGTH} disabled={operation.isPending} onChange={(event) => setMemo(event.target.value)} />
-        <span>{memo.length}/{MAX_MEMO_LENGTH}</span>
+        <textarea aria-label="관리자 메모" value={memo} maxLength={MAX_MEMO_LENGTH} aria-invalid={fieldError === 'memo'} aria-describedby={`${fieldId}-memo-help ${fieldId}-memo-error`} disabled={operation.isPending} onChange={(event) => { setMemo(event.target.value); setFieldError(undefined); setLocalError(undefined) }} />
+        <span id={`${fieldId}-memo-help`}>필수 · {memo.length}/{MAX_MEMO_LENGTH}자</span>
+        <span id={`${fieldId}-memo-error`} className="admin-reservation-field-error" role={fieldError === 'memo' ? 'alert' : undefined}>{fieldError === 'memo' ? localError : ''}</span>
       </label>
-      {localError ? <p className="admin-reservations-error" role="alert">{localError}</p> : null}
+      </fieldset>
+      {review ? <dl className="admin-reservation-dialog-facts">
+        {action === 'change' ? <div><dt>변경 후 시간대</dt><dd>{formatLesson(availableTimeSlots.find((slot) => String(slot.id) === targetTimeSlotId)?.lessonDate, availableTimeSlots.find((slot) => String(slot.id) === targetTimeSlotId)?.startTime)}</dd></div> : <>
+          <div><dt>취소 책임</dt><dd>{({ member: '회원 사유', stable: '마장 사유', exception: '운영 예외' } as Record<string, string>)[responsibility]}</dd></div>
+          <div><dt>최종 쿠폰 처리</dt><dd>{couponActionLabel(couponAction)}</dd></div></>}
+        <div><dt>관리자 메모</dt><dd>{memo.trim()}</dd></div>
+      </dl> : null}
       {operation.isError ? <p className="admin-reservations-error" role="alert">{getErrorMessage(operation.error)}</p> : null}
       <div className="admin-reservation-actions">
         <button className="secondary" type="button" disabled={operation.isPending} onClick={onCancel}>돌아가기</button>
-        <button type="button" disabled={operation.isPending || (action === 'cancel' && !cancellationPreview.data)} onClick={submit}>
-          {operation.isPending ? '처리 중' : action === 'change' ? '시간 변경 확인' : '예약 취소 확인'}
+        {review ? <button type="button" className="secondary" disabled={operation.isPending} onClick={() => setReview(false)}>입력 수정</button> : null}
+        <button type="button" disabled={operation.isPending || (action === 'cancel' && !previewReady) || (action === 'change' && (timeSlotsQuery.isPending || timeSlotsQuery.isError))} onClick={submit}>
+          {operation.isPending ? '처리 중' : !review ? '처리 내용 확인' : action === 'change' ? '시간 변경 확인' : '예약 취소 확인'}
         </button>
       </div>
     </div>
@@ -515,7 +561,7 @@ function couponActionLabel(action?: string) {
   if (action === 'return') return '쿠폰 반환'
   if (action === 'deduct') return '1회 차감'
   if (action === 'none') return '처리 없음'
-  return action ?? '-'
+  return '확인 필요'
 }
 
 function formatLesson(date?: Date, startTime?: string) {
@@ -533,12 +579,32 @@ function formatDateTime(date: Date) {
 }
 
 function couponLabel(type?: string) {
-  if (type === 'GENERAL') return '일반 쿠폰'
-  if (type === 'DRESSAGE') return '마장마술 쿠폰'
-  if (type === 'JUMPING') return '장애물 쿠폰'
-  return type ?? '쿠폰'
+  if (type === 'general') return '일반 기승 쿠폰'
+  if (type === 'dressage') return '마장마술 쿠폰'
+  if (type === 'jumping') return '장애물 쿠폰'
+  return '쿠폰 종류 확인 필요'
+}
+
+function statusLabel(status: string) {
+  return STATUS_META[status as ActionableStatus]?.label ?? ({ completed: '수업 완료', no_show: '노쇼', cancelled: '예약 취소', rejected: '반려됨', approval_expired: '승인 만료' } as Record<string, string>)[status] ?? '상태 확인 필요'
+}
+
+function blockedReasonLabel(reason?: string | null) {
+  if (reason === 'RESERVATION_LESSON_ALREADY_STARTED') return '이미 수업이 시작되어 처리할 수 없습니다.'
+  if (reason === 'RESERVATION_PAYMENT_EXPIRED') return '입금 확인 기한이 지났습니다. 최신 상태를 확인해 주세요.'
+  return '현재 예약 상태에서는 처리할 수 없습니다.'
+}
+
+function ReservationFacts({ reservation }: { reservation: AdminReservationResponse }) {
+  return <dl className="admin-reservation-dialog-facts">
+    <div><dt>회원 · 예약 번호</dt><dd>{reservation.memberName} · #{reservation.reservationId}</dd></div>
+    <div><dt>현재 상태</dt><dd>{statusLabel(reservation.status)}</dd></div>
+    <div><dt>수업 시간</dt><dd>{formatLesson(reservation.lessonDate, reservation.startTime)}</dd></div>
+    <div><dt>수업</dt><dd>{CLASS_LABELS[reservation.classType] ?? '확인 필요'}</dd></div>
+    <div><dt>결제 방식</dt><dd>{reservation.paymentSource === 'coupon' ? couponLabel(reservation.coupon?.couponType) : '단건 결제'}</dd></div>
+  </dl>
 }
 
 function ReservationsState({ message, error = false }: { message: string; error?: boolean }) {
-  return <main className="admin-reservations-page"><div className="admin-reservations-shell"><section className="admin-reservations-state" role={error ? 'alert' : undefined}>{message}</section></div></main>
+  return <main className="admin-reservations-page"><div className="admin-reservations-shell"><section className="admin-reservations-state" role={error ? 'alert' : 'status'}>{message}</section></div></main>
 }
