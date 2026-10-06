@@ -21,7 +21,8 @@ const ADMIN_NAVIGATION_ITEMS = [
 export function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const currentPath = ADMIN_NAVIGATION_ITEMS.find(({ to }) => to === location.pathname)?.to ?? '/admin'
+  const currentPath = location.pathname === '/admin/reservations/new' ? '/admin/reservations'
+    : ADMIN_NAVIGATION_ITEMS.find(({ to }) => to === location.pathname)?.to ?? '/admin'
 
   return (
     <div className="admin-app-shell">

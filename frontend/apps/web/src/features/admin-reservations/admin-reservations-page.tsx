@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { keepPreviousData, useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import type { AdminReservationResponse, TimeSlotResponse } from '@horse/api-client'
 import {
   adminReservationsApi,
@@ -9,6 +9,7 @@ import {
   type AdminReservationsApi,
 } from './admin-reservations.api'
 import './admin-reservations-page.css'
+import './admin-manual-reservation-page.css'
 import { AdminReservationActionDialog } from './admin-reservation-action-dialog'
 
 const RESERVATIONS_KEY = ['admin', 'actionable-reservations'] as const
@@ -185,7 +186,7 @@ export function AdminReservationsPage({ api = adminReservationsApi }: { api?: Ad
             <h1>예약 운영 관리</h1>
             <p>승인과 입금 확인부터 확정 예약의 변경·취소까지 현재 상태에 맞게 처리합니다.</p>
           </div>
-          <span className="admin-reservations-total">운영 대상 {total}건</span>
+          <div className="admin-reservations-header-actions"><span className="admin-reservations-total">운영 대상 {total}건</span><Link className="admin-reservations-create-link" to="/admin/reservations/new">수동 예약 추가</Link></div>
         </header>
 
         {result ? <section className={`admin-reservations-result${result.error ? ' result-error' : ''}`} role={result.error ? 'alert' : 'status'}>
