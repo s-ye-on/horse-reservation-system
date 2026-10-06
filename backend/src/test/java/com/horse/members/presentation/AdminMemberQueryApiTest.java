@@ -97,6 +97,72 @@ class AdminMemberQueryApiTest {
 		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("size", "101"))
 			.andExpect(status().isBadRequest())
 			.andExpect(jsonPath("$.code").value("COMMON_INVALID_REQUEST"));
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("query", "x".repeat(101)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("COMMON_INVALID_REQUEST"));
+	}
+
+	@Test
+	void 이름_검색은_전체_회원에_적용하고_검색_결과도_기존_정렬로_페이지를_나눈다() throws Exception {
+		final Long firstId = insertMember("search-first", "Alice 대상", 0, 0, 0, false, false);
+		final Long secondId = insertMember("search-second", "ALICE 대상", 0, 0, 0, false, false);
+		for (int index = 0; index < 21; index++) {
+			insertMember("search-filler-" + index, "다른 회원", 0, 0, 0, false, false);
+		}
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content.length()").value(20))
+			.andExpect(jsonPath("$.content[?(@.id == " + firstId + ")]").isEmpty());
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("query", " alice ").param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].id").value(secondId))
+			.andExpect(jsonPath("$.totalElements").value(2))
+			.andExpect(jsonPath("$.totalPages").value(2))
+			.andExpect(jsonPath("$.hasNext").value(true));
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("query", "alice")
+				.param("page", "1").param("size", "1"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].id").value(firstId))
+			.andExpect(jsonPath("$.hasNext").value(false));
+	}
+
+	@Test
+	void 전화번호_검색은_입력과_저장값의_하이픈과_공백을_무시한다() throws Exception {
+		final Long firstId = insertMember("phone-first", "첫 전화 회원", 0, 0, 0, false, false);
+		final Long secondId = insertMember("phone-second", "둘째 전화 회원", 0, 0, 0, false, false);
+		insertMember("phone-other", "다른 전화 회원", 0, 0, 0, false, false);
+		jdbcTemplate.update("UPDATE members SET phone = ? WHERE id = ?", "010-1234-5678", firstId);
+		jdbcTemplate.update("UPDATE members SET phone = ? WHERE id = ?", "010 1234 5678", secondId);
+		for (String query : new String[] {"01012345678", "010-1234 5678", "1234", " 010 1234 5678 "}) {
+			mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("query", query))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content.length()").value(2))
+				.andExpect(jsonPath("$.content[0].id").value(secondId))
+				.andExpect(jsonPath("$.content[1].id").value(firstId));
+		}
+	}
+
+	@Test
+	void 공백_검색은_기존_목록이고_문자와_숫자_혼합이나_기호는_전체_전화번호에_일치하지_않는다()
+		throws Exception {
+		insertMember("query-normal", "일반 회원", 0, 0, 0, false, false);
+		final Long percentId = insertMember("query-percent", "100% 회원", 0, 0, 0, false, false);
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("query", "   "))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.totalElements").value(2));
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("query", "x".repeat(100)))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content").isEmpty());
+		mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("query", "%"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.content[0].id").value(percentId))
+			.andExpect(jsonPath("$.totalElements").value(1));
+		for (String query : new String[] {"abc0000", "_", "---", "존재하지 않음"}) {
+			mockMvc.perform(get(ENDPOINT).with(adminJwt()).param("query", query))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.content").isEmpty())
+				.andExpect(jsonPath("$.totalElements").value(0));
+		}
 	}
 
 	@Test

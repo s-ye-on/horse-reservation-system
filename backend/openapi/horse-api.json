@@ -5231,6 +5231,18 @@
               "maximum": 100,
               "minimum": 1
             }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "description": "회원 이름 또는 전화번호 부분 검색. 생략하거나 공백이면 전체 회원 조회",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "회원 이름 또는 전화번호 부분 검색. 생략하거나 공백이면 전체 회원 조회",
+              "maxLength": 100,
+              "minLength": 0
+            }
           }
         ],
         "responses": {

@@ -31,6 +31,8 @@ export function AdminManualReservationPage({ api = adminManualReservationApi, ac
   const [attempt, setAttempt] = useState<ManualReservationAttempt | undefined>(saved.attempt)
   const [uncertain, setUncertain] = useState(Boolean(saved.attempt))
   const [page, setPage] = useState(0)
+  const [memberSearch, setMemberSearch] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [member, setMember] = useState<AdminMemberResponse>()
   const [day, setDay] = useState('')
   const [slotId, setSlotId] = useState('')
@@ -45,7 +47,7 @@ export function AdminManualReservationPage({ api = adminManualReservationApi, ac
   const execution = useRef<string | undefined>(undefined)
   const resultHeading = useRef<HTMLHeadingElement>(null)
   const feedback = useRef<HTMLDivElement>(null)
-  const members = useQuery({ queryKey: [...CANDIDATES_KEY, 'members', page], queryFn: () => api.getMembers(page, 20), placeholderData: keepPreviousData })
+  const members = useQuery({ queryKey: [...CANDIDATES_KEY, 'members', page, searchQuery], queryFn: () => api.getMembers(page, 20, searchQuery || undefined), placeholderData: keepPreviousData })
   const slots = useQuery({ queryKey: TIME_SLOTS_KEY, queryFn: () => api.getTimeSlots() })
   const selectedMember = useQuery({ queryKey: [...CANDIDATES_KEY, 'member', member?.id], queryFn: () => api.getMember(member!.id), enabled: Boolean(member) && !attempt && !result })
   const currentReservation = useQuery({ queryKey: ['admin', 'actionable-reservations', 'focused', result?.response.reservationId], queryFn: () => api.getReservation(result!.response.reservationId), enabled: Boolean(result) })
@@ -54,6 +56,14 @@ export function AdminManualReservationPage({ api = adminManualReservationApi, ac
   const dailySlots = (slots.data ?? []).filter((slot) => dateKey(slot.lessonDate) === selectedDay)
   const selectedSlot = slots.data?.find((slot) => slot.id === Number(slotId))
   const editingDisabled = Boolean(attempt || result || saved.error)
+  const searchPending = memberSearch.trim() !== searchQuery
+  const visibleMembers = members.data?.content ?? []
+
+  useEffect(() => {
+    if (!searchPending) return
+    const timer = window.setTimeout(() => { setSearchQuery(memberSearch.trim()); setPage(0) }, 300)
+    return () => window.clearTimeout(timer)
+  }, [memberSearch, searchPending])
 
   useEffect(() => { mounted.current = true; return () => { mounted.current = false } }, [])
   const ownsExecution = (operation: ManualReservationAttempt) => mounted.current && execution.current === operation.executionId
@@ -136,7 +146,7 @@ export function AdminManualReservationPage({ api = adminManualReservationApi, ac
     try {
       if (readManualReservationAttempt(accountSubject) && !clearManualReservationAttempt(accountSubject, result?.attempt.executionId)) { setMessage('다른 화면에서 진행 중인 요청이 있습니다. 해당 요청을 확인해 주세요.'); return }
     } catch { setMessage('저장된 요청을 정리하지 못했습니다. 브라우저 저장소를 확인해 주세요.'); return }
-    setAttempt(undefined); setUncertain(false); setResult(undefined); setMember(undefined); setSlotId(''); setClassType(''); setReason(''); setErrors({}); setMessage(undefined); creation.reset()
+    setAttempt(undefined); setUncertain(false); setResult(undefined); setMember(undefined); setMemberSearch(''); setSlotId(''); setClassType(''); setReason(''); setErrors({}); setMessage(undefined); creation.reset()
     document.getElementById('manual-member-heading')?.focus()
   }
   const fieldError = (field: string) => errors[field] ? <span id={`manual-${field}-error`} className="admin-manual-field-error" role="alert">{errors[field]}</span> : null
@@ -156,9 +166,13 @@ export function AdminManualReservationPage({ api = adminManualReservationApi, ac
     </section> : attempt ? <section className="admin-manual-unresolved" aria-labelledby="manual-unresolved-title"><h2 id="manual-unresolved-title">생성 요청 확인</h2><p>{creation.isPending ? '예약을 생성하고 있습니다.' : '이전 요청의 생성 여부가 아직 확인되지 않았습니다. 입력을 변경하지 않고 같은 요청을 다시 보냅니다.'}</p><AttemptFacts attempt={attempt} /><p className="admin-manual-note">선택 정보는 요청 당시의 내용입니다. 현재 예약 상태는 서버 응답과 최신 목록에서 확인합니다.</p><button type="button" disabled={creation.isPending} onClick={() => submit(attempt)}>{creation.isPending ? '생성 중' : '동일 요청 결과 확인'}</button></section> : null}
     {!result && !attempt ? <div className="admin-manual-workspace">
       <section aria-labelledby="manual-member-heading"><div className="admin-manual-section-title"><span>01</span><h2 id="manual-member-heading" tabIndex={-1}>회원 선택</h2></div>{fieldError('memberId')}
+        <label htmlFor="manual-member-search">이름 또는 전화번호 검색</label>
+        <div className="admin-manual-member-search"><input id="manual-member-search" type="search" value={memberSearch} maxLength={100} disabled={editingDisabled} aria-describedby="manual-member-search-help" onChange={(event) => setMemberSearch(event.target.value)} /><button type="button" disabled={editingDisabled || !memberSearch} onClick={() => setMemberSearch('')}>검색 지우기</button></div>
+        <p id="manual-member-search-help" className="admin-manual-note">전체 회원의 이름 또는 전화번호를 검색합니다.</p>
         {member ? <p className="admin-manual-selection">선택 회원 <strong>{member.name}</strong><span>{member.phone}</span></p> : null}
-        {members.isPending ? <p role="status">회원 목록을 불러오는 중입니다.</p> : members.isError ? <div role="alert"><p>회원 목록을 불러오지 못했습니다.</p><button type="button" onClick={() => void members.refetch()}>회원 목록 다시 조회</button></div> : <>
-          {!members.data?.content.length ? <p className="admin-reservations-empty">표시할 회원이 없습니다.</p> : <ul className="admin-manual-member-list">{members.data.content.map((candidate) => <li key={candidate.id}><button type="button" aria-current={member?.id === candidate.id ? 'true' : undefined} disabled={editingDisabled || members.isPlaceholderData} onClick={() => { setMember(candidate); setSlotId(''); setClassType(''); setReason(''); setErrors({}); setMessage(undefined) }}><strong>{candidate.name}</strong><span>{candidate.phone}</span><small>{member?.id === candidate.id ? '선택됨' : '선택'}</small></button></li>)}</ul>}
+        {members.isPending || searchPending ? <p role="status">회원 목록을 불러오는 중입니다.</p> : members.isError ? <div role="alert"><p>회원 목록을 불러오지 못했습니다.</p><button type="button" onClick={() => void members.refetch()}>회원 목록 다시 조회</button></div> : <>
+          {members.isPlaceholderData ? <p role="status">회원 목록을 불러오는 중입니다.</p> : <p className="admin-manual-note" role="status">{searchQuery ? '검색 결과' : '전체 회원'} {members.data?.totalElements ?? 0}명 · 현재 페이지 {visibleMembers.length}명</p>}
+          {members.isPlaceholderData ? null : !visibleMembers.length ? <p className="admin-reservations-empty">{searchQuery ? '검색 결과가 없습니다.' : '표시할 회원이 없습니다.'}</p> : <ul className="admin-manual-member-list">{visibleMembers.map((candidate) => <li key={candidate.id}><button type="button" aria-current={member?.id === candidate.id ? 'true' : undefined} disabled={editingDisabled} onClick={() => { setMember(candidate); setSlotId(''); setClassType(''); setReason(''); setErrors({}); setMessage(undefined) }}><strong>{candidate.name}</strong><span>{candidate.phone}</span><small>{member?.id === candidate.id ? '선택됨' : '선택'}</small></button></li>)}</ul>}
           <nav className="admin-reservations-pagination" aria-label="회원 목록 페이지"><button type="button" disabled={page === 0 || members.isFetching || editingDisabled} onClick={() => setPage(page - 1)}>이전</button><span>{page + 1} / {Math.max(members.data?.totalPages ?? 0, 1)}</span><button type="button" disabled={!members.data?.hasNext || members.isFetching || editingDisabled} onClick={() => setPage(page + 1)}>다음</button></nav>
         </>}
       </section>

@@ -19,7 +19,10 @@
 .admin-manual-selection strong { font-size: 18px; color: var(--horse-color-foreground); overflow-wrap: anywhere; }
 .admin-manual-page fieldset { padding: 0; margin: 0; border: 0; }
 .admin-manual-page label { display: block; font-size: 14px; font-weight: 700; margin: 20px 0 8px; }
-.admin-manual-page select, .admin-manual-page textarea { display: block; width: 100%; min-height: 44px; border: 1px solid var(--horse-color-border); border-radius: 8px; padding: 10px 12px; color: var(--horse-color-foreground); background: var(--horse-color-surface); font: inherit; font-size: 14px; }
+.admin-manual-page select, .admin-manual-page textarea, .admin-manual-member-search input { display: block; width: 100%; min-height: 44px; border: 1px solid var(--horse-color-border); border-radius: 8px; padding: 10px 12px; color: var(--horse-color-foreground); background: var(--horse-color-surface); font: inherit; font-size: 14px; }
+.admin-manual-member-search { display: flex; align-items: stretch; gap: 8px; }
+.admin-manual-member-search input { min-width: 0; flex: 1; }
+.admin-manual-member-search button { flex-shrink: 0; }
 .admin-manual-page textarea { min-height: 120px; resize: vertical; }
 .admin-manual-page [aria-invalid="true"] { border-color: var(--horse-color-danger); }
 .admin-manual-page :disabled { opacity: .6; }

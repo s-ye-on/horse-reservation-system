@@ -6,7 +6,7 @@ import { bearerApiConfiguration } from '../../api/web-api-configuration'
 import { getAdminReservationCommandErrorMessage } from './admin-reservations.api'
 
 export interface AdminManualReservationApi {
-  getMembers(page: number, size: number): Promise<AdminMemberPageResponse>
+  getMembers(page: number, size: number, query?: string): Promise<AdminMemberPageResponse>
   getMember(memberId: number): Promise<AdminMemberResponse>
   getTimeSlots(): Promise<TimeSlotResponse[]>
   getReservation(reservationId: number): Promise<AdminReservationResponse>
@@ -19,7 +19,7 @@ const reservations = new AdminManualReservationControllerApi(bearerApiConfigurat
 const reservationQuery = new AdminReservationQueryControllerApi(bearerApiConfiguration)
 
 export const adminManualReservationApi: AdminManualReservationApi = {
-  getMembers: (page, size) => members.getMembers({ page, size }),
+  getMembers: (page, size, query) => members.getMembers({ page, size, query }),
   getMember: (memberId) => members.getMember({ memberId }),
   getTimeSlots: () => timeSlots.getTimeSlots(),
   getReservation: (reservationId) => reservationQuery.getReservation({ reservationId }),

@@ -30,7 +30,7 @@ public class AdminMemberQueryController {
 	public AdminMemberPageResponse getMembers(
 		@Valid @ParameterObject @ModelAttribute AdminMemberQueryRequest request
 	) {
-		final AdminMemberPageResult result = service.getMembers(request.page(), request.size());
+		final AdminMemberPageResult result = service.getMembers(request.page(), request.size(), request.query());
 		return AdminMemberPageResponse.from(result);
 	}
 

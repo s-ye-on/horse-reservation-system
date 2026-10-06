@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
+import { execFileSync } from 'node:child_process'
 import { cleanupFixture, createAuthenticatedPage, navigateWithinApp, prepareMvpOneFixture } from './e2e-support'
 
 const ORIGIN = process.env.HORSE_E2E_WEB_BASE_URL ?? 'http://localhost:5173'
@@ -10,7 +11,12 @@ async function fixture(page: Page) {
   const calls: { body: unknown; key: string | undefined }[] = []
   let mode: 'success' | 'uncertain' | 'syncing' | 'closed' | 'payment' = 'success'
   let reads = 0
-  await page.route(`${ORIGIN}/api/admin/members**`, (route) => route.fulfill({ json: new URL(route.request().url()).pathname.endsWith('/7') ? member : { content: [member], page: 0, size: 20, totalElements: 1, totalPages: 1, hasNext: false } }))
+  await page.route(`${ORIGIN}/api/admin/members**`, (route) => {
+    const url = new URL(route.request().url())
+    const query = url.searchParams.get('query') ?? ''
+    const found = !query || member.name.toLowerCase().includes(query.toLowerCase()) || /^[\d\s-]+$/.test(query) && member.phone.replace(/\D/g, '').includes(query.replace(/\D/g, ''))
+    return route.fulfill({ json: url.pathname.endsWith('/7') ? member : { content: found ? [member] : [], page: 0, size: 20, totalElements: found ? 1 : 0, totalPages: found ? 1 : 0, hasNext: false } })
+  })
   await page.route(`${ORIGIN}/api/admin/timeslots**`, (route) => { reads++; return route.fulfill({ json: [{ id: 100, lessonDate: '2030-08-12', startTime: '09:00:00', totalCapacity: 8, roundArenaCapacity: 4, classCapacities: {}, closed: false, createdAt: '2030-08-01T01:00:00Z', updatedAt: '2030-08-01T01:00:00Z' }] }) })
   await page.route(`${ORIGIN}/api/admin/reservations**`, async (route) => {
     if (route.request().method() === 'GET') return route.fulfill({ json: new URL(route.request().url()).pathname.endsWith('/500') ? { ...couponResult, status: 'completed' } : { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0, hasNext: false } })
@@ -46,6 +52,14 @@ test('수동_예약은_1440_960_320과_긴입력_modal_키보드를_유지한다
     await expect(page.getByRole('heading', { name: '수동 예약 추가' })).toBeVisible()
     await noOverflow(page)
     if (width <= 960) await expect(page.getByLabel('관리 업무 이동')).toHaveValue('/admin/reservations')
+    const search = page.getByRole('searchbox', { name: '이름 또는 전화번호 검색' })
+    await expect(search).toHaveAttribute('aria-describedby', 'manual-member-search-help')
+    await search.fill('DoesNotExist')
+    await expect(page.getByText('검색 결과가 없습니다.')).toBeVisible()
+    await search.fill('01011112222')
+    await expect(page.getByRole('button', { name: new RegExp(memberName) })).toBeVisible()
+    expect(await search.evaluate((element) => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44)
+    await noOverflow(page)
     await fill(page)
     const dialog = page.getByRole('dialog', { name: '수동 예약 생성 확인' })
     await expect(dialog.getByRole('heading')).toBeFocused()
@@ -125,4 +139,49 @@ test('실제_API로_수동_쿠폰확정과_입금대기를_생성한다', async 
       await page.getByRole('button', { name: '새 예약 추가' }).click()
     }
   } finally { await page.context().close(); cleanupFixture(data) }
+})
+
+test('실제_API에서_첫_페이지_밖_회원을_검색하고_검색_결과도_페이지로_나눈다', async ({ browser }) => {
+  const database = process.env.HORSE_E2E_DATABASE
+  if (!database || !/^[A-Za-z0-9_]+$/.test(database)) throw new Error('Isolated E2E database is required.')
+  const sql = (statement: string) => execFileSync('docker', ['exec', '-i', '--env', `HORSE_E2E_DATABASE=${database}`, 'horse-mysql', 'sh', '-c', 'exec env MYSQL_PWD="$MYSQL_PASSWORD" mysql --user="$MYSQL_USER" --database="$HORSE_E2E_DATABASE" --default-character-set=utf8mb4 --batch --skip-column-names'], { input: statement, encoding: 'utf8' })
+  const data = prepareMvpOneFixture()
+  const prefix = 'e2e-manual-search-'
+  const page = await createAuthenticatedPage(browser, 'manual-global-search', 'ADMIN')
+  try {
+    sql(`DELETE FROM members WHERE auth_subject LIKE '${prefix}%';`)
+    sql(`INSERT INTO members (auth_subject, name, phone) VALUES ${Array.from({ length: 21 }, (_, index) => `('${prefix}${index}', 'Search Page Member ${index}', '010-8800-${String(index).padStart(4, '0')}')`).join(',')};`)
+    await navigateWithinApp(page, '/admin/reservations/new')
+    await expect(page.getByRole('button', { name: '다음', exact: true })).toBeEnabled()
+    await expect(page.getByRole('button', { name: new RegExp(data.couponMember.name) })).toHaveCount(0)
+    const search = page.getByRole('searchbox', { name: '이름 또는 전화번호 검색' })
+    await search.fill(data.couponMember.name)
+    await page.getByRole('button', { name: new RegExp(data.couponMember.name) }).click()
+    await expect(page.getByRole('button', { name: '처리 내용 확인' })).toBeEnabled()
+    await page.getByLabel('수업 날짜', { exact: true }).selectOption(data.couponMember.lessonDate)
+    await page.getByLabel('수업 시간', { exact: true }).selectOption(String(data.couponMember.timeSlotId))
+    await page.getByLabel('수업 클래스', { exact: true }).selectOption('FIRST_RIDE')
+    await page.getByLabel('관리자 사유').fill('검색 중 작성 내용 보존')
+    await search.fill('search page member')
+    await expect(page.getByText('검색 결과 21명 · 현재 페이지 20명')).toBeVisible()
+    await page.getByRole('button', { name: '다음', exact: true }).click()
+    await expect(page.getByText('검색 결과 21명 · 현재 페이지 1명')).toBeVisible()
+    await expect(page.getByLabel('수업 시간', { exact: true })).toHaveValue(String(data.couponMember.timeSlotId))
+    await expect(page.getByLabel('관리자 사유')).toHaveValue('검색 중 작성 내용 보존')
+    await search.fill('010 9000-0029')
+    await expect(page.getByRole('button', { name: new RegExp(data.couponMember.name) })).toBeVisible()
+    await expect(page.getByText('1 / 1', { exact: true })).toBeVisible()
+    await search.fill('NoMatchingMember')
+    await expect(page.getByText('검색 결과가 없습니다.')).toBeVisible()
+    await page.getByRole('button', { name: '검색 지우기' }).click()
+    await expect(page.getByRole('button', { name: '다음', exact: true })).toBeEnabled()
+    await expect(page.getByText('1 / 2', { exact: true })).toBeVisible()
+    await navigateWithinApp(page, '/admin/members')
+    await expect(page.getByRole('button', { name: /Search Page Member 20/ })).toBeVisible()
+    await expect(page.getByRole('button', { name: new RegExp(data.couponMember.name) })).toHaveCount(0)
+  } finally {
+    await page.context().close()
+    sql(`DELETE FROM members WHERE auth_subject LIKE '${prefix}%';`)
+    cleanupFixture(data)
+  }
 })

@@ -31,6 +31,7 @@ export interface GetMemberRequest {
 export interface GetMembersRequest {
     page?: number;
     size?: number;
+    query?: string;
 }
 
 /**
@@ -101,6 +102,10 @@ export class AdminMemberQueryControllerApi extends runtime.BaseAPI {
 
         if (requestParameters['size'] != null) {
             queryParameters['size'] = requestParameters['size'];
+        }
+
+        if (requestParameters['query'] != null) {
+            queryParameters['query'] = requestParameters['query'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

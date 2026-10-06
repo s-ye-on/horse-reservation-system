@@ -295,6 +295,13 @@ POST  /api/admin/coupons/{couponId}/expire
 GET   /api/admin/coupon-usage-logs
 ```
 
+`GET /api/admin/members`는 `page`(기본 0), `size`(기본 20, 최대 100)와 선택적
+`query`(최대 100자)를 받는다. `query`를 생략하거나 공백으로 보내면 기존 전체 회원
+목록을 유지한다. 검색어가 있으면 전체 회원의 이름 또는 전화번호를 부분 검색한 뒤
+`createdAt DESC, id DESC`로 정렬하고 검색 결과 기준 Page 메타데이터를 반환한다.
+이름은 대소문자를 구분하지 않고, 전화번호 검색은 하이픈·공백을 무시한다.
+`%`와 `_`는 wildcard가 아닌 검색 문자열 자체로 취급한다.
+
 ## 관리자 작업
 
 ```text

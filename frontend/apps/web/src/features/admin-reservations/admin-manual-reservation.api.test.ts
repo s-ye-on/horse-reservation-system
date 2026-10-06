@@ -1,10 +1,23 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ResponseError } from '@horse/api-client'
 import { adminManualReservationApi, describeManualReservationError } from './admin-manual-reservation.api'
+import { adminMembersApi } from '../admin-members/admin-members.api'
 
 afterEach(() => vi.unstubAllGlobals())
 
 describe('관리자 수동 예약 adapter', () => {
+  it('기존_회원_목록은_검색어를_생략하고_수동_예약_검색은_페이지와_검색어를_전달한다', async () => {
+    const fetch = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ content: [], page: 0, size: 20, totalElements: 0, totalPages: 0, hasNext: false }))))
+    vi.stubGlobal('fetch', fetch)
+    await adminMembersApi.getMembers(0, 20)
+    await adminManualReservationApi.getMembers(0, 20)
+    await adminManualReservationApi.getMembers(1, 20, '010-1234 5678')
+    expect(fetch.mock.calls[0][0]).toBe('/api/admin/members?page=0&size=20')
+    expect(fetch.mock.calls[1][0]).toBe('/api/admin/members?page=0&size=20')
+    const url = new URL(fetch.mock.calls[2][0] as string, 'http://localhost')
+    expect(url.pathname).toBe('/api/admin/members')
+    expect(Object.fromEntries(url.searchParams)).toEqual({ page: '1', size: '20', query: '010-1234 5678' })
+  })
   it('generated_Client에_실제_payload와_Idempotency_Key를_그대로_전달한다', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ reservationId: 1, classType: 'FIRST_RIDE', lessonDate: '2030-08-12', startTime: '09:00:00', status: 'pending_payment', paymentSource: 'single_payment', coupon: null, paymentDueAt: '2030-08-12T08:47:00+09:00' }), { status: 201 }))
     vi.stubGlobal('fetch', fetch)
