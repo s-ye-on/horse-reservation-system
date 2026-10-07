@@ -19,3 +19,15 @@ frontend/**/web-build/
 frontend/**/coverage/
 
 *.log
+
+# Local generated diagrams, backup archives and task-run records
+/.archify/
+/backend.zip
+/docs.zip
+/frontend.zip
+/.serena/memories/progress/
+/.serena/memories/result-pm/
+/.serena/memories/review/
+/.serena/memories/reviews/
+/.serena/memories/experiment-ledger.md
+/.serena/memories/session-*.md
