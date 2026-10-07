@@ -6,6 +6,11 @@ RUNTIME_DIR="${TMPDIR:-/tmp}/horse-local-demo"
 BACKEND_PORT=8081
 PROXY_PORT=8080
 WEB_PORT=5173
+# Development-only: never use a shared or production database.
+# Bootstrap overrides do not change the password of an existing ADMIN.
+DEMO_ADMIN_EMAIL="${HORSE_DEMO_ADMIN_EMAIL:-profile-admin@example.com}"
+DEMO_ADMIN_PASSWORD="${HORSE_DEMO_ADMIN_PASSWORD:-profile-bootstrap-password}"
+DEMO_WEB_ALLOWED_ORIGINS="${HORSE_DEMO_WEB_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}"
 JAVA_BIN="$(command -v java 2>/dev/null || true)"
 NODE_BIN="$(command -v node 2>/dev/null || true)"
 
@@ -114,8 +119,13 @@ start_process() {
 
 run_backend() {
   local java_bin="$1"
+  export SERVER_ADDRESS="127.0.0.1"
   export SERVER_PORT="$BACKEND_PORT"
   export JWT_SECRET="$(<"$RUNTIME_DIR/jwt-secret")"
+  export SPRING_PROFILES_ACTIVE="bootstrap-admin"
+  export BOOTSTRAP_ADMIN_EMAIL="$DEMO_ADMIN_EMAIL"
+  export BOOTSTRAP_ADMIN_PASSWORD="$DEMO_ADMIN_PASSWORD"
+  export WEB_ALLOWED_ORIGINS="$DEMO_WEB_ALLOWED_ORIGINS"
   exec "$java_bin" -jar "$ROOT_DIR/backend/build/libs/horse-backend-0.0.1-SNAPSHOT.jar"
 }
 
@@ -123,7 +133,6 @@ run_proxy() {
   local node_bin="$1"
   export DEMO_BACKEND_PORT="$BACKEND_PORT"
   export DEMO_PROXY_PORT="$PROXY_PORT"
-  export JWT_SECRET="$(<"$RUNTIME_DIR/jwt-secret")"
   exec "$node_bin" "$ROOT_DIR/scripts/local-demo-proxy.mjs"
 }
 

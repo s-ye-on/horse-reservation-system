@@ -1,4 +1,3 @@
-import { createHmac } from 'node:crypto'
 import { createServer, request as createRequest } from 'node:http'
 import { pathToFileURL } from 'node:url'
 
@@ -11,12 +10,10 @@ const ALLOWED_METHODS = 'GET,POST,PUT,PATCH,DELETE,OPTIONS'
 export function createDemoProxy({
   targetHost = '127.0.0.1',
   targetPort,
-  jwtSecret,
-  authSubject = 'local-demo-member',
   allowedOrigins = DEFAULT_ALLOWED_ORIGINS,
 }) {
-  if (!targetPort || !jwtSecret) {
-    throw new Error('targetPort and jwtSecret are required')
+  if (!targetPort) {
+    throw new Error('targetPort is required')
   }
 
   return createServer((incoming, outgoing) => {
@@ -35,7 +32,6 @@ export function createDemoProxy({
       headers: {
         ...incoming.headers,
         host: `${targetHost}:${targetPort}`,
-        authorization: incoming.headers.authorization ?? `Bearer ${createJwt(authSubject, jwtSecret)}`,
       },
     }, (response) => {
       outgoing.writeHead(response.statusCode ?? 502, {
@@ -55,20 +51,6 @@ export function createDemoProxy({
   })
 }
 
-export function createJwt(subject, secret, now = Math.floor(Date.now() / 1000)) {
-  const header = encodeJwtPart({ alg: 'HS256', typ: 'JWT' })
-  const payload = encodeJwtPart({
-    sub: subject,
-    roles: ['MEMBER', 'ADMIN'],
-    iat: now,
-    exp: now + 60 * 60 * 12,
-  })
-  const signature = createHmac('sha256', secret)
-    .update(`${header}.${payload}`)
-    .digest('base64url')
-  return `${header}.${payload}.${signature}`
-}
-
 export function createCorsHeaders(origin, allowedOrigins = DEFAULT_ALLOWED_ORIGINS) {
   const allowedOrigin = origin && allowedOrigins.has(origin)
     ? origin
@@ -76,20 +58,16 @@ export function createCorsHeaders(origin, allowedOrigins = DEFAULT_ALLOWED_ORIGI
   return {
     'access-control-allow-origin': allowedOrigin,
     'access-control-allow-methods': ALLOWED_METHODS,
-    'access-control-allow-headers': 'authorization,content-type',
+    'access-control-allow-headers': 'authorization,content-type,x-xsrf-token',
+    'access-control-allow-credentials': 'true',
     vary: 'Origin',
   }
-}
-
-function encodeJwtPart(value) {
-  return Buffer.from(JSON.stringify(value)).toString('base64url')
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.env.DEMO_PROXY_PORT ?? 8080)
   const targetPort = Number(process.env.DEMO_BACKEND_PORT ?? 8081)
-  const jwtSecret = process.env.JWT_SECRET
-  const server = createDemoProxy({ targetPort, jwtSecret })
+  const server = createDemoProxy({ targetPort })
   server.listen(port, '127.0.0.1', () => {
     process.stdout.write(`Local demo API proxy listening on http://127.0.0.1:${port}\n`)
   })

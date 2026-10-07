@@ -3,21 +3,31 @@ import { createServer } from 'node:http'
 import { after, before, test } from 'node:test'
 import { createDemoProxy } from './local-demo-proxy.mjs'
 
-const TEST_SECRET = 'local-demo-proxy-test-secret-32-bytes'
 let upstream
 let proxy
 let proxyBaseUrl
 
 before(async () => {
   upstream = createServer((request, response) => {
+    if (request.url === '/api/auth/web/refresh') {
+      response.writeHead(401, {
+        'content-type': 'application/json',
+        'set-cookie': 'REFRESH_TOKEN=; Max-Age=0; Path=/; HttpOnly',
+      })
+      response.end(JSON.stringify({ code: 'AUTH_REQUIRED' }))
+      return
+    }
     response.writeHead(200, { 'content-type': 'application/json' })
-    response.end(JSON.stringify({ authorization: request.headers.authorization }))
+    response.end(JSON.stringify({
+      authorization: request.headers.authorization,
+      cookie: request.headers.cookie,
+      csrf: request.headers['x-xsrf-token'],
+    }))
   })
   await listen(upstream)
   const upstreamAddress = upstream.address()
   proxy = createDemoProxy({
     targetPort: upstreamAddress.port,
-    jwtSecret: TEST_SECRET,
   })
   await listen(proxy)
   proxyBaseUrl = `http://127.0.0.1:${proxy.address().port}`
@@ -36,20 +46,48 @@ test('개발_프록시는_브라우저_preflight에_필요한_메서드를_허�
   assert.equal(response.status, 204)
   assert.equal(response.headers.get('access-control-allow-origin'), 'http://127.0.0.1:5173')
   assert.equal(response.headers.get('access-control-allow-methods'), 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+  assert.equal(response.headers.get('access-control-allow-headers'), 'authorization,content-type,x-xsrf-token')
+  assert.equal(response.headers.get('access-control-allow-credentials'), 'true')
 })
 
-test('개발_프록시는_회원과_관리자_권한_JWT를_주입한다', async () => {
+test('개발_프록시는_인증되지_않은_요청에_JWT를_주입하지_않는다', async () => {
   const response = await fetch(`${proxyBaseUrl}/api/me/reservations`, {
     headers: { origin: 'http://localhost:5173' },
   })
   const { authorization } = await response.json()
-  const token = authorization.replace('Bearer ', '')
-  const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
 
   assert.equal(response.status, 200)
   assert.equal(response.headers.get('access-control-allow-origin'), 'http://localhost:5173')
-  assert.equal(payload.sub, 'local-demo-member')
-  assert.deepEqual(payload.roles, ['MEMBER', 'ADMIN'])
+  assert.equal(authorization, undefined)
+})
+
+test('개발_프록시는_Web_인증_응답과_쿠키를_그대로_전달한다', async () => {
+  const refreshResponse = await fetch(`${proxyBaseUrl}/api/auth/web/refresh`, {
+    method: 'POST',
+    headers: {
+      origin: 'http://127.0.0.1:5173',
+      cookie: 'XSRF-TOKEN=csrf-token',
+      'x-xsrf-token': 'csrf-token',
+    },
+  })
+
+  assert.equal(refreshResponse.status, 401)
+  assert.deepEqual(await refreshResponse.json(), { code: 'AUTH_REQUIRED' })
+  assert.match(refreshResponse.headers.get('set-cookie'), /REFRESH_TOKEN=/)
+})
+
+test('개발_프록시는_Web_인증_쿠키와_CSRF_헤더를_Backend에_전달한다', async () => {
+  const response = await fetch(`${proxyBaseUrl}/api/auth/web/logout`, {
+    method: 'POST',
+    headers: {
+      cookie: 'XSRF-TOKEN=csrf-token',
+      'x-xsrf-token': 'csrf-token',
+    },
+  })
+  const payload = await response.json()
+
+  assert.equal(payload.cookie, 'XSRF-TOKEN=csrf-token')
+  assert.equal(payload.csrf, 'csrf-token')
 })
 
 test('개발_프록시는_브라우저가_보낸_Authorization을_덮어쓰지_않는다', async () => {
