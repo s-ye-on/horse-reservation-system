@@ -62,6 +62,71 @@ function renderPage(api: AdminAuditApi) {
 }
 
 describe('AdminAuditPage', () => {
+  it('관리자_생성_이력과_필터를_제공하고_미지_enum을_노출하지_않는다', async () => {
+    const api = createApi({ getAuditLogs: vi.fn().mockResolvedValue({ ...AUDIT_PAGE,
+      content: [{ ...AUDIT_PAGE.content[0], changeType: 'admin_reservation_created', toStatus: 'unknown_status', couponAction: 'unknown_action' }],
+    }) })
+    renderPage(api)
+    await screen.findByText('김하늘')
+    expect(screen.getByText('관리자 예약 생성', { selector: '.admin-audit-type' })).toBeInTheDocument()
+    expect(screen.queryByText('unknown_status')).not.toBeInTheDocument()
+    expect(screen.queryByText('unknown_action')).not.toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('변경 유형'), { target: { value: 'admin_reservation_created' } })
+    fireEvent.click(screen.getByRole('button', { name: '조건 적용' }))
+    await waitFor(() => expect(api.getAuditLogs).toHaveBeenLastCalledWith(expect.objectContaining({ changeType: 'admin_reservation_created' })))
+  })
+
+  it('새_조회_완료_전에는_이전_건수와_목록을_새_조건_결과처럼_보이지_않는다', async () => {
+    let resolve!: (value: AdminReservationAuditPageResponse) => void
+    const getAuditLogs = vi.fn().mockResolvedValueOnce(AUDIT_PAGE)
+      .mockImplementationOnce(() => new Promise<AdminReservationAuditPageResponse>((done) => { resolve = done }))
+    renderPage(createApi({ getAuditLogs }))
+    await screen.findByText('김하늘')
+    fireEvent.change(screen.getByLabelText('회원 검색'), { target: { value: '다른 회원' } })
+    fireEvent.click(screen.getByRole('button', { name: '조건 적용' }))
+    await screen.findByText('감사 이력을 불러오는 중입니다.')
+    expect(screen.queryByText(/전체 21건/)).not.toBeInTheDocument()
+    expect(screen.queryByText('김하늘')).not.toBeInTheDocument()
+    resolve({ ...AUDIT_PAGE, content: [], totalElements: 0, totalPages: 0, hasNext: false })
+    expect(await screen.findByText('전체 0건 · 현재 페이지 0건')).toBeInTheDocument()
+  })
+
+  it('같은_조건_재적용도_서버를_다시_조회한다', async () => {
+    const api = createApi()
+    renderPage(api)
+    await screen.findByText('김하늘')
+    fireEvent.click(screen.getByRole('button', { name: '조건 적용' }))
+    await waitFor(() => expect(api.getAuditLogs).toHaveBeenCalledTimes(2))
+  })
+
+  it('안전하지_않은_예약_번호는_필드_오류와_focus로_안내한다', async () => {
+    const api = createApi()
+    renderPage(api)
+    await screen.findByText('김하늘')
+    fireEvent.change(screen.getByLabelText('예약 번호'), { target: { value: '9007199254740993' } })
+    fireEvent.click(screen.getByRole('button', { name: '조건 적용' }))
+    expect(screen.getByRole('alert')).toHaveTextContent('예약 번호는 1 이상의 정수')
+    expect(document.getElementById('audit-reservation-id')).toHaveAttribute('aria-invalid', 'true')
+    expect(document.getElementById('audit-reservation-id')).toHaveFocus()
+    expect(api.getAuditLogs).toHaveBeenCalledTimes(1)
+  })
+
+  it('미적용_입력은_CSV에_포함하지_않고_다운로드_중_조건이_바뀌어도_원래_조건을_안내한다', async () => {
+    let resolve!: (value: AdminAuditDownload) => void
+    const downloadAuditLogs = vi.fn(() => new Promise<AdminAuditDownload>((done) => { resolve = done }))
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:csv')
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+    renderPage(createApi({ downloadAuditLogs }))
+    await screen.findByText('김하늘')
+    fireEvent.change(screen.getByLabelText('회원 검색'), { target: { value: '미적용 회원' } })
+    fireEvent.click(screen.getByRole('button', { name: '현재 조건 CSV 다운로드' }))
+    expect(downloadAuditLogs).toHaveBeenCalledWith(expect.objectContaining({ keyword: undefined }))
+    fireEvent.click(screen.getByRole('button', { name: '조건 적용' }))
+    resolve({ blob: new Blob(['csv']), fileName: 'audit.csv' })
+    await waitFor(() => expect(screen.getByText(/CSV 다운로드를 시작했습니다/)).toHaveTextContent('다운로드 조건: 전체 기간 · 전체 회원 · 전체 작업'))
+  })
+
   it('최신_감사_이력의_전후_상태와_처리_근거를_표시한다', async () => {
     renderPage(createApi())
 
@@ -72,10 +137,10 @@ describe('AdminAuditPage', () => {
     expect(screen.getAllByText('예약확정')).toHaveLength(2)
     expect(screen.getByText('2026.07.20 09:00')).toBeInTheDocument()
     expect(screen.getByText('2026.07.20 10:00')).toBeInTheDocument()
-    expect(screen.getByText('admin-operator')).toBeInTheDocument()
+    expect(screen.queryByText('admin-operator')).not.toBeInTheDocument()
     expect(screen.getByText('무료 변경권 사용')).toBeInTheDocument()
     expect(screen.getByText('회원 요청으로 시간 변경')).toBeInTheDocument()
-    expect(screen.getByText('전체 21건')).toBeInTheDocument()
+    expect(screen.getByText('전체 21건 · 현재 페이지 1건')).toBeInTheDocument()
   })
 
   it('회원_예약_기간_행위자_변경유형_필터를_첫_페이지에_적용한다', async () => {
@@ -84,7 +149,7 @@ describe('AdminAuditPage', () => {
     await screen.findByText('김하늘')
 
     fireEvent.change(screen.getByLabelText('회원 검색'), { target: { value: '  7788  ' } })
-    fireEvent.change(screen.getByLabelText('예약 ID'), { target: { value: '42' } })
+    fireEvent.change(screen.getByLabelText('예약 번호'), { target: { value: '42' } })
     fireEvent.change(screen.getByLabelText('시작일'), { target: { value: '2026-07-01' } })
     fireEvent.change(screen.getByLabelText('종료일'), { target: { value: '2026-07-31' } })
     fireEvent.change(screen.getByLabelText('처리 주체'), { target: { value: 'admin' } })
@@ -134,7 +199,10 @@ describe('AdminAuditPage', () => {
 
     await waitFor(() => expect(api.getAuditLogs).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1, size: 20 })))
     expect(await screen.findByText('2 / 2 페이지')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '다음' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '다음' })).toHaveAttribute('aria-disabled', 'true')
+    const callCount = vi.mocked(api.getAuditLogs).mock.calls.length
+    fireEvent.click(screen.getByRole('button', { name: '다음' }))
+    expect(api.getAuditLogs).toHaveBeenCalledTimes(callCount)
   })
 
   it('현재_적용된_필터로_CSV를_다운로드하고_목록과_페이지를_유지한다', async () => {
@@ -345,6 +413,7 @@ describe('AdminAuditPage', () => {
     }))
 
     expect(screen.getByRole('status')).toHaveTextContent('감사 이력을 불러오는 중입니다.')
+    expect(screen.queryByText(/전체 0건/)).not.toBeInTheDocument()
   })
 
   it('320px_화면에서도_검색과_페이지_기능을_사용할_수_있다', async () => {
@@ -353,7 +422,7 @@ describe('AdminAuditPage', () => {
 
     expect(await screen.findByText('김하늘')).toBeInTheDocument()
     expect(screen.getByLabelText('회원 검색')).toBeInTheDocument()
-    expect(screen.getByLabelText('예약 ID')).toBeInTheDocument()
+    expect(screen.getByLabelText('예약 번호')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '조건 적용' })).toBeInTheDocument()
     const downloadButton = screen.getByRole('button', { name: '현재 조건 CSV 다운로드' })
     downloadButton.focus()

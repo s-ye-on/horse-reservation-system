@@ -21,6 +21,7 @@ const ACTOR_LABELS: Record<string, string> = {
 }
 
 const CHANGE_TYPE_LABELS: Record<string, string> = {
+  admin_reservation_created: '관리자 예약 생성',
   payment_restored: '입금만료 복구',
   no_show_processed: '노쇼 처리',
   schedule_changed: '일정 변경',
@@ -36,6 +37,7 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: '반려',
   cancelled: '취소',
   no_show: '노쇼',
+  approval_expired: '승인 만료',
 }
 
 const COUPON_ACTION_LABELS: Record<string, string> = {
@@ -84,7 +86,9 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
   const [appliedFilters, setAppliedFilters] = useState<AuditFilterForm>(EMPTY_FILTERS)
   const [page, setPage] = useState(0)
   const [localError, setLocalError] = useState<string>()
+  const [idError, setIdError] = useState<string>()
   const [downloadError, setDownloadError] = useState<string>()
+  const [downloadStatus, setDownloadStatus] = useState<string>()
   const [isDownloading, setIsDownloading] = useState(false)
   const downloadInFlight = useRef(false)
   const query = useQuery({
@@ -95,21 +99,40 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
 
   useEffect(() => {
     const totalPages = query.data?.totalPages
-    if (totalPages === undefined) return
+    if (totalPages === undefined || query.isPlaceholderData || !query.isSuccess) return
     const validPage = totalPages === 0 ? 0 : Math.min(page, totalPages - 1)
     if (validPage !== page) setPage(validPage)
-  }, [page, query.data?.totalPages])
+  }, [page, query.data?.totalPages, query.isPlaceholderData, query.isSuccess])
 
   const applyFilters = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const incompleteInput = Array.from(event.currentTarget.querySelectorAll<HTMLInputElement>('input'))
+      .find((input) => input.validity.badInput)
+    if (incompleteInput) {
+      if (incompleteInput.id === 'audit-reservation-id') setIdError('예약 번호는 1 이상의 정수로 입력해 주세요.')
+      else setLocalError('날짜를 완전하게 입력해 주세요.')
+      incompleteInput.focus()
+      return
+    }
+    const reservationId = draftFilters.reservationId.trim()
+    if (reservationId && (!/^\d+$/.test(reservationId) || !Number.isSafeInteger(Number(reservationId)) || Number(reservationId) < 1)) {
+      setIdError('예약 번호는 1 이상의 정수로 입력해 주세요.')
+      document.getElementById('audit-reservation-id')?.focus()
+      return
+    }
+    setIdError(undefined)
     if (draftFilters.occurredDateFrom && draftFilters.occurredDateTo
       && draftFilters.occurredDateFrom > draftFilters.occurredDateTo) {
       setLocalError('시작일은 종료일보다 늦을 수 없습니다.')
+      document.getElementById('audit-date-from')?.focus()
       return
     }
     setLocalError(undefined)
     setDownloadError(undefined)
-    setAppliedFilters(normalizeFilters(draftFilters))
+    setDownloadStatus(undefined)
+    const next = normalizeFilters(draftFilters)
+    if (page === 0 && JSON.stringify(next) === JSON.stringify(appliedFilters)) void query.refetch()
+    setAppliedFilters(next)
     setPage(0)
   }
 
@@ -117,7 +140,10 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
     setDraftFilters(EMPTY_FILTERS)
     setAppliedFilters(EMPTY_FILTERS)
     setLocalError(undefined)
+    setIdError(undefined)
     setDownloadError(undefined)
+    setDownloadStatus(undefined)
+    if (page === 0 && JSON.stringify(appliedFilters) === JSON.stringify(EMPTY_FILTERS)) void query.refetch()
     setPage(0)
   }
 
@@ -126,6 +152,8 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
     downloadInFlight.current = true
     setIsDownloading(true)
     setDownloadError(undefined)
+    setDownloadStatus(undefined)
+    const context = describeFilters(appliedFilters)
 
     let objectUrl: string | undefined
     let downloadLink: HTMLAnchorElement | undefined
@@ -140,8 +168,9 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
       document.body.append(downloadLink)
       downloadLink.click()
       downloadTriggered = true
+      setDownloadStatus(`CSV 다운로드를 시작했습니다. 다운로드 조건: ${context}`)
     } catch (error) {
-      setDownloadError(downloadErrorMessage(error))
+      setDownloadError(`${downloadErrorMessage(error)} 요청 조건: ${context}`)
     } finally {
       downloadLink?.remove()
       if (objectUrl) {
@@ -160,6 +189,10 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
   const totalElements = query.data?.totalElements ?? 0
   const totalPages = query.data?.totalPages ?? 0
   const content = query.data?.content ?? []
+  const hasCurrentResult = query.isSuccess && !query.isPlaceholderData
+  const filtersChanged = JSON.stringify(normalizeFilters(draftFilters)) !== JSON.stringify(appliedFilters)
+  const previousPageUnavailable = page === 0 || query.isFetching || query.isPlaceholderData
+  const nextPageUnavailable = page + 1 >= totalPages || !query.data?.hasNext || query.isFetching || query.isPlaceholderData
 
   return (
     <main className="admin-audit-page">
@@ -168,12 +201,12 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
           <div>
             <p>RESERVATION AUDIT</p>
             <h1>예약 감사 이력</h1>
-            <span>예약 변경·취소·노쇼·복구의 처리 근거와 전후 상태를 확인합니다.</span>
+            <span>관리자 예약 생성·변경·취소·노쇼·복구의 처리 근거를 확인합니다.</span>
           </div>
           <Link to="/admin">관리자 메뉴</Link>
         </header>
 
-        <form className="admin-audit-filters" onSubmit={applyFilters}>
+        <form className="admin-audit-filters" onSubmit={applyFilters} noValidate aria-label="감사 이력 조회 조건">
           <label className="admin-audit-keyword">회원 검색
             <input
               type="search"
@@ -182,28 +215,38 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
               onChange={(event) => setDraftFilters((filters) => ({ ...filters, keyword: event.target.value }))}
             />
           </label>
-          <label>예약 ID
+          <label>예약 번호
             <input
+              id="audit-reservation-id"
               type="number"
               inputMode="numeric"
               min="1"
               placeholder="예: 152"
               value={draftFilters.reservationId}
-              onChange={(event) => setDraftFilters((filters) => ({ ...filters, reservationId: event.target.value }))}
+              aria-invalid={!!idError}
+              aria-describedby={idError ? 'audit-id-error' : undefined}
+              onChange={(event) => { setIdError(undefined); setDraftFilters((filters) => ({ ...filters, reservationId: event.target.value })) }}
             />
+            {idError ? <span id="audit-id-error" className="admin-audit-field-error" role="alert">{idError}</span> : null}
           </label>
           <label>시작일
             <input
               type="date"
+              id="audit-date-from"
+              aria-invalid={!!localError}
+              aria-describedby={localError ? 'audit-date-error audit-date-help' : 'audit-date-help'}
               value={draftFilters.occurredDateFrom}
-              onChange={(event) => setDraftFilters((filters) => ({ ...filters, occurredDateFrom: event.target.value }))}
+              onChange={(event) => { setLocalError(undefined); setDraftFilters((filters) => ({ ...filters, occurredDateFrom: event.target.value })) }}
             />
+            {localError ? <span id="audit-date-error" className="admin-audit-field-error" role="alert">{localError}</span> : null}
           </label>
           <label>종료일
             <input
               type="date"
+              aria-invalid={!!localError}
+              aria-describedby={localError ? 'audit-date-error audit-date-help' : 'audit-date-help'}
               value={draftFilters.occurredDateTo}
-              onChange={(event) => setDraftFilters((filters) => ({ ...filters, occurredDateTo: event.target.value }))}
+              onChange={(event) => { setLocalError(undefined); setDraftFilters((filters) => ({ ...filters, occurredDateTo: event.target.value })) }}
             />
           </label>
           <label>처리 주체
@@ -224,36 +267,45 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
             >
               <option value="">전체</option>
               <option value="schedule_changed">일정 변경</option>
+              <option value="admin_reservation_created">관리자 예약 생성</option>
               <option value="reservation_cancelled">예약 취소</option>
               <option value="no_show_processed">노쇼 처리</option>
               <option value="payment_restored">입금만료 복구</option>
             </select>
           </label>
+          <p className="admin-audit-help" id="audit-date-help">기간은 수업일이 아닌 처리 발생일 기준입니다. 비워두면 전체 기간을 조회합니다.</p>
           <div className="admin-audit-filter-actions">
             <button type="submit">조건 적용</button>
             <button type="button" className="secondary" onClick={resetFilters}>초기화</button>
           </div>
         </form>
 
-        {localError ? <p className="admin-audit-error" role="alert">{localError}</p> : null}
+        {filtersChanged ? <p className="admin-audit-help">입력한 조건을 적용하면 목록과 CSV 다운로드 조건이 변경됩니다.</p> : null}
 
         <section className="admin-audit-results" aria-labelledby="admin-audit-results-title">
+          <p className="admin-audit-announcement" aria-live="polite" aria-atomic="true">
+            {hasCurrentResult && !query.isFetching ? `감사 이력 조회 완료. 전체 ${totalElements}건, 현재 페이지 ${content.length}건.` : ''}
+          </p>
           <div className="admin-audit-results-heading">
             <div>
               <h2 id="admin-audit-results-title">처리 이력</h2>
-              <p>최신 처리부터 표시합니다.</p>
+              <p>최신 처리부터 페이지당 20건을 표시합니다.</p>
             </div>
             <div className="admin-audit-results-actions">
-              <strong>전체 {totalElements}건</strong>
+              {hasCurrentResult ? <strong>전체 {totalElements}건 · 현재 페이지 {content.length}건</strong> : null}
               <button
                 type="button"
                 disabled={isDownloading}
                 onClick={() => { void downloadCsv() }}
+                aria-describedby="audit-export-help audit-applied-filters"
               >
                 {isDownloading ? 'CSV 준비 중...' : '현재 조건 CSV 다운로드'}
               </button>
             </div>
           </div>
+          <p className="admin-audit-applied" id="audit-applied-filters"><strong>적용 조건</strong> {describeFilters(appliedFilters)}</p>
+          <p className="admin-audit-help" id="audit-export-help">CSV는 현재 페이지가 아닌 적용 조건의 전체 이력을 내려받습니다. 별도 조회이므로 목록과 파일의 결과가 달라질 수 있습니다.</p>
+          {downloadStatus ? <p className="admin-audit-download-status" role="status">{downloadStatus}</p> : null}
 
           {downloadError ? (
             <div className="admin-audit-download-error" role="alert">
@@ -264,7 +316,7 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
             </div>
           ) : null}
 
-          {query.isPending ? <AuditState message="감사 이력을 불러오는 중입니다." /> : null}
+          {query.isPending || query.isPlaceholderData ? <AuditState message="감사 이력을 불러오는 중입니다." /> : null}
           {query.isError ? (
             <AuditState
               error
@@ -272,25 +324,25 @@ export function AdminAuditPage({ api = adminAuditApi }: { api?: AdminAuditApi })
               onRetry={() => { void query.refetch() }}
             />
           ) : null}
-          {query.isSuccess && content.length === 0
+          {hasCurrentResult && content.length === 0
             ? <AuditState message="조회 조건에 해당하는 예약 감사 이력이 없습니다." />
             : null}
-          {query.isSuccess && content.length > 0 ? (
-            <div className="admin-audit-list">
+          {hasCurrentResult && content.length > 0 ? (
+            <ul className="admin-audit-list" aria-label="예약 감사 이력">
               {content.map((auditLog) => (
-                <AuditLogRow auditLog={auditLog} key={auditLog.auditLogId} />
+                <li key={auditLog.auditLogId}><AuditLogRow auditLog={auditLog} /></li>
               ))}
-            </div>
+            </ul>
           ) : null}
 
           {query.isSuccess && totalPages > 0 ? (
             <nav className="admin-audit-pagination" aria-label="감사 이력 페이지">
-              <button type="button" disabled={page === 0 || query.isFetching} onClick={() => setPage((current) => current - 1)}>이전</button>
-              <span aria-live="polite">{page + 1} / {totalPages} 페이지</span>
-              <button type="button" disabled={page + 1 >= totalPages || !query.data?.hasNext || query.isFetching} onClick={() => setPage((current) => current + 1)}>다음</button>
+              <button type="button" aria-disabled={previousPageUnavailable} onClick={() => { if (!previousPageUnavailable) setPage((current) => current - 1) }}>이전</button>
+              <span aria-live="polite">{query.isPlaceholderData ? '페이지 조회 중' : `${page + 1} / ${totalPages} 페이지`}</span>
+              <button type="button" aria-disabled={nextPageUnavailable} onClick={() => { if (!nextPageUnavailable) setPage((current) => current + 1) }}>다음</button>
             </nav>
           ) : null}
-          {query.isFetching && !query.isPending ? <p className="admin-audit-page-loading" role="status">페이지 이동 중입니다.</p> : null}
+          {query.isFetching && !query.isPending && !query.isPlaceholderData ? <p className="admin-audit-page-loading" role="status">감사 이력을 갱신하는 중입니다.</p> : null}
         </section>
       </div>
     </main>
@@ -323,12 +375,14 @@ function AuditLogRow({ auditLog }: { auditLog: AdminReservationAuditResponse }) 
         </div>
       </div>
 
-      <dl className="admin-audit-meta">
-        <div><dt>처리 주체</dt><dd>{label(ACTOR_LABELS, auditLog.actorType)}</dd></div>
-        <div><dt>인증 주체</dt><dd>{auditLog.actorAuthSubject ?? '-'}</dd></div>
-        <div><dt>쿠폰 처리</dt><dd>{label(COUPON_ACTION_LABELS, auditLog.couponAction)}</dd></div>
-      </dl>
       <p className="admin-audit-memo"><span>처리 사유</span>{auditLog.memo ?? '기록된 사유 없음'}</p>
+      <details className="admin-audit-details">
+        <summary>처리 상세 · 예약 #{auditLog.reservationId ?? '-'}</summary>
+        <dl className="admin-audit-meta">
+          <div><dt>처리 주체</dt><dd>{label(ACTOR_LABELS, auditLog.actorType)}</dd></div>
+          <div><dt>쿠폰 처리</dt><dd>{label(COUPON_ACTION_LABELS, auditLog.couponAction)}</dd></div>
+        </dl>
+      </details>
     </article>
   )
 }
@@ -357,7 +411,17 @@ function normalizeFilters(filters: AuditFilterForm): AuditFilterForm {
 }
 
 function label(labels: Record<string, string>, value?: string) {
-  return value ? labels[value] ?? value : '-'
+  return value ? labels[value] ?? '기타 기록' : '-'
+}
+
+function describeFilters(filters: AuditFilterForm) {
+  return [
+    filters.occurredDateFrom || filters.occurredDateTo ? `${filters.occurredDateFrom || '시작 제한 없음'} ~ ${filters.occurredDateTo || '종료 제한 없음'}` : '전체 기간',
+    filters.keyword ? `회원: ${filters.keyword}` : '전체 회원',
+    filters.reservationId ? `예약 #${filters.reservationId}` : '',
+    filters.actorType ? label(ACTOR_LABELS, filters.actorType) : '',
+    filters.changeType ? label(CHANGE_TYPE_LABELS, filters.changeType) : '전체 작업',
+  ].filter(Boolean).join(' · ')
 }
 
 function formatSchedule(date?: Date, startTime?: string) {
