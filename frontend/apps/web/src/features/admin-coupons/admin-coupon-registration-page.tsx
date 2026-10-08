@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import type { CouponRegistrationRequest, CouponResponse } from '@horse/api-client'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query'
+import type { AdminMemberResponse, CouponRegistrationRequest, CouponResponse } from '@horse/api-client'
 import {
   adminCouponsApi,
   getAdminCouponErrorKind,
@@ -15,6 +15,8 @@ const COUPON_TYPES: ReadonlyArray<{ type: CouponType; label: string; description
   { type: 'dressage', label: '마장마술', description: '승인 회원 전용' },
   { type: 'jumping', label: '장애물', description: '승인 회원 전용' },
 ]
+
+const MEMBER_PAGE_SIZE = 20
 type RegistrationMode = 'new' | 'existing'
 
 const COUPON_STATUS_LABELS: Readonly<Record<string, string>> = {
@@ -27,12 +29,11 @@ interface AdminCouponRegistrationPageProps {
   api?: AdminCouponsApi
 }
 
-function getRequestErrorMessage(error: unknown) {
+function getMemberQueryErrorMessage(error: unknown) {
   const kind = getAdminCouponErrorKind(error)
-  if (kind === 'forbidden') return '관리자 권한이 없어 쿠폰을 등록할 수 없습니다.'
-  if (kind === 'not-found') return '선택한 회원을 찾을 수 없습니다. 회원 목록을 다시 확인해 주세요.'
-  if (kind === 'validation') return '쿠폰 정보가 올바르지 않습니다. 입력 내용을 확인해 주세요.'
-  return '쿠폰을 등록하지 못했습니다. 처리 결과를 확인한 뒤 다시 시도해 주세요.'
+  if (kind === 'forbidden') return '관리자 권한이 없어 회원을 조회할 수 없습니다.'
+  if (kind === 'validation') return '검색어는 100자 이하로 입력해 주세요.'
+  return '회원 목록을 불러오지 못했습니다. 다시 조회해 주세요.'
 }
 
 function getCouponTypeLabel(type?: string) {
@@ -70,7 +71,12 @@ function parseNonNegativeInteger(value: string) {
 }
 
 export function AdminCouponRegistrationPage({ api = adminCouponsApi }: AdminCouponRegistrationPageProps) {
-  const [memberId, setMemberId] = useState<number>()
+  const [selectedMember, setSelectedMember] = useState<AdminMemberResponse>()
+  const [memberPage, setMemberPage] = useState(0)
+  const [memberSearch, setMemberSearch] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [memberResultsOpen, setMemberResultsOpen] = useState(false)
+  const [activeMemberIndex, setActiveMemberIndex] = useState(0)
   const [couponType, setCouponType] = useState<CouponType>()
   const [registrationMode, setRegistrationMode] = useState<RegistrationMode>('new')
   const [totalCount, setTotalCount] = useState('10')
@@ -79,9 +85,46 @@ export function AdminCouponRegistrationPage({ api = adminCouponsApi }: AdminCoup
   const [formError, setFormError] = useState<string>()
   const [requestError, setRequestError] = useState<string>()
   const [createdCoupon, setCreatedCoupon] = useState<CouponResponse>()
-  const membersQuery = useQuery({ queryKey: ['admin', 'coupon-members'], queryFn: api.getMembers })
-  const members = membersQuery.data ?? []
-  const selectedMember = members.find((member) => member.id === memberId)
+  const searchRef = useRef<HTMLInputElement>(null)
+  const focusedElementRef = useRef<HTMLElement>(null)
+  const resultsRef = useRef<HTMLUListElement>(null)
+  const membersQuery = useQuery({
+    queryKey: ['admin', 'coupon-members', memberPage, searchQuery],
+    queryFn: () => api.getMembers(memberPage, MEMBER_PAGE_SIZE, searchQuery || undefined),
+    placeholderData: keepPreviousData,
+  })
+  const searchPending = memberSearch.trim() !== searchQuery
+  const membersLoading = searchPending || membersQuery.isFetching || membersQuery.isPlaceholderData
+  const visibleMembers = membersLoading || membersQuery.isError ? [] : membersQuery.data?.content ?? []
+  const activeMember = visibleMembers[activeMemberIndex]
+
+  useEffect(() => {
+    if (!searchPending) return
+    const timer = window.setTimeout(() => {
+      setSearchQuery(memberSearch.trim())
+      setMemberPage(0)
+    }, 300)
+    return () => window.clearTimeout(timer)
+  }, [memberSearch, searchPending])
+
+  useEffect(() => {
+    const list = resultsRef.current
+    const option = list?.querySelector(`#coupon-member-${activeMember?.id}`)
+    if (!memberResultsOpen || !list || !option) return
+    // Scroll only the result list so keyboard navigation does not move the form.
+    const listBounds = list.getBoundingClientRect()
+    const optionBounds = option.getBoundingClientRect()
+    if (optionBounds.top < listBounds.top) list.scrollTop -= listBounds.top - optionBounds.top
+    else if (optionBounds.bottom > listBounds.bottom) list.scrollTop += optionBounds.bottom - listBounds.bottom
+  }, [memberResultsOpen, activeMember])
+
+  useEffect(() => {
+    const previousFocus = focusedElementRef.current
+    if (membersQuery.isError && previousFocus?.hasAttribute('data-member-pagination')
+      && !previousFocus.isConnected && document.activeElement === document.body) {
+      searchRef.current?.focus()
+    }
+  }, [membersQuery.isError])
   const registration = useMutation({
     mutationFn: ({ targetMemberId, request }: {
       targetMemberId: number
@@ -97,7 +140,7 @@ export function AdminCouponRegistrationPage({ api = adminCouponsApi }: AdminCoup
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (memberId === undefined || couponType === undefined) {
+    if (selectedMember === undefined || couponType === undefined) {
       setFormError('회원과 쿠폰 종류를 모두 선택해 주세요.')
       return
     }
@@ -135,7 +178,7 @@ export function AdminCouponRegistrationPage({ api = adminCouponsApi }: AdminCoup
     setRequestError(undefined)
     setCreatedCoupon(undefined)
     registration.mutate({
-      targetMemberId: memberId,
+      targetMemberId: selectedMember.id,
       request: {
         type: couponType,
         totalCount: parsedTotalCount,
@@ -145,9 +188,35 @@ export function AdminCouponRegistrationPage({ api = adminCouponsApi }: AdminCoup
     })
   }
 
-  if (membersQuery.isPending) return <CouponState message="회원 목록을 불러오는 중입니다." />
-  if (membersQuery.isError) {
-    return <CouponState error message={getRequestErrorMessage(membersQuery.error)} />
+  const selectMember = (member?: AdminMemberResponse) => {
+    if (!member || membersLoading || membersQuery.isError) return
+    setSelectedMember(member)
+    setMemberResultsOpen(false)
+    setFormError(undefined)
+  }
+
+  const handleMemberSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.nativeEvent.isComposing || event.keyCode === 229) return
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      setMemberResultsOpen(false)
+      return
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault()
+      setMemberResultsOpen(true)
+      setActiveMemberIndex((currentIndex) => {
+        if (visibleMembers.length === 0) return 0
+        const offset = event.key === 'ArrowDown' ? 1 : -1
+        return (currentIndex + offset + visibleMembers.length) % visibleMembers.length
+      })
+      return
+    }
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      if (memberResultsOpen) selectMember(activeMember)
+      else setMemberResultsOpen(true)
+    }
   }
 
   return (
@@ -158,20 +227,102 @@ export function AdminCouponRegistrationPage({ api = adminCouponsApi }: AdminCoup
           <h1>쿠폰 등록</h1>
         </header>
 
-        {members.length === 0 ? <CouponState message="쿠폰을 등록할 회원이 없습니다." embedded /> : (
-          <form className="admin-coupon-form" onSubmit={submit} noValidate>
+          <form className="admin-coupon-form" onSubmit={submit} noValidate
+            onFocusCapture={(event) => { focusedElementRef.current = event.target }}>
             <fieldset className="admin-coupon-fieldset" disabled={registration.isPending}>
               <legend>1. 회원 선택</legend>
-              <label className="admin-coupon-label" htmlFor="coupon-member">등록 대상</label>
-              <select
-                className="admin-coupon-select"
-                id="coupon-member"
-                value={memberId ?? ''}
-                onChange={(event) => setMemberId(event.target.value ? Number(event.target.value) : undefined)}
-              >
-                <option value="">회원을 선택하세요</option>
-                {members.map((member) => <option key={member.id} value={member.id}>{member.name} · {member.phone}</option>)}
-              </select>
+              <div onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setMemberResultsOpen(false)
+              }}>
+              <label className="admin-coupon-label" htmlFor="coupon-member-search">회원 검색</label>
+              <input
+                ref={searchRef}
+                className="admin-coupon-search"
+                id="coupon-member-search"
+                type="search"
+                maxLength={100}
+                value={memberSearch}
+                placeholder="이름 또는 전화번호 입력"
+                role="combobox"
+                aria-controls={memberResultsOpen && visibleMembers.length > 0 ? 'coupon-member-results' : undefined}
+                aria-describedby="coupon-member-search-help coupon-member-result-count"
+                aria-expanded={memberResultsOpen}
+                aria-autocomplete="list"
+                aria-activedescendant={memberResultsOpen && activeMember ? `coupon-member-${activeMember.id}` : undefined}
+                onFocus={() => setMemberResultsOpen(true)}
+                onKeyDown={handleMemberSearchKeyDown}
+                onChange={(event) => {
+                  setMemberSearch(event.target.value)
+                  setMemberResultsOpen(true)
+                  setActiveMemberIndex(0)
+                }}
+              />
+              <p className="admin-coupon-result-count" id="coupon-member-search-help">
+                전체 회원의 이름 또는 전화번호로 검색합니다.
+              </p>
+              <p className="admin-coupon-result-count" id="coupon-member-result-count" aria-live="polite">
+                {membersLoading ? '회원 목록을 불러오는 중입니다.' : membersQuery.isError
+                  ? '회원 검색 결과를 확인하지 못했습니다.'
+                  : `${searchQuery ? '검색 결과' : '전체 회원'} ${membersQuery.data?.totalElements ?? 0}명 · 현재 페이지 ${visibleMembers.length}명`}
+              </p>
+              {membersQuery.isError && !searchPending ? (
+                <div className="admin-coupon-error" role="alert">
+                  <p>{getMemberQueryErrorMessage(membersQuery.error)}</p>
+                  <button type="button" onClick={() => {
+                    searchRef.current?.focus()
+                    void membersQuery.refetch()
+                  }}>회원 목록 다시 조회</button>
+                </div>
+              ) : null}
+              {memberResultsOpen && !membersLoading && !membersQuery.isError && visibleMembers.length > 0 ? (
+                <ul
+                  className="admin-coupon-member-results"
+                  ref={resultsRef}
+                  id="coupon-member-results"
+                  role="listbox"
+                  aria-label="회원 검색 결과"
+                >
+                  {visibleMembers.map((member) => (
+                    <li
+                      className="admin-coupon-member-result"
+                      id={`coupon-member-${member.id}`}
+                      key={member.id}
+                      role="option"
+                      aria-selected={member.id === selectedMember?.id}
+                      data-active={member.id === activeMember?.id}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onMouseEnter={() => setActiveMemberIndex(visibleMembers.indexOf(member))}
+                      onClick={() => selectMember(member)}
+                    >
+                      <span>
+                        <strong>{member.name}</strong>
+                        <small>{member.phone}</small>
+                      </span>
+                      <small>일반 기승 {member.generalRideCount ?? 0}회</small>
+                    </li>
+                  ))}
+                </ul>
+              ) : memberResultsOpen && !membersLoading && !membersQuery.isError ? (
+                <p className="admin-coupon-no-results">{searchQuery
+                  ? '검색 조건과 일치하는 회원이 없습니다.'
+                  : '쿠폰을 등록할 회원이 없습니다.'}</p>
+              ) : null}
+              {memberResultsOpen && !membersQuery.isError && (membersQuery.data?.totalPages ?? 0) > 1 ? (
+                <nav className="admin-coupon-member-pagination" aria-label="회원 검색 결과 페이지">
+                  <button type="button" data-member-pagination aria-disabled={membersLoading || memberPage === 0} onClick={() => {
+                    if (membersLoading || memberPage === 0) return
+                    setMemberPage((page) => page - 1)
+                    setActiveMemberIndex(0)
+                  }}>이전</button>
+                  <span>{(membersQuery.data?.page ?? 0) + 1} / {membersQuery.data?.totalPages}</span>
+                  <button type="button" data-member-pagination aria-disabled={membersLoading || !membersQuery.data?.hasNext} onClick={() => {
+                    if (membersLoading || !membersQuery.data?.hasNext) return
+                    setMemberPage((page) => page + 1)
+                    setActiveMemberIndex(0)
+                  }}>다음</button>
+                </nav>
+              ) : null}
+              </div>
               {selectedMember ? (
                 <div className="admin-coupon-member-summary" aria-label="선택 회원 정보">
                   <p><strong>{selectedMember.name}</strong></p>
@@ -307,7 +458,6 @@ export function AdminCouponRegistrationPage({ api = adminCouponsApi }: AdminCoup
               {registration.isPending ? '등록 중...' : '쿠폰 등록'}
             </button>
           </form>
-        )}
 
         {createdCoupon ? (
           <section className="admin-coupon-success" aria-live="polite">
@@ -326,14 +476,4 @@ export function AdminCouponRegistrationPage({ api = adminCouponsApi }: AdminCoup
       </div>
     </main>
   )
-}
-
-function CouponState({ message, error = false, embedded = false }: {
-  message: string
-  error?: boolean
-  embedded?: boolean
-}) {
-  const content = <section className="admin-coupon-state" role={error ? 'alert' : undefined}>{message}</section>
-  if (embedded) return content
-  return <main className="admin-coupon-page"><div className="admin-coupon-shell">{content}</div></main>
 }

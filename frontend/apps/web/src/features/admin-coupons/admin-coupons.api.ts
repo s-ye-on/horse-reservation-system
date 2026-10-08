@@ -2,7 +2,7 @@ import {
   AdminCouponRegistrationControllerApi,
   AdminMemberQueryControllerApi,
   ResponseError,
-  type AdminMemberResponse,
+  type AdminMemberPageResponse,
   type CouponRegistrationRequest,
   type CouponResponse,
   type ErrorResponse,
@@ -12,7 +12,7 @@ import { bearerApiConfiguration } from '../../api/web-api-configuration'
 export type CouponType = 'general' | 'dressage' | 'jumping'
 
 export interface AdminCouponsApi {
-  getMembers(): Promise<AdminMemberResponse[]>
+  getMembers(page: number, size: number, query?: string): Promise<AdminMemberPageResponse>
   registerCoupon(memberId: number, request: CouponRegistrationRequest): Promise<CouponResponse>
 }
 
@@ -49,7 +49,7 @@ const memberApi = new AdminMemberQueryControllerApi(bearerApiConfiguration)
 const couponApi = new AdminCouponRegistrationControllerApi(bearerApiConfiguration)
 
 export const adminCouponsApi: AdminCouponsApi = {
-  getMembers: async () => (await memberApi.getMembers()).content ?? [],
+  getMembers: (page, size, query) => memberApi.getMembers({ page, size, query }),
   registerCoupon: (memberId, couponRegistrationRequest) => couponApi.register({
     memberId,
     couponRegistrationRequest,
