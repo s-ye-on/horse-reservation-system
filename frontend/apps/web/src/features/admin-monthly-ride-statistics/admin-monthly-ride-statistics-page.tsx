@@ -33,6 +33,14 @@ export function AdminMonthlyRideStatisticsPage({
     queryKey: ['admin', 'monthly-ride-statistics', selectedMonth, selectedRideType],
     queryFn: () => api.getStatistics(selectedMonth, selectedRideType),
   })
+  const statistics = statisticsQuery.isSuccess ? statisticsQuery.data : undefined
+  const announcement = statisticsQuery.isPending || statisticsQuery.isFetching
+    ? '월간 기승 현황을 불러오는 중입니다.'
+    : statistics
+      ? `${formatMonth(statistics.month)} ${rideTypeLabel(statistics.rideType)} 조회 완료. ${statistics.totalCompletedRideCount === 0
+        ? '완료된 수업이 없습니다.'
+        : `총 기승 횟수 ${statistics.totalCompletedRideCount}회, 최다 기승 횟수 ${statistics.topCompletedRideCount}회, 최다 회원 ${statistics.leaders.length}명.`}`
+      : ''
 
   return (
     <main className="admin-monthly-statistics-page">
@@ -41,7 +49,7 @@ export function AdminMonthlyRideStatisticsPage({
           <div>
             <p>MONTHLY RIDES</p>
             <h1>월간 기승 현황</h1>
-            <span>완료된 수업을 기준으로 월별 운영 실적을 확인합니다.</span>
+            <span>수업 날짜를 기준으로 완료된 예약의 월간 기승 횟수를 확인합니다.</span>
           </div>
           <Link to="/admin">관리자 메뉴</Link>
         </header>
@@ -62,8 +70,9 @@ export function AdminMonthlyRideStatisticsPage({
                 type="month"
                 required
                 value={selectedMonth}
+                aria-describedby="monthly-statistics-period-help"
                 onChange={(event) => {
-                  if (/^\d{4}-\d{2}$/.test(event.target.value)) setSelectedMonth(event.target.value)
+                  if (/^\d{4}-(0[1-9]|1[0-2])$/.test(event.target.value)) setSelectedMonth(event.target.value)
                 }}
               />
             </label>
@@ -84,6 +93,7 @@ export function AdminMonthlyRideStatisticsPage({
               이번 달
             </button>
           </div>
+          <p id="monthly-statistics-period-help" className="admin-monthly-statistics-help">조회 월은 서울 기준 수업 날짜가 속한 달입니다.</p>
 
           <fieldset className="admin-monthly-statistics-type-controls">
             <legend>기승 종류</legend>
@@ -103,10 +113,11 @@ export function AdminMonthlyRideStatisticsPage({
           </fieldset>
         </section>
 
-        <section className="admin-monthly-statistics-results" aria-live="polite">
+        <section className="admin-monthly-statistics-results" aria-label="월간 기승 조회 결과">
+          <p className="admin-monthly-statistics-announcement" role="status" aria-atomic="true">{announcement}</p>
           <div className="admin-monthly-statistics-results-heading">
             <div>
-              <h2>{formatMonth(selectedMonth)} {rideTypeLabel(selectedRideType)}</h2>
+              <h2>{formatMonth(statisticsQuery.isSuccess ? statisticsQuery.data.month : selectedMonth)} {rideTypeLabel(statisticsQuery.isSuccess ? statisticsQuery.data.rideType : selectedRideType)}</h2>
               <p>Horse에서 완료 처리된 예약만 집계합니다.</p>
             </div>
           </div>
@@ -117,11 +128,18 @@ export function AdminMonthlyRideStatisticsPage({
           {statisticsQuery.isError ? (
             <StatisticsError
               error={statisticsQuery.error}
-              retry={() => statisticsQuery.refetch()}
+              pending={statisticsQuery.isFetching}
+              retry={() => { void statisticsQuery.refetch() }}
             />
           ) : null}
           {statisticsQuery.isSuccess ? <StatisticsResult statistics={statisticsQuery.data} /> : null}
+          {statisticsQuery.isSuccess && statisticsQuery.isFetching ? <StatisticsState message="월간 기승 현황을 갱신 중입니다. 기존 조회 결과를 표시하고 있습니다." /> : null}
         </section>
+        <details className="admin-monthly-statistics-policy">
+          <summary>집계 기준</summary>
+          <p>Horse에서 수업 완료 처리된 예약만 수업 날짜 기준으로 집계합니다. 취소·노쇼·대기 예약은 포함하지 않습니다.</p>
+          <p>인정 시작 클래스, 특수 승인 추가 인정분, 기승 횟수 보정과 Horse 운영 이전 경력은 이 통계에 포함하지 않습니다.</p>
+        </details>
       </div>
     </main>
   )
@@ -131,18 +149,18 @@ function StatisticsResult({ statistics }: { statistics: AdminMonthlyRideStatisti
   const isEmpty = statistics.totalCompletedRideCount === 0
   return (
     <>
-      <div className="admin-monthly-statistics-metrics" aria-label="월간 기승 집계">
+      <section className="admin-monthly-statistics-metrics" aria-label="월간 기승 집계">
         <article>
           <span>총 기승 횟수</span>
           <strong>{statistics.totalCompletedRideCount}</strong>
-          <small>완료된 수업</small>
+          <small>선택한 월·종류의 완료 수업 전체</small>
         </article>
         <article>
           <span>최다 기승 횟수</span>
           <strong>{statistics.topCompletedRideCount}</strong>
-          <small>{isEmpty ? '해당 기록 없음' : '회원별 최고 기록'}</small>
+          <small>{isEmpty ? '해당 기록 없음' : '한 회원의 월간 최고 횟수'}</small>
         </article>
-      </div>
+      </section>
 
       {isEmpty ? (
         <StatisticsState message="선택한 월과 기승 종류에 완료된 수업이 없습니다." />
@@ -152,7 +170,7 @@ function StatisticsResult({ statistics }: { statistics: AdminMonthlyRideStatisti
             <h3 id="monthly-leaders-title">
               {statistics.leaders.length > 1 ? '공동 최다 기승 회원' : '최다 기승 회원'}
             </h3>
-            <span>{statistics.leaders.length}명</span>
+            <span>최다 회원 {statistics.leaders.length}명</span>
           </div>
           <ul>
             {statistics.leaders.map((leader) => (
@@ -168,7 +186,7 @@ function StatisticsResult({ statistics }: { statistics: AdminMonthlyRideStatisti
   )
 }
 
-function StatisticsError({ error, retry }: { error: unknown; retry: () => void }) {
+function StatisticsError({ error, retry, pending }: { error: unknown; retry: () => void; pending: boolean }) {
   const kind = getAdminMonthlyRideStatisticsErrorKind(error)
   const message = kind === 'unauthorized'
     ? '관리자 로그인이 필요합니다.'
@@ -181,13 +199,13 @@ function StatisticsError({ error, retry }: { error: unknown; retry: () => void }
   return (
     <section className="admin-monthly-statistics-state error" role="alert">
       <p>{message}</p>
-      <button type="button" onClick={retry}>다시 시도</button>
+      <button type="button" disabled={pending} onClick={retry}>{pending ? '조회 중' : '다시 시도'}</button>
     </section>
   )
 }
 
 function StatisticsState({ message }: { message: string }) {
-  return <section className="admin-monthly-statistics-state" role="status">{message}</section>
+  return <section className="admin-monthly-statistics-state">{message}</section>
 }
 
 function seoulMonth(date: Date) {
