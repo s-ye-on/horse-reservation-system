@@ -22,12 +22,12 @@ export function ReservationCancelPage({ api = reservationCancelApi }: { api?: Re
   const validReservationId = Number.isSafeInteger(reservationId) && reservationId > 0
   const [reason, setReason] = useState('')
   const queryClient = useQueryClient()
-  const reservationsQuery = useQuery({
-    queryKey: ['member', 'reservations'],
-    queryFn: api.getMyReservations,
+  const reservationQuery = useQuery({
+    queryKey: ['member', 'reservations', 'detail', reservationId],
+    queryFn: () => api.getMyReservation(reservationId),
     enabled: validReservationId,
   })
-  const reservation = reservationsQuery.data?.find((item) => item.reservationId === reservationId)
+  const reservation = reservationQuery.data
   const canCancel = reservation?.actions?.cancel?.allowed === true
   const previewQuery = useQuery({
     queryKey: ['member', 'reservation-cancel', 'preview', reservationId],
@@ -45,8 +45,8 @@ export function ReservationCancelPage({ api = reservationCancelApi }: { api?: Re
   const validReason = reason.trim().length > 0 && reason.trim().length <= 500
 
   if (!validReservationId) return <CancelState error message="예약 번호가 올바르지 않습니다." />
-  if (reservationsQuery.isPending) return <CancelState message="예약 정보를 불러오는 중입니다." />
-  if (reservationsQuery.isError) return <CancelState error message={cancelErrorMessage(reservationsQuery.error, '예약 정보를 불러오지 못했습니다.')} />
+  if (reservationQuery.isPending) return <CancelState message="예약 정보를 불러오는 중입니다." />
+  if (reservationQuery.isError) return <CancelState error message={cancelErrorMessage(reservationQuery.error, '예약 정보를 불러오지 못했습니다.')} />
   if (!reservation) return <CancelState error message="취소할 예약을 찾을 수 없습니다." />
   if (!canCancel) return <CancelState error message="현재 상태에서는 예약을 취소할 수 없습니다." />
 
@@ -118,6 +118,7 @@ function CancelState({ message, error = false }: { message: string; error?: bool
 function cancelErrorMessage(error: unknown, fallback: string) {
   const kind = getReservationCancelErrorKind(error)
   if (kind === 'unauthorized') return '회원 인증을 확인할 수 없습니다. 다시 로그인해 주세요.'
+  if (kind === 'not-found') return '취소할 예약을 찾을 수 없습니다. 내 예약을 다시 확인해 주세요.'
   if (kind === 'validation') return '예약 또는 취소 사유를 다시 확인해 주세요.'
   if (kind === 'conflict') return '예약 상태가 변경되어 취소할 수 없습니다. 내 예약을 다시 확인해 주세요.'
   return `${fallback} 잠시 후 다시 시도해 주세요.`

@@ -9,17 +9,18 @@ import {
 import { bearerApiConfiguration } from '../../api/web-api-configuration'
 
 export interface ReservationCancelApi {
-  getMyReservations(): Promise<MemberReservationResponse[]>
+  getMyReservation(reservationId: number): Promise<MemberReservationResponse>
   previewCancellation(reservationId: number): Promise<ReservationCancellationPreviewResponse>
   cancelReservation(reservationId: number, reason: string): Promise<ReservationCancelResponse>
 }
 
-export type ReservationCancelErrorKind = 'unauthorized' | 'validation' | 'conflict' | 'unknown'
+export type ReservationCancelErrorKind = 'unauthorized' | 'not-found' | 'validation' | 'conflict' | 'unknown'
 
 export function getReservationCancelErrorKind(error: unknown): ReservationCancelErrorKind {
   if (!(error instanceof ResponseError)) return 'unknown'
   if (error.response.status === 401 || error.response.status === 403) return 'unauthorized'
-  if (error.response.status === 400 || error.response.status === 404) return 'validation'
+  if (error.response.status === 404) return 'not-found'
+  if (error.response.status === 400) return 'validation'
   if (error.response.status === 409) return 'conflict'
   return 'unknown'
 }
@@ -28,7 +29,7 @@ const reservationQueryApi = new MemberReservationQueryControllerApi(bearerApiCon
 const reservationCancelClient = new MemberReservationCancelControllerApi(bearerApiConfiguration)
 
 export const reservationCancelApi: ReservationCancelApi = {
-  getMyReservations: async () => (await reservationQueryApi.getMyReservations()).content ?? [],
+  getMyReservation: (reservationId) => reservationQueryApi.getMyReservation({ reservationId }),
   previewCancellation: (reservationId) => reservationCancelClient.preview2({ reservationId }),
   cancelReservation: (reservationId, reason) => reservationCancelClient.cancel({
     reservationId,

@@ -39,7 +39,7 @@ afterEach(cleanup)
 
 function createApi(overrides: Partial<ReservationChangeApi> = {}): ReservationChangeApi {
   return {
-    getMyReservations: vi.fn().mockResolvedValue([RESERVATION]),
+    getMyReservation: vi.fn().mockResolvedValue(RESERVATION),
     getAvailableTimeSlots: vi.fn().mockResolvedValue({
       date: new Date('2026-07-21T00:00:00+09:00'),
       classType: 'ROUND_BEGINNER',
@@ -60,19 +60,57 @@ function createApi(overrides: Partial<ReservationChangeApi> = {}): ReservationCh
   }
 }
 
-function renderPage(api: ReservationChangeApi) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+function renderPage(api: ReservationChangeApi, reservationId = '12', client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })) {
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/my/reservations/12/change']}>
+      <MemoryRouter initialEntries={[`/my/reservations/${reservationId}/change`]}>
         <Routes><Route path="/my/reservations/:reservationId/change" element={children} /></Routes>
       </MemoryRouter>
     </QueryClientProvider>
   )
-  return render(<ReservationChangePage api={api} today="2026-07-16" />, { wrapper: Wrapper })
+  return { ...render(<ReservationChangePage api={api} today="2026-07-16" />, { wrapper: Wrapper }), client }
 }
 
 describe('ReservationChangePage', () => {
+  it('첫_20건에_없는_예약도_URL의_ID로_직접_조회한다', async () => {
+    const getMyReservations = vi.fn().mockResolvedValue(Array.from({ length: 20 }, (_, index) => ({
+      ...RESERVATION, reservationId: 100 + index,
+    })))
+    const getMyReservation = vi.fn().mockResolvedValue(RESERVATION)
+    const api = { ...createApi(), getMyReservations, getMyReservation }
+    renderPage(api)
+    expect(await screen.findByText('원형초보')).toBeInTheDocument()
+    expect(getMyReservation).toHaveBeenCalledWith(12)
+    expect(getMyReservations).not.toHaveBeenCalled()
+  })
+
+  it.each(['RESERVATION_NOT_FOUND', 'RESERVATION_MEMBER_MISMATCH'])('조회_404_%s는_예약_정보를_노출하지_않고_작업을_중단한다', async (code) => {
+    const api = createApi({ getMyReservation: vi.fn().mockRejectedValue(new ResponseError(new Response(JSON.stringify({ code }), { status: 404 }), code)) })
+    renderPage(api, '999')
+    expect(await screen.findByRole('alert')).toHaveTextContent('변경할 예약을 찾을 수 없습니다')
+    expect(api.getMyReservation).toHaveBeenCalledWith(999)
+    expect(api.getAvailableTimeSlots).not.toHaveBeenCalled()
+    expect(api.previewChange).not.toHaveBeenCalled()
+    expect(api.changeReservation).not.toHaveBeenCalled()
+  })
+
+  it.each(['0', '-1', 'invalid'])('잘못된_URL_ID_%s는_조회하지_않는다', async (id) => {
+    const api = createApi()
+    renderPage(api, id)
+    expect(await screen.findByRole('alert')).toHaveTextContent('예약 번호가 올바르지 않습니다')
+    expect(api.getMyReservation).not.toHaveBeenCalled()
+  })
+
+  it('예약_ID가_다르면_같은_query_client에서도_별도로_조회한다', async () => {
+    const api = createApi({ getMyReservation: vi.fn(async (id: number) => ({ ...RESERVATION, reservationId: id, classType: id === 12 ? 'ROUND_BEGINNER' : 'DRESSAGE' })) })
+    const view = renderPage(api)
+    expect(await screen.findByText('원형초보')).toBeInTheDocument()
+    view.unmount()
+    renderPage(api, '13', view.client)
+    expect(await screen.findByText('마장마술')).toBeInTheDocument()
+    expect(api.getMyReservation).toHaveBeenCalledWith(13)
+  })
+
   it('현재_클래스를_유지하고_3개월_이내_날짜를_선택한다', async () => {
     renderPage(createApi())
     expect(await screen.findByText('원형초보')).toBeInTheDocument()
@@ -94,7 +132,8 @@ describe('ReservationChangePage', () => {
 
   it('변경_성공_후_새_일시와_무료_변경권_사용을_표시한다', async () => {
     const api = createApi()
-    renderPage(api)
+    const { client } = renderPage(api)
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
     fireEvent.click(await screen.findByText('10:00'))
     const button = await screen.findByRole('button', { name: '이 시간으로 변경' })
     await waitFor(() => expect(button).toBeEnabled())
@@ -103,6 +142,7 @@ describe('ReservationChangePage', () => {
     expect(within(result).getByText(/2026년 7월 21일.*10:00/)).toBeInTheDocument()
     expect(within(result).getByText(/무료 변경권 사용/)).toBeInTheDocument()
     expect(api.changeReservation).toHaveBeenCalledWith(12, 31, undefined)
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['member', 'reservations'] })
   })
 
   it('시간대_로딩과_빈_목록을_표시한다', async () => {
@@ -124,13 +164,13 @@ describe('ReservationChangePage', () => {
 
   it('서버가_변경을_허용하지_않은_예약은_상태와_무관하게_차단한다', async () => {
     renderPage(createApi({
-      getMyReservations: vi.fn().mockResolvedValue([{
+      getMyReservation: vi.fn().mockResolvedValue({
         ...RESERVATION,
         actions: {
           ...RESERVATION.actions,
           change: { allowed: false, blockedReason: 'RESERVATION_CHANGE_NOT_ALLOWED' },
         },
-      }]),
+      }),
     }))
     expect(await screen.findByRole('alert')).toHaveTextContent('현재 상태에서는 예약을 변경할 수 없습니다')
   })

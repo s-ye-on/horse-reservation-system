@@ -30,12 +30,12 @@ export function ReservationChangePage({ api = reservationChangeApi, today = getS
   const [reason, setReason] = useState('')
   const queryClient = useQueryClient()
 
-  const reservationsQuery = useQuery({
-    queryKey: ['member', 'reservations'],
-    queryFn: api.getMyReservations,
+  const reservationQuery = useQuery({
+    queryKey: ['member', 'reservations', 'detail', reservationId],
+    queryFn: () => api.getMyReservation(reservationId),
     enabled: validReservationId,
   })
-  const reservation = reservationsQuery.data?.find((item) => item.reservationId === reservationId)
+  const reservation = reservationQuery.data
   const canChange = reservation?.actions?.change?.allowed === true
   const classType = reservation?.classType ?? ''
   const timeSlotsQuery = useQuery({
@@ -58,8 +58,8 @@ export function ReservationChangePage({ api = reservationChangeApi, today = getS
   })
 
   if (!validReservationId) return <ChangeState error message="예약 번호가 올바르지 않습니다." />
-  if (reservationsQuery.isPending) return <ChangeState message="예약 정보를 불러오는 중입니다." />
-  if (reservationsQuery.isError) return <ChangeState error message={changeErrorMessage(reservationsQuery.error, '예약 정보를 불러오지 못했습니다.')} />
+  if (reservationQuery.isPending) return <ChangeState message="예약 정보를 불러오는 중입니다." />
+  if (reservationQuery.isError) return <ChangeState error message={changeErrorMessage(reservationQuery.error, '예약 정보를 불러오지 못했습니다.')} />
   if (!reservation) return <ChangeState error message="변경할 예약을 찾을 수 없습니다." />
   if (!canChange) return <ChangeState error message="현재 상태에서는 예약을 변경할 수 없습니다." />
 
@@ -161,6 +161,7 @@ function isCurrentTimeSlot(reservation: MemberReservationResponse | undefined, s
 function changeErrorMessage(error: unknown, fallback: string) {
   const kind = getReservationChangeErrorKind(error)
   if (kind === 'unauthorized') return '회원 인증을 확인할 수 없습니다. 다시 로그인해 주세요.'
+  if (kind === 'not-found') return '변경할 예약을 찾을 수 없습니다. 내 예약을 다시 확인해 주세요.'
   if (kind === 'validation') return '예약 또는 변경할 시간 정보를 다시 확인해 주세요.'
   if (kind === 'conflict') return '선택한 시간이 마감되었거나 변경 정책상 처리할 수 없습니다. 다른 시간을 선택해 주세요.'
   return `${fallback} 잠시 후 다시 시도해 주세요.`

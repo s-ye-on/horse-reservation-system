@@ -39,26 +39,63 @@ afterEach(cleanup)
 
 function createApi(overrides: Partial<ReservationCancelApi> = {}): ReservationCancelApi {
   return {
-    getMyReservations: vi.fn().mockResolvedValue([RESERVATION]),
+    getMyReservation: vi.fn().mockResolvedValue(RESERVATION),
     previewCancellation: vi.fn().mockResolvedValue({ reservationId: 12, timing: 'after_cutoff_weekday', responsibility: 'member', couponAction: 'deduct' }),
     cancelReservation: vi.fn().mockResolvedValue({ reservationId: 12, status: 'cancelled', responsibility: 'MEMBER', couponAction: 'DEDUCT', cancelledAt: new Date('2026-07-19T22:00:00+09:00'), changed: true }),
     ...overrides,
   }
 }
 
-function renderPage(api: ReservationCancelApi) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })
+function renderPage(api: ReservationCancelApi, reservationId = '12', client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })) {
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/my/reservations/12/cancel']}>
+      <MemoryRouter initialEntries={[`/my/reservations/${reservationId}/cancel`]}>
         <Routes><Route path="/my/reservations/:reservationId/cancel" element={children} /></Routes>
       </MemoryRouter>
     </QueryClientProvider>
   )
-  return render(<ReservationCancelPage api={api} />, { wrapper: Wrapper })
+  return { ...render(<ReservationCancelPage api={api} />, { wrapper: Wrapper }), client }
 }
 
 describe('ReservationCancelPage', () => {
+  it('첫_20건에_없는_예약도_URL의_ID로_직접_조회한다', async () => {
+    const getMyReservations = vi.fn().mockResolvedValue(Array.from({ length: 20 }, (_, index) => ({
+      ...RESERVATION, reservationId: 100 + index,
+    })))
+    const getMyReservation = vi.fn().mockResolvedValue(RESERVATION)
+    const api = { ...createApi(), getMyReservations, getMyReservation }
+    renderPage(api)
+    expect(await screen.findByLabelText(/취소 사유/)).toBeInTheDocument()
+    expect(getMyReservation).toHaveBeenCalledWith(12)
+    expect(getMyReservations).not.toHaveBeenCalled()
+  })
+
+  it.each(['RESERVATION_NOT_FOUND', 'RESERVATION_MEMBER_MISMATCH'])('조회_404_%s는_예약_정보를_노출하지_않고_작업을_중단한다', async (code) => {
+    const api = createApi({ getMyReservation: vi.fn().mockRejectedValue(new ResponseError(new Response(JSON.stringify({ code }), { status: 404 }), code)) })
+    renderPage(api, '999')
+    expect(await screen.findByRole('alert')).toHaveTextContent('취소할 예약을 찾을 수 없습니다')
+    expect(api.getMyReservation).toHaveBeenCalledWith(999)
+    expect(api.previewCancellation).not.toHaveBeenCalled()
+    expect(api.cancelReservation).not.toHaveBeenCalled()
+  })
+
+  it.each(['0', '-1', 'invalid'])('잘못된_URL_ID_%s는_조회하지_않는다', async (id) => {
+    const api = createApi()
+    renderPage(api, id)
+    expect(await screen.findByRole('alert')).toHaveTextContent('예약 번호가 올바르지 않습니다')
+    expect(api.getMyReservation).not.toHaveBeenCalled()
+  })
+
+  it('예약_ID가_다르면_같은_query_client에서도_별도로_조회한다', async () => {
+    const api = createApi({ getMyReservation: vi.fn(async (id: number) => ({ ...RESERVATION, reservationId: id, classType: id === 12 ? 'ROUND_BEGINNER' : 'DRESSAGE' })) })
+    const view = renderPage(api)
+    expect(await screen.findByText('원형초보')).toBeInTheDocument()
+    view.unmount()
+    renderPage(api, '13', view.client)
+    expect(await screen.findByText('마장마술')).toBeInTheDocument()
+    expect(api.getMyReservation).toHaveBeenCalledWith(13)
+  })
+
   it('서버_preview의_마감_기준과_예상_쿠폰_차감을_표시한다', async () => {
     renderPage(createApi())
     expect(await screen.findByText('취소 마감 후')).toBeInTheDocument()
@@ -75,11 +112,12 @@ describe('ReservationCancelPage', () => {
   })
 
   it('취소_성공_후_상태_시각과_최종_쿠폰_처리를_표시한다', async () => {
-    const getMyReservations = vi.fn()
-      .mockResolvedValueOnce([RESERVATION])
-      .mockResolvedValue([{ ...RESERVATION, status: 'cancelled' }])
-    const api = createApi({ getMyReservations })
-    renderPage(api)
+    const getMyReservation = vi.fn()
+      .mockResolvedValueOnce(RESERVATION)
+      .mockResolvedValue({ ...RESERVATION, status: 'cancelled' })
+    const api = createApi({ getMyReservation })
+    const { client } = renderPage(api)
+    const invalidate = vi.spyOn(client, 'invalidateQueries')
     fireEvent.change(await screen.findByLabelText(/취소 사유/), { target: { value: '  몸 상태가 좋지 않습니다.  ' } })
     const button = await screen.findByRole('button', { name: '예약 취소 확정' })
     await waitFor(() => expect(button).toBeEnabled())
@@ -89,7 +127,8 @@ describe('ReservationCancelPage', () => {
     expect(within(result).getByText('최종 쿠폰 처리 1회 차감')).toBeInTheDocument()
     expect(within(result).getByText(/취소 시각/)).toBeInTheDocument()
     expect(api.cancelReservation).toHaveBeenCalledWith(12, '몸 상태가 좋지 않습니다.')
-    expect(getMyReservations).toHaveBeenCalledTimes(1)
+    expect(getMyReservation).toHaveBeenCalledTimes(1)
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['member', 'reservations'], refetchType: 'none' })
   })
 
   it('preview_로딩_상태를_표시한다', async () => {
@@ -99,13 +138,13 @@ describe('ReservationCancelPage', () => {
 
   it('서버가_취소를_허용하지_않은_예약은_상태와_무관하게_차단한다', async () => {
     renderPage(createApi({
-      getMyReservations: vi.fn().mockResolvedValue([{
+      getMyReservation: vi.fn().mockResolvedValue({
         ...RESERVATION,
         actions: {
           ...RESERVATION.actions,
           cancel: { allowed: false, blockedReason: 'RESERVATION_INVALID_STATUS' },
         },
-      }]),
+      }),
     }))
     expect(await screen.findByRole('alert')).toHaveTextContent('현재 상태에서는 예약을 취소할 수 없습니다')
   })

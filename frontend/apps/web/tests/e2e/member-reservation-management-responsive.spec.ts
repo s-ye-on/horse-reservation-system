@@ -81,20 +81,51 @@ test('회원은_반응형_내_예약에서_서버_preview를_거쳐_변경과_�
   await page.context().close()
 })
 
-async function mockReservationApis(page: Page) {
+for (const action of ['change', 'cancel'] as const) {
+  test(`첫_20건_밖의_예약도_${action}_화면으로_직접_진입한다`, async ({ browser }) => {
+    const page = await createAuthenticatedPage(browser, `reservation-detail-${action}`, 'MEMBER', { viewport: { width: 320, height: 800 } })
+    const requests: string[] = []
+    page.on('request', (request) => {
+      const path = new URL(request.url()).pathname
+      if (request.method() === 'GET' && path.startsWith('/api/me/reservations')) requests.push(path)
+    })
+    await mockReservationApis(page, true)
+    await navigateWithinApp(page, `/my/reservations/${RESERVATION_ID}/${action}`)
+    await expect(page.getByRole('heading', { name: action === 'change' ? '예약 변경' : '예약 취소', exact: true })).toBeVisible()
+    await expect(page.getByText('원형초보', { exact: true })).toBeVisible()
+    expect(requests).toContain(`/api/me/reservations/${RESERVATION_ID}`)
+    expect(requests).not.toContain('/api/me/reservations')
+    if (action === 'change') {
+      await page.locator('.reservation-change-times label').filter({ hasText: '10:00' }).click()
+      await expect(page.getByRole('button', { name: '이 시간으로 변경' })).toBeEnabled()
+    } else {
+      await page.getByLabel('취소 사유').fill('목록 페이지와 무관한 예약 취소 확인')
+      await expect(page.getByRole('button', { name: '예약 취소 확정' })).toBeEnabled()
+    }
+    await expectNoHorizontalOverflow(page)
+    await page.unrouteAll({ behavior: 'ignoreErrors' })
+    await page.context().close()
+  })
+}
+
+async function mockReservationApis(page: Page, outsideFirstPage = false) {
   await page.route('**/api/me/reservations**', async (route) => {
     const request = route.request()
     const path = new URL(request.url()).pathname
 
     if (path === '/api/me/reservations') {
       await fulfillJson(route, {
-        content: [reservation],
+        content: outsideFirstPage ? Array.from({ length: 20 }, (_, index) => ({ ...reservation, reservationId: index + 1 })) : [reservation],
         page: 0,
         size: 20,
-        totalElements: 1,
-        totalPages: 1,
-        hasNext: false,
+        totalElements: outsideFirstPage ? 21 : 1,
+        totalPages: outsideFirstPage ? 2 : 1,
+        hasNext: outsideFirstPage,
       })
+      return
+    }
+    if (path === `/api/me/reservations/${RESERVATION_ID}`) {
+      await fulfillJson(route, reservation)
       return
     }
     if (path.endsWith('/change/preview')) {
