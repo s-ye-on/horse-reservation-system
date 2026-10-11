@@ -5,6 +5,7 @@ import {
   type AdminReservationAuditPageResponse,
 } from '@horse/api-client'
 import { bearerApiConfiguration } from '../../api/web-api-configuration'
+import { parseCsvFileName } from '../../api/csv-download'
 
 export interface AdminAuditCriteria {
   keyword?: string
@@ -59,57 +60,8 @@ function toAuditCriteria(filters: AdminAuditCriteria) {
   }
 }
 
-function decodeFileName(value: string) {
-  try {
-    return decodeURIComponent(value)
-  } catch {
-    return ''
-  }
-}
-
-function stripControlCharacters(value: string) {
-  return Array.from(value)
-    .filter((character) => {
-      const codePoint = character.codePointAt(0) ?? 0
-      return codePoint >= 32 && codePoint !== 127
-    })
-    .join('')
-}
-
-function sanitizeCsvFileName(value: string) {
-  const candidate = stripControlCharacters(value)
-    .replace(/\\(.)/g, '$1')
-    .split(/[\\/]/)
-    .at(-1) ?? ''
-  const baseName = candidate
-    .replace(/[<>:"|?*]/g, '_')
-    .trim()
-    .replace(/[. ]+$/g, '')
-
-  if (!baseName || baseName === '.' || baseName === '..') return FALLBACK_CSV_FILE_NAME
-
-  const safeBaseName = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(baseName)
-    ? `_${baseName}`
-    : baseName
-  const csvFileName = safeBaseName.toLowerCase().endsWith('.csv') ? safeBaseName : `${safeBaseName}.csv`
-  if (csvFileName.length <= 120) return csvFileName
-  return `${csvFileName.slice(0, 116)}.csv`
-}
-
 export function parseAuditCsvFileName(contentDisposition: string | null) {
-  if (!contentDisposition) return FALLBACK_CSV_FILE_NAME
-
-  const encoded = contentDisposition.match(/filename\*\s*=\s*UTF-8'[^']*'("?)([^";]+)\1/i)?.[2]
-  if (encoded) {
-    const decoded = decodeFileName(encoded)
-    if (decoded) return sanitizeCsvFileName(decoded)
-  }
-
-  const quoted = contentDisposition.match(/filename\s*=\s*"((?:\\.|[^"])*)"/i)?.[1]
-  if (quoted) return sanitizeCsvFileName(quoted)
-
-  const plain = contentDisposition.match(/filename\s*=\s*([^;]+)/i)?.[1]
-  return plain ? sanitizeCsvFileName(plain) : FALLBACK_CSV_FILE_NAME
+  return parseCsvFileName(contentDisposition, FALLBACK_CSV_FILE_NAME)
 }
 
 export const adminAuditApi: AdminAuditApi = {

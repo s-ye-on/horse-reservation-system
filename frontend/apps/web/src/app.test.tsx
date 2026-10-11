@@ -75,6 +75,7 @@ describe('App', () => {
     expect(within(adminNavigation).getByRole('link', { name: '예약 승인 및 입금 확인' })).toHaveAttribute('href', '/admin/reservations')
     expect(within(adminNavigation).getByRole('link', { name: '수업 완료 및 노쇼' })).toHaveAttribute('href', '/admin/attendance')
     expect(within(adminNavigation).getByRole('link', { name: '예약 감사 이력' })).toHaveAttribute('href', '/admin/audit-logs')
+    expect(within(adminNavigation).getByRole('link', { name: '쿠폰 사용 이력 CSV' })).toHaveAttribute('href', '/admin/coupon-usage-logs')
     expect(within(adminNavigation).getByRole('link', { name: '가족 그룹 관리' })).toHaveAttribute('href', '/admin/family-groups')
     expect(within(adminNavigation).getByRole('link', { name: '정규 시간표 및 정기 휴일' })).toHaveAttribute(
       'href',
@@ -238,5 +239,20 @@ describe('App', () => {
     )
 
     expect(screen.getByRole('heading', { name: '접근 권한이 없습니다' })).toBeInTheDocument()
+  })
+
+  it('관리자_쿠폰_사용_CSV_route와_모바일_메뉴를_연결한다', () => {
+    authState.account = { subject: 'admin-subject', memberId: null, email: 'admin@horse.test', role: 'ADMIN', status: 'ACTIVE' }
+    render(<MemoryRouter initialEntries={['/admin/coupon-usage-logs']}><App /></MemoryRouter>)
+    expect(screen.getByRole('heading', { name: '쿠폰 사용 이력 CSV' })).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: '관리 업무 이동' })).toHaveValue('/admin/coupon-usage-logs')
+    expect(within(screen.getByRole('navigation', { name: '관리자 전체 메뉴' })).getByRole('link', { name: '쿠폰 사용 이력 CSV' })).toHaveAttribute('aria-current', 'page')
+  })
+
+  it('회원은_쿠폰_사용_CSV_route를_사용할_수_없다', () => {
+    authState.account = { subject: 'member-subject', memberId: 1, email: 'member@horse.test', role: 'MEMBER', status: 'ACTIVE' }
+    render(<MemoryRouter initialEntries={['/admin/coupon-usage-logs']}><App /></MemoryRouter>)
+    expect(screen.getByRole('heading', { name: '접근 권한이 없습니다' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '현재 조건 쿠폰 사용 이력 CSV 다운로드' })).not.toBeInTheDocument()
   })
 })

@@ -9,6 +9,7 @@ import { AdminDashboardPage } from './features/admin-dashboard/admin-dashboard-p
 import { AdminMonthlyRideStatisticsPage } from './features/admin-monthly-ride-statistics/admin-monthly-ride-statistics-page'
 import { AdminWeeklyOperationsCalendarPage } from './features/admin-weekly-operations-calendar/admin-weekly-operations-calendar-page'
 import { AdminAuditPage } from './features/admin-audit/admin-audit-page'
+import { AdminCouponUsagePage } from './features/admin-coupon-usage/admin-coupon-usage-page'
 import { AdminScheduleConfigurationPage } from './features/admin-schedule-configuration/admin-schedule-configuration-page'
 import { AdminScheduleClosuresPage } from './features/admin-schedule-closures/admin-schedule-closures-page'
 import { AdminFamilyGroupsPage } from './features/admin-family-groups/admin-family-groups-page'
@@ -71,6 +72,7 @@ function AdminHomePage() {
         <Link to="/admin/members">회원 및 기승 승인</Link>
         <Link to="/admin/family-groups">가족 그룹 관리</Link>
         <Link to="/admin/coupons/new">쿠폰 등록</Link>
+        <Link to="/admin/coupon-usage-logs">쿠폰 사용 이력 CSV</Link>
         <Link to="/admin/timeslots">시간대 및 정원</Link>
         <Link to="/admin/schedule-configuration">정규 시간표 및 정기 휴일</Link>
         <Link to="/admin/schedule-closures">날짜 휴무 및 개별 휴강</Link>
@@ -119,6 +121,7 @@ export default function App() {
             <Route path="/admin/members" element={<AdminMembersPage />} />
             <Route path="/admin/family-groups" element={<AdminFamilyGroupsPage />} />
             <Route path="/admin/coupons/new" element={<AdminCouponRegistrationPage />} />
+            <Route path="/admin/coupon-usage-logs" element={<AdminCouponUsagePage />} />
             <Route path="/admin/timeslots" element={<AdminTimeSlotsPage />} />
             <Route path="/admin/schedule-configuration" element={<AdminScheduleConfigurationPage />} />
             <Route path="/admin/schedule-closures" element={<AdminScheduleClosuresPage />} />

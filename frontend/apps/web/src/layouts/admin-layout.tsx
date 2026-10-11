@@ -10,6 +10,7 @@ const ADMIN_NAVIGATION_ITEMS = [
   { to: '/admin/members', label: '회원 및 기승 승인' },
   { to: '/admin/family-groups', label: '가족 그룹 관리' },
   { to: '/admin/coupons/new', label: '쿠폰 등록' },
+  { to: '/admin/coupon-usage-logs', label: '쿠폰 사용 이력 CSV' },
   { to: '/admin/timeslots', label: '시간대 및 정원' },
   { to: '/admin/schedule-configuration', label: '정규 시간표 및 정기 휴일' },
   { to: '/admin/schedule-closures', label: '날짜 휴무 및 개별 휴강' },
