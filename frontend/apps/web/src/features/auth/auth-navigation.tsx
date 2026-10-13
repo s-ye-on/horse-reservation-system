@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router'
 import { AppLogo } from '../../components/app-logo'
 import { getAuthErrorMessage } from './auth-api'
 import { useAuth } from './use-auth'
@@ -11,12 +11,25 @@ interface AuthNavigationProps {
 export function AuthNavigation({ variant = 'default' }: AuthNavigationProps) {
   const { account, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const focusedLoginKey = useRef<string | null>(null)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (!account || !location.state?.authLoginCompleted || focusedLoginKey.current === location.key) return
+    const destination = document.querySelector<HTMLElement>('#main-content h1')
+      ?? document.getElementById('main-content')
+    if (destination) {
+      destination.tabIndex = -1
+      destination.focus()
+      focusedLoginKey.current = location.key
+    }
+  }, [account, location.key, location.state])
+
   if (!account) {
     return (
-      <header className="app-topbar">
+      <header className={`app-topbar${['/login', '/signup', '/forbidden'].includes(location.pathname) ? ' auth-public-topbar' : ''}`}>
         <div className="app-topbar-inner">
           <AppLogo />
           <nav className="public-session-navigation" aria-label="계정 메뉴">

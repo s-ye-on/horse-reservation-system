@@ -238,7 +238,7 @@ describe('App', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole('heading', { name: '접근 권한이 없습니다' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '이 화면을 이용할 수 없습니다' })).toBeInTheDocument()
   })
 
   it('관리자_쿠폰_사용_CSV_route와_모바일_메뉴를_연결한다', () => {
@@ -252,7 +252,7 @@ describe('App', () => {
   it('회원은_쿠폰_사용_CSV_route를_사용할_수_없다', () => {
     authState.account = { subject: 'member-subject', memberId: 1, email: 'member@horse.test', role: 'MEMBER', status: 'ACTIVE' }
     render(<MemoryRouter initialEntries={['/admin/coupon-usage-logs']}><App /></MemoryRouter>)
-    expect(screen.getByRole('heading', { name: '접근 권한이 없습니다' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '이 화면을 이용할 수 없습니다' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '현재 조건 쿠폰 사용 이력 CSV 다운로드' })).not.toBeInTheDocument()
   })
 })

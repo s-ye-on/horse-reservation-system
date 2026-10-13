@@ -98,7 +98,7 @@ describe('웹 인증 흐름', () => {
     )
 
     expect(screen.getByLabelText('비밀번호')).toHaveAttribute('minlength', '8')
-    expect(screen.getByText('8자 이상 입력해 주세요.')).toBeInTheDocument()
+    expect(screen.getByText(/8자 이상, UTF-8 기준 72바이트 이하/)).toBeInTheDocument()
   })
 
   it('회원가입_validation_오류를_공통_ErrorResponse로_표시한다', async () => {

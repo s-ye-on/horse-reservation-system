@@ -17,6 +17,7 @@ import {
   webAuthApiClient,
 } from '../../api/web-auth-csrf'
 import { refreshWebAuthentication } from '../../api/web-auth-session'
+import { AUTH_PASSWORD_HELP, type AuthField, type AuthFieldErrors } from './auth-form-validation'
 
 const authApiClient = new AuthControllerApi(publicApiConfiguration)
 const authenticatedAuthApiClient = new AuthControllerApi(bearerApiConfiguration)
@@ -86,5 +87,28 @@ export async function getAuthErrorMessage(error: unknown, fallback: string): Pro
       .join(' ')
   } catch {
     return fallback
+  }
+}
+
+export async function getAuthFormError(error: unknown, fallback: string): Promise<{ message: string; fields: AuthFieldErrors }> {
+  if (!(error instanceof ResponseError)) return { message: fallback, fields: {} }
+  try {
+    const body: unknown = await error.response.clone().json()
+    if (!isErrorResponse(body)) return { message: fallback, fields: {} }
+    const fields: AuthFieldErrors = {}
+    for (const { field, message } of body.fieldErrors) {
+      if (Object.hasOwn(FIELD_LABELS, field)) fields[field as AuthField] = message
+    }
+    if (body.code === 'AUTH_INVALID_PASSWORD') fields.password = AUTH_PASSWORD_HELP
+    if (body.code === 'AUTH_INVALID_EMAIL') fields.email = '올바른 이메일 주소를 입력해 주세요.'
+    if (body.code === 'AUTH_EMAIL_ALREADY_EXISTS') fields.email = '이미 사용 중인 이메일입니다. 다른 이메일을 입력해 주세요.'
+    return {
+      message: Object.keys(fields).length
+        ? Object.entries(fields).map(([field, message]) => `${FIELD_LABELS[field]}: ${message}`).join(' ')
+        : body.message,
+      fields,
+    }
+  } catch {
+    return { message: fallback, fields: {} }
   }
 }
